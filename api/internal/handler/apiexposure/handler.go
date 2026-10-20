@@ -77,6 +77,12 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return nil
 	}
 
+	if err = validateBasicWithScopesPolicy(apiExp); err != nil {
+		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
+		apiExp.SetCondition(condition.NewBlockedCondition(err.Error()))
+		return nil
+	}
+
 	// Validate specification scopes unless this exposure has an external token endpoint.
 	if !validateExposureScopes(ctx, api, apiExp) {
 		return nil
@@ -538,6 +544,17 @@ func validateExposureScopes(ctx context.Context, api *apiapi.Api, apiExp *apiapi
 	}
 	log.FromContext(ctx).V(1).Info("✅ Scopes are valid and exist")
 	return true
+}
+
+func validateBasicWithScopesPolicy(apiExp *apiapi.ApiExposure) error {
+	if !apiExp.HasExternalIdp() || len(apiExp.Spec.Security.M2M.Scopes) == 0 {
+		return nil
+	}
+	idp := apiExp.Spec.Security.M2M.ExternalIDP
+	if idp.Basic == nil || idp.GrantType == apiapi.GrantTypePassword {
+		return nil
+	}
+	return errors.New("Provider username/password with scopes requires an external IDP grant type \"password\"")
 }
 
 func validateApiCategoryPolicy(ctx context.Context, api *apiapi.Api, application *applicationapi.Application, apiExp *apiapi.ApiExposure) bool {

@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -74,6 +75,7 @@ var _ = BeforeSuite(func() {
 			[]string{
 				filepath.Join("..", "..", "..", "..", "admin", "config", "crd", "bases"),
 				filepath.Join("..", "..", "..", "..", "organization", "config", "crd", "bases"),
+				filepath.Join("..", "..", "..", "..", "api", "config", "crd", "bases"),
 			},
 			filepath.Join("..", "..", "..", "config", "crd", "bases")),
 		ErrorIfCRDPathMissing: true,
@@ -109,6 +111,9 @@ var _ = BeforeSuite(func() {
 	err = organizationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = apiv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -130,6 +135,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = SetupWebhookWithManager(mgr, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = SetupApiSpecificationWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating the namespace for the test")

@@ -45,6 +45,10 @@ type FileExposure struct {
 	Active *bool `json:"active,omitempty"`
 	// ZoneName holds the value of the "zone_name" field.
 	ZoneName string `json:"zone_name,omitempty"`
+	// ServiceURL holds the value of the "service_url" field.
+	ServiceURL string `json:"service_url,omitempty"`
+	// ServiceExternalURL holds the value of the "service_external_url" field.
+	ServiceExternalURL string `json:"service_external_url,omitempty"`
 	// Sftp holds the value of the "sftp" field.
 	Sftp *model.FileSFTP `json:"sftp,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
@@ -130,7 +134,7 @@ func (*FileExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case fileexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case fileexposure.FieldStatusPhase, fileexposure.FieldStatusMessage, fileexposure.FieldEnvironment, fileexposure.FieldNamespace, fileexposure.FieldFileType, fileexposure.FieldVisibility, fileexposure.FieldZoneName:
+		case fileexposure.FieldStatusPhase, fileexposure.FieldStatusMessage, fileexposure.FieldEnvironment, fileexposure.FieldNamespace, fileexposure.FieldFileType, fileexposure.FieldVisibility, fileexposure.FieldZoneName, fileexposure.FieldServiceURL, fileexposure.FieldServiceExternalURL:
 			values[i] = new(sql.NullString)
 		case fileexposure.FieldCreatedAt, fileexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -224,6 +228,18 @@ func (_m *FileExposure) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field zone_name", values[i])
 			} else if value.Valid {
 				_m.ZoneName = value.String
+			}
+		case fileexposure.FieldServiceURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field service_url", values[i])
+			} else if value.Valid {
+				_m.ServiceURL = value.String
+			}
+		case fileexposure.FieldServiceExternalURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field service_external_url", values[i])
+			} else if value.Valid {
+				_m.ServiceExternalURL = value.String
 			}
 		case fileexposure.FieldSftp:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -355,6 +371,12 @@ func (_m *FileExposure) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("zone_name=")
 	builder.WriteString(_m.ZoneName)
+	builder.WriteString(", ")
+	builder.WriteString("service_url=")
+	builder.WriteString(_m.ServiceURL)
+	builder.WriteString(", ")
+	builder.WriteString("service_external_url=")
+	builder.WriteString(_m.ServiceExternalURL)
 	builder.WriteString(", ")
 	builder.WriteString("sftp=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Sftp))

@@ -31,14 +31,16 @@ func (t *Translator) Translate(_ context.Context, obj *filev1.FileExposure) (*Fi
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
 	return &FileExposureData{
-		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
-		StatusPhase:   phase,
-		StatusMessage: message,
-		Variant:       obj.Spec.Variant,
-		Visibility:    strings.ToUpper(string(obj.Spec.Visibility)),
-		Active:        obj.Status.Active,
-		Zone:          obj.Spec.Zone.Name,
-		FileSFTP:      toFileSFTP(obj.Spec.SFTP),
+		Meta:               shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
+		StatusPhase:        phase,
+		StatusMessage:      message,
+		Variant:            obj.Spec.Variant,
+		Visibility:         strings.ToUpper(string(obj.Spec.Visibility)),
+		Active:             obj.Status.Active,
+		Zone:               obj.Spec.Zone.Name,
+		FileSFTP:           toFileSFTP(obj.Spec.SFTP),
+		ServiceURL:         obj.Status.ServiceURL,
+		ServiceExternalURL: obj.Status.ServiceExternalURL,
 		ApprovalConfig: model.ApprovalConfig{
 			Strategy:     shared.MapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,

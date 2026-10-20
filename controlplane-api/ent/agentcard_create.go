@@ -107,6 +107,20 @@ func (_c *AgentCardCreate) SetName(v string) *AgentCardCreate {
 	return _c
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_c *AgentCardCreate) SetDisplayName(v string) *AgentCardCreate {
+	_c.mutation.SetDisplayName(v)
+	return _c
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_c *AgentCardCreate) SetNillableDisplayName(v *string) *AgentCardCreate {
+	if v != nil {
+		_c.SetDisplayName(*v)
+	}
+	return _c
+}
+
 // SetDescription sets the "description" field.
 func (_c *AgentCardCreate) SetDescription(v string) *AgentCardCreate {
 	_c.mutation.SetDescription(v)
@@ -131,6 +145,20 @@ func (_c *AgentCardCreate) SetSpecification(v string) *AgentCardCreate {
 func (_c *AgentCardCreate) SetNillableSpecification(v *string) *AgentCardCreate {
 	if v != nil {
 		_c.SetSpecification(*v)
+	}
+	return _c
+}
+
+// SetHash sets the "hash" field.
+func (_c *AgentCardCreate) SetHash(v string) *AgentCardCreate {
+	_c.mutation.SetHash(v)
+	return _c
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_c *AgentCardCreate) SetNillableHash(v *string) *AgentCardCreate {
+	if v != nil {
+		_c.SetHash(*v)
 	}
 	return _c
 }
@@ -246,6 +274,10 @@ func (_c *AgentCardCreate) defaults() error {
 		v := agentcard.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		v := agentcard.DefaultDisplayName
+		_c.mutation.SetDisplayName(v)
+	}
 	if _, ok := _c.mutation.Active(); !ok {
 		v := agentcard.DefaultActive
 		_c.mutation.SetActive(v)
@@ -297,6 +329,9 @@ func (_c *AgentCardCreate) check() error {
 		if err := agentcard.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AgentCard.name": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.DisplayName(); !ok {
+		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "AgentCard.display_name"`)}
 	}
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "AgentCard.active"`)}
@@ -363,6 +398,10 @@ func (_c *AgentCardCreate) createSpec() (*AgentCard, *sqlgraph.CreateSpec) {
 		_spec.SetField(agentcard.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.DisplayName(); ok {
+		_spec.SetField(agentcard.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
+	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(agentcard.FieldDescription, field.TypeString, value)
 		_node.Description = value
@@ -370,6 +409,10 @@ func (_c *AgentCardCreate) createSpec() (*AgentCard, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Specification(); ok {
 		_spec.SetField(agentcard.FieldSpecification, field.TypeString, value)
 		_node.Specification = value
+	}
+	if value, ok := _c.mutation.Hash(); ok {
+		_spec.SetField(agentcard.FieldHash, field.TypeString, value)
+		_node.Hash = value
 	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(agentcard.FieldCategory, field.TypeString, value)
@@ -564,6 +607,18 @@ func (u *AgentCardUpsert) UpdateName() *AgentCardUpsert {
 	return u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsert) SetDisplayName(v string) *AgentCardUpsert {
+	u.Set(agentcard.FieldDisplayName, v)
+	return u
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsert) UpdateDisplayName() *AgentCardUpsert {
+	u.SetExcluded(agentcard.FieldDisplayName)
+	return u
+}
+
 // SetDescription sets the "description" field.
 func (u *AgentCardUpsert) SetDescription(v string) *AgentCardUpsert {
 	u.Set(agentcard.FieldDescription, v)
@@ -597,6 +652,24 @@ func (u *AgentCardUpsert) UpdateSpecification() *AgentCardUpsert {
 // ClearSpecification clears the value of the "specification" field.
 func (u *AgentCardUpsert) ClearSpecification() *AgentCardUpsert {
 	u.SetNull(agentcard.FieldSpecification)
+	return u
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsert) SetHash(v string) *AgentCardUpsert {
+	u.Set(agentcard.FieldHash, v)
+	return u
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsert) UpdateHash() *AgentCardUpsert {
+	u.SetExcluded(agentcard.FieldHash)
+	return u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsert) ClearHash() *AgentCardUpsert {
+	u.SetNull(agentcard.FieldHash)
 	return u
 }
 
@@ -805,6 +878,20 @@ func (u *AgentCardUpsertOne) UpdateName() *AgentCardUpsertOne {
 	})
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsertOne) SetDisplayName(v string) *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsertOne) UpdateDisplayName() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
 // SetDescription sets the "description" field.
 func (u *AgentCardUpsertOne) SetDescription(v string) *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
@@ -844,6 +931,27 @@ func (u *AgentCardUpsertOne) UpdateSpecification() *AgentCardUpsertOne {
 func (u *AgentCardUpsertOne) ClearSpecification() *AgentCardUpsertOne {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsertOne) SetHash(v string) *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsertOne) UpdateHash() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsertOne) ClearHash() *AgentCardUpsertOne {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.ClearHash()
 	})
 }
 
@@ -1226,6 +1334,20 @@ func (u *AgentCardUpsertBulk) UpdateName() *AgentCardUpsertBulk {
 	})
 }
 
+// SetDisplayName sets the "display_name" field.
+func (u *AgentCardUpsertBulk) SetDisplayName(v string) *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetDisplayName(v)
+	})
+}
+
+// UpdateDisplayName sets the "display_name" field to the value that was provided on create.
+func (u *AgentCardUpsertBulk) UpdateDisplayName() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateDisplayName()
+	})
+}
+
 // SetDescription sets the "description" field.
 func (u *AgentCardUpsertBulk) SetDescription(v string) *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
@@ -1265,6 +1387,27 @@ func (u *AgentCardUpsertBulk) UpdateSpecification() *AgentCardUpsertBulk {
 func (u *AgentCardUpsertBulk) ClearSpecification() *AgentCardUpsertBulk {
 	return u.Update(func(s *AgentCardUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetHash sets the "hash" field.
+func (u *AgentCardUpsertBulk) SetHash(v string) *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.SetHash(v)
+	})
+}
+
+// UpdateHash sets the "hash" field to the value that was provided on create.
+func (u *AgentCardUpsertBulk) UpdateHash() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.UpdateHash()
+	})
+}
+
+// ClearHash clears the value of the "hash" field.
+func (u *AgentCardUpsertBulk) ClearHash() *AgentCardUpsertBulk {
+	return u.Update(func(s *AgentCardUpsert) {
+		s.ClearHash()
 	})
 }
 

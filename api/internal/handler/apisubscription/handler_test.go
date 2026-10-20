@@ -11,17 +11,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	"github.com/telekom/controlplane/api/internal/handler/util"
-	applicationapi "github.com/telekom/controlplane/application/api/v1"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -117,163 +109,52 @@ var _ = Describe("Subscription scope validation", func() {
 })
 
 var _ = Describe("ApiSubscription Handler", func() {
-	Context("validateApiCategoryPolicy", func() {
-		const (
-			environment = "test"
-			group       = "alpha"
-			teamName    = "core"
-		)
-
-		baseApp := &applicationapi.Application{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "consumer-app",
-				Namespace: environment + "--" + group + "--" + teamName,
-			},
-		}
-		baseAPI := &apiv1.Api{
-			Spec: apiv1.ApiSpec{
-				Category: "partner",
-			},
+	Context("validateBasicWithScopesPolicy", func() {
+		basic := &apiv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"}
+		withBasicAndScopes := &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+			Basic: basic, Scopes: []string{"consumer:read"},
+		}}
+		exposureWithGrant := func(grantType apiv1.GrantType) *apiv1.ApiExposure {
+			return &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{Security: &apiv1.Security{
+				M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token", GrantType: grantType,
+				}},
+			}}}
 		}
 
-		type testCase struct {
-			name           string
-			teamCategory   organizationapi.TeamCategory
-			apiCategories  []apiv1.ApiCategory
-			expectedResult bool
-			expectedReason string
-		}
-
-		tests := []testCase{
-			{
-				name:         "allowed category",
-				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
-							LabelValue: "partner",
-							Active:     true,
-							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
-						},
-					},
-				},
-				expectedResult: true,
-			},
-			{
-				name:         "denied category",
-				teamCategory: organizationapi.TeamCategoryInfrastructure,
-				apiCategories: []apiv1.ApiCategory{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
-							LabelValue: "partner",
-							Active:     true,
-							AllowTeams: &apiv1.AllowTeamsConfig{Categories: []string{"Customer"}},
-						},
-					},
-				},
-				expectedResult: false,
-				expectedReason: util.ApiCategoryTeamCategoryNotAllowedReason,
-			},
-			{
-				name:           "no categories configured",
-				teamCategory:   organizationapi.TeamCategoryCustomer,
-				apiCategories:  nil,
-				expectedResult: true,
-			},
-			{
-				name:         "missing category",
-				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
-							LabelValue: "other",
-							Active:     true,
-						},
-					},
-				},
-				expectedResult: false,
-				expectedReason: util.ApiCategoryPolicyResolutionFailedReason,
-			},
-			{
-				name:         "inactive category",
-				teamCategory: organizationapi.TeamCategoryCustomer,
-				apiCategories: []apiv1.ApiCategory{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "partner", Namespace: environment, Labels: map[string]string{config.EnvironmentLabelKey: environment}},
-						Spec: apiv1.ApiCategorySpec{
-							LabelValue: "partner",
-							Active:     false,
-						},
-					},
-				},
-				expectedResult: false,
-				expectedReason: util.ApiCategoryPolicyResolutionFailedReason,
-			},
-		}
-
-		for _, tt := range tests {
-			It(tt.name, func() {
-				team := &organizationapi.Team{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      group + "--" + teamName,
-						Namespace: environment,
-						Labels: map[string]string{
-							config.EnvironmentLabelKey: environment,
-						},
-					},
-					Spec: organizationapi.TeamSpec{
-						Group:    group,
-						Name:     teamName,
-						Email:    "team@example.com",
-						Category: tt.teamCategory,
-					},
-				}
-
-				objects := []crclient.Object{team}
-				for i := range tt.apiCategories {
-					cat := tt.apiCategories[i]
-					objects = append(objects, &cat)
-				}
-
-				ctx := newClientContext(environment, objects...)
-				apiSub := &apiv1.ApiSubscription{}
-
-				result := validateApiCategoryPolicy(ctx, baseAPI, baseApp, apiSub)
-				Expect(result).To(Equal(tt.expectedResult))
-
-				if tt.expectedReason == "" {
-					notReady := meta.FindStatusCondition(apiSub.GetConditions(), condition.ConditionTypeReady)
-					Expect(notReady == nil || notReady.Status != metav1.ConditionFalse).To(BeTrue())
+		DescribeTable("returns a validation error only for incompatible Basic credentials with scopes",
+			func(security *apiv1.SubscriberSecurity, exposure *apiv1.ApiExposure, blocked bool) {
+				sub := &apiv1.ApiSubscription{Spec: apiv1.ApiSubscriptionSpec{Security: security}}
+				err := validateBasicWithScopesPolicy(sub, exposure)
+				if !blocked {
+					Expect(err).NotTo(HaveOccurred())
 					return
 				}
-
-				notReady := meta.FindStatusCondition(apiSub.GetConditions(), condition.ConditionTypeReady)
-				Expect(notReady).NotTo(BeNil())
-				Expect(notReady.Reason).To(Equal(tt.expectedReason))
-			})
-		}
+				Expect(err).To(MatchError(`Consumer username/password with scopes requires an external IDP grant type "password"`))
+			},
+			Entry("without subscription security", nil, nil, false),
+			Entry("without subscription M2M", &apiv1.SubscriberSecurity{}, nil, false),
+			Entry("with scopes only", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Scopes: []string{"consumer:read"},
+			}}, nil, false),
+			Entry("with Basic only", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic,
+			}}, nil, false),
+			Entry("with empty scopes", &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+				Basic: basic, Scopes: []string{},
+			}}, nil, false),
+			Entry("without an exposure", withBasicAndScopes, nil, true),
+			Entry("without exposure security", withBasicAndScopes, &apiv1.ApiExposure{}, true),
+			Entry("without exposure M2M", withBasicAndScopes, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
+				Security: &apiv1.Security{},
+			}}, true),
+			Entry("without an external IDP", withBasicAndScopes, &apiv1.ApiExposure{Spec: apiv1.ApiExposureSpec{
+				Security: &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{}},
+			}}, true),
+			Entry("with an omitted grant", withBasicAndScopes, exposureWithGrant(""), true),
+			Entry("with a client_credentials grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeClientCredentials), true),
+			Entry("with an authorization_code grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypeAuthorizationCode), true),
+			Entry("with a password grant", withBasicAndScopes, exposureWithGrant(apiv1.GrantTypePassword), false),
+		)
 	})
 })
-
-func newClientContext(environment string, objects ...crclient.Object) context.Context {
-	sch := runtime.NewScheme()
-	Expect(apiv1.AddToScheme(sch)).To(Succeed())
-	Expect(applicationapi.AddToScheme(sch)).To(Succeed())
-	Expect(organizationapi.AddToScheme(sch)).To(Succeed())
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(sch).
-		WithObjects(objects...).
-		WithIndex(&apiv1.ApiCategory{}, "spec.labelValue", func(obj crclient.Object) []string {
-			apiCategory, ok := obj.(*apiv1.ApiCategory)
-			if !ok || apiCategory.Spec.LabelValue == "" {
-				return nil
-			}
-			return []string{apiCategory.Spec.LabelValue}
-		}).
-		Build()
-	janitorClient := cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment))
-	return cclient.WithClient(context.Background(), janitorClient)
-}

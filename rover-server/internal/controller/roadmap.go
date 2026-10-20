@@ -10,7 +10,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -121,15 +120,9 @@ func (r *RoadmapController) Get(ctx context.Context, resourceId string) (api.Api
 	}
 
 	// Download items from file-manager
-	reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
+	items, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 	if err != nil {
-		return res, errors.Wrap(err, "failed to download roadmap items from file-manager")
-	}
-
-	var items []api.ApiRoadmapItem
-	err = json.NewDecoder(reader).Decode(&items)
-	if err != nil {
-		return res, errors.Wrap(err, "failed to decode roadmap items")
+		return res, err
 	}
 
 	return out.MapResponse(roadmap, items), nil
@@ -151,15 +144,9 @@ func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllApiRoad
 	list := make([]api.ApiRoadmapResponse, 0, len(objList.Items))
 	for _, roadmap := range objList.Items {
 		// Download items from file-manager
-		reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
+		items, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
-		}
-
-		var items []api.ApiRoadmapItem
-		err = json.NewDecoder(reader).Decode(&items)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to decode roadmap items", err.Error())
+			return nil, err
 		}
 
 		list = append(list, out.MapResponse(roadmap, items))
@@ -241,12 +228,15 @@ func (r *RoadmapController) uploadFile(ctx context.Context, itemsMarshaled []byt
 	}
 
 	// Check if hash changed (optimization: skip upload if same)
-	localHash, same, err := r.isHashEqual(ctx, id, itemsMarshaled)
+	localHash, same, existingId, err := r.isHashEqual(ctx, id, itemsMarshaled)
 	if err != nil {
 		return nil, err
 	}
 
-	fileId := generateFileId(id)
+	fileId, err := resolveFileId(existingId)
+	if err != nil {
+		return nil, err
+	}
 	fileContentType := "application/json"
 
 	resp := &filesapi.FileUploadResponse{
@@ -262,31 +252,40 @@ func (r *RoadmapController) uploadFile(ctx context.Context, itemsMarshaled []byt
 	return resp, err
 }
 
-// isHashEqual checks if the hash of the data matches the stored hash
-func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
+// isHashEqual checks if the hash of the data matches the stored hash and returns the stored file ID
+func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, string, error) {
 	ns := id.Environment + "--" + id.Namespace
 	roadmap, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return "", false, nil
+			return "", false, "", nil
 		}
-		return "", false, err
+		return "", false, "", err
 	}
 
 	hasher := sha256.New()
 	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
-	return hash, hash == roadmap.Spec.Hash, nil
+	return hash, hash == roadmap.Spec.Hash, roadmap.Spec.Contents, nil
 }
 
 // downloadFile downloads items JSON from file-manager
-func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {
+func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) ([]api.ApiRoadmapItem, error) {
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
-		return nil, err
+		return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
 	}
-	return &b, nil
-}
 
-// generateFileId is defined in apispecification.go and shared across controllers
+	if b.Len() == 0 {
+		return nil, nil
+	}
+
+	items := []api.ApiRoadmapItem{}
+	err = json.NewDecoder(&b).Decode(&items)
+	if err != nil {
+		return nil, problems.InternalServerError("Failed to unmarshal roadmap items", err.Error())
+	}
+
+	return items, nil
+}

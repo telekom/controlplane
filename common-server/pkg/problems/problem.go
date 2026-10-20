@@ -40,6 +40,16 @@ func (p *problem) Code() int {
 	return p.Status
 }
 
+// Details returns the type and field details of p.
+// It returns zero values for Problem implementations outside this package.
+func Details(p Problem) (problemType string, fields []Field) {
+	pr, ok := p.(*problem)
+	if !ok {
+		return "", nil
+	}
+	return pr.Type, pr.Fields
+}
+
 type ProblemBuilder interface {
 	Build() Problem
 	Type(string) ProblemBuilder

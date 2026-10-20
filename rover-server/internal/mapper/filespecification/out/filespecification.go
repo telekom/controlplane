@@ -13,7 +13,7 @@ import (
 )
 
 // MapResponse maps a FileSpecification CRD to the API response type.
-func MapResponse(in *roverv1.FileSpecification) (res api.FileSpecificationResponse, err error) {
+func MapResponse(in *roverv1.FileSpecification, specContent map[string]any) (res api.FileSpecificationResponse, err error) {
 	if in == nil {
 		return res, errors.New("input file specification crd is nil")
 	}
@@ -24,6 +24,9 @@ func MapResponse(in *roverv1.FileSpecification) (res api.FileSpecificationRespon
 		Description: in.Spec.Description,
 		Id:          mapper.MakeResourceId(in),
 		Status:      status.MapStatus(in.GetConditions(), in.GetGeneration()),
+	}
+	if specContent != nil {
+		res.Specification = specContent
 	}
 
 	return res, nil

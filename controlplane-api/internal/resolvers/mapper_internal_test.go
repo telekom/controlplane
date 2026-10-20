@@ -16,7 +16,8 @@ import (
 var _ = Describe("mapApplicationInfo", func() {
 	It("should map an application together with zone and owning team", func() {
 		ids := []model.ExternalId{{Id: "z-123", Scheme: "inventory"}, {Id: "a-456", Scheme: "catalog"}}
-		app := &ent.Application{ID: 3, Name: "app-alpha", ExternalIds: ids}
+		clientID := "client-alpha"
+		app := &ent.Application{ID: 3, Name: "app-alpha", ClientID: &clientID, ExternalIds: ids}
 		z := &ent.Zone{ID: 7, Name: "zone-eu", Visibility: zone.VisibilityEnterprise}
 		team := &ent.Team{ID: 11, Name: "team-alpha", Email: "alpha@test.dev"}
 		group := &ent.Group{ID: 13, Name: "group-a"}
@@ -25,11 +26,18 @@ var _ = Describe("mapApplicationInfo", func() {
 		Expect(info).NotTo(BeNil())
 		Expect(info.ID).To(Equal(3))
 		Expect(info.Name).To(Equal("app-alpha"))
+		Expect(info.ClientID).To(HaveValue(Equal("client-alpha")))
 		Expect(info.ExternalIds).To(Equal(ids))
 		Expect(info.Zone).To(BeIdenticalTo(z))
 		Expect(info.OwnerTeam).NotTo(BeNil())
 		Expect(info.OwnerTeam.Name).To(Equal("team-alpha"))
 		Expect(info.OwnerTeam.GroupName).To(Equal("group-a"))
+	})
+
+	It("should map a missing client ID to nil", func() {
+		info := mapApplicationInfo(&ent.Application{ID: 4, Name: "app-unprovisioned"}, nil, &ent.Team{Name: "team-alpha"}, &ent.Group{Name: "group-a"})
+		Expect(info).NotTo(BeNil())
+		Expect(info.ClientID).To(BeNil())
 	})
 
 	It("should return nil for a nil application", func() {

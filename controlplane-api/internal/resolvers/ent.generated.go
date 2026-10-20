@@ -2081,6 +2081,29 @@ func (ec *executionContext) fieldContext_AgentCard_name(_ context.Context, field
 	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _AgentCard_displayName(ctx context.Context, field graphql.CollectedField, obj *ent.AgentCard) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgentCard_displayName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AgentCard_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _AgentCard_description(ctx context.Context, field graphql.CollectedField, obj *ent.AgentCard) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2101,6 +2124,29 @@ func (ec *executionContext) _AgentCard_description(ctx context.Context, field gr
 	)
 }
 func (ec *executionContext) fieldContext_AgentCard_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AgentCard_hash(ctx context.Context, field graphql.CollectedField, obj *ent.AgentCard) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgentCard_hash(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hash, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgentCard_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("AgentCard", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -9755,6 +9801,52 @@ func (ec *executionContext) fieldContext_FileExposure_zoneName(_ context.Context
 	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _FileExposure_serviceURL(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposure_serviceURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposure_serviceURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FileExposure_serviceExternalURL(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FileExposure_serviceExternalURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceExternalURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FileExposure_serviceExternalURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FileExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _FileExposure_sftp(ctx context.Context, field graphql.CollectedField, obj *ent.FileExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11480,6 +11572,29 @@ func (ec *executionContext) fieldContext_McpServer_name(_ context.Context, field
 	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _McpServer_displayName(ctx context.Context, field graphql.CollectedField, obj *ent.McpServer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_McpServer_displayName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_McpServer_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _McpServer_description(ctx context.Context, field graphql.CollectedField, obj *ent.McpServer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11500,6 +11615,29 @@ func (ec *executionContext) _McpServer_description(ctx context.Context, field gr
 	)
 }
 func (ec *executionContext) fieldContext_McpServer_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _McpServer_hash(ctx context.Context, field graphql.CollectedField, obj *ent.McpServer) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_McpServer_hash(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Hash, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_McpServer_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("McpServer", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -14413,7 +14551,7 @@ func (ec *executionContext) unmarshalInputAgentCardWhereInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15120,6 +15258,97 @@ func (ec *executionContext) unmarshalInputAgentCardWhereInput(ctx context.Contex
 				return it, err
 			}
 			it.NameContainsFold = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		case "displayNameNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNEQ = data
+		case "displayNameIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameIn = data
+		case "displayNameNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNotIn = data
+		case "displayNameGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGT = data
+		case "displayNameGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGTE = data
+		case "displayNameLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLT = data
+		case "displayNameLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLTE = data
+		case "displayNameContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContains = data
+		case "displayNameHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasPrefix = data
+		case "displayNameHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasSuffix = data
+		case "displayNameEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameEqualFold = data
+		case "displayNameContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContainsFold = data
 		case "description":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -26353,7 +26582,7 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "fileType", "fileTypeNEQ", "fileTypeIn", "fileTypeNotIn", "fileTypeGT", "fileTypeGTE", "fileTypeLT", "fileTypeLTE", "fileTypeContains", "fileTypeHasPrefix", "fileTypeHasSuffix", "fileTypeEqualFold", "fileTypeContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "zoneName", "zoneNameNEQ", "zoneNameIn", "zoneNameNotIn", "zoneNameGT", "zoneNameGTE", "zoneNameLT", "zoneNameLTE", "zoneNameContains", "zoneNameHasPrefix", "zoneNameHasSuffix", "zoneNameEqualFold", "zoneNameContainsFold", "serviceURL", "serviceURLNEQ", "serviceURLIn", "serviceURLNotIn", "serviceURLGT", "serviceURLGTE", "serviceURLLT", "serviceURLLTE", "serviceURLContains", "serviceURLHasPrefix", "serviceURLHasSuffix", "serviceURLIsNil", "serviceURLNotNil", "serviceURLEqualFold", "serviceURLContainsFold", "serviceExternalURL", "serviceExternalURLNEQ", "serviceExternalURLIn", "serviceExternalURLNotIn", "serviceExternalURLGT", "serviceExternalURLGTE", "serviceExternalURLLT", "serviceExternalURLLTE", "serviceExternalURLContains", "serviceExternalURLHasPrefix", "serviceExternalURLHasSuffix", "serviceExternalURLIsNil", "serviceExternalURLNotNil", "serviceExternalURLEqualFold", "serviceExternalURLContainsFold", "hasOwner", "hasOwnerWith", "hasFileTypeDef", "hasFileTypeDefWith", "hasZone", "hasZoneWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -27130,6 +27359,216 @@ func (ec *executionContext) unmarshalInputFileExposureWhereInput(ctx context.Con
 				return it, err
 			}
 			it.ZoneNameContainsFold = data
+		case "serviceURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURL = data
+		case "serviceURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNEQ = data
+		case "serviceURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLIn = data
+		case "serviceURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNotIn = data
+		case "serviceURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLGT = data
+		case "serviceURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLGTE = data
+		case "serviceURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLLT = data
+		case "serviceURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLLTE = data
+		case "serviceURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLContains = data
+		case "serviceURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLHasPrefix = data
+		case "serviceURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLHasSuffix = data
+		case "serviceURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLIsNil = data
+		case "serviceURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLNotNil = data
+		case "serviceURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLEqualFold = data
+		case "serviceURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceURLContainsFold = data
+		case "serviceExternalURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURL = data
+		case "serviceExternalURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNEQ = data
+		case "serviceExternalURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLIn = data
+		case "serviceExternalURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNotIn = data
+		case "serviceExternalURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLGT = data
+		case "serviceExternalURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLGTE = data
+		case "serviceExternalURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLLT = data
+		case "serviceExternalURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLLTE = data
+		case "serviceExternalURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLContains = data
+		case "serviceExternalURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLHasPrefix = data
+		case "serviceExternalURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLHasSuffix = data
+		case "serviceExternalURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLIsNil = data
+		case "serviceExternalURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLNotNil = data
+		case "serviceExternalURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLEqualFold = data
+		case "serviceExternalURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serviceExternalURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceExternalURLContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -29823,7 +30262,7 @@ func (ec *executionContext) unmarshalInputMcpServerWhereInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionIsNil", "descriptionNotNil", "descriptionEqualFold", "descriptionContainsFold", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -30530,6 +30969,97 @@ func (ec *executionContext) unmarshalInputMcpServerWhereInput(ctx context.Contex
 				return it, err
 			}
 			it.NameContainsFold = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		case "displayNameNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNEQ = data
+		case "displayNameIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameIn = data
+		case "displayNameNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNotIn = data
+		case "displayNameGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGT = data
+		case "displayNameGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGTE = data
+		case "displayNameLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLT = data
+		case "displayNameLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLTE = data
+		case "displayNameContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContains = data
+		case "displayNameHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasPrefix = data
+		case "displayNameHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasSuffix = data
+		case "displayNameEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameEqualFold = data
+		case "displayNameContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContainsFold = data
 		case "description":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -33958,8 +34488,18 @@ func (ec *executionContext) _AgentCard(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "displayName":
+			out.Values[i] = ec._AgentCard_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "description":
 			out.Values[i] = ec._AgentCard_description(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "hash":
+			out.Values[i] = ec._AgentCard_hash(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -38203,6 +38743,16 @@ func (ec *executionContext) _FileExposure(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "serviceURL":
+			out.Values[i] = ec._FileExposure_serviceURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "serviceExternalURL":
+			out.Values[i] = ec._FileExposure_serviceExternalURL(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "sftp":
 			out.Values[i] = ec._FileExposure_sftp(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -39226,8 +39776,18 @@ func (ec *executionContext) _McpServer(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "displayName":
+			out.Values[i] = ec._McpServer_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "description":
 			out.Values[i] = ec._McpServer_description(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "hash":
+			out.Values[i] = ec._McpServer_hash(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

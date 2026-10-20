@@ -86,7 +86,7 @@ type Machine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
 	// Claims defines token claims that must be present in the token reaching the upstream.
 	// Only valid on the platform-managed LMS token.
@@ -97,7 +97,6 @@ type Machine2MachineAuthentication struct {
 // SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
@@ -108,7 +107,7 @@ type SubscriberMachine2MachineAuthentication struct {
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
 }
 

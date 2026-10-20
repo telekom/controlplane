@@ -106,7 +106,14 @@ type ClientUpdateOptions struct {
 
 type KeycloakService interface {
 	// Realm operations
-	CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) error
+	// CreateOrReplaceRealm creates or updates the realm, including the
+	// attributes in realm.Spec.Attributes. Keys in
+	// realm.Status.ManagedAttributes that are no longer desired are removed.
+	CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) (*RealmSyncResult, error)
+	// ResolveIssuerUrl returns the issuer URL of the realm. If frontendUrl is
+	// a valid base URL, the issuer is derived from it. Otherwise (unset or
+	// invalid) it is read from the realm's OIDC discovery document.
+	ResolveIssuerUrl(ctx context.Context, realmName, frontendUrl string) (string, error)
 	DeleteRealm(ctx context.Context, realmName string) error
 	ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *identityv1.SecretRotationConfig) error
 	DeleteSecretRotationPolicy(ctx context.Context, realmName string) error
@@ -130,8 +137,30 @@ type KeycloakService interface {
 
 var _ KeycloakService = (*keycloakService)(nil)
 
+// RealmSyncResult describes the realm state after a successful sync.
+type RealmSyncResult struct {
+	// ManagedAttributes are the sorted attribute keys applied from the spec.
+	ManagedAttributes []string
+	// FrontendUrl is the effective frontendUrl attribute of the realm,
+	// including a value configured outside the controller. Empty if unset.
+	FrontendUrl string
+}
+
 type keycloakService struct {
-	Client KeycloakClient
+	Client    KeycloakClient
+	discovery *issuerDiscovery
+}
+
+// ServiceOption configures a KeycloakService.
+type ServiceOption func(*keycloakService)
+
+// WithIssuerDiscovery enables OIDC issuer discovery. The httpClient must not
+// carry admin credentials. adminUrl is the management URL used to reach the
+// discovery document.
+func WithIssuerDiscovery(httpClient *http.Client, adminUrl string) ServiceOption {
+	return func(k *keycloakService) {
+		k.discovery = &issuerDiscovery{httpClient: httpClient, adminUrl: adminUrl}
+	}
 }
 
 func (k *keycloakService) getClient(ctx context.Context, realmName string, client *identityv1.Client) (*api.ClientRepresentation, error) {
@@ -306,48 +335,86 @@ func (k *keycloakService) updateClient(ctx context.Context, realmName string, ex
 // It checks whether the realm already exists in Keycloak. If it does, the
 // desired state is compared with the existing representation using the mapper
 // package; a PUT is issued only when differences are detected, and the merged
-// representation preserves all Keycloak-managed fields. If the realm does not
-// exist, it is created via POST.
-func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) error {
+// representation preserves all Keycloak-managed fields and all attributes not
+// managed by the controller. If the realm does not exist, it is created via
+// POST.
+//
+// Keycloak replaces the complete attribute set when a PUT contains an
+// attributes map, so the existing attributes are always sent along and
+// previously managed keys are removed by omitting them.
+func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) (*RealmSyncResult, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
 	getRealm, err := k.Client.GetRealmWithResponse(ctx, realm.Name)
 	if err != nil {
-		return fmt.Errorf("error checking for existing realm: %w", err)
+		return nil, fmt.Errorf("error checking for existing realm: %w", err)
 	}
+
+	result := &RealmSyncResult{ManagedAttributes: util.ManagedAttributeKeys(realm.Spec.Attributes)}
 
 	if getRealm.StatusCode() == http.StatusOK && getRealm.JSON2XX != nil {
 		// Realm exists — compare and merge before PUT.
 		existing := getRealm.JSON2XX
 		desired := util.MapToRealmRepresentation(realm)
+		effective := util.Attributes(existing.Attributes)
+		desired.Attributes = nil
+		if attributes, managed := util.ReconcileRealmAttributes(effective, realm.Spec.Attributes, realm.Status.ManagedAttributes); managed {
+			desired.Attributes = &attributes
+			effective = attributes
+		}
+		result.FrontendUrl = util.RealmAttribute(effective, FrontendUrlAttribute)
 		if util.CompareRealmRepresentation(existing, &desired) {
 			logger.V(1).Info("no changes detected for realm, skipping update", "realm", realm.Name)
-			return nil
+			return result, nil
 		}
 		merged := util.MergeRealmRepresentation(existing, &desired)
 		body := *merged
 		res, putErr := k.Client.PutRealmWithResponse(ctx, realm.Name, body)
 		if putErr != nil {
-			return fmt.Errorf("error updating realm: %w", putErr)
+			return nil, fmt.Errorf("error updating realm: %w", putErr)
 		}
 		if responseErr := CheckHTTPStatus(res.StatusCode(), 204); responseErr != nil {
-			return fmt.Errorf("updating realm: %w", responseErr)
+			return nil, fmt.Errorf("updating realm: %w", responseErr)
 		}
-		logger.V(1).Info("updated existing realm in keycloak", "realm", realm.Name)
-		return nil
+		logger.V(1).Info("updated existing realm in keycloak", "realm", realm.Name, "managedAttributes", result.ManagedAttributes)
+		return result, nil
 	}
 
 	// Realm does not exist — create it.
 	body := util.MapToRealmRepresentation(realm)
 	res, err := k.Client.PostWithResponse(ctx, body)
 	if err != nil {
-		return fmt.Errorf("error creating realm: %w", err)
+		return nil, fmt.Errorf("error creating realm: %w", err)
 	}
 	if responseErr := CheckHTTPStatus(res.StatusCode(), 201); responseErr != nil {
-		return fmt.Errorf("creating realm: %w", responseErr)
+		return nil, fmt.Errorf("creating realm: %w", responseErr)
 	}
-	logger.V(1).Info("created realm in keycloak", "realm", realm.Name)
-	return nil
+	result.FrontendUrl = util.RealmAttribute(util.Attributes(body.Attributes), FrontendUrlAttribute)
+	logger.V(1).Info("created realm in keycloak", "realm", realm.Name, "managedAttributes", result.ManagedAttributes)
+	return result, nil
+}
+
+// ResolveIssuerUrl implements [KeycloakService].
+func (k *keycloakService) ResolveIssuerUrl(ctx context.Context, realmName, frontendUrl string) (string, error) {
+	// Like Keycloak, a blank frontendUrl means it is not set. An invalid
+	// frontendUrl is not trusted; the issuer Keycloak advertises is used instead.
+	if strings.TrimSpace(frontendUrl) != "" {
+		issuer, err := IssuerUrlFromFrontendUrl(frontendUrl, realmName)
+		if err == nil {
+			return issuer, nil
+		}
+		// The value itself is not logged as it may contain credentials.
+		logr.FromContextOrDiscard(ctx).Info("Realm frontendUrl is not a valid base URL, discovering issuer", "realm", realmName, "reason", err.Error())
+	}
+	if k.discovery == nil {
+		return "", blockedErrorf("cannot determine issuer of realm %q: no %s set and OIDC discovery is not configured", realmName, FrontendUrlAttribute)
+	}
+	issuer, err := k.discovery.discoverIssuer(ctx, realmName)
+	if err != nil {
+		return "", fmt.Errorf("discovering issuer of realm %q: %w", realmName, err)
+	}
+	logr.FromContextOrDiscard(ctx).V(1).Info("discovered realm issuer", "realm", realmName, "issuerUrl", issuer)
+	return issuer, nil
 }
 
 // DeleteClient implements [KeycloakService].
@@ -386,8 +453,12 @@ func (k *keycloakService) DeleteRealm(ctx context.Context, realmName string) err
 	return nil
 }
 
-func NewKeycloakService(client KeycloakClient) KeycloakService {
-	return &keycloakService{
+func NewKeycloakService(client KeycloakClient, opts ...ServiceOption) KeycloakService {
+	svc := &keycloakService{
 		Client: client,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }

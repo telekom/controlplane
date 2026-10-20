@@ -39,8 +39,10 @@ func ParseSpecification(_ context.Context, specYAML string) (*roverv1.AgentSpeci
 		if v, ok := info["version"].(string); ok && v != "" {
 			version = v
 		}
-		if title, ok := info["title"].(string); ok && title != "" {
-			name = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(title), " ", "-"))
+		if title, ok := info["title"].(string); ok {
+			if title = strings.TrimSpace(title); title != "" {
+				name = title
+			}
 		}
 		if d, ok := info["description"].(string); ok {
 			description = d
@@ -81,19 +83,9 @@ func MapRequest(agentSpec *roverv1.AgentSpecification, fileAPIResp *filesapi.Fil
 		Kind:       "AgentSpecification",
 		APIVersion: "rover.cp.ei.telekom.de/v1",
 	}
-	agentSpec.Spec.Hash = fileAPIResp.FileHash
-	agentSpec.Spec.Specification = fileAPIResp.FileId
-	agentSpec.Labels = map[string]string{
-		config.EnvironmentLabelKey: id.Environment,
-	}
-	agentSpec.Namespace = id.Environment + "--" + id.Namespace
-}
-
-// MapRequestWithoutFile maps AgentSpecification fields when file-manager is disabled.
-func MapRequestWithoutFile(agentSpec *roverv1.AgentSpecification, id mapper.ResourceIdInfo) {
-	agentSpec.TypeMeta = metav1.TypeMeta{
-		Kind:       "AgentSpecification",
-		APIVersion: "rover.cp.ei.telekom.de/v1",
+	if fileAPIResp != nil {
+		agentSpec.Spec.Hash = fileAPIResp.FileHash
+		agentSpec.Spec.Specification = fileAPIResp.FileId
 	}
 	agentSpec.Labels = map[string]string{
 		config.EnvironmentLabelKey: id.Environment,

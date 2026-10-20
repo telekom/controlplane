@@ -8,14 +8,17 @@ import (
 	"context"
 	"os"
 
-	"github.com/telekom/controlplane/common/pkg/controller/index"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common/pkg/controller/index"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-var IndexFieldSpecRoute = "spec.route"
-var IndexFieldSpecRouteName = "spec.route.name"
+var (
+	IndexFieldSpecRoute     = "spec.route"
+	IndexFieldSpecRouteName = "spec.route.name"
+)
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	// Index the consumeRoute by the route it references

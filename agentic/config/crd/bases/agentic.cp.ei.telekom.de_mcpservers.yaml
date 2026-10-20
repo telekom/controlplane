@@ -69,6 +69,12 @@ spec:
                 description: Description provides a human-readable summary of this
                   MCP server.
                 type: string
+              hash:
+                description: |-
+                  Hash is the base64-encoded SHA-256 hash of the specification
+                  file referenced by Specification. Consumers can use it to detect content
+                  changes without downloading the file.
+                type: string
               name:
                 description: Name is a human-readable name for the MCP server.
                 minLength: 1

@@ -7,10 +7,12 @@ package cmd
 import (
 	"io"
 	"os"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/apply"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/delete"
@@ -26,18 +28,21 @@ import (
 func ErrorHandler(err error, verbose bool) {
 	logger := log.L().WithName("error-handler")
 	if err != nil {
-		errCause := errors.Cause(err)
-		if verbose {
-			// log entire stack trace
-			logger.Error(err, "An error occurred")
-		} else {
-			// only log the error message of the root cause
-			logger.Error(nil, "An error occurred", "error", errCause.Error())
-		}
+		logError(logger, err, verbose)
 		os.Exit(1)
 	} else {
 		logger.Info("Command executed successfully")
 	}
+}
+
+// logError logs the full error chain in verbose (--debug) mode and only the
+// customer-facing root cause otherwise.
+func logError(logger logr.Logger, err error, verbose bool) {
+	if verbose {
+		logger.Error(err, "An error occurred")
+		return
+	}
+	logger.Error(nil, "An error occurred", "error", errors.Cause(err).Error())
 }
 
 // NewRootCommand creates the root command for rover-ctl
@@ -117,4 +122,108 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 	)
 
 	return rootCmd
+}
+
+const (
+	legacyNameFlag = "-name"
+	modernNameFlag = "--name"
+)
+
+// NormalizeLegacyArgs rewrites the legacy single-dash long flag "-name" (and "-name=<value>")
+// to "--name" for the resource command and its subcommands. All other arguments, values of
+// flags and everything after the "--" terminator are passed through unchanged.
+func NormalizeLegacyArgs(root *cobra.Command, args []string) []string {
+	target := findTarget(root, args)
+	if target == nil || !isResourceCommand(target) {
+		return args
+	}
+
+	normalized := make([]string, len(args))
+	copy(normalized, args)
+
+	for i := 0; i < len(normalized); i++ {
+		arg := normalized[i]
+		switch {
+		case arg == "--":
+			return normalized
+		case arg == legacyNameFlag:
+			normalized[i] = modernNameFlag
+			i++ // skip the flag value
+		case strings.HasPrefix(arg, legacyNameFlag+"="):
+			normalized[i] = "-" + arg
+		case consumesNextArg(target, arg):
+			i++
+		}
+	}
+
+	return normalized
+}
+
+// findTarget resolves the command that will be executed for args.
+func findTarget(root *cobra.Command, args []string) *cobra.Command {
+	probe := make([]string, 0, len(args))
+	for _, arg := range args {
+		if arg == "--" {
+			break
+		}
+		if arg == legacyNameFlag || strings.HasPrefix(arg, legacyNameFlag+"=") {
+			arg = "-" + arg
+		}
+		probe = append(probe, arg)
+	}
+	target, _, err := root.Find(probe)
+	if err != nil {
+		return nil
+	}
+	return target
+}
+
+func isResourceCommand(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Name() == "resource" && c.HasParent() && !c.Parent().HasParent() {
+			return true
+		}
+	}
+	return false
+}
+
+// consumesNextArg reports whether arg is a flag of cmd whose value is the following argument.
+func consumesNextArg(cmd *cobra.Command, arg string) bool {
+	if !strings.HasPrefix(arg, "-") || arg == "-" || strings.Contains(arg, "=") {
+		return false
+	}
+	if strings.HasPrefix(arg, "--") {
+		return takesValue(lookupFlag(cmd, arg[2:], ""))
+	}
+	// Shorthand flags may be combined, e.g. "-dn <value>"; only the last one can take the next argument.
+	shorthands := arg[1:]
+	for i, r := range shorthands {
+		if r > 127 {
+			return false
+		}
+		if !takesValue(lookupFlag(cmd, "", string(r))) {
+			continue
+		}
+		return i == len(shorthands)-1
+	}
+	return false
+}
+
+func lookupFlag(cmd *cobra.Command, name, shorthand string) *pflag.Flag {
+	for _, fs := range []*pflag.FlagSet{cmd.Flags(), cmd.InheritedFlags()} {
+		if name != "" {
+			if f := fs.Lookup(name); f != nil {
+				return f
+			}
+			continue
+		}
+		if f := fs.ShorthandLookup(shorthand); f != nil {
+			return f
+		}
+	}
+	return nil
+}
+
+func takesValue(f *pflag.Flag) bool {
+	return f != nil && f.NoOptDefVal == ""
 }

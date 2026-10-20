@@ -28,13 +28,15 @@ openapi: "3.0.0"
 info:
   version: "1.0.0"
   title: "Rover API"
-servers: 
+servers:
   - url: "http://rover-api.com/eni/distr/v1"
 `
 
+	const apiSpecFileId = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f60"
+
 	Context("Get ApiSpecification resource", func() {
 		It("should return the ApiSpecification successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, apiSpecFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specV3))
@@ -65,7 +67,7 @@ servers:
 
 	Context("GetAll ApiSpecifications resource", func() {
 		It("should return all ApiSpecifications successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, apiSpecFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specV3))
@@ -164,13 +166,13 @@ servers:
 				},
 			})
 
-			mockFileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+			mockFileManager.EXPECT().UploadFile(mock.Anything, apiSpecFileId, mock.Anything, mock.Anything).Return(
 				&fileApi.FileUploadResponse{
 					FileHash:    "randomHash",
-					FileId:      "randomId",
+					FileId:      apiSpecFileId,
 					ContentType: "application/yaml",
 				}, nil)
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, apiSpecFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specV3))

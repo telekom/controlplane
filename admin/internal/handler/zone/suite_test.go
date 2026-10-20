@@ -10,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
+	"sync"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,6 +36,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 const (
@@ -121,7 +125,6 @@ func createTestEnvironment() {
 
 // newTestZone creates a fully populated zone fixture using the Presets-based GatewayConfig.
 func newTestZone(name string) *adminv1.Zone {
-	gatewayAdminSecret := "test-gateway-admin-secret"
 	identityAdminURL := "https://test-iris.de/auth/admin/realms"
 
 	return &adminv1.Zone{
@@ -147,7 +150,6 @@ func newTestZone(name string) *adminv1.Zone {
 			Gateways: []adminv1.GatewayConfig{{
 				Name: "standard",
 				Admin: adminv1.GatewayAdminConfig{
-					ClientSecret:        &gatewayAdminSecret,
 					Url:                 "https://test-stargate.de/admin-api",
 					IdentityProviderRef: "primary",
 				},
@@ -170,13 +172,135 @@ func newTestZone(name string) *adminv1.Zone {
 // newTestContext builds a context with the JanitorClient and environment injected,
 // ready for handler step functions.
 func newTestContext(zone *adminv1.Zone) context.Context {
+	return newTestContextWithClient(zone, k8sClient)
+}
+
+// newTestContextWithClient is newTestContext with a custom underlying Kubernetes client.
+func newTestContextWithClient(zone *adminv1.Zone, c client.Client) context.Context {
 	envName := zone.Labels[config.EnvironmentLabelKey]
-	scopedClient := cclient.NewScopedClient(k8sClient, envName)
+	scopedClient := cclient.NewScopedClient(c, envName)
 	janitor := cclient.NewJanitorClient(scopedClient)
 	testCtx := contextutil.WithEnv(ctx, envName)
 	testCtx = cclient.WithClient(testCtx, janitor)
 	testCtx = contextutil.WithRecorder(testCtx, &mock.EventRecorder{})
 	return testCtx
+}
+
+// newTestHandler installs a fresh in-memory secret-manager for the current spec and
+// returns a ZoneHandler.
+func newTestHandler() *ZoneHandler {
+	useSecretManager()
+	return &ZoneHandler{}
+}
+
+// useSecretManager installs a fresh in-memory secret-manager as the global secret-manager
+// API for the current spec.
+func useSecretManager() *memorySecretManager {
+	sm := newMemorySecretManager()
+	original := secretsapi.API
+	secretsapi.API = func() secretsapi.SecretManager { return sm }
+	DeferCleanup(func() { secretsapi.API = original })
+	return sm
+}
+
+// memorySecretManager is an in-memory secret-manager storing environment secrets by path.
+type memorySecretManager struct {
+	mu        sync.Mutex
+	values    map[string]string
+	published []string
+	version   int
+	failNext  int
+	getErr    error
+}
+
+func newMemorySecretManager() *memorySecretManager {
+	return &memorySecretManager{values: map[string]string{}}
+}
+
+// memoryKey maps a secret ID (env:team:app:path:checksum) to its storage key, ignoring the checksum.
+func memoryKey(ref string) string {
+	id, _ := secretsapi.FromRef(ref)
+	parts := strings.Split(id, ":")
+	Expect(parts).To(HaveLen(5), "invalid secret id %q", id)
+	return parts[0] + ":" + parts[3]
+}
+
+func (m *memorySecretManager) UpsertEnvironment(_ context.Context, envID string, opts ...secretsapi.OnboardingOption) (map[string]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	options := &secretsapi.OnboardingOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if m.failNext > 0 {
+		m.failNext--
+		return nil, fmt.Errorf("secret-manager unavailable")
+	}
+	available := map[string]string{}
+	for path, value := range options.SecretValues {
+		str, ok := value.(string)
+		Expect(ok).To(BeTrue())
+		m.version++
+		m.values[envID+":"+path] = str
+		m.published = append(m.published, str)
+		available[path] = fmt.Sprintf("%s:::%s:%d", envID, path, m.version)
+	}
+	return available, nil
+}
+
+func (m *memorySecretManager) Get(_ context.Context, ref string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.getErr != nil {
+		return "", m.getErr
+	}
+	value, ok := m.values[memoryKey(ref)]
+	if !ok {
+		return "", secretsapi.ErrNotFound
+	}
+	return value, nil
+}
+
+func (m *memorySecretManager) valueOf(ref string) string {
+	GinkgoHelper()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	Expect(secretsapi.IsRef(ref)).To(BeTrue(), "expected a secret-manager reference")
+	return m.values[memoryKey(ref)]
+}
+
+func (m *memorySecretManager) publishedValues() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.Clone(m.published)
+}
+
+func (m *memorySecretManager) Set(context.Context, string, string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) Rotate(context.Context, string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) UpsertTeam(context.Context, string, string, ...secretsapi.OnboardingOption) (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) UpsertApplication(context.Context, string, string, string, ...secretsapi.OnboardingOption) (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) DeleteEnvironment(context.Context, string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) DeleteTeam(context.Context, string, string) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (m *memorySecretManager) DeleteApplication(context.Context, string, string, string) error {
+	return fmt.Errorf("not implemented")
 }
 
 // newTestHandlingContext creates a HandlingContext by running the constructor
@@ -186,6 +310,10 @@ func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *Handli
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }
+
+// testInternalIssuerHost is the host the identity operator resolves for the
+// internal (rover) realm; it deliberately differs from the public issuer host.
+const testInternalIssuerHost = "irix.example.com"
 
 // markSubResourcesReady stands in for the identity operator: it marks the
 // resources the pipeline barrier waits for as provisioned.
@@ -198,11 +326,16 @@ func markSubResourcesReady(zone *adminv1.Zone) {
 	idp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "IdentityProvider is ready"))
 	Expect(k8sClient.Status().Update(ctx, idp)).To(Succeed())
 
-	for _, ref := range []*types.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+	issuerHosts := map[*types.ObjectRef]string{
+		zone.Status.IdentityRealm:         "test-iris.de",
+		zone.Status.InternalIdentityRealm: testInternalIssuerHost,
+	}
+	for ref, host := range issuerHosts {
 		Expect(ref).NotTo(BeNil())
 		realm := &identityv1.Realm{}
 		Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
 		realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
+		realm.Status.IssuerUrl = "https://" + host + "/auth/realms/" + realm.Name
 		Expect(k8sClient.Status().Update(ctx, realm)).To(Succeed())
 	}
 }

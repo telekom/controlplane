@@ -7,18 +7,22 @@ package kongutil
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
+
 	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 type GatewayAdminConfig interface {
@@ -51,7 +55,7 @@ func (g *gatewayAdminConfig) AdminIssuer() string {
 	return g.issuer
 }
 
-func NewGatewayConfig(rawUrl string, clientId, clientSecret, issuer string) GatewayAdminConfig {
+func NewGatewayConfig(rawUrl, clientId, clientSecret, issuer string) GatewayAdminConfig {
 	return &gatewayAdminConfig{
 		url:          rawUrl,
 		clientId:     clientId,
@@ -73,11 +77,10 @@ var (
 // When any parameter (including the secret) changes, the key changes,
 // causing an automatic cache miss and fresh client creation.
 func cacheKey(gwCfg GatewayAdminConfig) string {
-	h := sha256.New()
-	_, _ = fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s",
+	key := fmt.Sprintf("%s\x00%s\x00%s\x00%s",
 		gwCfg.AdminUrl(), gwCfg.AdminClientId(),
 		gwCfg.AdminClientSecret(), gwCfg.AdminIssuer())
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
 }
 
 var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
@@ -107,18 +110,36 @@ var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
 	return c, nil
 }
 
+// EnvSkipTlsVerify is the environment variable that disables TLS
+// certificate and hostname verification for Kong Admin API and OAuth
+// token requests. Only the value "true" (case-insensitive) enables it.
+const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
+
+func skipTlsVerify() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+}
+
 var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInterface, error) {
+	transport := &http.Transport{
+		MaxIdleConnsPerHost: 100,
+	}
+	if skipTlsVerify() {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // explicit opt-in via SKIP_TLS_VERIFY
+	}
 	baseClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 100,
-		},
-		Timeout: 10 * time.Second,
+		Transport: transport,
+		Timeout:   10 * time.Second,
+	}
+
+	tokenUrl, err := url.JoinPath(gwCfg.AdminIssuer(), tokenUrlPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to construct token URL")
 	}
 
 	tokenCfg := clientcredentials.Config{
 		ClientID:     gwCfg.AdminClientId(),
 		ClientSecret: gwCfg.AdminClientSecret(),
-		TokenURL:     gwCfg.AdminIssuer() + tokenUrlPath,
+		TokenURL:     tokenUrl,
 	}
 
 	ctx := context.WithValue(rootCtx, oauth2.HTTPClient, baseClient)

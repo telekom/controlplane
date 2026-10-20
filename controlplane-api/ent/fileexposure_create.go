@@ -146,6 +146,34 @@ func (_c *FileExposureCreate) SetZoneName(v string) *FileExposureCreate {
 	return _c
 }
 
+// SetServiceURL sets the "service_url" field.
+func (_c *FileExposureCreate) SetServiceURL(v string) *FileExposureCreate {
+	_c.mutation.SetServiceURL(v)
+	return _c
+}
+
+// SetNillableServiceURL sets the "service_url" field if the given value is not nil.
+func (_c *FileExposureCreate) SetNillableServiceURL(v *string) *FileExposureCreate {
+	if v != nil {
+		_c.SetServiceURL(*v)
+	}
+	return _c
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (_c *FileExposureCreate) SetServiceExternalURL(v string) *FileExposureCreate {
+	_c.mutation.SetServiceExternalURL(v)
+	return _c
+}
+
+// SetNillableServiceExternalURL sets the "service_external_url" field if the given value is not nil.
+func (_c *FileExposureCreate) SetNillableServiceExternalURL(v *string) *FileExposureCreate {
+	if v != nil {
+		_c.SetServiceExternalURL(*v)
+	}
+	return _c
+}
+
 // SetSftp sets the "sftp" field.
 func (_c *FileExposureCreate) SetSftp(v *model.FileSFTP) *FileExposureCreate {
 	_c.mutation.SetSftp(v)
@@ -413,6 +441,14 @@ func (_c *FileExposureCreate) createSpec() (*FileExposure, *sqlgraph.CreateSpec)
 		_spec.SetField(fileexposure.FieldZoneName, field.TypeString, value)
 		_node.ZoneName = value
 	}
+	if value, ok := _c.mutation.ServiceURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceURL, field.TypeString, value)
+		_node.ServiceURL = value
+	}
+	if value, ok := _c.mutation.ServiceExternalURL(); ok {
+		_spec.SetField(fileexposure.FieldServiceExternalURL, field.TypeString, value)
+		_node.ServiceExternalURL = value
+	}
 	if value, ok := _c.mutation.Sftp(); ok {
 		_spec.SetField(fileexposure.FieldSftp, field.TypeJSON, value)
 		_node.Sftp = value
@@ -672,6 +708,42 @@ func (u *FileExposureUpsert) UpdateZoneName() *FileExposureUpsert {
 	return u
 }
 
+// SetServiceURL sets the "service_url" field.
+func (u *FileExposureUpsert) SetServiceURL(v string) *FileExposureUpsert {
+	u.Set(fileexposure.FieldServiceURL, v)
+	return u
+}
+
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileExposureUpsert) UpdateServiceURL() *FileExposureUpsert {
+	u.SetExcluded(fileexposure.FieldServiceURL)
+	return u
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileExposureUpsert) ClearServiceURL() *FileExposureUpsert {
+	u.SetNull(fileexposure.FieldServiceURL)
+	return u
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileExposureUpsert) SetServiceExternalURL(v string) *FileExposureUpsert {
+	u.Set(fileexposure.FieldServiceExternalURL, v)
+	return u
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileExposureUpsert) UpdateServiceExternalURL() *FileExposureUpsert {
+	u.SetExcluded(fileexposure.FieldServiceExternalURL)
+	return u
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileExposureUpsert) ClearServiceExternalURL() *FileExposureUpsert {
+	u.SetNull(fileexposure.FieldServiceExternalURL)
+	return u
+}
+
 // SetSftp sets the "sftp" field.
 func (u *FileExposureUpsert) SetSftp(v *model.FileSFTP) *FileExposureUpsert {
 	u.Set(fileexposure.FieldSftp, v)
@@ -898,6 +970,48 @@ func (u *FileExposureUpsertOne) SetZoneName(v string) *FileExposureUpsertOne {
 func (u *FileExposureUpsertOne) UpdateZoneName() *FileExposureUpsertOne {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateZoneName()
+	})
+}
+
+// SetServiceURL sets the "service_url" field.
+func (u *FileExposureUpsertOne) SetServiceURL(v string) *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.SetServiceURL(v)
+	})
+}
+
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileExposureUpsertOne) UpdateServiceURL() *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.UpdateServiceURL()
+	})
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileExposureUpsertOne) ClearServiceURL() *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearServiceURL()
+	})
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileExposureUpsertOne) SetServiceExternalURL(v string) *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.SetServiceExternalURL(v)
+	})
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileExposureUpsertOne) UpdateServiceExternalURL() *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.UpdateServiceExternalURL()
+	})
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileExposureUpsertOne) ClearServiceExternalURL() *FileExposureUpsertOne {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearServiceExternalURL()
 	})
 }
 
@@ -1298,6 +1412,48 @@ func (u *FileExposureUpsertBulk) SetZoneName(v string) *FileExposureUpsertBulk {
 func (u *FileExposureUpsertBulk) UpdateZoneName() *FileExposureUpsertBulk {
 	return u.Update(func(s *FileExposureUpsert) {
 		s.UpdateZoneName()
+	})
+}
+
+// SetServiceURL sets the "service_url" field.
+func (u *FileExposureUpsertBulk) SetServiceURL(v string) *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.SetServiceURL(v)
+	})
+}
+
+// UpdateServiceURL sets the "service_url" field to the value that was provided on create.
+func (u *FileExposureUpsertBulk) UpdateServiceURL() *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.UpdateServiceURL()
+	})
+}
+
+// ClearServiceURL clears the value of the "service_url" field.
+func (u *FileExposureUpsertBulk) ClearServiceURL() *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearServiceURL()
+	})
+}
+
+// SetServiceExternalURL sets the "service_external_url" field.
+func (u *FileExposureUpsertBulk) SetServiceExternalURL(v string) *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.SetServiceExternalURL(v)
+	})
+}
+
+// UpdateServiceExternalURL sets the "service_external_url" field to the value that was provided on create.
+func (u *FileExposureUpsertBulk) UpdateServiceExternalURL() *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.UpdateServiceExternalURL()
+	})
+}
+
+// ClearServiceExternalURL clears the value of the "service_external_url" field.
+func (u *FileExposureUpsertBulk) ClearServiceExternalURL() *FileExposureUpsertBulk {
+	return u.Update(func(s *FileExposureUpsert) {
+		s.ClearServiceExternalURL()
 	})
 }
 

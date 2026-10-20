@@ -42,9 +42,10 @@ var _ = Describe("McpServer Translator", func() {
 				Spec: agenticv1.McpServerSpec{
 					BasePath:      "/mcp/weather/v1",
 					Version:       "1.0.0",
-					Name:          "weather-server",
+					Name:          "Weather Server",
 					Description:   "Weather MCP server",
 					Specification: "file-123",
+					Hash:          "hash-123",
 					Category:      "g-api",
 					Oauth2Scopes:  []string{"scope-a", "scope-b"},
 				},
@@ -69,9 +70,11 @@ var _ = Describe("McpServer Translator", func() {
 			Expect(data.StatusPhase).To(Equal("READY"))
 			Expect(data.BasePath).To(Equal("/mcp/weather/v1"))
 			Expect(data.Version).To(Equal("1.0.0"))
-			Expect(data.Name).To(Equal("weather-server"))
+			Expect(data.Name).To(Equal("mcp-weather-v1"))
+			Expect(data.DisplayName).To(Equal("Weather Server"))
 			Expect(data.Description).To(Equal("Weather MCP server"))
 			Expect(data.Specification).To(Equal("file-123"))
+			Expect(data.Hash).To(Equal("hash-123"))
 			Expect(data.Category).To(Equal("g-api"))
 			Expect(data.Oauth2Scopes).To(Equal([]string{"scope-a", "scope-b"}))
 			Expect(data.Active).To(BeTrue())
@@ -110,20 +113,24 @@ var _ = Describe("McpServer Translator", func() {
 	Describe("KeyFromDelete", func() {
 		It("should use lastKnown when available", func() {
 			lastKnown := &agenticv1.McpServer{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "prod--platform--narvi"},
+				ObjectMeta: metav1.ObjectMeta{Name: "mcp-weather-v1", Namespace: "prod--platform--narvi"},
 				Spec:       agenticv1.McpServerSpec{BasePath: "/mcp/weather/v1"},
 			}
 			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "mcp-weather-v1", Namespace: "prod--platform--narvi"}, lastKnown)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(key.BasePath).To(Equal("/mcp/weather/v1"))
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("mcp-weather-v1"))
 		})
 
-		It("should fall back to req.Name when lastKnown is nil", func() {
+		It("should use the namespace and name from req when lastKnown is nil", func() {
 			key, err := t.KeyFromDelete(k8stypes.NamespacedName{Name: "mcp-weather-v1", Namespace: "prod--platform--narvi"}, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(key.BasePath).To(Equal("mcp-weather-v1"))
+			Expect(key.BasePath).To(BeEmpty())
 			Expect(key.TeamName).To(Equal("platform--narvi"))
+			Expect(key.Namespace).To(Equal("prod--platform--narvi"))
+			Expect(key.Name).To(Equal("mcp-weather-v1"))
 		})
 	})
 })

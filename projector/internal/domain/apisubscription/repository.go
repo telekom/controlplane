@@ -67,7 +67,8 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps API
 // Steps:
 //  1. Resolve owner Application FK (required) — ErrDependencyMissing if missing.
 //  2. Resolve target ApiExposure FK (optional) — nil FK if missing, only
-//     non-ErrEntityNotFound errors are propagated.
+//     non-ErrEntityNotFound errors are propagated immediately. A missing
+//     target is reported as ErrDependencyMissing after all writes succeed.
 //  3. Create with ON CONFLICT (base_path, owner) + UpdateNewValues().
 //  4. If target is nil, explicitly clear the target FK via ClearTarget().
 //     This is necessary because ent's SetNillableTargetID(nil) omits the
@@ -92,12 +93,15 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// API is exposed. If not found, store with NULL target FK.
 	var targetExposureID *int
 	var traffic *model.ApiSubscriptionTraffic
+	targetMissing := false
 	if id, findErr := r.deps.FindAPIExposureByBasePath(ctx, data.TargetBasePath); findErr != nil {
 		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
 			return fmt.Errorf("find target api_exposure for subscription (basePath %q): %w",
 				data.TargetBasePath, findErr)
 		}
-		// Not found — leave targetExposureID as nil.
+		// Not found — persist with NULL target, then report the missing
+		// dependency after all writes so the reconciler retries.
+		targetMissing = true
 	} else {
 		targetExposureID = &id
 		if traffic, err = r.resolveSubscriberTraffic(ctx, id, ownerAppID, data); err != nil {
@@ -156,6 +160,9 @@ func (r *Repository) Upsert(ctx context.Context, data *APISubscriptionData) erro
 	// spec.target references.
 	et, lk := cachekeys.APISubscriptionMeta(data.Meta.Namespace, data.Meta.Name)
 	r.cache.Set(et, lk, subscriptionID)
+	if targetMissing {
+		return runtime.WrapDependencyMissing("api_exposure", data.TargetBasePath)
+	}
 	return nil
 }
 

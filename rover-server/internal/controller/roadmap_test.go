@@ -39,6 +39,8 @@ var _ = Describe("Roadmap Controller", func() {
 
 	roadmapItemsJSON, _ := json.Marshal(roadmapItems)
 
+	const roadmapFileId = "01926a3e-7b2c-7d3e-8f4a-1b2c3d4e5f63"
+
 	var roadmapFileMgr *filefake.MockFileManager
 
 	BeforeEach(func() {
@@ -56,7 +58,7 @@ var _ = Describe("Roadmap Controller", func() {
 
 	Context("Get ApiRoadmap resource", func() {
 		It("should return the ApiRoadmap successfully", func() {
-			roadmapFileMgr.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
+			roadmapFileMgr.EXPECT().DownloadFile(mock.Anything, roadmapFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -85,7 +87,7 @@ var _ = Describe("Roadmap Controller", func() {
 
 	Context("GetAll ApiRoadmaps resource", func() {
 		It("should return all ApiRoadmaps successfully", func() {
-			roadmapFileMgr.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
+			roadmapFileMgr.EXPECT().DownloadFile(mock.Anything, roadmapFileId, mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -128,9 +130,9 @@ var _ = Describe("Roadmap Controller", func() {
 
 	Context("Update ApiRoadmap resource", func() {
 		It("should update the ApiRoadmap successfully", func() {
-			roadmapFileMgr.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", "application/json", mock.Anything).
+			roadmapFileMgr.EXPECT().UploadFile(mock.Anything, roadmapFileId, "application/json", mock.Anything).
 				Return(&fileApi.FileUploadResponse{
-					FileId:      "poc--eni--hyperion--eni-test-api",
+					FileId:      roadmapFileId,
 					FileHash:    "updatedHash",
 					ContentType: "application/json",
 				}, nil).Once()
@@ -165,7 +167,7 @@ var _ = Describe("Roadmap Controller", func() {
 
 	Context("Delete ApiRoadmap resource", func() {
 		It("should delete the ApiRoadmap successfully", func() {
-			roadmapFileMgr.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--eni-test-api").Return(nil).Once()
+			roadmapFileMgr.EXPECT().DeleteFile(mock.Anything, roadmapFileId).Return(nil).Once()
 
 			req := httptest.NewRequest(http.MethodDelete, "/apiroadmaps/eni--hyperion--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)

@@ -8,13 +8,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
-	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
+	gatewayhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
@@ -39,8 +40,7 @@ func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv
 }
 
 func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consumer) error {
-
-	_, gateway, err := gateway.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
+	_, gateway, err := gatewayhandler.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
 		return err
 	}
@@ -59,8 +59,7 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 }
 
 func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
-
-	ready, gateway, err := gateway.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
+	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, consumer.Spec.Gateway, true)
 	if err != nil {
 		return nil, err
 	}

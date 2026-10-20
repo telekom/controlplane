@@ -51,14 +51,14 @@ var _ = Describe("Client Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind IdentityProvider")
-			NewIdentityProvider(ctx, clientIdpRef, clientIdp)
+			NewIdentityProvider(ctx, clientIdpRef, clientIdp.DeepCopy())
 
 			By("creating the custom resource for the Kind Realm")
-			NewRealm(ctx, clientRealmRef, clientRealm)
+			NewRealm(ctx, clientRealmRef, clientRealm.DeepCopy())
 			VerifyRealmIsAvailable(clientRealmRef)
 
 			By("creating the custom resource for the Kind Client")
-			NewClient(ctx, clientRef, testClient)
+			NewClient(ctx, clientRef, testClient.DeepCopy())
 		})
 
 		AfterEach(func() {
@@ -74,6 +74,39 @@ var _ = Describe("Client Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			Eventually(func(g Gomega) {
 				VerifyClient(ctx, g, clientRef, testClient)
+			}, timeout, interval).Should(Succeed())
+
+			By("synchronizing origins when the referenced realm changes")
+			realm := &identityv1.Realm{}
+			Expect(k8sClient.Get(ctx, clientRealmRef, realm)).To(Succeed())
+			origins := []string{"https://app.example.com", "https://other.example.com"}
+			realm.Spec.AllowedOrigins = origins
+			Expect(k8sClient.Update(ctx, realm)).To(Succeed())
+			Eventually(func(g Gomega) {
+				actual := &identityv1.Client{}
+				g.Expect(k8sClient.Get(ctx, clientRef, actual)).To(Succeed())
+				g.Expect(actual.Status.AllowedOrigins).To(Equal(origins))
+			}, timeout, interval).Should(Succeed())
+
+			By("propagating a change in origin order")
+			Expect(k8sClient.Get(ctx, clientRealmRef, realm)).To(Succeed())
+			reordered := []string{"https://other.example.com", "https://app.example.com"}
+			realm.Spec.AllowedOrigins = reordered
+			Expect(k8sClient.Update(ctx, realm)).To(Succeed())
+			Eventually(func(g Gomega) {
+				actual := &identityv1.Client{}
+				g.Expect(k8sClient.Get(ctx, clientRef, actual)).To(Succeed())
+				g.Expect(actual.Status.AllowedOrigins).To(Equal(reordered))
+			}, timeout, interval).Should(Succeed())
+
+			Expect(k8sClient.Get(ctx, clientRealmRef, realm)).To(Succeed())
+			empty := []string{}
+			realm.Spec.AllowedOrigins = empty
+			Expect(k8sClient.Update(ctx, realm)).To(Succeed())
+			Eventually(func(g Gomega) {
+				actual := &identityv1.Client{}
+				g.Expect(k8sClient.Get(ctx, clientRef, actual)).To(Succeed())
+				g.Expect(actual.Status.AllowedOrigins).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 	})

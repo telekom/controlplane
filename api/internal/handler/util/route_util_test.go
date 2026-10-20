@@ -11,6 +11,7 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -92,6 +93,45 @@ var _ = Describe("Route Util", func() {
 
 				Expect(opts.FailoverSecurity).NotTo(BeNil())
 				Expect(opts.FailoverSecurity.M2M.Scopes).To(ConsistOf("scope1"))
+			})
+
+			It("maps password-grant provider credentials and scopes from failover options", func() {
+				security := &apiapi.Security{M2M: &apiapi.Machine2MachineAuthentication{
+					ExternalIDP: &apiapi.ExternalIdentityProvider{
+						TokenEndpoint: "https://idp.example/token",
+						TokenRequest:  apiapi.TokenRequestClientSecretPost,
+						GrantType:     apiapi.GrantTypePassword,
+						Basic:         &apiapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+					},
+					Scopes: []string{"provider:read"},
+				}}
+
+				opts := &CreateRouteOptions{}
+				WithFailoverSecurity(security)(opts)
+				mapped := mapSecurity(opts.FailoverSecurity, nil)
+
+				Expect(mapped.M2M.Basic).To(BeNil())
+				Expect(mapped.M2M.Scopes).To(Equal([]string{"provider:read"}))
+				Expect(mapped.M2M.ExternalIDP).To(Equal(&gatewayapi.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token",
+					TokenRequest:  gatewayapi.TokenRequestClientSecretPost,
+					GrantType:     gatewayapi.GrantTypePassword,
+					Basic:         &gatewayapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+				}))
+			})
+		})
+
+		Describe("mapConsumerSecurity", func() {
+			It("keeps consumer username/password together with scopes", func() {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Basic:  &apiapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+					Scopes: []string{"consumer:read", "consumer:write"},
+				}})
+
+				Expect(mapped.M2M).To(Equal(&gatewayapi.ConsumerMachine2MachineAuthentication{
+					Basic:  &gatewayapi.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
+					Scopes: []string{"consumer:read", "consumer:write"},
+				}))
 			})
 		})
 

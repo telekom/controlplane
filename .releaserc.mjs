@@ -24,9 +24,6 @@ export default {
                 bash ./.github/scripts/update_install.sh "\${nextRelease.gitTag}"
                 bash ./.github/scripts/update_chart_version.sh common-server/helm "\${nextRelease.gitTag}"
             `,
-            publishCmd: `cat > /tmp/release-notes.md <<'EOF'
-\${nextRelease.notes}
-EOF`,
         }],
         ['@semantic-release/git', {
             assets: [

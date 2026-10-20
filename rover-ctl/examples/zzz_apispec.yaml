@@ -7,5 +7,5 @@ info:
   title: Test API 
   version: 1.0.0
 servers:
-  - url: http://localhost:8080/api/basic-auth-service
+  - url: http://localhost:8080/api/basic-auth-service/v1
     description: Local server for testing

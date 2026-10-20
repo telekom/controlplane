@@ -42,12 +42,24 @@ func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef, resolveSecr
 	return true, realm, nil
 }
 
+// ValidateRealmStatus validates a fully reconciled realm status, including
+// the issuer URL. Use it before consuming a realm.
 func ValidateRealmStatus(realmStatus *identityv1.RealmStatus) error {
 	if realmStatus == nil {
 		return fmt.Errorf("realmStatus is nil")
 	}
 	if realmStatus.IssuerUrl == "" {
 		return fmt.Errorf("realmStatus.IssuerUrl is empty")
+	}
+	return ValidateRealmManagementStatus(realmStatus)
+}
+
+// ValidateRealmManagementStatus validates the fields needed to manage the
+// realm in Keycloak. The issuer URL is not required, as it is only known
+// after the realm has been synced.
+func ValidateRealmManagementStatus(realmStatus *identityv1.RealmStatus) error {
+	if realmStatus == nil {
+		return fmt.Errorf("realmStatus is nil")
 	}
 	if realmStatus.AdminClientId == "" {
 		return fmt.Errorf("realmStatus.AdminClientId is empty")

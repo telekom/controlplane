@@ -136,6 +136,20 @@ func (_u *McpServerUpdate) SetNillableName(v *string) *McpServerUpdate {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *McpServerUpdate) SetDisplayName(v string) *McpServerUpdate {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *McpServerUpdate) SetNillableDisplayName(v *string) *McpServerUpdate {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *McpServerUpdate) SetDescription(v string) *McpServerUpdate {
 	_u.mutation.SetDescription(v)
@@ -173,6 +187,26 @@ func (_u *McpServerUpdate) SetNillableSpecification(v *string) *McpServerUpdate 
 // ClearSpecification clears the value of the "specification" field.
 func (_u *McpServerUpdate) ClearSpecification() *McpServerUpdate {
 	_u.mutation.ClearSpecification()
+	return _u
+}
+
+// SetHash sets the "hash" field.
+func (_u *McpServerUpdate) SetHash(v string) *McpServerUpdate {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *McpServerUpdate) SetNillableHash(v *string) *McpServerUpdate {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *McpServerUpdate) ClearHash() *McpServerUpdate {
+	_u.mutation.ClearHash()
 	return _u
 }
 
@@ -400,6 +434,9 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)
 	}
@@ -411,6 +448,12 @@ func (_u *McpServerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(mcpserver.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(mcpserver.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)
@@ -628,6 +671,20 @@ func (_u *McpServerUpdateOne) SetNillableName(v *string) *McpServerUpdateOne {
 	return _u
 }
 
+// SetDisplayName sets the "display_name" field.
+func (_u *McpServerUpdateOne) SetDisplayName(v string) *McpServerUpdateOne {
+	_u.mutation.SetDisplayName(v)
+	return _u
+}
+
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (_u *McpServerUpdateOne) SetNillableDisplayName(v *string) *McpServerUpdateOne {
+	if v != nil {
+		_u.SetDisplayName(*v)
+	}
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *McpServerUpdateOne) SetDescription(v string) *McpServerUpdateOne {
 	_u.mutation.SetDescription(v)
@@ -665,6 +722,26 @@ func (_u *McpServerUpdateOne) SetNillableSpecification(v *string) *McpServerUpda
 // ClearSpecification clears the value of the "specification" field.
 func (_u *McpServerUpdateOne) ClearSpecification() *McpServerUpdateOne {
 	_u.mutation.ClearSpecification()
+	return _u
+}
+
+// SetHash sets the "hash" field.
+func (_u *McpServerUpdateOne) SetHash(v string) *McpServerUpdateOne {
+	_u.mutation.SetHash(v)
+	return _u
+}
+
+// SetNillableHash sets the "hash" field if the given value is not nil.
+func (_u *McpServerUpdateOne) SetNillableHash(v *string) *McpServerUpdateOne {
+	if v != nil {
+		_u.SetHash(*v)
+	}
+	return _u
+}
+
+// ClearHash clears the value of the "hash" field.
+func (_u *McpServerUpdateOne) ClearHash() *McpServerUpdateOne {
+	_u.mutation.ClearHash()
 	return _u
 }
 
@@ -922,6 +999,9 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(mcpserver.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DisplayName(); ok {
+		_spec.SetField(mcpserver.FieldDisplayName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(mcpserver.FieldDescription, field.TypeString, value)
 	}
@@ -933,6 +1013,12 @@ func (_u *McpServerUpdateOne) sqlSave(ctx context.Context) (_node *McpServer, er
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(mcpserver.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Hash(); ok {
+		_spec.SetField(mcpserver.FieldHash, field.TypeString, value)
+	}
+	if _u.mutation.HashCleared() {
+		_spec.ClearField(mcpserver.FieldHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(mcpserver.FieldCategory, field.TypeString, value)

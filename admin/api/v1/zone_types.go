@@ -114,10 +114,19 @@ type IdentityProviderConfig struct {
 	// +kubebuilder:validation:Format=uri
 	TokenUrl       string                `json:"tokenUrl,omitempty"`
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
+	// AllowedOrigins configures the web origins for clients in this zone's default identity realm.
+	// Origin header format: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin
+	// CEL validation isn't correct and it allowed define invalid port range. This validation should be enough for most cases.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?)$`
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
 // Most of it can be optional if the Gateway was setup to support it, then only the URL is required.
+// The OAuth client used to call the admin API is system-managed: every gateway of a zone shares
+// one "rover" client whose credentials cannot be configured here.
 type GatewayAdminConfig struct {
 	// IdentityProviderRef selects the IDP used to obtain gateway-admin tokens.
 	IdentityProviderRef string `json:"identityProviderRef"`
@@ -126,15 +135,6 @@ type GatewayAdminConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
-
-	// ClientId of the admin client.
-	// If empty, a managed client with the default name will be used.
-	// +kubebuilder:validation:Optional
-	ClientId *string `json:"clientId,omitempty"`
-	// ClientSecret of the admin client
-	// If empty, a managed client secret will be generated.
-	// +kubebuilder:validation:Optional
-	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
 // UrlConfig defines the configuration for a single URL (hostname + base path) exposed by the gateway for this zone.
@@ -217,11 +217,17 @@ type Preset struct {
 }
 
 // ResolveHostnamesAndPaths derives route hostnames and paths from the preset's URL configuration.
-// Each URL contributes one hostname and one path (basePath + routePath).
+// Each URL contributes its hostname and its path (basePath + routePath).
+// Duplicates are dropped; first-occurrence order is kept.
 func (p *Preset) ResolveHostnamesAndPaths(routePath string) (hostnames, paths []string) {
 	for _, u := range p.Urls {
-		hostnames = append(hostnames, u.Hostname)
-		paths = append(paths, path.Join(u.BasePath, routePath))
+		if !slices.Contains(hostnames, u.Hostname) {
+			hostnames = append(hostnames, u.Hostname)
+		}
+		joined := path.Join(u.BasePath, routePath)
+		if !slices.Contains(paths, joined) {
+			paths = append(paths, joined)
+		}
 	}
 	return hostnames, paths
 }
@@ -274,6 +280,9 @@ const (
 	// without any authentication or authorization.
 	ManagedRouteTypeProxy ManagedRouteType = "Proxy"
 )
+
+// ZoneHealthRouteName is reserved for the platform probe and cannot be used by managed routes.
+const ZoneHealthRouteName = "zone-health"
 
 type ManagedRouteConfig struct {
 	// Name is the name of the created route. It must be unique within the zone.
