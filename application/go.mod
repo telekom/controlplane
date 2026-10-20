@@ -32,7 +32,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
 	github.com/stretchr/testify v1.12.1
-	k8s.io/apimachinery v0.37.0
+	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.0
 	sigs.k8s.io/controller-runtime v0.24.1
 )
@@ -66,7 +66,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	k8s.io/streaming v0.37.0 // indirect
+	k8s.io/streaming v0.37.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 )
 
