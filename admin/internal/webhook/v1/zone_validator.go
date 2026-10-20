@@ -21,6 +21,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/routeinputs"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 // +kubebuilder:webhook:path=/validate-admin-cp-ei-telekom-de-v1-zone,mutating=false,failurePolicy=fail,sideEffects=None,groups=admin.cp.ei.telekom.de,resources=zones,verbs=create;update,versions=v1,name=vzone-v1.kb.io,admissionReviewVersions=v1
@@ -152,11 +153,13 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 			errs = append(errs, field.Invalid(gatewayPath.Child("admin", "identityProviderRef"), gateway.Admin.IdentityProviderRef, "must reference the sole identity provider "+strconv.Quote(soleIdentityProviderName)))
 		}
 		errs = append(errs, validateHTTPSURL(gatewayPath.Child("admin", "url"), gateway.Admin.Url)...)
+		errs = append(errs, validateTLS(gatewayPath.Child("tls"), gateway.TLS)...)
 	}
 
 	for i := range zone.Spec.IdentityProviders {
 		identityProvider := &zone.Spec.IdentityProviders[i]
 		idpPath := specPath.Child("identityProviders").Index(i)
+		errs = append(errs, validateTLS(idpPath.Child("tls"), identityProvider.TLS)...)
 		if identityProvider.Admin.Url != nil {
 			errs = append(errs, validateHTTPSURL(idpPath.Child("admin", "url"), *identityProvider.Admin.Url)...)
 		}
@@ -344,6 +347,22 @@ func validateBasePath(path *field.Path, basePath string) field.ErrorList {
 		return field.ErrorList{field.Invalid(path, basePath, "must be a valid URL path")}
 	}
 	return nil
+}
+
+// validateTLS requires a valid ConfigMap name and data key when TLS is configured.
+func validateTLS(path *field.Path, tls *ctypes.TLSConfig) field.ErrorList {
+	if tls == nil {
+		return nil
+	}
+	refPath := path.Child("configMapRef")
+	var errs field.ErrorList
+	if msgs := utilvalidation.IsDNS1123Subdomain(tls.ConfigMapRef.Name); len(msgs) != 0 {
+		errs = append(errs, field.Invalid(refPath.Child("name"), tls.ConfigMapRef.Name, strings.Join(msgs, "; ")))
+	}
+	if msgs := utilvalidation.IsConfigMapKey(tls.ConfigMapRef.Key); len(msgs) != 0 {
+		errs = append(errs, field.Invalid(refPath.Child("key"), tls.ConfigMapRef.Key, strings.Join(msgs, "; ")))
+	}
+	return errs
 }
 
 func containsControl(value string) bool {

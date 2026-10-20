@@ -164,6 +164,7 @@ func uniqueZone(prefix string, env ...string) *adminv1.Zone {
 var _ = Describe("Zone rover admin client", func() {
 	var sm *memorySecretManager
 	h := &ZoneHandler{}
+	BeforeEach(func() { h.Client = k8sClient })
 
 	It("constructs a checksum-less environment secret reference", func() {
 		Expect(environmentSecretRef("env-1", roverSecretManagerPath("zone-a"))).

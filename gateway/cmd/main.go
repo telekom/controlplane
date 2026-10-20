@@ -26,6 +26,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
@@ -139,6 +140,16 @@ func main() {
 	rootCtx := ctrl.SetupSignalHandler()
 	controller.RegisterIndecesOrDie(rootCtx, mgr)
 
+	kongClients, err := kongutil.NewClientFactory(rootCtx, mgr.GetClient())
+	if err != nil {
+		setupLog.Error(err, "unable to create kong client factory")
+		os.Exit(1)
+	}
+	if err = mgr.Add(kongClients); err != nil {
+		setupLog.Error(err, "unable to add kong client factory to manager")
+		os.Exit(1)
+	}
+
 	if err = (&controller.GatewayReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -147,8 +158,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.RouteReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Scheme:      mgr.GetScheme(),
+		KongClients: kongClients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Route")
 		os.Exit(1)
@@ -161,8 +173,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.ConsumerReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Scheme:      mgr.GetScheme(),
+		KongClients: kongClients,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Consumer")
 		os.Exit(1)

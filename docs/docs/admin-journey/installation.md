@@ -137,40 +137,11 @@ kubectl get crds | grep cp.ei.telekom.de
 | Pods crash with `configmap not found` | trust-manager has not yet created the trust bundle | Wait for cert-manager Certificates to be issued, then trust-manager will create the ConfigMaps |
 | CRD conflicts on apply | Existing CRD versions from a previous install | Use `ServerSideApply=true` in ArgoCD sync options or `kubectl apply --server-side` |
 
-### Skipping TLS verification for Keycloak, Kong and OIDC discovery (not recommended) {#skip-tls-verify}
+### TLS verification for Keycloak, Kong and OIDC discovery
 
-By default, the Identity, Gateway and Admin controllers verify the TLS certificate and hostname of the endpoints they call. If a non-production zone uses self-signed or otherwise untrusted certificates, you can turn verification off with the `SKIP_TLS_VERIFY` setting. Set it in the ConfigMap of the controller you want to change:
+The Identity, Gateway and Admin controllers enforce certificate-chain and hostname verification for Keycloak and Kong API requests, their token requests, and OIDC discovery. The former `SKIP_TLS_VERIFY` setting no longer disables verification for these connections; remove it from controller and shared environment ConfigMaps.
 
-| ConfigMap | Controller | Affected requests | Default |
-|---|---|---|---|
-| `identity-env` | Identity | Keycloak admin API requests and the Keycloak admin token request | `false` |
-| `gateway-env` | Gateway | Kong Admin API requests and the OAuth token request for the Kong Admin API | `false` |
-| `admin-env` | Admin | OIDC discovery requests (`/.well-known/openid-configuration`) that the Admin controller uses to find a preset's token URL | `false` |
-
-For example, to turn verification off for the Identity controller:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: identity-env
-  namespace: controlplane-system
-data:
-  SKIP_TLS_VERIFY: "true"
-```
-
-Use `gateway-env` or `admin-env` in the same way.
-
-- The controllers read the setting at startup. Restart the controller after you change it.
-- For the requests listed above, only `true` (in any letter case) turns verification off. Any other value, or no value, keeps it on.
-- `SKIP_TLS_VERIFY` is a shared setting. The Secret Manager client in the same controller also reads it, so setting it to `true` also turns off TLS verification for that controller's Secret Manager requests. The Secret Manager client only reacts to the exact lowercase value `true`.
-- Setting `SKIP_TLS_VERIFY` in `controlplane-env` instead applies it to every component that loads that ConfigMap (controllers and servers), and to every client in those components that reads it, such as Secret Manager and File Manager clients.
-- The setting does not change Go's default HTTP transport.
-- In the Admin controller, the setting affects OIDC discovery and the Secret Manager client. The Admin controller does not request tokens itself.
-
-:::warning
-With verification off, the controller accepts any certificate. An attacker who can intercept the traffic can then read or change admin credentials and tokens. Use this only for testing. In production, use certificates that the controller trusts.
-:::
+For endpoints signed by a private CA, configure [custom CA certificates](./environments-and-zones.md#custom-ca-certificates). These certificates extend system trust without disabling verification.
 
 ## Next steps
 

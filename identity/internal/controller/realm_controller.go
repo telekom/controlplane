@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -38,6 +39,7 @@ type RealmReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms/finalizers,verbs=update
@@ -49,13 +51,11 @@ func (r *RealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
-
-	factory := r.ClientFactory
-	if factory == nil {
-		factory = keycloak.NewServiceFactory()
+	if r.ClientFactory == nil {
+		return errors.New("keycloak service factory is required")
 	}
-	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(factory), r.Client, r.Recorder)
+	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
+	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(r.ClientFactory), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Realm{}, builder.WithPredicates(cc.Count("realm", cc.RoleFor))).

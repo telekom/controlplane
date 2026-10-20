@@ -82,6 +82,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 				IssuerUrl:    issuerURL,
 				Url:          config.Admin.Url,
 			},
+			TLS: hc.managedTLS(),
 		}
 
 		if hc.Zone.Spec.Redis != nil {

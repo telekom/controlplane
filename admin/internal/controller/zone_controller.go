@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,7 @@ type ZoneReconciler struct {
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get;update;patch
@@ -67,7 +69,11 @@ func (r *ZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("zone-controller")
-	r.Controller = cc.NewController(zone_handler.NewZoneHandler(), r.Client, r.Recorder)
+	r.Controller = cc.NewController(&zone_handler.ZoneHandler{Client: r.Client}, r.Client, r.Recorder)
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &adminv1.Zone{}, IndexFieldCAConfigMapName, indexCAConfigMapNames); err != nil {
+		return fmt.Errorf("indexing zone CA ConfigMap names: %w", err)
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.Zone{}, builder.WithPredicates(cc.Count("zone", cc.RoleFor))).
@@ -75,6 +81,9 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapEnvironmentToZone),
 			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
+		Watches(&corev1.ConfigMap{},
+			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToZones),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		Watches(&corev1.Namespace{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
 			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).

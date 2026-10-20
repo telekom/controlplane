@@ -28,15 +28,19 @@ import (
 
 var _ handler.Handler[*gatewayv1.Route] = &RouteHandler{}
 
-type RouteHandler struct{}
+type RouteHandler struct {
+	// KongClients provides leased Kong clients for Gateways.
+	KongClients *kongutil.ClientFactory
+}
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := ctrllog.FromContext(ctx)
 	kubeClient := cc.ClientFromContextOrDie(ctx)
-	builder, err := NewFeatureBuilder(ctx, route)
+	builder, release, err := h.newFeatureBuilder(ctx, route)
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
+	defer release()
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
 	if !route.Spec.PassThrough {
@@ -114,10 +118,11 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 		return err
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kong client")
 	}
+	defer release()
 
 	err = kc.DeleteRoute(ctx, route)
 	if err != nil {
@@ -127,18 +132,20 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	return nil
 }
 
-func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
+// newFeatureBuilder returns a builder using a leased Kong client and the
+// function releasing the lease.
+func (h *RouteHandler) newFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, func(), error) {
 	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !ready {
-		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
+		return nil, nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
 
-	kc, err := kongutil.GetClientFor(gateway)
+	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get kong client")
+		return nil, nil, errors.Wrap(err, "failed to get kong client")
 	}
 
 	builder := features.NewFeatureBuilder(kc, route, nil, gateway)
@@ -157,5 +164,5 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceDynamicUpstreamFeature)
 	builder.EnableFeature(feature.InstanceRequestTerminationFeature)
 
-	return builder, nil
+	return builder, release, nil
 }

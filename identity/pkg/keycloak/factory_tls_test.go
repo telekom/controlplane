@@ -11,6 +11,9 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
@@ -19,12 +22,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("NewKeycloakServiceFor TLS verification", func() {
+var _ = Describe("ServiceFactory TLS verification", func() {
 	var (
 		server      *httptest.Server
 		tokenHits   atomic.Int32
 		adminHits   atomic.Int32
 		realmStatus identityv1.RealmStatus
+		factory     *keycloak.CachedServiceFactory
 	)
 
 	BeforeEach(func() {
@@ -48,42 +52,38 @@ var _ = Describe("NewKeycloakServiceFor TLS verification", func() {
 			AdminUserName: "admin",
 			AdminPassword: "secret",
 		}
+		ctx, cancel := context.WithCancel(context.Background())
+		var err error
+		factory, err = keycloak.NewServiceFactory(ctx, nil)
+		Expect(err).NotTo(HaveOccurred())
+		done := make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			defer close(done)
+			Expect(factory.Start(ctx)).To(Succeed())
+		}()
+		DeferCleanup(func() {
+			cancel()
+			Eventually(done).WithTimeout(5 * time.Second).WithPolling(10 * time.Millisecond).Should(BeClosed())
+		})
 	})
 
-	DescribeTable("rejects an untrusted certificate unless explicitly enabled",
+	DescribeTable("rejects an untrusted certificate regardless of the legacy bypass environment variable",
 		func(value string, set bool) {
-			setOrUnsetEnv(keycloak.EnvSkipTlsVerify, value, set)
-			_, err := keycloak.NewKeycloakServiceFor(&realmStatus)
+			setOrUnsetEnv("SKIP_TLS_VERIFY", value, set)
+			realm := &identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test", UID: "test"}}
+			_, _, err := factory.ServiceFor(context.Background(), realm, realmStatus)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("certificate"))
 			Expect(tokenHits.Load()).To(BeZero())
+			Expect(adminHits.Load()).To(BeZero())
 		},
 		Entry("when unset", "", false),
 		Entry("when false", "false", true),
 		Entry("when not a true value", "yes", true),
+		Entry("when true", "true", true),
+		Entry("when mixed case with whitespace", " TRUE ", true),
 	)
-
-	It("permits token and admin requests when SKIP_TLS_VERIFY=true", func() {
-		GinkgoT().Setenv(keycloak.EnvSkipTlsVerify, "true")
-		svc, err := keycloak.NewKeycloakServiceFor(&realmStatus)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(tokenHits.Load()).To(Equal(int32(1)))
-
-		Expect(svc.DeleteRealm(context.Background(), "test")).To(Succeed())
-		Expect(adminHits.Load()).To(BeNumerically(">=", 1))
-	})
-
-	It("does not affect the default HTTP client when SKIP_TLS_VERIFY=true", func() {
-		GinkgoT().Setenv(keycloak.EnvSkipTlsVerify, "true")
-		_, err := keycloak.NewKeycloakServiceFor(&realmStatus)
-		Expect(err).NotTo(HaveOccurred())
-
-		resp, err := http.Get(server.URL + "/admin/realms") //nolint:noctx // test-only request
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
-		Expect(err).To(MatchError(ContainSubstring("certificate")))
-	})
 })
 
 // setOrUnsetEnv sets or explicitly unsets key for the current spec and

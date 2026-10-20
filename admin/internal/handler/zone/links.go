@@ -58,7 +58,7 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 			}
 			if tokenURL == "" {
 				var advertisedIssuer string
-				tokenURL, advertisedIssuer, err = discoverTokenURL(ctx, hc.HTTPClient, issuer)
+				tokenURL, advertisedIssuer, err = discoverPresetTokenURL(ctx, hc, issuer)
 				if err != nil {
 					return ctrlerrors.RetryableErrorf("failed OIDC discovery for preset %q: %s", preset.Name, err)
 				}
@@ -77,6 +77,15 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 	sort.Slice(statuses, func(i, j int) bool { return statuses[i].Name < statuses[j].Name })
 	hc.Zone.Status.Presets = statuses
 	return nil
+}
+
+func discoverPresetTokenURL(ctx context.Context, hc *HandlingContext, issuer string) (string, string, error) {
+	doer, release, err := discoveryClient(ctx, hc, issuer)
+	if err != nil {
+		return "", "", err
+	}
+	defer release()
+	return discoverTokenURL(ctx, doer, issuer)
 }
 
 func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.IdentityProviderConfig) (adminv1.Links, string, error) {

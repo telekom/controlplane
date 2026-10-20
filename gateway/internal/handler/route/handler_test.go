@@ -39,9 +39,12 @@ var _ = Describe("RouteHandler", func() {
 		mockKC      *clientmock.MockKongClient
 		mockBuilder *featmock.MockFeaturesBuilder
 		route       *gatewayv1.Route
+		releases    int
 	)
+	releaseLease := func() { releases++ }
 
 	BeforeEach(func() {
+		releases = 0
 		handler = &routehandler.RouteHandler{}
 		mockClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		mockKC = clientmock.NewMockKongClient(GinkgoT())
@@ -78,8 +81,8 @@ var _ = Describe("RouteHandler", func() {
 	setupFeatureBuilderOverrides := func() {
 		originalGetClientFor := kongutil.GetClientFor
 		DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-		kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-			return mockKC, nil
+		kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+			return mockKC, releaseLease, nil
 		}
 
 		originalNewFeatureBuilder := features.NewFeatureBuilder
@@ -132,7 +135,9 @@ var _ = Describe("RouteHandler", func() {
 				// Mock builder expectations
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
 				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
-				mockBuilder.EXPECT().Build(mock.Anything).Return(nil)
+				mockBuilder.EXPECT().Build(mock.Anything).Run(func(_ context.Context) {
+					Expect(releases).To(BeZero(), "lease must be held while building")
+				}).Return(nil)
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Mock List to return empty consumers
@@ -144,6 +149,7 @@ var _ = Describe("RouteHandler", func() {
 
 				err := handler.CreateOrUpdate(ctx, route)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(releases).To(Equal(1), "lease must be released")
 
 				Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
 				Expect(meta.IsStatusConditionFalse(route.GetConditions(), condition.ConditionTypeProcessing)).To(BeTrue())
@@ -222,8 +228,8 @@ var _ = Describe("RouteHandler", func() {
 				// Don't override features.NewFeatureBuilder - let the real one run with the not-ready gateway
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				err := handler.CreateOrUpdate(ctx, route)
@@ -299,14 +305,15 @@ var _ = Describe("RouteHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(nil)
 
 				err := handler.Delete(ctx, route)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(releases).To(Equal(1), "lease must be released")
 			})
 		})
 
@@ -325,8 +332,8 @@ var _ = Describe("RouteHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				mockKC.EXPECT().DeleteRoute(mock.Anything, route).Return(fmt.Errorf("kong delete error"))
@@ -334,6 +341,7 @@ var _ = Describe("RouteHandler", func() {
 				err := handler.Delete(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to delete route"))
+				Expect(releases).To(Equal(1), "lease must be released on error")
 			})
 
 			It("returns error when GetClientFor fails", func() {
@@ -341,8 +349,8 @@ var _ = Describe("RouteHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return nil, fmt.Errorf("failed to create kong client")
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return nil, nil, fmt.Errorf("failed to create kong client")
 				}
 
 				err := handler.Delete(ctx, route)

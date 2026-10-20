@@ -190,7 +190,7 @@ func newTestContextWithClient(zone *adminv1.Zone, c client.Client) context.Conte
 // returns a ZoneHandler.
 func newTestHandler() *ZoneHandler {
 	useSecretManager()
-	return &ZoneHandler{}
+	return &ZoneHandler{Client: k8sClient}
 }
 
 // useSecretManager installs a fresh in-memory secret-manager as the global secret-manager
@@ -306,7 +306,7 @@ func (m *memorySecretManager) DeleteApplication(context.Context, string, string,
 // newTestHandlingContext creates a HandlingContext by running the constructor
 // (which creates the namespace and fetches the environment).
 func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *HandlingContext {
-	hc, err := newHandlingContext(testCtx, zone, (&ZoneHandler{}).httpClient())
+	hc, err := newHandlingContext(testCtx, zone, nil, k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }
