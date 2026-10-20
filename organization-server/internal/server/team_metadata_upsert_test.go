@@ -193,6 +193,28 @@ var _ = Describe("Team metadata and presence-aware upsert", func() {
 			map[string]any{"displayName": nil, "description": nil}),
 	)
 
+	DescribeTable("POST on an existing team forwards the description pointer unchanged",
+		func(description string, expected any) {
+			srv, captured := capturingTeamServer(projectedTeam(), nil)
+			DeferCleanup(srv.Close)
+			body := `{"name":"hyperion","email":"team@example.com","displayName":"Hyperion",` + description +
+				`"members":[{"name":"Bob","email":"bob@example.com"}]}`
+			result, status := sendTeamRequest(srv.URL, http.MethodPost, "/organization/v1/hubs/eni/teams", body)
+			Expect(status).To(Equal(http.StatusAccepted))
+			input := decodeInput(captured["CreateTeam"])
+			if expected == nil {
+				Expect(input["description"]).To(BeNil())
+				return
+			}
+			Expect(input).To(HaveKeyWithValue("description", expected))
+			Expect(result).To(HaveKeyWithValue("description", expected))
+		},
+		Entry("omitted preserves", ``, nil),
+		Entry("null preserves", `"description":null,`, nil),
+		Entry("empty string clears", `"description":"",`, ""),
+		Entry("provided", `"description":"Desc",`, "Desc"),
+	)
+
 	It("maps metadata from the create mutation response", func() {
 		srv, _ := capturingTeamServer(nil, projectedTeam())
 		DeferCleanup(srv.Close)

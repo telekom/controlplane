@@ -90,7 +90,7 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Accepted).To(BeFalse())
-			Expect(result.Errors).NotTo(BeEmpty())
+			Expect(result.Errors).To(ContainElement(HaveField("Code", model.ErrorCodeValidationFailed)))
 			Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(team), team)).To(Succeed())
 			Expect(team.Spec).To(Equal(*original))
 		},
@@ -180,6 +180,7 @@ var _ = Describe("Team member removal with Kubernetes", Ordered, func() {
 			},
 			Entry("metadata omitted", nil, nil, "Old Name", "Old description"),
 			Entry("metadata provided", strPtr("New Name"), strPtr(""), "New Name", ""),
+			Entry("empty description only clears", nil, strPtr(""), "Old Name", ""),
 		)
 	})
 

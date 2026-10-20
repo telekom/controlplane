@@ -73,7 +73,7 @@ func (s *teamK8sService) CreateTeam(ctx context.Context, input model.CreateTeamI
 		team.Spec.Name = input.Name
 		team.Spec.Group = input.Group
 		team.Spec.Email = input.Email
-		team.Spec.Members = toK8sMembers(input.Members)
+		team.Spec.Members = toK8SMembers(input.Members)
 		if team.Spec.Category == "" {
 			team.Spec.Category = organizationv1.TeamCategoryCustomer
 		}
@@ -123,8 +123,9 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, ref ResourceRef, input 
 		if input.Email != nil {
 			team.Spec.Email = *input.Email
 		}
+		// A non-nil empty list is an explicit replacement and must be validated.
 		if input.Members != nil {
-			team.Spec.Members = toK8sMembers(input.Members)
+			team.Spec.Members = toK8SMembers(input.Members)
 		}
 		applyTeamMetadata(&team.Spec, input.DisplayName, input.Description)
 		return nil
@@ -320,7 +321,7 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 	}, nil
 }
 
-func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
+func toK8SMembers(members []model.MemberInput) []organizationv1.Member {
 	result := make([]organizationv1.Member, len(members))
 	for i, m := range members {
 		result[i] = organizationv1.Member{

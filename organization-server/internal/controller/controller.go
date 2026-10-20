@@ -205,13 +205,12 @@ func (ctrl *Controller) GetStatus(_ context.Context, _ string) (*api.ResourceSta
 // --- Team operations ---
 
 func (ctrl *Controller) CreateTeam(ctx context.Context, env, hubName string, req *api.TeamCreateRequest) (*api.TeamResponse, []MutationError, error) {
-	// The create request cannot distinguish omitted from empty metadata, so empty values are not forwarded.
 	return ctrl.createTeam(ctx, env, hubName, &gql.CreateTeamInput{
 		Name:        req.Name,
 		Email:       req.Email,
 		Members:     toMemberInputs(req.Members),
 		DisplayName: nonEmpty(req.DisplayName),
-		Description: nonEmpty(req.Description),
+		Description: req.Description,
 	})
 }
 

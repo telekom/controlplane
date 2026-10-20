@@ -1086,6 +1086,7 @@ components:
           type: string
         displayName:
           type: string
+          maxLength: 200
         email:
           type: string
           deprecated: true
@@ -1182,12 +1183,14 @@ components:
           readOnly: true
     TeamCreateRequest:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/Team'
       required:
         - name
         - displayName
+        - email
+        - members
       properties:
+        status:
+          $ref: '#/components/schemas/Status'
         name:
           type: string
           minLength: 1
@@ -1197,6 +1200,22 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        email:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: >-
+            Omitted or null keeps the current description of an existing team;
+            an empty string clears it.
+          x-go-type-skip-optional-pointer: false
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        teamToken:
+          type: string
+          readOnly: true
     TeamUpdateRequest:
       type: object
       description: >-
