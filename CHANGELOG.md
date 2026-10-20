@@ -1,3 +1,10 @@
+## [0.41.5](https://github.com/telekom/controlplane/compare/v0.41.4...v0.41.5) (2026-10-20)
+
+
+### Bug Fixes
+
+* **organization:** preserve fields in team and hub upserts ([#794](https://github.com/telekom/controlplane/issues/794)) ([0a7f88a](https://github.com/telekom/controlplane/commit/0a7f88ab15c74f44fbf86725228f0f2ee7f75a17))
+
 ## [0.41.4](https://github.com/telekom/controlplane/compare/v0.41.3...v0.41.4) (2026-10-16)
 
 
