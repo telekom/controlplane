@@ -1,3 +1,25 @@
+## [0.41.4](https://github.com/telekom/controlplane/compare/v0.41.3...v0.41.4) (2026-10-16)
+
+
+### Bug Fixes
+
+* **rover-server:** check agentic sub-resource statuses ([#791](https://github.com/telekom/controlplane/issues/791)) ([0396839](https://github.com/telekom/controlplane/commit/039683992e76545c51d29cb678d64f9372680ed5))
+
+## [0.41.3](https://github.com/telekom/controlplane/compare/v0.41.2...v0.41.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* **rover:** validate EventSpecification version suffix ([#790](https://github.com/telekom/controlplane/issues/790)) ([58b5ab7](https://github.com/telekom/controlplane/commit/58b5ab7c70590cdc343888d4980a71dcfdd588ae))
+
+## [0.41.2](https://github.com/telekom/controlplane/compare/v0.41.1...v0.41.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* **admin:** use resolved rover issuer for internal endpoints ([#779](https://github.com/telekom/controlplane/issues/779)) ([e56f13c](https://github.com/telekom/controlplane/commit/e56f13ca81588755e19a026c61d4ffe41bf6394f))
+* **security:** accept user scope alias and use canonical team scopes ([#778](https://github.com/telekom/controlplane/issues/778)) ([8e184d4](https://github.com/telekom/controlplane/commit/8e184d455a769938ff4bb859b6b24bafa74f8afb))
+
 ## [0.41.1](https://github.com/telekom/controlplane/compare/v0.41.0...v0.41.1) (2026-10-14)
 
 

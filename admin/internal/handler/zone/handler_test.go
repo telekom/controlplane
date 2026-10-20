@@ -187,6 +187,27 @@ var _ = Describe("Zone Handler", func() {
 		Entry("world", adminv1.ZoneVisibilityWorld, spacegatePathPrefix),
 	)
 
+	It("uses the resolved internal realm issuer for gateway admin and presets in world zones", func() {
+		zone.Spec.Visibility = adminv1.ZoneVisibilityWorld
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		internalIssuer := "https://" + testInternalIssuerHost + "/auth/realms/" + zone.Status.InternalIdentityRealm.Name
+		Expect(zone.Status.Gateways).NotTo(BeEmpty())
+		for _, status := range zone.Status.Gateways {
+			gateway := &gatewayapi.Gateway{}
+			Expect(k8sClient.Get(ctx, status.Gateway.K8s(), gateway)).To(Succeed())
+			Expect(gateway.Spec.Admin.IssuerUrl).To(Equal(internalIssuer))
+		}
+		Expect(zone.Status.Presets).NotTo(BeEmpty())
+		for _, preset := range zone.Status.Presets {
+			Expect(preset.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/" + zone.Status.IdentityRealm.Name))
+			Expect(preset.Links.InternalIssuer).To(Equal(internalIssuer))
+		}
+	})
+
 	It("serves identity routes under the preset base path so LmsIssuer resolves", func() {
 		zone.Spec.Presets[0].Urls[0].BasePath = "/v1"
 

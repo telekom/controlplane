@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,6 +119,18 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 	hc.InternalIdentityRealm = realm
 	hc.Zone.Status.InternalIdentityRealm = types.ObjectRefFromObject(realm)
 	return nil
+}
+
+// internalIssuerURL returns the issuer URL the identity operator resolved for the
+// internal (rover) realm. Admin consumers must use it instead of deriving one
+// from the public issuer hostname, as the rover realm may live on another host.
+// A trailing "/" is trimmed for consumers that append path suffixes.
+func internalIssuerURL(hc *HandlingContext) (string, error) {
+	issuer := hc.InternalIdentityRealm.Status.IssuerUrl
+	if issuer == "" {
+		return "", ctrlerrors.RetryableErrorf("internal identity realm %q has no resolved issuer URL yet", hc.InternalIdentityRealm.Name)
+	}
+	return strings.TrimSuffix(issuer, "/"), nil
 }
 
 func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
