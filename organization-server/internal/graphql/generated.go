@@ -142,6 +142,8 @@ type CreateTeamCreateTeamCreateTeamPayloadTeam struct {
 	StatusPhase    *TeamStatusPhase                                         `json:"statusPhase"`
 	StatusMessage  *string                                                  `json:"statusMessage"`
 	Name           string                                                   `json:"name"`
+	DisplayName    *string                                                  `json:"displayName"`
+	Description    *string                                                  `json:"description"`
 	Email          string                                                   `json:"email"`
 	TeamToken      *string                                                  `json:"teamToken"`
 	Group          *CreateTeamCreateTeamCreateTeamPayloadTeamGroup          `json:"group"`
@@ -171,6 +173,12 @@ func (v *CreateTeamCreateTeamCreateTeamPayloadTeam) GetStatusMessage() *string {
 
 // GetName returns CreateTeamCreateTeamCreateTeamPayloadTeam.Name, and is useful for accessing the field via an interface.
 func (v *CreateTeamCreateTeamCreateTeamPayloadTeam) GetName() string { return v.Name }
+
+// GetDisplayName returns CreateTeamCreateTeamCreateTeamPayloadTeam.DisplayName, and is useful for accessing the field via an interface.
+func (v *CreateTeamCreateTeamCreateTeamPayloadTeam) GetDisplayName() *string { return v.DisplayName }
+
+// GetDescription returns CreateTeamCreateTeamCreateTeamPayloadTeam.Description, and is useful for accessing the field via an interface.
+func (v *CreateTeamCreateTeamCreateTeamPayloadTeam) GetDescription() *string { return v.Description }
 
 // GetEmail returns CreateTeamCreateTeamCreateTeamPayloadTeam.Email, and is useful for accessing the field via an interface.
 func (v *CreateTeamCreateTeamCreateTeamPayloadTeam) GetEmail() string { return v.Email }
@@ -435,6 +443,8 @@ type GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam struct {
 	StatusPhase    *TeamStatusPhase                                               `json:"statusPhase"`
 	StatusMessage  *string                                                        `json:"statusMessage"`
 	Name           string                                                         `json:"name"`
+	DisplayName    *string                                                        `json:"displayName"`
+	Description    *string                                                        `json:"description"`
 	Email          string                                                         `json:"email"`
 	TeamToken      *string                                                        `json:"teamToken"`
 	Group          *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeamGroup          `json:"group"`
@@ -466,6 +476,16 @@ func (v *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetStatusMessage() *st
 
 // GetName returns GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Name, and is useful for accessing the field via an interface.
 func (v *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetName() string { return v.Name }
+
+// GetDisplayName returns GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam.DisplayName, and is useful for accessing the field via an interface.
+func (v *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDisplayName() *string {
+	return v.DisplayName
+}
+
+// GetDescription returns GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Description, and is useful for accessing the field via an interface.
+func (v *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDescription() *string {
+	return v.Description
+}
 
 // GetEmail returns GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Email, and is useful for accessing the field via an interface.
 func (v *GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetEmail() string { return v.Email }
@@ -596,6 +616,8 @@ type ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam struct {
 	StatusPhase    *TeamStatusPhase                                                 `json:"statusPhase"`
 	StatusMessage  *string                                                          `json:"statusMessage"`
 	Name           string                                                           `json:"name"`
+	DisplayName    *string                                                          `json:"displayName"`
+	Description    *string                                                          `json:"description"`
 	Email          string                                                           `json:"email"`
 	TeamToken      *string                                                          `json:"teamToken"`
 	Group          *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeamGroup          `json:"group"`
@@ -627,6 +649,16 @@ func (v *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetStatusMessage() *
 
 // GetName returns ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Name, and is useful for accessing the field via an interface.
 func (v *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetName() string { return v.Name }
+
+// GetDisplayName returns ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam.DisplayName, and is useful for accessing the field via an interface.
+func (v *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDisplayName() *string {
+	return v.DisplayName
+}
+
+// GetDescription returns ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Description, and is useful for accessing the field via an interface.
+func (v *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetDescription() *string {
+	return v.Description
+}
 
 // GetEmail returns ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam.Email, and is useful for accessing the field via an interface.
 func (v *ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam) GetEmail() string { return v.Email }
@@ -846,6 +878,8 @@ type UpdateTeamInput struct {
 	Email       *string `json:"email"`
 	DisplayName *string `json:"displayName"`
 	Description *string `json:"description"`
+	// Replace the full membership list. Omitted or null preserves members. Team admission requires at least one member.
+	Members []MemberInput `json:"members"`
 }
 
 // GetTeamId returns UpdateTeamInput.TeamId, and is useful for accessing the field via an interface.
@@ -860,9 +894,12 @@ func (v *UpdateTeamInput) GetDisplayName() *string { return v.DisplayName }
 // GetDescription returns UpdateTeamInput.Description, and is useful for accessing the field via an interface.
 func (v *UpdateTeamInput) GetDescription() *string { return v.Description }
 
+// GetMembers returns UpdateTeamInput.Members, and is useful for accessing the field via an interface.
+func (v *UpdateTeamInput) GetMembers() []MemberInput { return v.Members }
+
 // UpdateTeamResponse is returned by UpdateTeam on success.
 type UpdateTeamResponse struct {
-	// Update team metadata (email, description, displayName). Does not manage members.
+	// Update team metadata and optionally replace members. Reconciliation and projection remain asynchronous.
 	UpdateTeam UpdateTeamUpdateTeamUpdateTeamPayload `json:"updateTeam"`
 }
 
@@ -913,6 +950,8 @@ type UpdateTeamUpdateTeamUpdateTeamPayloadTeam struct {
 	StatusPhase    *TeamStatusPhase                                         `json:"statusPhase"`
 	StatusMessage  *string                                                  `json:"statusMessage"`
 	Name           string                                                   `json:"name"`
+	DisplayName    *string                                                  `json:"displayName"`
+	Description    *string                                                  `json:"description"`
 	Email          string                                                   `json:"email"`
 	TeamToken      *string                                                  `json:"teamToken"`
 	Group          *UpdateTeamUpdateTeamUpdateTeamPayloadTeamGroup          `json:"group"`
@@ -942,6 +981,12 @@ func (v *UpdateTeamUpdateTeamUpdateTeamPayloadTeam) GetStatusMessage() *string {
 
 // GetName returns UpdateTeamUpdateTeamUpdateTeamPayloadTeam.Name, and is useful for accessing the field via an interface.
 func (v *UpdateTeamUpdateTeamUpdateTeamPayloadTeam) GetName() string { return v.Name }
+
+// GetDisplayName returns UpdateTeamUpdateTeamUpdateTeamPayloadTeam.DisplayName, and is useful for accessing the field via an interface.
+func (v *UpdateTeamUpdateTeamUpdateTeamPayloadTeam) GetDisplayName() *string { return v.DisplayName }
+
+// GetDescription returns UpdateTeamUpdateTeamUpdateTeamPayloadTeam.Description, and is useful for accessing the field via an interface.
+func (v *UpdateTeamUpdateTeamUpdateTeamPayloadTeam) GetDescription() *string { return v.Description }
 
 // GetEmail returns UpdateTeamUpdateTeamUpdateTeamPayloadTeam.Email, and is useful for accessing the field via an interface.
 func (v *UpdateTeamUpdateTeamUpdateTeamPayloadTeam) GetEmail() string { return v.Email }
@@ -1115,6 +1160,8 @@ mutation CreateTeam ($input: CreateTeamInput!) {
 			statusPhase
 			statusMessage
 			name
+			displayName: displayname
+			description
 			email
 			teamToken
 			group {
@@ -1283,6 +1330,8 @@ query GetTeam ($where: TeamWhereInput) {
 				statusPhase
 				statusMessage
 				name
+				displayName: displayname
+				description
 				email
 				teamToken
 				group {
@@ -1372,6 +1421,8 @@ query ListTeams ($where: TeamWhereInput) {
 				statusPhase
 				statusMessage
 				name
+				displayName: displayname
+				description
 				email
 				teamToken
 				group {
@@ -1510,6 +1561,8 @@ mutation UpdateTeam ($input: UpdateTeamInput!) {
 			statusPhase
 			statusMessage
 			name
+			displayName: displayname
+			description
 			email
 			teamToken
 			group {
