@@ -7,6 +7,7 @@ package delete_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -147,6 +148,64 @@ spec:
 
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
+			})
+		})
+
+		Context("when deleting multiple resources", func() {
+			var errA, errC error
+
+			BeforeEach(func() {
+				Expect(os.WriteFile(yamlFile, []byte(`apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-a
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-b
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-c
+spec: {}
+`), 0o644)).To(Succeed())
+				errA = errors.New("delete a refused")
+				errC = errors.New("wait c timed out")
+				gone := &common.ObjectStatusResponse{Gone: true}
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Delete(mock.Anything, mock.MatchedBy(func(o types.Object) bool { return o.GetName() == "rover-a" })).Return(errA).Once()
+				mockHandler.EXPECT().Delete(mock.Anything, mock.MatchedBy(func(o types.Object) bool { return o.GetName() != "rover-a" })).Return(nil).Maybe()
+				mockHandler.EXPECT().WaitForDeleted(mock.Anything, "rover-b").Return(gone, nil).Maybe()
+				mockHandler.EXPECT().WaitForDeleted(mock.Anything, "rover-c").Return(nil, errC).Maybe()
+			})
+
+			It("should process all resources and report all failures at the end without --fail-fast", func() {
+				cmd.SetArgs([]string{"--file", yamlFile})
+
+				err := cmd.Execute()
+
+				Expect(err).To(MatchError(errA))
+				Expect(err).To(MatchError(errC))
+				Expect(err.Error()).To(ContainSubstring(`Rover "rover-a"`))
+				Expect(err.Error()).To(ContainSubstring(`Rover "rover-c"`))
+				Expect(err.Error()).To(ContainSubstring("failed to delete 2 resource(s)"))
+				mockHandler.AssertCalled(GinkgoT(), "WaitForDeleted", mock.Anything, "rover-b")
+				mockHandler.AssertCalled(GinkgoT(), "WaitForDeleted", mock.Anything, "rover-c")
+			})
+
+			It("should stop at the first failure with --fail-fast", func() {
+				cmd.SetArgs([]string{"--file", yamlFile, "--fail-fast"})
+
+				err := cmd.Execute()
+
+				Expect(err).To(MatchError(errA))
+				Expect(errors.Is(err, errC)).To(BeFalse())
+				mockHandler.AssertNumberOfCalls(GinkgoT(), "Delete", 1)
+				mockHandler.AssertNotCalled(GinkgoT(), "WaitForDeleted", mock.Anything, mock.Anything)
 			})
 		})
 

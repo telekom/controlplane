@@ -8,12 +8,15 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )
 
@@ -64,39 +67,88 @@ var _ = Describe("BaseCommand", func() {
 			baseCmd.Cmd.SetErr(stderr)
 		})
 
-		Context("when fail-fast is true", func() {
-			It("should return an error", func() {
-				// Set fail-fast to true
-				baseCmd.FailFast = true
-
-				// Handle an error
+		DescribeTable("should print and return the error regardless of fail-fast",
+			func(failFast bool) {
+				baseCmd.FailFast = failFast
 				testErr := errors.New("test error")
+
 				result := baseCmd.HandleError(testErr, "process test")
 
-				// Verify the error is returned
-				Expect(result).To(HaveOccurred())
+				Expect(result).To(MatchError(testErr))
 				Expect(result.Error()).To(ContainSubstring("failed to process test"))
+				Expect(stderr.String()).To(ContainSubstring("test error"))
+			},
+			Entry("with fail-fast", true),
+			Entry("without fail-fast", false),
+		)
+	})
 
-				// Verify error was written to stderr
-				Expect(stderr.String()).NotTo(BeEmpty())
-			})
+	Describe("ForEach", func() {
+		var (
+			baseCmd   *base.BaseCommand
+			stderr    *bytes.Buffer
+			errA      = errors.New("a failed")
+			errC      = errors.New("c failed")
+			processed []string
+			op        func(string) error
+		)
+
+		BeforeEach(func() {
+			baseCmd = base.NewCommand("test", "Test command", "Test command long description")
+			stderr = &bytes.Buffer{}
+			baseCmd.Cmd.SetErr(stderr)
+			processed = nil
+			op = func(item string) error {
+				processed = append(processed, item)
+				switch item {
+				case "a":
+					return errA
+				case "c":
+					return errC
+				}
+				return nil
+			}
 		})
 
-		Context("when fail-fast is false", func() {
-			It("should log the error but not return it", func() {
-				// Set fail-fast to false
-				baseCmd.FailFast = false
+		It("should return nil when no item fails", func() {
+			Expect(base.ForEach(baseCmd, "process", []string{"b", "d"}, op)).To(Succeed())
+			Expect(processed).To(Equal([]string{"b", "d"}))
+		})
 
-				// Handle an error
-				testErr := errors.New("test error")
-				result := baseCmd.HandleError(testErr, "process test")
+		It("should process all items and join all failures without fail-fast", func() {
+			err := base.ForEach(baseCmd, "process", []string{"a", "b", "c", "d"}, op)
 
-				// Verify no error is returned
-				Expect(result).NotTo(HaveOccurred())
+			Expect(processed).To(Equal([]string{"a", "b", "c", "d"}))
+			Expect(err).To(MatchError(errA))
+			Expect(err).To(MatchError(errC))
+			Expect(err.Error()).To(ContainSubstring("failed to process 2 resource(s)"))
+		})
 
-				// Verify error was written to stderr
-				Expect(stderr.String()).NotTo(BeEmpty())
+		It("should stop at the first failure with fail-fast", func() {
+			baseCmd.FailFast = true
+
+			err := base.ForEach(baseCmd, "process", []string{"a", "b", "c"}, op)
+
+			Expect(processed).To(Equal([]string{"a"}))
+			Expect(err).To(MatchError(errA))
+			Expect(errors.Is(err, errC)).To(BeFalse())
+			Expect(err.Error()).To(ContainSubstring("failed to process 1 resource(s)"))
+		})
+
+		It("should print structured API error diagnostics only once, at the end", func() {
+			apiErr := &common.ApiError{Type: "ValidationError", Status: 400, Title: "Bad Request", Detail: "invalid spec"}
+			err := base.ForEach(baseCmd, "process", []string{"x", "y"}, func(item string) error {
+				if item == "x" {
+					return fmt.Errorf("Rover %q: %w", item, apiErr)
+				}
+				Expect(stderr.String()).To(BeEmpty(), "diagnostics must not be printed before all items are processed")
+				return errors.New("plain failure")
 			})
+
+			Expect(err).To(MatchError(apiErr))
+			Expect(strings.Count(stderr.String(), "invalid spec")).To(Equal(1))
+			Expect(stderr.String()).NotTo(ContainSubstring("plain failure"))
+			Expect(err.Error()).To(ContainSubstring("plain failure"))
 		})
 	})
 

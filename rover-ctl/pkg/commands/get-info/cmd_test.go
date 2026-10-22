@@ -7,6 +7,7 @@ package getinfo_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -197,6 +198,79 @@ spec:
 
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
+			})
+		})
+
+		Context("when getting info for multiple resources from a file", func() {
+			It("should continue after a failure and report it at the end without --fail-fast", func() {
+				Expect(os.WriteFile(yamlFile, []byte(`apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-a
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-b
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-c
+spec: {}
+`), 0o644)).To(Succeed())
+				infoErr := errors.New("not found")
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Info(mock.Anything, "rover-a").Return(nil, infoErr).Once()
+				mockHandler.EXPECT().Info(mock.Anything, "rover-b").Return(map[string]any{"name": "rover-b"}, nil).Once()
+				mockHandler.EXPECT().Info(mock.Anything, "rover-c").Return(map[string]any{"name": "rover-c"}, nil).Once()
+				cmd.SetArgs([]string{"--file", yamlFile})
+
+				err := cmd.Execute()
+
+				Expect(err).To(MatchError(infoErr))
+				Expect(err.Error()).To(ContainSubstring(`Rover "rover-a"`))
+				Expect(stdout.String()).To(ContainSubstring("rover-c"))
+			})
+
+			It("should stop at the first failure with --fail-fast", func() {
+				Expect(os.WriteFile(yamlFile, []byte(`apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-a
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-b
+spec: {}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-c
+spec: {}
+`), 0o644)).To(Succeed())
+				infoErr := errors.New("not found")
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Info(mock.Anything, "rover-a").Return(nil, infoErr).Once()
+				cmd.SetArgs([]string{"--file", yamlFile, "--fail-fast"})
+
+				Expect(cmd.Execute()).To(MatchError(infoErr))
+			})
+		})
+
+		Context("when a single info request fails", func() {
+			It("should return the error without --fail-fast", func() {
+				infoErr := errors.New("not found")
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Info(mock.Anything, "test-rover").Return(nil, infoErr).Once()
+				cmd.SetArgs([]string{"--name", "test-rover"})
+
+				Expect(cmd.Execute()).To(MatchError(infoErr))
 			})
 		})
 

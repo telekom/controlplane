@@ -87,6 +87,17 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
 		})
 
+		It("reports a pending approval as a blocked status with the problem in errors", func() {
+			// roverctl treats overallStatus=blocked as "not a failure" even though
+			// the approval problem is listed in errors. This documents that contract.
+			response, err := MapRoverResponse(ctx, rover, stores)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response.OverallStatus).To(Equal(api.OverallStatusBlocked))
+			Expect(response.ProcessingState).To(Equal(api.ProcessingStateDone))
+			Expect(response.Errors).To(ContainElement(HaveField("Cause", "NoApproval")))
+		})
+
 		It("must return an error if the input rover is nil", func() {
 			response, err := MapRoverResponse(ctx, nil, stores)
 

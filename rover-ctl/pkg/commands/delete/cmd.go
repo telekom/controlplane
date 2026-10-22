@@ -5,6 +5,7 @@
 package delete
 
 import (
+	stderrors "errors"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -47,20 +48,13 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Process objects
-	count := 0
-
-	for _, obj := range handlers.Sort(c.Parser.Objects()) {
+	return base.ForEach(c.BaseCommand, "delete", handlers.Sort(c.Parser.Objects()), func(obj types.Object) error {
 		c.Logger().V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
-
 		if err := c.deleteObject(obj); err != nil {
-			c.Logger().Error(err, "Failed to delete object", "kind", obj.GetKind(), "name", obj.GetName())
-			return errors.Wrapf(err, "failed to delete object %s", obj.GetName())
+			return errors.Wrapf(err, "%s %q", obj.GetKind(), obj.GetName())
 		}
-		count++
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // deleteObject processes a single object from the parser
@@ -83,17 +77,20 @@ func (c *Command) deleteObject(obj types.Object) error {
 		"name", obj.GetName())
 
 	// Delete the object using the handler
-	if err := handler.Delete(c.Cmd.Context(), obj); err != nil {
-		return c.HandleError(err, fmt.Sprintf("delete %s", obj.GetKind()))
+	if err = handler.Delete(c.Cmd.Context(), obj); err != nil {
+		return errors.Wrap(err, "failed to delete")
 	}
 
 	status, err := handler.WaitForDeleted(c.Cmd.Context(), obj.GetName())
 	if err != nil {
-		if status != nil {
-			statusEval := common.NewStatusEval(obj, status)
-			_ = statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format"))
+		waitErr := errors.Wrap(err, "failed to wait for deletion")
+		if status == nil {
+			return waitErr
 		}
-		return c.HandleError(err, fmt.Sprintf("wait for %s to be deleted", obj.GetKind()))
+		if printErr := common.NewStatusEval(obj, status).PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); printErr != nil {
+			return stderrors.Join(waitErr, errors.Wrap(printErr, "failed to print status"))
+		}
+		return waitErr
 	}
 
 	if status.IsGone() {

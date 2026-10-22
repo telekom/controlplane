@@ -5,6 +5,7 @@
 package apply
 
 import (
+	stderrors "errors"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -47,17 +48,13 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Process objects
-	for _, obj := range handlers.Sort(c.Parser.Objects()) {
+	return base.ForEach(c.BaseCommand, "apply", handlers.Sort(c.Parser.Objects()), func(obj types.Object) error {
 		c.Logger().V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
-
 		if err := c.applyObject(obj); err != nil {
-			return errors.Wrapf(err, "failed to apply object %s", obj.GetName())
+			return errors.Wrapf(err, "%s %q", obj.GetKind(), obj.GetName())
 		}
-
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // applyObject processes a single object from the parser
@@ -79,32 +76,53 @@ func (c *Command) applyObject(obj types.Object) error {
 		"name", obj.GetName())
 
 	// Apply the object using the handler
-	if err := handler.Apply(c.Cmd.Context(), obj); err != nil {
-		return c.HandleError(err, fmt.Sprintf("apply %s", obj.GetKind()))
+	if err = handler.Apply(c.Cmd.Context(), obj); err != nil {
+		return errors.Wrap(err, "failed to apply")
 	}
 
 	status, err := handler.WaitForReady(c.Cmd.Context(), obj.GetName())
 	if err != nil {
-		if status != nil {
-			statusEval := common.NewStatusEval(obj, status)
-			_ = statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format"))
+		waitErr := errors.Wrap(err, "failed to wait for readiness")
+		if status == nil {
+			return waitErr
 		}
-		return c.HandleError(err, fmt.Sprintf("wait for %s to be ready", obj.GetKind()))
+		return stderrors.Join(waitErr, c.printStatus(obj, status))
 	}
 
-	statusEval := common.NewStatusEval(obj, status)
-	if statusEval.IsSuccess() {
+	switch status.GetOverallStatus() {
+	case types.OverallStatusComplete:
 		c.Logger().Info(fmt.Sprintf("✅ Successfully applied %s",
+			obj.GetKind()),
+			"name", obj.GetName())
+		return nil
+	case types.OverallStatusBlocked:
+		// Blocked means waiting for an external action (e.g. an approval).
+		// It is not a failure, but the resource is not necessarily ready.
+		if err := c.printStatus(obj, status); err != nil {
+			return err
+		}
+		c.Logger().Info(fmt.Sprintf("⏸️  Applied %s, but it is blocked and not necessarily ready",
+			obj.GetKind()),
+			"name", obj.GetName())
+		return nil
+	case types.OverallStatusDone:
+		if err := c.printStatus(obj, status); err != nil {
+			return err
+		}
+		c.Logger().Info(fmt.Sprintf("☑️  Applied %s, processing is done but it is not necessarily ready",
 			obj.GetKind()),
 			"name", obj.GetName())
 		return nil
 	}
 
-	if err := statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
-		if c.FailFast {
-			return errors.Wrap(err, "failed to print status")
-		}
-	}
+	statusErr := fmt.Errorf("finished with status %q", status.GetOverallStatus())
+	return stderrors.Join(statusErr, c.printStatus(obj, status))
+}
 
-	return fmt.Errorf("apply %s/%s finished with status %q", obj.GetKind(), obj.GetName(), status.GetOverallStatus())
+// printStatus prints the status of the object.
+func (c *Command) printStatus(obj types.Object, status types.ObjectStatus) error {
+	if err := common.NewStatusEval(obj, status).PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
+		return errors.Wrap(err, "failed to print status")
+	}
+	return nil
 }

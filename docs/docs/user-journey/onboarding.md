@@ -91,6 +91,30 @@ If the server returns a structured error (problem details), its fields, includin
 
 Review any output before sharing it: other parts of the output, such as the result of `roverctl get-secret`, intentionally contain credentials.
 
+### Exit Codes and `--fail-fast`
+
+Rover-CTL exits with a non-zero code if any resource fails, and with `0` if none fails. `--fail-fast` does not change which results count as failures. It only changes when Rover-CTL stops:
+
+- **Without `--fail-fast`**, commands that handle several resources (`apply`, `delete`, `get-info --file`) process every resource and report all failures together at the end.
+- **With `--fail-fast`**, processing stops at the first failure, which is reported immediately.
+
+Commands that handle a single resource always return their error; `--fail-fast` has no effect on them.
+
+For `roverctl apply`, the final status of each resource is evaluated as follows:
+
+| Final status | Result |
+| ------------ | ------ |
+| `complete` | Success. |
+| `blocked` | Not a failure. The resource waits for an external action, such as an approval. The status, including any listed problems, is printed. The resource is **not necessarily ready**. |
+| `done` | Not a failure. Processing has finished, but the resource is **not necessarily ready**. The status is printed. |
+| `failed`, `invalid`, or any other status | Failure. |
+
+Request errors, wait errors and timeouts are always failures. Resources of an unknown kind are skipped with a log message and do not count as failures.
+
+:::caution
+The server currently reports both normal waiting (for example, a pending approval) and some real problems (for example, a denied access or a configuration conflict) as `blocked`, and lists all of them as problems in the status. Rover-CTL cannot reliably tell these apart, so a `blocked` resource exits with `0`. Always review the printed status of blocked resources.
+:::
+
 ## Next Steps
 
 - [Managing Applications](./applications.mdx) — Create your first application
