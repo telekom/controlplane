@@ -1384,13 +1384,13 @@ var _ = Describe("Listener apiBasePath spelling (controller)", func() {
 var _ = Describe("Listener event environment (controller)", func() {
 	It("E1: a capture EventStore subscribing with another environment than the capture realm blocks without relocating capture to P's zone", func() {
 		f := newPlFixtures("a3")
-		f.ecs["c"].Spec.OverwriteEnvironmentName = "spectre-test"
-		f.stores["c"].Spec.OverwriteEnvironmentName = "spectre-test"
+		f.ecs["c"].Spec.OverwriteEnvironmentName = "custom-env"
+		f.stores["c"].Spec.OverwriteEnvironmentName = "custom-env"
 		h := newPlHarness(f)
 
 		all := h.startup()
 		want := `capture zone "c" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) ` +
-			`but its EventStore "pl-env--c/es-c" subscribes with environment "spectre-test" (EventConfig spec.overwriteEnvironmentName); Galaxy would drop every event; ` +
+			`but its EventStore "pl-env--c/es-c" subscribes with environment "custom-env" (EventConfig spec.overwriteEnvironmentName); Galaxy would drop every event; ` +
 			`set EventConfig "pl-env--c/ec-c" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`
 		l := h.listener()
 		Expect(plBlocked(l)).To(Equal(want))
@@ -1451,17 +1451,17 @@ var _ = Describe("Listener event environment (controller)", func() {
 			Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
 		},
 		Entry("capture EventStore",
-			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "spectre-test") },
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "custom-env") },
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("c", "default") },
 			`capture zone "c" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
-				`but its EventStore "pl-env--c/es-c" subscribes with environment "spectre-test" `+
+				`but its EventStore "pl-env--c/es-c" subscribes with environment "custom-env" `+
 				`(EventStore not yet updated by the event operator, EventConfig resolves to "default"); Galaxy would drop every event; `+
 				`set EventConfig "pl-env--c/ec-c" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`),
 		Entry("observer EventStore",
-			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "spectre-test") },
+			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "custom-env") },
 			func(h *plHarness, f *plFixtures) { h.setOverwrite("a3", "default") },
 			`observer zone "a3" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
-				`but its EventStore "pl-env--a3/es-a3" subscribes with environment "spectre-test" `+
+				`but its EventStore "pl-env--a3/es-a3" subscribes with environment "custom-env" `+
 				`(EventStore not yet updated by the event operator, EventConfig resolves to "default"); Galaxy would drop every event; `+
 				`set EventConfig "pl-env--a3/ec-a3" spec.overwriteEnvironmentName or Environment "pl-env/pl-env" spec.realmName to match`),
 	)
@@ -1520,18 +1520,18 @@ var _ = Describe("Listener event environment (controller)", func() {
 		},
 		Entry("capture zone realm",
 			func(f *plFixtures) {
-				f.realms["c"].Status.IssuerUrl = "https://iris.c.example/auth/realms/spectre-test"
+				f.realms["c"].Status.IssuerUrl = "https://iris.c.example/auth/realms/custom-env"
 			},
-			`capture zone "c" publishes events with environment "spectre-test" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+			`capture zone "c" publishes events with environment "custom-env" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
 				`but its EventStore "pl-env--c/es-c" subscribes with environment "default" (EventConfig spec.overwriteEnvironmentName); `+
 				`events are delivered only if the Horizon `+
-				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+				`defaultEnvironment of Starlight and Galaxy is "custom-env"`),
 		Entry("observer zone realm",
-			func(f *plFixtures) { f.zones["a3"].Status.RealmName = "spectre-test" },
-			`observer zone "a3" publishes events with environment "spectre-test" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
+			func(f *plFixtures) { f.zones["a3"].Status.RealmName = "custom-env" },
+			`observer zone "a3" publishes events with environment "custom-env" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
 				`but its EventStore "pl-env--a3/es-a3" subscribes with environment "default" (EventConfig spec.overwriteEnvironmentName); `+
 				`events are delivered only if the Horizon `+
-				`defaultEnvironment of Starlight and Galaxy is "spectre-test"`),
+				`defaultEnvironment of Starlight and Galaxy is "custom-env"`),
 	)
 
 	DescribeTable("E5: realm status that is missing after provisioning blocks without draining",

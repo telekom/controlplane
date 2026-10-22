@@ -914,9 +914,9 @@ var _ = Describe("SpectreApplicationHandler", func() {
 					Expect(obj.Status.Publisher).To(BeNil())
 					Expect(obj.Status.Subscriber).To(BeNil())
 				},
-				Entry("environment mismatch", "default", "spectre-test",
+				Entry("environment mismatch", "default", "custom-env",
 					`observer zone "`+testZoneName+`" publishes events with environment "default" (identity realm of the zone: Environment spec.realmName, else the Environment name) `+
-						`but its EventStore "`+testZoneStatusNs+`/eventstore-aws" subscribes with environment "spectre-test" (EventConfig spec.overwriteEnvironmentName); `+
+						`but its EventStore "`+testZoneStatusNs+`/eventstore-aws" subscribes with environment "custom-env" (EventConfig spec.overwriteEnvironmentName); `+
 						`Galaxy would drop every event; `+
 						`set EventConfig "`+testZoneStatusNs+`/ec-aws" spec.overwriteEnvironmentName or Environment "env/env" spec.realmName to match`, true),
 				Entry("no RealmName yet", "", "default",
@@ -928,7 +928,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				ctx = log.IntoContext(ctx, zap.New(zap.WriteTo(logs)))
 				obj := newSpectreApplication("callback")
 				zone := makeReadyZone()
-				zone.Status.RealmName = "spectre-test"
+				zone.Status.RealmName = "custom-env"
 				ec := makeReadyEventConfig()
 				ec.Spec.OverwriteEnvironmentName = "default"
 
@@ -946,7 +946,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(obj.Status.Subscriber).ToNot(BeNil())
 				Expect(strings.Split(logs.String(), "\n")).To(ContainElement(SatisfyAll(
 					ContainSubstring(`"msg":"Event environment relies on a Horizon defaultEnvironment alias"`),
-					ContainSubstring(`"publishEnvironment":"spectre-test"`),
+					ContainSubstring(`"publishEnvironment":"custom-env"`),
 					ContainSubstring(`"subscribeEnvironment":"default"`),
 				)))
 			})
