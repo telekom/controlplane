@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -59,14 +60,24 @@ func (s *teamK8sService) CreateTeam(ctx context.Context, input model.CreateTeamI
 		},
 	}
 
+	if err := validateCreateTeamInput(&input); err != nil {
+		log.V(1).Info("Invalid team input", "reason", err.Error())
+		return &model.CreateTeamPayload{
+			Errors: []model.MutationError{{Code: model.ErrorCodeValidationFailed, Message: err.Error()}},
+		}, nil
+	}
+
+	// The team may already exist when the caller's projection lags behind; only supplied
+	// fields are applied so omitted metadata and server-managed fields are preserved.
 	_, err := s.client.CreateOrUpdate(ctx, team, func() error {
-		team.Spec = organizationv1.TeamSpec{
-			Name:     input.Name,
-			Group:    input.Group,
-			Email:    input.Email,
-			Members:  toK8sMembers(input.Members),
-			Category: organizationv1.TeamCategoryCustomer,
+		team.Spec.Name = input.Name
+		team.Spec.Group = input.Group
+		team.Spec.Email = input.Email
+		team.Spec.Members = toK8SMembers(input.Members)
+		if team.Spec.Category == "" {
+			team.Spec.Category = organizationv1.TeamCategoryCustomer
 		}
+		applyTeamMetadata(&team.Spec, input.DisplayName, input.Description)
 		return nil
 	})
 	if err != nil {
@@ -93,6 +104,13 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, ref ResourceRef, input 
 		}, nil
 	}
 
+	if err := validateTeamDisplayName(input.DisplayName); err != nil {
+		log.V(1).Info("Invalid team input", "reason", err.Error())
+		return &model.UpdateTeamPayload{
+			Errors: []model.MutationError{{Code: model.ErrorCodeValidationFailed, Message: err.Error()}},
+		}, nil
+	}
+
 	team := &organizationv1.Team{}
 	if err := s.client.Get(ctx, k8stypes.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, team); err != nil {
 		log.V(1).Info("Failed to get team resource", "error", err)
@@ -105,6 +123,11 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, ref ResourceRef, input 
 		if input.Email != nil {
 			team.Spec.Email = *input.Email
 		}
+		// A non-nil empty list is an explicit replacement and must be validated.
+		if input.Members != nil {
+			team.Spec.Members = toK8SMembers(input.Members)
+		}
+		applyTeamMetadata(&team.Spec, input.DisplayName, input.Description)
 		return nil
 	})
 	if err != nil {
@@ -298,7 +321,7 @@ func (s *teamK8sService) DeleteTeam(ctx context.Context, ref ResourceRef) (*mode
 	}, nil
 }
 
-func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
+func toK8SMembers(members []model.MemberInput) []organizationv1.Member {
 	result := make([]organizationv1.Member, len(members))
 	for i, m := range members {
 		result[i] = organizationv1.Member{
@@ -341,9 +364,7 @@ func (s *groupK8sService) CreateGroup(ctx context.Context, input model.CreateGro
 	}
 
 	_, err := s.client.CreateOrUpdate(ctx, group, func() error {
-		group.Spec = organizationv1.GroupSpec{
-			DisplayName: input.DisplayName,
-		}
+		group.Spec.DisplayName = input.DisplayName
 		if input.Description != nil {
 			group.Spec.Description = *input.Description
 		}
@@ -675,6 +696,44 @@ func (s *approvalK8sService) DecideApproval(ctx context.Context, ref ResourceRef
 // ──────────────────────────────────────────────────────────────────────────────
 
 // forbiddenError creates a MutationError with FORBIDDEN code.
+// maxTeamDisplayNameLength mirrors the organization REST contract for displayName.
+const maxTeamDisplayNameLength = 200
+
+func validateCreateTeamInput(input *model.CreateTeamInput) error {
+	if input.Email == "" {
+		return errors.New("email is required")
+	}
+	if len(input.Members) == 0 {
+		return errors.New("at least one member is required")
+	}
+	return validateTeamDisplayName(input.DisplayName)
+}
+
+// validateTeamDisplayName rejects a provided but empty or too long displayName.
+// Description limits are enforced by the Team CRD.
+func validateTeamDisplayName(displayName *string) error {
+	if displayName == nil {
+		return nil
+	}
+	if *displayName == "" {
+		return errors.New("displayName must not be empty")
+	}
+	if utf8.RuneCountInString(*displayName) > maxTeamDisplayNameLength {
+		return fmt.Errorf("displayName must not exceed %d characters", maxTeamDisplayNameLength)
+	}
+	return nil
+}
+
+// applyTeamMetadata sets only the provided metadata; an empty description clears it.
+func applyTeamMetadata(spec *organizationv1.TeamSpec, displayName, description *string) {
+	if displayName != nil {
+		spec.DisplayName = *displayName
+	}
+	if description != nil {
+		spec.Description = *description
+	}
+}
+
 func forbiddenError(msg string) model.MutationError {
 	return model.MutationError{
 		Code:    model.ErrorCodeForbidden,
