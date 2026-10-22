@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/route-tester
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0
