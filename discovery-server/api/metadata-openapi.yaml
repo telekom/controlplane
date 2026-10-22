@@ -1,0 +1,31 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: Discovery API
+  description: >
+    **Discovery** is the new name of this API. **Stargate** is its legacy name,
+    which is still supported, e.g. in the base URL (`/stargate/v2`).
+
+
+    Read-only API of the TARDIS control plane. It provides access to
+    Applications, ApiExposures, ApiSubscriptions, EventTypes, EventExposures
+    and EventSubscriptions, including their status.
+
+    For creating and updating resources, use the Rover-API.
+
+
+    **Scopes:** `tardis:hub:*` is deprecated and replaced by `tardis:group:*`;
+    `tardis:user:*` is deprecated and replaced by `tardis:team:*`.
+
+  contact:
+    name: TARDIS
+    url: https://developer.telekom.de/docs/src/tardis_customer_handbook/support/
+    email: FMB_TARDIS_Support@telekom.de
+  version: 2.0.0
+  x-api-category: TARDIS
+servers:
+  - url: https://api.telekom.de/stargate/v2
+paths: {}

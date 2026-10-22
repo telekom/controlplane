@@ -2,13 +2,16 @@
     "output": "./uber-openapi.yaml",
     "inputs": [
         {
+            "inputFile": "./metadata-openapi.yaml"
+        },
+        {
+            "inputFile": "./stargate-openapi.yaml"
+        },
+        {
             "inputFile": "./common.yaml"
         },
         {
             "inputFile": "./application-openapi.yaml"
-        },
-        {
-            "inputFile": "./stargate-openapi.yaml"
         },
         {
             "inputFile": "./event-openapi.yaml"
