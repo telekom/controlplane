@@ -41,6 +41,44 @@ var _ = Describe("Event identifier CRD admission", func() {
 		})
 	}
 
+	It("accepts EventSpecification type suffix matching the version major", func() {
+		obj := &v1.EventSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "valid-eventspec-suffix", Namespace: "default"},
+			Spec:       v1.EventSpecificationSpec{Type: "orders.v2", Version: "2.1.0"},
+		}
+		Expect(k8sClient.Create(ctx, obj)).To(Succeed())
+		DeferCleanup(func() { Expect(k8sClient.Delete(ctx, obj)).To(Succeed()) })
+	})
+
+	for i, tc := range []struct{ eventType, version string }{
+		{"orders.v1", "2.0.0"},
+		{"orders-v1", "1.0.0"},
+		{"orders", "1.0.0"},
+	} {
+		It(fmt.Sprintf("rejects EventSpecification type %q with version %q", tc.eventType, tc.version), func() {
+			obj := &v1.EventSpecification{
+				ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("invalid-eventspec-suffix-%d", i), Namespace: "default"},
+				Spec:       v1.EventSpecificationSpec{Type: tc.eventType, Version: tc.version},
+			}
+			err := k8sClient.Create(ctx, obj)
+			Expect(apierrors.IsInvalid(err)).To(BeTrue(), fmt.Sprintf("error: %v", err))
+			Expect(err.Error()).To(ContainSubstring("must match the version suffix"))
+		})
+	}
+
+	It("rejects EventSpecification update with mismatching version major", func() {
+		obj := &v1.EventSpecification{
+			ObjectMeta: metav1.ObjectMeta{Name: "update-eventspec-suffix", Namespace: "default"},
+			Spec:       v1.EventSpecificationSpec{Type: "orders.v1", Version: "1.0.0"},
+		}
+		Expect(k8sClient.Create(ctx, obj)).To(Succeed())
+		DeferCleanup(func() { Expect(k8sClient.Delete(ctx, obj)).To(Succeed()) })
+		obj.Spec.Version = "2.0.0"
+		err := k8sClient.Update(ctx, obj)
+		Expect(apierrors.IsInvalid(err)).To(BeTrue(), fmt.Sprintf("error: %v", err))
+		Expect(err.Error()).To(ContainSubstring("must match the version suffix"))
+	})
+
 	for _, reference := range []struct {
 		name    string
 		field   string

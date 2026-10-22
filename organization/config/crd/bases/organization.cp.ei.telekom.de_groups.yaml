@@ -44,14 +44,13 @@ spec:
             properties:
               description:
                 description: Description is the description of the group
-                minLength: 1
+                maxLength: 256
                 type: string
               displayName:
                 description: DisplayName is the name of the group
                 minLength: 1
                 type: string
             required:
-            - description
             - displayName
             type: object
           status:

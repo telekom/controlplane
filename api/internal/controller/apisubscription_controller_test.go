@@ -657,23 +657,24 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 		It("should progress when the RemoteApiSubscription has been approved and is ready", func() {
 			By("Updating the RemoteApiSubscription")
-			remoteApiSubscription.Status = apiapi.RemoteApiSubscriptionStatus{
-				Approval: &apiapi.ApprovalInfo{
-					ApprovalState: approvalapi.ApprovalStateGranted.String(),
-					Message:       "Test-Message",
-				},
-				ApprovalRequest: &apiapi.ApprovalInfo{
-					ApprovalState: approvalapi.ApprovalStateGranted.String(),
-					Message:       "Test-Message",
-				},
-				GatewayUrl: "http://ger.gateway.es:8080/ger",
-			}
-			ready := condition.NewReadyCondition("RemoteApiSubscriptionReady", "Trust me, I am ready")
-			ready.ObservedGeneration = remoteApiSubscription.Generation
-			remoteApiSubscription.SetCondition(ready)
-
-			err := k8sClient.Status().Update(ctx, remoteApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(remoteApiSubscription), remoteApiSubscription)).To(Succeed())
+				remoteApiSubscription.Status = apiapi.RemoteApiSubscriptionStatus{
+					Approval: &apiapi.ApprovalInfo{
+						ApprovalState: approvalapi.ApprovalStateGranted.String(),
+						Message:       "Test-Message",
+					},
+					ApprovalRequest: &apiapi.ApprovalInfo{
+						ApprovalState: approvalapi.ApprovalStateGranted.String(),
+						Message:       "Test-Message",
+					},
+					GatewayUrl: "http://ger.gateway.es:8080/ger",
+				}
+				ready := condition.NewReadyCondition("RemoteApiSubscriptionReady", "Trust me, I am ready")
+				ready.ObservedGeneration = remoteApiSubscription.Generation
+				remoteApiSubscription.SetCondition(ready)
+				g.Expect(k8sClient.Status().Update(ctx, remoteApiSubscription)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			CompleteSubscriptionChildren(apiSubscription)
 			Eventually(func(g Gomega) {

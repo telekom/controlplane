@@ -21,6 +21,7 @@ func MakeEventSpecificationName(eventSpec *EventSpecification) string {
 }
 
 // EventSpecificationSpec defines the desired state of EventSpecification.
+// +kubebuilder:validation:XValidation:rule="self.type.endsWith('.v' + self.version.split('.')[0])",message="major version in \"version\" must match the version suffix (e.g. \"vN\") in \"type\""
 type EventSpecificationSpec struct {
 	// Type is an event type identifier with dot or hyphen separators (e.g. "de.telekom.eni-quickstart.v1").
 	// +kubebuilder:validation:Required

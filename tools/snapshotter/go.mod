@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/snapshotter
 
-go 1.26.9
+go 1.26.10
 
 require github.com/telekom/controlplane/gateway v0.0.0
 
@@ -21,7 +21,7 @@ require (
 	go.uber.org/zap v1.28.0
 	golang.org/x/time v0.15.0
 	k8s.io/client-go v0.37.0
-	sigs.k8s.io/controller-runtime v0.24.1
+	sigs.k8s.io/controller-runtime v0.25.2
 )
 
 replace (

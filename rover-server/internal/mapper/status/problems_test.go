@@ -6,11 +6,13 @@ package status
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -21,6 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverStore "github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
 // MockObjectStore is a mock implementation of the ObjectStore interface.
@@ -474,4 +477,150 @@ var _ = Describe("getAllProblemsInSubResource HasStale", func() {
 			mockStore.AssertExpectations(GinkgoT())
 		})
 	})
+})
+
+var _ = Describe("GetAllRoverProblems agentic sub-resources", func() {
+	const namespace = "poc--eni--hyperion"
+
+	readyConds := func() []metav1.Condition {
+		return []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 1},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, ObservedGeneration: 1},
+		}
+	}
+	blockedConds := []metav1.Condition{
+		{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Blocked", ObservedGeneration: 1},
+		{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NoApproval", Message: "not approved", ObservedGeneration: 1},
+	}
+	processingConds := []metav1.Condition{
+		{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionTrue, Reason: "Processing", ObservedGeneration: 1},
+		{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Processing", Message: "in progress", ObservedGeneration: 1},
+	}
+
+	newRover := func(exposures, subscriptions []types.ObjectRef) *v1.Rover {
+		return &v1.Rover{
+			ObjectMeta: metav1.ObjectMeta{Name: "rover", Namespace: namespace, UID: "rover-uid"},
+			Status: v1.RoverStatus{
+				AgenticExposures:     exposures,
+				AgenticSubscriptions: subscriptions,
+			},
+		}
+	}
+	refs := []types.ObjectRef{{Name: "child", Namespace: namespace}}
+
+	newExposure := func(gen int64, conds []metav1.Condition) *agenticv1.AgenticExposure {
+		return &agenticv1.AgenticExposure{
+			TypeMeta:   metav1.TypeMeta{APIVersion: agenticv1.GroupVersion.String(), Kind: "AgenticExposure"},
+			ObjectMeta: metav1.ObjectMeta{Name: "exposure", Namespace: namespace, Generation: gen},
+			Status:     agenticv1.AgenticExposureStatus{Conditions: conds},
+		}
+	}
+	newSubscription := func(gen int64, conds []metav1.Condition) *agenticv1.AgenticSubscription {
+		return &agenticv1.AgenticSubscription{
+			TypeMeta:   metav1.TypeMeta{APIVersion: agenticv1.GroupVersion.String(), Kind: "AgenticSubscription"},
+			ObjectMeta: metav1.ObjectMeta{Name: "subscription", Namespace: namespace, Generation: gen},
+			Status:     agenticv1.AgenticSubscriptionStatus{Conditions: conds},
+		}
+	}
+
+	type expectation struct {
+		worst        api.OverallStatus
+		problemKinds []string
+		stale        bool
+		active       bool
+	}
+
+	run := func(exposure *agenticv1.AgenticExposure, subscription *agenticv1.AgenticSubscription, exp expectation) {
+		ctx := context.Background()
+		expStore := new(MockObjectStore[*agenticv1.AgenticExposure])
+		subStore := new(MockObjectStore[*agenticv1.AgenticSubscription])
+		ownerFilter := mock.MatchedBy(func(opts commonStore.ListOpts) bool {
+			return opts.Prefix == namespace && len(opts.Filters) == 1 && opts.Filters[0].Value == "rover-uid"
+		})
+
+		var exposureRefs, subscriptionRefs []types.ObjectRef
+		if exposure != nil {
+			exposureRefs = refs
+			expStore.On("List", ctx, ownerFilter).Return(
+				&commonStore.ListResponse[*agenticv1.AgenticExposure]{Items: []*agenticv1.AgenticExposure{exposure}}, nil).Once()
+		}
+		if subscription != nil {
+			subscriptionRefs = refs
+			subStore.On("List", ctx, ownerFilter).Return(
+				&commonStore.ListResponse[*agenticv1.AgenticSubscription]{Items: []*agenticv1.AgenticSubscription{subscription}}, nil).Once()
+		}
+		s := &roverStore.Stores{AgenticExposureStore: expStore, AgenticSubscriptionStore: subStore}
+
+		result, err := GetAllRoverProblems(ctx, newRover(exposureRefs, subscriptionRefs), s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.WorstOverallStatus).To(Equal(exp.worst))
+		Expect(result.HasStale).To(Equal(exp.stale))
+		Expect(result.HasActiveSubResources).To(Equal(exp.active))
+		kinds := make([]string, 0, len(result.Problems))
+		for _, p := range result.Problems {
+			kinds = append(kinds, p.Resource.Kind)
+		}
+		Expect(kinds).To(ConsistOf(exp.problemKinds))
+		expStore.AssertExpectations(GinkgoT())
+		subStore.AssertExpectations(GinkgoT())
+	}
+
+	DescribeTable("aggregates agentic sub-resource status",
+		run,
+		Entry("exposure blocked", newExposure(1, blockedConds), nil,
+			expectation{worst: api.OverallStatusBlocked, problemKinds: []string{"AgenticExposure"}}),
+		Entry("subscription blocked", nil, newSubscription(1, blockedConds),
+			expectation{worst: api.OverallStatusBlocked, problemKinds: []string{"AgenticSubscription"}}),
+		Entry("both ready", newExposure(1, readyConds()), newSubscription(1, readyConds()),
+			expectation{worst: api.OverallStatusComplete, problemKinds: []string{}}),
+		Entry("exposure stale", newExposure(2, readyConds()), nil,
+			expectation{worst: api.OverallStatusComplete, problemKinds: []string{}, stale: true}),
+		Entry("subscription stale", nil, newSubscription(2, readyConds()),
+			expectation{worst: api.OverallStatusComplete, problemKinds: []string{}, stale: true}),
+		Entry("exposure processing", newExposure(1, processingConds), nil,
+			expectation{worst: api.OverallStatusProcessing, problemKinds: []string{"AgenticExposure"}, active: true}),
+		Entry("subscription processing, exposure blocked", newExposure(1, blockedConds), newSubscription(1, processingConds),
+			expectation{worst: api.OverallStatusBlocked, problemKinds: []string{"AgenticExposure", "AgenticSubscription"}, active: true}),
+	)
+
+	It("does not query agentic stores when refs are empty", func() {
+		expStore := new(MockObjectStore[*agenticv1.AgenticExposure])
+		subStore := new(MockObjectStore[*agenticv1.AgenticSubscription])
+		s := &roverStore.Stores{AgenticExposureStore: expStore, AgenticSubscriptionStore: subStore}
+
+		result, err := GetAllRoverProblems(context.Background(), newRover(nil, []types.ObjectRef{}), s)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal(ProblemsResult{}))
+		expStore.AssertNotCalled(GinkgoT(), "List", mock.Anything, mock.Anything)
+		subStore.AssertNotCalled(GinkgoT(), "List", mock.Anything, mock.Anything)
+	})
+
+	DescribeTable("propagates store errors",
+		func(exposureFails bool) {
+			ctx := context.Background()
+			storeErr := errors.New("store unavailable")
+			expStore := new(MockObjectStore[*agenticv1.AgenticExposure])
+			subStore := new(MockObjectStore[*agenticv1.AgenticSubscription])
+			var rov *v1.Rover
+			if exposureFails {
+				expStore.On("List", ctx, mock.Anything).Return((*commonStore.ListResponse[*agenticv1.AgenticExposure])(nil), storeErr).Once()
+				rov = newRover(refs, nil)
+			} else {
+				subStore.On("List", ctx, mock.Anything).Return((*commonStore.ListResponse[*agenticv1.AgenticSubscription])(nil), storeErr).Once()
+				rov = newRover(nil, refs)
+			}
+			s := &roverStore.Stores{AgenticExposureStore: expStore, AgenticSubscriptionStore: subStore}
+
+			result, err := GetAllRoverProblems(ctx, rov, s)
+
+			Expect(err).To(MatchError(storeErr))
+			Expect(result).To(Equal(ProblemsResult{}))
+			expStore.AssertExpectations(GinkgoT())
+			subStore.AssertExpectations(GinkgoT())
+		},
+		Entry("AgenticExposure store", true),
+		Entry("AgenticSubscription store", false),
+	)
 })

@@ -42,6 +42,8 @@ var (
 	ctx       context.Context
 	cancel    context.CancelFunc
 	k8sClient client.Client
+	// mgrClient reads from the manager cache that the webhook reads from.
+	mgrClient client.Reader
 	cfg       *rest.Config
 	testEnv   *envtest.Environment
 )
@@ -107,6 +109,8 @@ var _ = BeforeSuite(func() {
 		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
 	Expect(err).NotTo(HaveOccurred())
+
+	mgrClient = mgr.GetClient()
 
 	err = SetupTeamWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())

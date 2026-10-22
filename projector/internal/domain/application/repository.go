@@ -157,6 +157,8 @@ func (r *Repository) Upsert(ctx context.Context, data *ApplicationData) error {
 			}
 			if data.ClientSecret != nil {
 				u.SetClientSecret(*data.ClientSecret)
+			} else {
+				u.ClearClientSecret()
 			}
 			if data.TokenURL != nil {
 				u.SetTokenURL(*data.TokenURL)

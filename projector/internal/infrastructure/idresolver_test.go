@@ -819,13 +819,32 @@ var _ = Describe("IDResolver Hardening", func() {
 			)
 
 			const n = 10
+			var joined sync.WaitGroup
+			joined.Add(n)
+			allJoined := make(chan struct{})
+			go func() {
+				joined.Wait()
+				close(allJoined)
+			}()
+			// Hold the DB query until every caller has joined the in-flight call.
+			client.Zone.Intercept(ent.InterceptFunc(func(next ent.Querier) ent.Querier {
+				return ent.QuerierFunc(func(qctx context.Context, q ent.Query) (ent.Value, error) {
+					select {
+					case <-allJoined:
+						return next.Query(qctx, q)
+					case <-time.After(10 * time.Second):
+						return nil, errors.New("not all callers joined the singleflight call")
+					}
+				})
+			}))
+
 			var wg sync.WaitGroup
 			wg.Add(n)
 			errs := make([]error, n)
 			for i := range n {
 				go func(idx int) {
 					defer wg.Done()
-					_, errs[idx] = resolver.FindZoneID(ctx, "sf-missing")
+					_, errs[idx] = resolver.FindZoneID(&joinSignalCtx{Context: ctx, joined: &joined}, "sf-missing")
 				}(i)
 			}
 			wg.Wait()
@@ -1030,6 +1049,19 @@ var _ = Describe("IDResolver Hardening", func() {
 		})
 	})
 })
+
+// joinSignalCtx marks its caller as joined on the first Done call, which
+// IDResolver.resolve makes only after entering the singleflight call.
+type joinSignalCtx struct {
+	context.Context
+	once   sync.Once
+	joined *sync.WaitGroup
+}
+
+func (c *joinSignalCtx) Done() <-chan struct{} {
+	c.once.Do(c.joined.Done)
+	return c.Context.Done()
+}
 
 // capitalize returns s with the first letter upper-cased (ASCII only).
 func capitalize(s string) string {

@@ -357,6 +357,26 @@ var _ = Describe("Application Repository", func() {
 			Expect(app.TokenURL).To(BeNil())
 		})
 
+		It("should clear the client secret on update", func() {
+			data := &application.ApplicationData{
+				Meta:                shared.NewMetadata("prod--platform--narvi", "clear-secret-app", nil),
+				StatusPhase:         "READY",
+				Name:                "clear-secret-app",
+				ClientSecret:        strPtr("secret-ref"),
+				TeamName:            "platform--narvi",
+				ZoneName:            "caas",
+				SecretRotationPhase: "DONE",
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.ClientSecret = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			app, err := client.Application.Query().Where(entapp.NameEQ("clear-secret-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(app.ClientSecret).To(BeNil())
+		})
+
 		It("should set permissionsURL when permissionSet exists and zone has permissionsURL", func() {
 			_, err := client.Zone.UpdateOneID(zoneID).SetPermissionsURL("https://perms.example.com").Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
