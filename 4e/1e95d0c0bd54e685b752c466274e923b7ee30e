@@ -1,0 +1,77 @@
+rover-ctl/docs/roverctl_apply.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 16,35
+rover-ctl/docs/roverctl_resource_list.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 25,36
+rover-ctl/pkg/commands/base/base.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 9,38,55-57,60-74,76-91
+rover-ctl/pkg/commands/get-info/cmd.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 67,83,85,87,140
+rover-ctl/docs/roverctl_delete.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 16,35
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 17,36
+docs/docs/user-journey/onboarding.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 94-117
+rover-ctl/docs/roverctl_get-secret.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 17,36
+rover-ctl/docs/roverctl_resource_get.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 26,37
+rover-ctl/pkg/commands/apply/cmd.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 8,51,54,56-57,79-80,85-87,89,92-93,98-100,102,104-108,110-115,118-127
+  s_cd08fb4af5de82::t_805adec5ae49c6 101,109
+rover-ctl/pkg/commands/delete/cmd.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 8,51,54,56-57,80-81,86-91,93
+rover-server/internal/mapper/status/status_test.go
+  s_cd08fb4af5de82::t_805adec5ae49c6 95
+  s_05c725c3fcea2e::t_adf7e33bfc3362 90-94,96-100
+rover-ctl/pkg/commands/apply/cmd_test.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 10,13,29-34,197-469
+  s_05c725c3fcea2e::t_a3a2cf78b1fd99 470-471
+rover-ctl/docs/roverctl_get-info.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 18,39
+rover-ctl/docs/roverctl_reset-secret.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 19,38
+rover-ctl/docs/roverctl_resource.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 29,54
+rover-ctl/docs/roverctl.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 31
+rover-ctl/pkg/commands/get-info/cmd_test.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 10,204-275
+  s_05c725c3fcea2e::t_2af6113fb746ba 276
+rover-ctl/docs/roverctl_resource_delete.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 26,37
+rover-ctl/README.md
+  s_05c725c3fcea2e::t_adf7e33bfc3362 43-44
+rover-ctl/pkg/commands/base/base_test.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 11-12,19,70-72,74,77,79-84,86-110,113-116,118-119,121-125,127-145,147-151
+rover-ctl/pkg/commands/delete/cmd_test.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 10,154-209
+  s_05c725c3fcea2e::t_1a437135e2afb9 210-211
+rover-ctl/pkg/commands/get-secret/cmd_test.go
+  s_05c725c3fcea2e::t_adf7e33bfc3362 10,126-140
+  s_05c725c3fcea2e::t_0aaf65b04da614 141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4e1e95d0c0bd54e685b752c466274e923b7ee30e",
+  "prompts": {},
+  "sessions": {
+    "s_05c725c3fcea2e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d489d69ffezuJn2xr27kYv2W",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_cd08fb4af5de82": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d473b36ffeD7qvAnaXJUOXWS",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
