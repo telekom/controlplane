@@ -140,9 +140,19 @@ spec:
 
 The subscription inherits this exception from its active exposure. Subscriber credentials or a token endpoint configured elsewhere do not enable it. Removing the exposure's external-IDP configuration restores normal scope checking; an empty endpoint does not qualify for the exception.
 
-Subscriber username/password credentials may be combined with scopes only when the selected exposure explicitly uses an external-IDP `password` grant. A different or omitted grant blocks that subscription before approval.
+Subscriber username/password credentials may be combined with scopes, client credentials or a `grantType` only when the selected exposure uses an external IDP; otherwise the subscription is blocked before approval. The subscription can set its own `grantType`; if it doesn't, the exposure's grant type applies. The gateway only uses subscriber credentials that can build a token request for this effective grant type: `password` needs username/password, `refresh_token` needs client credentials with a refresh token, and other grant types need client credentials. Client credentials are also sent with the `password` grant to authenticate the client. The subscription can also set its own `tokenRequest` to control how its client credentials are sent to the identity provider; if it doesn't, the exposure's `tokenRequest` applies. When the token is requested with the exposure's credentials, the exposure's `tokenRequest` is always used.
 
-For both API and agentic exposures, provider username/password credentials in `spec.security.m2m.externalIDP.basic` may be combined with non-empty `spec.security.m2m.scopes` only with an explicit `password` grant.
+| Subscriber credentials | Effective grant | Result |
+|---|---|---|
+| Username/password only, no `grantType` | any | Sent to the backend as HTTP Basic authentication |
+| Credentials that match the effective grant | any | Used for the external-IDP token request; username/password only with the `password` grant |
+| Scopes, or credentials that don't match the effective grant | any | The token is requested with the exposure's credentials, its grant type and the subscriber's scopes |
+
+If an existing API or agentic subscription becomes invalid after its exposure's external IDP or scope policy changes, further processing is blocked and a Warning event explains the validation failure. Its existing ConsumeRoutes and active scopes are preserved; the invalid configuration is not applied. Restoring a valid configuration allows processing to resume, subject to approval. Revoking an approval still removes the subscription's ConsumeRoutes and clears its active scopes.
+
+Cross-organization API subscriptions currently support scopes only. Client credentials and username/password credentials are not propagated by the remote-subscription flow and are blocked with a Warning event. Existing subscription-owned resources, active scopes and shared proxy routes are preserved.
+
+Provider username/password credentials in `spec.security.m2m.externalIDP` require the `password` grant; otherwise the exposure is rejected. They may be combined with provider client credentials, which then authenticate the client in the password grant.
 API approval requests still include the requested scopes. Existing readiness and approval requirements continue to apply, and the external identity provider determines whether it will grant the requested scopes.
 
 ### Audience Claims
@@ -224,7 +234,7 @@ You must set exactly one of `value` or `valueFrom`. Setting both, or neither, is
 | `security.clientSecret` | The OAuth2 client secret. Cannot be used together with `clientKey`. |
 | `security.clientKey` | An alternative to `clientSecret` for asymmetric authentication. Cannot be used together with `clientSecret`. |
 | `security.refreshToken` | An OAuth2 refresh token used to obtain new access tokens from the external identity provider. Used with the `REFRESH_TOKEN` grant type. |
-| `security.tokenRequest` | How authentication data is sent to the identity provider: `body` or `header`. |
+| `security.tokenRequest` | How authentication data is sent to the identity provider: `body` or `header`. On an exposure, defaults to `header`. On a subscription, overrides the exposure's value for the subscriber's own client credentials. |
 | `security.username` | Username for basic authentication or the OAuth2 password grant. |
 | `security.password` | Password for basic authentication or the OAuth2 password grant. |
 | `security.scopes` | A list of additional OAuth2 scopes to request. Maximum: 10 scopes. |

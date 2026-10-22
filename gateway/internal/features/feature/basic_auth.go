@@ -59,7 +59,7 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 
 		// Check if any consumer has basic auth configured
 		for _, consumer := range builder.GetAllowedConsumers() {
-			if consumer.HasM2MBasic() && !usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
+			if usesBackendBasicAuth(consumer) {
 				return true
 			}
 		}
@@ -92,7 +92,7 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		if !consumer.HasM2MBasic() || usesScopedPasswordGrant(route, consumer.Spec.Security.M2M.Scopes) {
+		if !usesBackendBasicAuth(consumer) {
 			continue
 		}
 		security := consumer.Spec.Security
@@ -110,14 +110,14 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 	return nil
 }
 
-func usesScopedPasswordGrant(route *v1.Route, scopes []string) bool {
-	if len(scopes) == 0 {
+// usesBackendBasicAuth reports whether the consumer's username/password are meant for the backend.
+// Backend Basic credentials never carry scopes, client credentials or a grant type; if any of those
+// is set, the username/password belong to the external IDP token request and are handled by the
+// ExternalIDPFeature instead.
+func usesBackendBasicAuth(consumer *v1.ConsumeRoute) bool {
+	if !consumer.HasM2MBasic() {
 		return false
 	}
-	security := route.Spec.Security
-	if route.IsFailoverSecondary() && route.Spec.Traffic.Failover != nil {
-		security = route.Spec.Traffic.Failover.Security
-	}
-	return security.HasM2MExternalIDP() && security.M2M.ExternalIDP.GrantType == v1.GrantTypePassword &&
-		(route.IsPrimary() || route.IsFailoverSecondary())
+	m2m := consumer.Spec.Security.M2M
+	return m2m.Client == nil && len(m2m.Scopes) == 0 && m2m.GrantType == ""
 }

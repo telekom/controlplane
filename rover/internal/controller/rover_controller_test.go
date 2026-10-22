@@ -428,7 +428,8 @@ var _ = Describe("Rover Controller", Ordered, func() {
 										ClientSecret: "******",
 										RefreshToken: "refreshToken",
 									},
-									Scopes: []string{"eIDP:scope"},
+									Scopes:    []string{"eIDP:scope"},
+									GrantType: roverv1.GrantTypeRefreshToken,
 								},
 							},
 						},
@@ -495,6 +496,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.RefreshToken).To(Equal("refreshToken"))
 				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
+				g.Expect(apiSubscription.Spec.Security.M2M.GrantType).To(Equal(apiapi.GrantTypeRefreshToken))
 
 				apiExposure := &apiapi.ApiExposure{}
 				err = k8sClient.Get(ctx, client.ObjectKey{

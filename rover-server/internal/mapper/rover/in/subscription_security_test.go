@@ -15,6 +15,49 @@ import (
 
 var _ = Describe("Subscription Security Mapper", func() {
 	Context("mapSubscriptionSecurity", func() {
+		DescribeTable("normalizes the subscriber grant type",
+			func(grant api.GrantType, expected roverv1.GrantType) {
+				input := api.ApiSubscription{BasePath: "/test"}
+				input.Security = api.Security{}
+				Expect(input.Security.FromOauth2(api.Oauth2{
+					Username: "testuser", Password: "testpass", Scopes: []string{"read"}, GrantType: grant,
+				})).To(Succeed())
+
+				output := &roverv1.ApiSubscription{}
+				mapSubscriptionSecurity(input, output)
+
+				Expect(output.Security.M2M.GrantType).To(Equal(expected))
+				snaps.MatchSnapshot(GinkgoT(), output.Security)
+			},
+			Entry("omitted", api.GrantType(""), roverv1.GrantType("")),
+			Entry("uppercase", api.PASSWORD, roverv1.GrantTypePassword),
+			Entry("lowercase", api.RefreshToken, roverv1.GrantTypeRefreshToken),
+		)
+
+		DescribeTable("maps the subscriber token request method without a default",
+			func(tokenRequest api.Oauth2TokenRequest, expected roverv1.TokenRequestMethod) {
+				input := api.ApiSubscription{BasePath: "/test"}
+				input.Security = api.Security{}
+				Expect(input.Security.FromOauth2(api.Oauth2{
+					ClientId: "client-id", ClientSecret: "client-secret", TokenRequest: tokenRequest,
+				})).To(Succeed())
+
+				output := &roverv1.ApiSubscription{}
+				mapSubscriptionSecurity(input, output)
+				Expect(output.Security.M2M.TokenRequest).To(Equal(expected))
+
+				aiInput := api.AiSubscription{BasePath: "/test", Security: input.Security}
+				aiOutput := &roverv1.AgenticSubscription{}
+				mapAiSubscriptionSecurity(aiInput, aiOutput)
+				Expect(aiOutput.Security.M2M.TokenRequest).To(Equal(expected))
+			},
+			Entry("omitted", api.Oauth2TokenRequest(""), roverv1.TokenRequestMethod("")),
+			Entry("uppercase BODY", api.Oauth2TokenRequestBODY, roverv1.TokenRequestClientSecretPost),
+			Entry("lowercase body", api.Oauth2TokenRequestBody, roverv1.TokenRequestClientSecretPost),
+			Entry("uppercase HEADER", api.Oauth2TokenRequestHEADER, roverv1.TokenRequestClientSecretBasic),
+			Entry("lowercase header", api.Oauth2TokenRequestHeader, roverv1.TokenRequestClientSecretBasic),
+		)
+
 		It("must map BasicAuth security correctly", func() {
 			// Given
 			input := api.ApiSubscription{
@@ -182,6 +225,36 @@ var _ = Describe("Subscription Security Mapper", func() {
 			Expect(output.Security.M2M.Client.ClientId).To(Equal("client-id"))
 			Expect(output.Security.M2M.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), output.Security)
+		})
+
+		It("must map password-grant credentials with client authentication and scopes", func() {
+			input := api.ApiSubscription{
+				BasePath: "/orders/v1",
+			}
+			oauth2 := api.Oauth2{
+				ClientId:     "test-client",
+				ClientSecret: "test-client-secret",
+				Username:     "test-user",
+				Password:     "test-user-password",
+				Scopes:       []string{"orders.read", "orders.write"},
+			}
+			input.Security = api.Security{}
+			Expect(input.Security.FromOauth2(oauth2)).To(Succeed())
+
+			output := &roverv1.ApiSubscription{}
+			mapSubscriptionSecurity(input, output)
+
+			Expect(output.Security).NotTo(BeNil())
+			Expect(output.Security.M2M).NotTo(BeNil())
+			Expect(output.Security.M2M.Client).To(Equal(&roverv1.OAuth2ClientCredentials{
+				ClientId:     "test-client",
+				ClientSecret: "test-client-secret",
+			}))
+			Expect(output.Security.M2M.Basic).To(Equal(&roverv1.BasicAuthCredentials{
+				Username: "test-user",
+				Password: "test-user-password",
+			}))
+			Expect(output.Security.M2M.Scopes).To(Equal([]string{"orders.read", "orders.write"}))
 		})
 	})
 })
