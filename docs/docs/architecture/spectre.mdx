@@ -14,8 +14,8 @@ The Spectre domain manages application listeners that bridge external API traffi
 
 | CRD | Purpose |
 |---|---|
-| **SpectreApplication** | Groups all listeners for one application. Creates the shared generic Publisher. |
-| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a Subscriber, a RouteListener and the provider and consumer ApprovalRequests. |
+| **SpectreApplication** | Groups all listeners for one application. Creates the application's Publisher for `de.telekom.ei.listener.<appId>` and its Subscriber. |
+| **Listener** | Represents a single consumer-to-provider binding for an API path. Creates a bridge Subscriber, a RouteListener and the provider and consumer ApprovalRequests. Creates the zone's shared Publisher for `de.telekom.ei.listener` on first use. |
 
 ## Ownership Model
 
@@ -24,14 +24,14 @@ Event and Spectre are **peer business-logic domains**. PubSub is a shared Horizo
 | PubSub Resource | Created by |
 |---|---|
 | EventStore | Event domain (EventConfig) |
-| Publisher | Event domain (EventExposure) **and** Spectre domain (SpectreApplication) |
-| Subscriber | Event domain (EventSubscription) **and** Spectre domain (Listener) |
+| Publisher | Event domain (EventExposure) **and** Spectre domain (SpectreApplication: per-app Publisher; Listener: the zone's shared Publisher) |
+| Subscriber | Event domain (EventSubscription) **and** Spectre domain (SpectreApplication: the application's Subscriber; Listener: bridge Subscribers) |
 
 Users do not create PubSub resources directly. EventStore ownership is unchanged — Spectre only reads it.
 
 ## Domain Interactions
 
-- **PubSub domain** — SpectreApplication creates Publishers; Listener creates Subscribers. Both read the zone's EventStore.
+- **PubSub domain** — SpectreApplication creates its Publisher and Subscriber for `de.telekom.ei.listener.<appId>`. Listener creates bridge Subscribers and, on first use, the zone's shared Publisher for `de.telekom.ei.listener`. Both read the zone's EventStore.
 - **Gateway domain** — SpectreApplication creates the SSE Route(s) for SSE delivery. Listener creates RouteListener resources to expose listener endpoints. Reads existing Route resources for service path resolution.
 - **Approval domain** — Each Listener creates two keyed ApprovalRequests, a provider gate and a consumer gate, that capture consumer, provider, path, delivery mode, callback, and filters. Both must be granted; a gate is auto-approved when the observer (the SpectreApplication's own Application, i.e. the listening application that requests approval) is in the same team as its decider. When a gate's Approval is revoked, a person's grant of the new request for a changed Listener, made after the revocation, lifts it; an automatic approval does not, so the decider has to grant the Approval again.
 - **Event domain** — Reads EventConfig for zone configuration and the gateway callback URL.
@@ -44,7 +44,7 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 
 Each Listener involves three zones: the consumer zone (C), the provider zone (P) and the observer zone (A), the zone of the listening application.
 
-- **Capture zone** — Spectre tries C's zone first, then P's zone. The first zone with a usable Route on the C→P path wins. A zone is skipped when it has no Route for the path, the Route is pass-through or failover, the Route serves another consumer zone, or the zone has no EventConfig. A's zone is never a candidate, so Listeners with the same C, P and path capture in the same zone.
+- **Capture zone** — Spectre tries C's zone first, then P's zone. The first zone with a usable Route on the C→P path wins. A zone is skipped when it has no Route for the path, the Route is pass-through or failover, the Route serves another consumer zone, or the zone has no EventConfig. A's zone is not a criterion: capture lands in A's zone only when A shares C's or P's zone. So Listeners with the same C, P and path capture in the same zone.
 - **Delivery zone** — always A's zone. When the capture zone is A's zone, delivery uses A's EventConfig `status.callbackUrl`. Otherwise it uses the capture zone's EventConfig `status.proxyCallbackUrls[<A's zone>]`.
 
 The result is recorded in `Listener.status.appliedPlacement` (`captureZone`, `deliveryZone`, `callbackBaseURL`).

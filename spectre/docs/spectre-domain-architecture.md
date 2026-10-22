@@ -65,6 +65,7 @@ flowchart TB
 
     %% ── SpectreApplication interactions ────────────────────
     SpectreApp -- "creates / owns" --> Publisher
+    SpectreApp -- "creates / owns" --> Subscriber
     SpectreApp -- "creates / owns" --> Route
     SpectreApp -. "reads" .-> EventStore
     SpectreApp -. "reads" .-> EventConfig
@@ -78,7 +79,7 @@ flowchart TB
     Listener -. "reads" .-> EventConfig
     Listener -. "reads" .-> EventStore
     Listener -. "reads" .-> Route
-    Listener -. "reads" .-> Publisher
+    Listener -- "creates (shared)" --> Publisher
 ```
 
 ### Legend
@@ -86,6 +87,7 @@ flowchart TB
 | Arrow style | Meaning |
 |---|---|
 | **Solid line** (`--creates/owns-->`) | The controller **creates and owns** this resource (full CRUD lifecycle) |
+| **Solid line** (`--creates (shared)-->`) | The controller **creates** this resource on first use; it is shared and not owned by any single controller object |
 | **Dashed line** (`-.reads.->`) | The controller **reads** this resource during reconciliation (GET/LIST) |
 
 ## Interaction Details
@@ -96,13 +98,14 @@ Reconciles `SpectreApplication` resources. One SpectreApplication groups all Lis
 
 | Target Domain | Resource | Relationship | Purpose |
 |---|---|---|---|
-| **PubSub** | `Publisher` | creates/owns | Registers a shared generic Publisher for the application's listener event type |
+| **PubSub** | `Publisher` | creates/owns | Creates the application's Publisher for its listener event type |
+| **PubSub** | `Subscriber` | creates/owns | Creates the application's Subscriber, delivering by callback or SSE |
 | **PubSub** | `EventStore` | reads | Resolves the zone's EventStore for backend connection details |
 | **Gateway** | `Route` | creates/owns | SSE delivery only: a primary SSE Route in the backend zone, plus a proxy SSE Route in the app zone when that zone is a proxy zone |
 | **Event** | `EventConfig` | reads | Reads `CallbackURL` and zone configuration |
 | **Application** | `Application` | reads | Resolves consumer and provider application metadata |
 
-The shared generic Publisher uses event type `de.telekom.ei.listener.<applicationId>`. Multiple Listeners may reference the same Publisher; it is not exclusively owned by any single Listener.
+The application's Publisher and Subscriber use event type `de.telekom.ei.listener.<applicationId>`.
 
 ### Listener Handler
 
@@ -113,7 +116,7 @@ Reconciles `Listener` resources. Each Listener represents one consumer-to-provid
 | **PubSub** | `Subscriber` | creates/owns | Creates a bridge Subscriber that routes events through the Horizon callback path |
 | **Gateway** | `RouteListener` | creates/owns | Creates a RouteListener that exposes the listener endpoint on the API Gateway |
 | **Gateway** | `Route` | reads | Resolves the existing API Route to extract the service path for the RouteListener |
-| **PubSub** | `Publisher` | reads | Verifies the parent SpectreApplication's Publisher is ready |
+| **PubSub** | `Publisher` | creates (shared) | Creates the zone's shared Publisher for `de.telekom.ei.listener` on first use; the bridge Subscribers of all Listeners in the zone reference it, so no single Listener owns it |
 | **PubSub** | `EventStore` | reads | Resolves the capture and delivery zones' EventStores and their environment |
 | **Event** | `EventConfig` | reads | Resolves capture and delivery placement: mesh, `status.callbackUrl`, `status.proxyCallbackUrls` |
 | **Approval** | `ApprovalRequest` | creates/owns | Two keyed gates, one decided by the provider and one by the consumer, capturing consumer, provider, path, delivery mode, callback, and filters |
@@ -126,8 +129,8 @@ Event and Spectre are **peer business-logic domains**. PubSub is a **shared Hori
 | PubSub Resource | Created by |
 |---|---|
 | `EventStore` | Event domain (`EventConfig` controller) |
-| `Publisher` | Event domain (`EventExposure`) **and** Spectre domain (`SpectreApplication`) |
-| `Subscriber` | Event domain (`EventSubscription`) **and** Spectre domain (`Listener`) |
+| `Publisher` | Event domain (`EventExposure`) **and** Spectre domain (`SpectreApplication`: per-app Publisher; `Listener`: the zone's shared Publisher) |
+| `Subscriber` | Event domain (`EventSubscription`) **and** Spectre domain (`SpectreApplication`: the application's Subscriber; `Listener`: bridge Subscribers) |
 
 Users do not create PubSub resources directly. EventStore ownership is unchanged -- Spectre only consumes it.
 

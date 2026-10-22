@@ -263,10 +263,14 @@ func checkEventEnvironment(
 // CheckCaptureEnvironment compares the environment the capture zone's Jumper
 // publishes bridge events with against es, the capture EventStore holding the
 // bridge Subscribers, with ec the zone's EventConfig that owns es. The Jumper
-// takes the environment from the RouteListener gateway client issuer
-// (gatewayIssuer): the text after its last "realms/" (gateway-jumper
-// SpectreService.determineEnvironment). It returns an *EnvironmentMismatchError
-// or, for the "default" exemption, an *EnvironmentAlias.
+// takes the environment from the request's realm (gateway-jumper
+// SpectreService.publishEvent, jc.getRealmName()): the "realm" header that last
+// mile security sets from the capture Route's spec.security.realmName, which is
+// Zone.Status.RealmName. The check reads it from the RouteListener gateway client
+// issuer (gatewayIssuer) instead, the text after its last "realms/". Both are
+// Environment.GetRealmName(): the issuer is that of the zone's default identity
+// Realm, named after it (see publishSource). It returns an
+// *EnvironmentMismatchError or, for the "default" exemption, an *EnvironmentAlias.
 func CheckCaptureEnvironment(
 	ctx context.Context, captureZone *adminv1.Zone, gatewayIssuer string, ec *eventv1.EventConfig, es *pubsubv1.EventStore,
 ) (*EnvironmentAlias, error) {
@@ -301,9 +305,9 @@ func CheckDeliveryEnvironment(
 //
 // The order never depends on the observer (A). Listeners that share C, P and
 // path must capture in the same zone: the Jumpers of two capture zones would
-// both capture the same request, and since the bridge trigger carries no zone,
-// each Listener's bridge would accept both captures and deliver every event
-// twice.
+// both capture the same request. When both zones feed the same Horizon, each
+// Listener's bridge would accept both captures, since the bridge trigger
+// carries no zone, and deliver every event twice.
 func CaptureCandidateZones(consumerZone, providerZone *adminv1.Zone) []*adminv1.Zone {
 	if SameZone(consumerZone, providerZone) {
 		return []*adminv1.Zone{consumerZone}
