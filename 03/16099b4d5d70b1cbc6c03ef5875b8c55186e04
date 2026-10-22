@@ -1,0 +1,63 @@
+discovery-server/api/uber-openapi.yaml
+  s_61015287bff768::t_ef623c9f8be5c9 10
+  s_825829d54bd012::t_dc7d99990021c3 7,9,22-25,27,29,46-47,67,70-73,75,90,119-121,133-135,140,147,164,167-170,173-178,185,216-218,230,233-238,243,250,272-275,278-283,305,308-311,314-319,354,357-360,377,406-407,420,427,434,451,454-457,460-461,472,503-504,517,520,522,530,532-533,537,559-562,565,567,592,595-598,601-602,641,644-647,650-655,691-692,694-697,699-704,706-718,729,731-733,735-736,738-739,741-789,792-795,804,819,836-838,850,857,859-860,864,886-889,913,916-919,1501,1504,1506-1507,1509-1510,1512-1543,1546-1551,1554-1843,2126,2130-2132,2136-2137,2147-2148,2151-2157,2159,2161-2164,2166-2169,2171-2174,2176-2178,2181-2184,2186-2188,2190-2193,2195
+  s_b188a8a0741ba2::t_f0727f2c421c9d 13-15,17,20-21
+discovery-server/api/openapi-merge.json
+  s_0fac0a69d4ded3::t_67e16f42601b72 5
+  s_825829d54bd012::t_dc7d99990021c3 8,11-14
+discovery-server/README.md
+  s_0fac0a69d4ded3::t_5274f7dc5a417a 226-227
+  s_825829d54bd012::t_dc7d99990021c3 9
+discovery-server/api/README.md
+  s_0fac0a69d4ded3::t_5274f7dc5a417a 10-11,29-34
+  s_825829d54bd012::t_dc7d99990021c3 12,35-36
+  s_0fac0a69d4ded3::t_4419a2b4278c6e 37
+discovery-server/internal/api/server.gen.go
+  s_61015287bff768::t_ef623c9f8be5c9 1439-1521,1523-1589
+  s_b188a8a0741ba2::t_f0727f2c421c9d 1522
+  s_825829d54bd012::t_dc7d99990021c3 710,747,786,826,869,904
+discovery-server/api/metadata-openapi.yaml
+  s_61015287bff768::t_c51f55699ade15 10
+  s_b188a8a0741ba2::t_f0727f2c421c9d 13-15,17,20-21
+  s_0fac0a69d4ded3::t_67e16f42601b72 1-9,11-12,16,18-19,22-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0316099b4d5d70b1cbc6c03ef5875b8c55186e04",
+  "prompts": {},
+  "sessions": {
+    "s_0fac0a69d4ded3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d9af02dffecGAWjLaf0myDfp",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_61015287bff768": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d9131dbffef2o92p7e3iyqnb",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_825829d54bd012": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9da55a17ffeADfMwLCCaH2RH7",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b188a8a0741ba2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9d97d943ffe1kuEwluT185WdO",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
