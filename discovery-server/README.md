@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC0-1.0
 
 # Discovery Server
 
-The Discovery Server (also known as the **Stargate API**) is a read-only HTTP API for the TARDIS Control Plane. It provides a stable, user-facing REST interface for querying the state of Applications, ApiExposures, ApiSubscriptions, EventExposures, EventSubscriptions, and EventTypes.
+The Discovery Server (**Discovery API**; **Stargate API** is the legacy name and is still supported) is a read-only HTTP API for the TARDIS Control Plane. It provides a stable, user-facing REST interface for querying the state of Applications, ApiExposures, ApiSubscriptions, EventExposures, EventSubscriptions, and EventTypes.
 
 All data is sourced directly from Kubernetes Custom Resources (CRDs) using in-memory stores backed by Kubernetes informers. The server does not perform any write operations on the cluster. Legacy write endpoints are retained for backward compatibility but return `HTTP 410 Gone`, directing clients to the [Rover API](../rover-server/) for mutations.
 
@@ -223,7 +223,8 @@ make generate
 ```
 discovery-server/
   api/                          # OpenAPI specifications
-    stargate-openapi.yaml       # ApiExposure & ApiSubscription spec
+    metadata-openapi.yaml       # Discovery API metadata (info, servers); first merge input
+    stargate-openapi.yaml       # ApiExposure & ApiSubscription spec (legacy, unchanged)
     application-openapi.yaml    # Application spec
     event-openapi.yaml          # EventType, EventExposure & EventSubscription spec
     common.yaml                 # Shared schemas, parameters, security schemes
