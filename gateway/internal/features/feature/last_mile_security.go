@@ -69,7 +69,7 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 		// Proxy Route
 		rtpPlugin.Config.Append.
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
-			AddHeader("issuer", "gateway-mesh-requires-gateway-helm-chart>=10.X.X") // TODO: this needs to be removed after migration is fully complete. Currently it acts as a debug-flag to identify outdated gateway instances.
+			AddHeader("issuer", "gateway-mesh-requires-gateway-helm-chart-10.X.X-or-newer") // TODO: this needs to be removed after migration is fully complete. Currently it acts as a debug-flag to identify outdated gateway instances.
 
 		jumperCfg := builder.JumperConfig()
 		jumperCfg.Mesh = true

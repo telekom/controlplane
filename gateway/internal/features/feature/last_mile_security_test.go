@@ -212,7 +212,7 @@ var _ = Describe("LastMileSecurityFeature", func() {
 					// Append headers: remote_api_url and issuer (proxy-specific)
 					Expect(rtpPlugin.Config.Append.Headers).ToNot(BeNil())
 					Expect(rtpPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("https://proxy.example.com:8443/api"))
-					Expect(rtpPlugin.Config.Append.Headers.Get("issuer")).To(Equal("gateway-mesh-requires-gateway-helm-chart>=10.X.X"))
+					Expect(rtpPlugin.Config.Append.Headers.Get("issuer")).To(Equal("gateway-mesh-requires-gateway-helm-chart-10.X.X-or-newer"))
 
 					// Proxy route does NOT set api_base_path or access_token_forwarding
 					Expect(rtpPlugin.Config.Append.Headers.Contains("api_base_path")).To(BeFalse())
