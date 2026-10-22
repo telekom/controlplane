@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/organization/api
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/onsi/gomega v1.44.0

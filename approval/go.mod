@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/approval
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/telekom/controlplane/approval/api v0.0.0
