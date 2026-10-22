@@ -45,7 +45,7 @@ Users do not create PubSub resources directly. EventStore ownership is unchanged
 Each Listener involves three zones: the consumer zone (C), the provider zone (P) and the observer zone (A), the zone of the listening application.
 
 - **Capture zone** — Spectre tries C's zone first, then P's zone. The first zone with a usable Route on the C→P path wins. A zone is skipped when it has no Route for the path, the Route is pass-through or failover, the Route serves another consumer zone, or the zone has no EventConfig. A's zone is never a candidate, so Listeners with the same C, P and path capture in the same zone.
-- **Delivery zone** — always A's zone. When the capture zone (or, for a proxy capture zone, its target zone) is A's zone, delivery uses A's EventConfig `status.callbackUrl`. Otherwise it uses the capture zone's EventConfig `status.proxyCallbackUrls[<A's zone>]`.
+- **Delivery zone** — always A's zone. When the capture zone is A's zone, delivery uses A's EventConfig `status.callbackUrl`. Otherwise it uses the capture zone's EventConfig `status.proxyCallbackUrls[<A's zone>]`.
 
 The result is recorded in `Listener.status.appliedPlacement` (`captureZone`, `deliveryZone`, `callbackBaseURL`).
 
