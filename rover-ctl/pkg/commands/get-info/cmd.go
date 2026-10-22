@@ -64,7 +64,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if c.Name != "" {
-		return c.getInfoFor(c.Name)
+		return base.ForEach(c.BaseCommand, "get info for", []string{c.Name}, c.getInfoFor)
 	}
 
 	if c.FilePath != "" {
@@ -80,11 +80,11 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 			return errors.New("no Rover resources found in the provided file(s)")
 		}
 		c.Logger().V(1).Info("Filtered Rover resources from parsed objects", "total", len(c.Parser.Objects()), "roverCount", len(roverObjects))
+		names := make([]string, 0, len(roverObjects))
 		for _, obj := range roverObjects {
-			if err := c.getInfoFor(obj.GetName()); err != nil {
-				return err
-			}
+			names = append(names, obj.GetName())
 		}
+		return base.ForEach(c.BaseCommand, "get info for", names, c.getInfoFor)
 	}
 
 	if c.Name == "" && c.FilePath == "" {
@@ -137,7 +137,7 @@ func (c *Command) getInfoFor(name string) error {
 
 	info, err := roverHandler.Info(c.Cmd.Context(), name)
 	if err != nil {
-		return c.HandleError(err, "get info for Rover")
+		return errors.Wrapf(err, "Rover %q", name)
 	}
 
 	prettyString, err := util.FormatOutput(info, viper.GetString("output.format"))

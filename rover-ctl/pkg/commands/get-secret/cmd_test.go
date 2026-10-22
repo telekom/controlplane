@@ -7,6 +7,7 @@ package getsecret_test
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -121,6 +122,22 @@ var _ = Describe("Get-Secret Command", func() {
 				mockStatusHandler.AssertExpectations(GinkgoT())
 			})
 		})
+
+		DescribeTable("should return wait failures regardless of --fail-fast",
+			func(args ...string) {
+				waitErr := errors.New("timed out")
+				mockStatusHandler.On("Priority").Return(100).Maybe()
+				mockStatusHandler.EXPECT().WaitForSecretConvergence(mock.Anything, "test-app").Return(nil, waitErr).Once()
+				cmd.SetArgs(args)
+
+				err := cmd.Execute()
+
+				Expect(err).To(MatchError(waitErr))
+				Expect(err.Error()).To(ContainSubstring("failed to get secret rotation status"))
+			},
+			Entry("without --fail-fast", "--application", "test-app"),
+			Entry("with --fail-fast", "--application", "test-app", "--fail-fast"),
+		)
 
 		Context("when no handler is found for resource", func() {
 			BeforeEach(func() {

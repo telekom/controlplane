@@ -40,6 +40,8 @@ Rover Control CLI (roverctl) is a command-line tool for managing rover resources
 
 See [rover-ctl help](./docs/roverctl.md) for a complete list of commands and options.
 
+Any failed resource leads to a non-zero exit code. `--fail-fast` only stops at the first failure instead of processing the remaining resources and reporting all failures at the end. For `apply`, the final statuses `blocked` and `done` are not failures, but the resource is not necessarily ready. See [Exit Codes and `--fail-fast`](../docs/docs/user-journey/onboarding.md#exit-codes-and---fail-fast) for details and limitations.
+
 ### Container Image
 
 The `roverctl` container image published to an internal Docker registry (not GHCR, due to GPL licensing considerations) bundles the following tools alongside the `roverctl` binary, so it can be used to script and chain Control Plane interactions (e.g. piping `roverctl` JSON/YAML output through `jq`/`yq`) without installing anything separately:

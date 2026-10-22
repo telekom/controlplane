@@ -6,6 +6,7 @@ package base
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -34,7 +35,7 @@ func NewCommand(use, short, long string) *BaseCommand {
 		},
 	}
 
-	cmd.Cmd.PersistentFlags().BoolVar(&cmd.FailFast, "fail-fast", false, "Stop processing on the first error encountered")
+	cmd.Cmd.PersistentFlags().BoolVar(&cmd.FailFast, "fail-fast", false, "Stop processing further resources on the first failure (failures always cause a non-zero exit code)")
 
 	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
 		PrintBanner(cmd.Cmd)
@@ -51,13 +52,43 @@ func (c *BaseCommand) Logger() logr.Logger {
 	return c.logger
 }
 
+// HandleError prints the error diagnostics of a single operation and returns
+// the wrapped error. The --fail-fast flag has no effect here: every failure
+// results in a non-zero exit code.
 func (c *BaseCommand) HandleError(err error, ctxInfo string) error {
 	common.PrintTo(err, c.Cmd.ErrOrStderr(), viper.GetString("log.format"))
-	if c.FailFast {
-		return errors.Wrapf(err, "failed to %s", ctxInfo)
+	return errors.Wrapf(err, "failed to %s", ctxInfo)
+}
+
+// ForEach runs op for every item. Without --fail-fast all items are processed;
+// with --fail-fast processing stops at the first failure. The collected
+// failures are reported once at the end via ReportFailures.
+func ForEach[T any](c *BaseCommand, action string, items []T, op func(T) error) error {
+	var failures []error
+	for _, item := range items {
+		if err := op(item); err != nil {
+			failures = append(failures, err)
+			if c.FailFast {
+				break
+			}
+		}
 	}
-	c.Logger().Info(fmt.Sprintf("⚠️  Failed to %s", ctxInfo))
-	return nil
+	return c.ReportFailures(action, failures)
+}
+
+// ReportFailures prints structured API error diagnostics for each failure and
+// returns a single error joining all failures, or nil if there are none.
+func (c *BaseCommand) ReportFailures(action string, failures []error) error {
+	if len(failures) == 0 {
+		return nil
+	}
+	format := viper.GetString("log.format")
+	for _, err := range failures {
+		if apiErr, ok := common.AsApiError(err); ok && apiErr != nil {
+			common.PrintTo(err, c.Cmd.ErrOrStderr(), format)
+		}
+	}
+	return errors.Wrapf(stderrors.Join(failures...), "failed to %s %d resource(s)", action, len(failures))
 }
 
 // SetupToken sets up the authorization token for the command
