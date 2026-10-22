@@ -77,8 +77,8 @@ paths:
         - Hub
       summary: Create a Hub
       description: >-
-        Create a new and empty Hub with the specified name, displayName (this will be used in MissionControl),
-        email and description.
+        Create a new and empty Hub with the specified name, displayName (this will be used in MissionControl)
+        and optional description. The deprecated email field is ignored.
       operationId: createHub
       requestBody:
         content:
@@ -1063,6 +1063,8 @@ components:
           type: string
         email:
           type: string
+          deprecated: true
+          description: Deprecated and unsupported. Hubs have no contact email; this field is never returned.
         description:
           type: string
     HubResponse:
@@ -1071,14 +1073,39 @@ components:
         - $ref: '#/components/schemas/Hub'
     HubCreateRequest:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/Hub'
+      description: >-
+        Creates a hub. An omitted or null description preserves the current
+        description if the hub already exists. An empty description clears it.
+      required:
+        - name
+        - displayName
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        name:
+          type: string
+        displayName:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          deprecated: true
+          description: Deprecated and unsupported. The value is ignored and not stored.
+        description:
+          type: string
+          nullable: true
+          maxLength: 256
+          description: Omit or send null to keep the current value; provide an empty string to clear it.
+          x-go-type-skip-optional-pointer: false
     HubUpdateRequest:
       type: object
+      description: >-
+        Upserts a hub. displayName is required. An omitted or null description
+        preserves the current value; an empty string clears it. A new hub may
+        have no description. A 202 response indicates acceptance; reconciliation
+        and projection are asynchronous and the response may reflect the previous projection.
       required:
         - displayName
-        - email
-        - description
       properties:
         status:
           $ref: '#/components/schemas/Status'
@@ -1088,8 +1115,14 @@ components:
           maxLength: 200
         email:
           type: string
+          deprecated: true
+          description: Deprecated and unsupported. The value is ignored and not stored.
         description:
           type: string
+          nullable: true
+          maxLength: 256
+          description: Omit or send null to keep the current value; provide an empty string to clear it.
+          x-go-type-skip-optional-pointer: false
     HubListResponse:
       type: object
       readOnly: true
@@ -1150,12 +1183,14 @@ components:
           readOnly: true
     TeamCreateRequest:
       type: object
-      allOf:
-        - $ref: '#/components/schemas/Team'
       required:
         - name
         - displayName
+        - email
+        - members
       properties:
+        status:
+          $ref: '#/components/schemas/Status'
         name:
           type: string
           minLength: 1
@@ -1165,26 +1200,58 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        email:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: >-
+            Omitted or null keeps the current description of an existing team;
+            an empty string clears it.
+          x-go-type-skip-optional-pointer: false
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        teamToken:
+          type: string
+          readOnly: true
     TeamUpdateRequest:
       type: object
-      required:
-        - displayName
-        - email
-        - description
-        - members
+      description: >-
+        Upserts a team. Every field is optional and is changed only when
+        provided; omitted or null fields keep their current value. An empty
+        description clears it. When the team does not exist yet, email and a
+        non-empty members list are required and it is created. A 202 response
+        indicates acceptance; reconciliation and projection are asynchronous and
+        the returned team may reflect the previous projection.
       properties:
         status:
           $ref: '#/components/schemas/Status'
         displayName:
           type: string
+          nullable: true
           minLength: 1
           maxLength: 200
+          x-go-type-skip-optional-pointer: false
         email:
           type: string
+          nullable: true
+          x-go-type-skip-optional-pointer: false
         description:
           type: string
+          nullable: true
+          maxLength: 256
+          description: Provide an empty string to clear the description.
+          x-go-type-skip-optional-pointer: false
         members:
           type: array
+          nullable: true
+          minItems: 1
+          description: >-
+            Complete desired membership, replacing the current list. Omit to
+            keep the current members. An empty list is rejected.
+          x-go-type-skip-optional-pointer: false
           items:
             $ref: '#/components/schemas/TeamMember'
     TeamResponse:
