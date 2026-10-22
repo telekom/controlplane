@@ -14064,7 +14064,7 @@ func (r FetchPluginForConsumerResponse) ContentType() string {
 type UpdatePluginForConsumerResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ListPluginsForConsumer200Response
+	JSON200      *Plugin
 	JSON400      *map[string]interface{}
 	JSON401      *UnauthorizedError
 }
@@ -14096,7 +14096,7 @@ func (r UpdatePluginForConsumerResponse) ContentType() string {
 type UpsertPluginForConsumerResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ListPluginsForConsumer200Response
+	JSON200      *Plugin
 	JSON401      *UnauthorizedError
 }
 
@@ -20417,7 +20417,7 @@ func ParseUpdatePluginForConsumerResponse(rsp *http.Response) (*UpdatePluginForC
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ListPluginsForConsumer200Response
+		var dest Plugin
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20457,7 +20457,7 @@ func ParseUpsertPluginForConsumerResponse(rsp *http.Response) (*UpsertPluginForC
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ListPluginsForConsumer200Response
+		var dest Plugin
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
