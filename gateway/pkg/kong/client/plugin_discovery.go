@@ -18,9 +18,9 @@ import (
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
-// LegacyPluginTag is the tag the legacy operator stamped on its plugins. A
-// bound plugin that is found neither by its stored ID nor by its ownership tags
-// is looked up by this tag and adopted under its existing ID.
+// LegacyPluginTag is the realm tag the legacy operator stamped on its plugins.
+// A bound plugin that is found neither by its stored ID nor by its ownership
+// tags is looked up by legacyPluginTags and adopted under its existing ID.
 const LegacyPluginTag = "ei__telekom__de--realm---default"
 
 const pluginListPageSize = 1000
@@ -164,7 +164,7 @@ func (i *boundPluginIdentity) legacyOwned(plugin *kong.Plugin) bool {
 }
 
 // discoverBoundPlugin looks up a bound plugin by its stored ID, then by its
-// ownership tags and finally by LegacyPluginTag. It returns nil if none
+// ownership tags and finally by its legacy tags. It returns nil if none
 // matches.
 func discoverBoundPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlugin, identity *boundPluginIdentity) (*kong.Plugin, error) {
 	log := logr.FromContextOrDiscard(ctx).WithValues("plugin", plugin.GetName())
@@ -195,8 +195,9 @@ func discoverBoundPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlu
 		return current, err
 	}
 
-	log.V(1).Info("loading plugin by legacy tag")
-	return findOne(ctx, api, []string{LegacyPluginTag}, identity.name, func(candidate *kong.Plugin) (bool, error) {
+	legacyTags := legacyPluginTags(plugin)
+	log.V(1).Info("loading plugin by legacy tags", "tags", legacyTags)
+	return findOne(ctx, api, legacyTags, identity.name, func(candidate *kong.Plugin) (bool, error) {
 		if !identity.inSlot(candidate) {
 			return false, nil
 		}
@@ -205,6 +206,20 @@ func discoverBoundPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlu
 		}
 		return true, nil
 	})
+}
+
+// legacyPluginTags returns the tags the legacy operator stamped on a bound
+// plugin: the realm tag, the plugin name and the route name and consumer
+// username it is bound to.
+func legacyPluginTags(plugin CustomPlugin) []string {
+	tags := []string{LegacyPluginTag, plugin.GetName()}
+	if plugin.GetRoute() != nil {
+		tags = append(tags, *plugin.GetRoute())
+	}
+	if plugin.GetConsumer() != nil {
+		tags = append(tags, *plugin.GetConsumer())
+	}
+	return tags
 }
 
 // findOne lists the plugins matching the tags and returns the single plugin
