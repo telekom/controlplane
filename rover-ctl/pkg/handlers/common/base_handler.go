@@ -75,8 +75,9 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 		Hooks:      make(map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error),
 	}
 	pollInterval := viper.GetDuration("poll.interval")
+	pollDelay := viper.GetDuration("poll.delay")
 	statusTimeout := viper.GetDuration("timeout.status")
-	handler.applyStatusPoller = NewStatusPoller(handler, nil, statusTimeout, pollInterval)
+	handler.applyStatusPoller = NewStatusPoller(handler, nil, statusTimeout, pollInterval, WithInitialDelay(pollDelay))
 	handler.deleteStatusPoller = NewStatusPoller(handler, func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
 		return !status.IsGone(), nil
 	}, statusTimeout, pollInterval)
