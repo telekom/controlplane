@@ -197,10 +197,13 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				Subscriptions: updateSubscriptions,
 			}
 
-			fetchedRover.Spec = updateSpec
-
-			// Update rover
-			Expect(k8sClient.Update(ctx, fetchedRover)).To(Succeed())
+			// Update rover; retry on conflict, as the controller writes the status concurrently
+			Eventually(func(g Gomega) {
+				freshRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, freshRover)).To(Succeed())
+				freshRover.Spec = updateSpec
+				g.Expect(k8sClient.Update(ctx, freshRover)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			// fetch updated rover and validate subscriptions
 			fetchedUpdatedRover := &roverv1.Rover{}
@@ -245,10 +248,13 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				Subscriptions: updateSubscriptions,
 			}
 
-			fetchedUpdatedRover.Spec = updateSpec
-
-			// Update rover
-			Expect(k8sClient.Update(ctx, fetchedUpdatedRover)).To(Succeed())
+			// Update rover; retry on conflict, as the controller writes the status concurrently
+			Eventually(func(g Gomega) {
+				freshRover := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, freshRover)).To(Succeed())
+				freshRover.Spec = updateSpec
+				g.Expect(k8sClient.Update(ctx, freshRover)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			// fetch updated rover and validate exposures
 			fetchedUpdatedRover = &roverv1.Rover{}
