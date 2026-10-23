@@ -21,21 +21,31 @@ import (
 )
 
 const (
-	legacyTag     = clientpkg.LegacyPluginTag
-	routeTags     = "env--test,plugin--acl,route--r1,consumer--none"
-	combinedTags  = "env--test,plugin--acl,route--r1,consumer--c1"
-	consumerTags  = "env--test,plugin--acl,consumer--c1"
-	emptyPage     = `{"data":[]}`
-	routeID       = "route-id"
-	consumerID    = "consumer-id"
-	legacyID      = "legacy-id"
-	storedID      = "stored-id"
-	otherRouteID  = "other-route-id"
-	serviceID     = "service-id"
-	unrelatedName = "jwt"
+	legacyTag           = clientpkg.LegacyPluginTag
+	legacyRouteQuery    = "ei__telekom__de--realm---default,acl,r1"
+	legacyConsumerQuery = "ei__telekom__de--realm---default,acl,c1"
+	legacyCombinedQuery = "ei__telekom__de--realm---default,acl,r1,c1"
+	routeTags           = "env--test,plugin--acl,route--r1,consumer--none"
+	combinedTags        = "env--test,plugin--acl,route--r1,consumer--c1"
+	consumerTags        = "env--test,plugin--acl,consumer--c1"
+	emptyPage           = `{"data":[]}`
+	routeID             = "route-id"
+	consumerID          = "consumer-id"
+	legacyID            = "legacy-id"
+	storedID            = "stored-id"
+	otherRouteID        = "other-route-id"
+	serviceID           = "service-id"
+	unrelatedName       = "jwt"
 )
 
 var routeGoTags = []string{"env--test", "plugin--acl", "route--r1", "consumer--none"}
+
+// Legacy plugins carry the realm tag, the plugin name and their bindings.
+var (
+	legacyRouteTags    = []string{legacyTag, "acl", "r1"}
+	legacyConsumerTags = []string{legacyTag, "acl", "c1"}
+	legacyCombinedTags = []string{legacyTag, "acl", "r1", "c1"}
+)
 
 var _ = Describe("Bound plugin discovery", func() {
 	var (
@@ -58,7 +68,7 @@ var _ = Describe("Bound plugin discovery", func() {
 
 	legacyRoutePlugin := func() *pluginRecord {
 		return &pluginRecord{
-			id: legacyID, name: "acl", route: routeID, tags: []string{legacyTag},
+			id: legacyID, name: "acl", route: routeID, tags: legacyRouteTags,
 			protocols: []string{"grpc", "grpcs", "http", "https"}, instanceName: "legacy-instance", config: allowConfig,
 		}
 	}
@@ -69,7 +79,7 @@ var _ = Describe("Bound plugin discovery", func() {
 			expectRouteID(api)
 			expectPluginStatus(api, storedID, http.StatusNotFound)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil, legacyRoutePlugin().json()))
+			expectList(api, legacyRouteQuery, nil, pageOf(nil, legacyRoutePlugin().json()))
 			expectRouteWrite(api, &written)
 
 			result, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -79,7 +89,7 @@ var _ = Describe("Bound plugin discovery", func() {
 
 			By("updating the same ID with additive tags although the config is equal")
 			Expect(written.id).To(Equal(legacyID))
-			Expect(*written.body.Tags).To(ConsistOf(append(routeGoTags, legacyTag)))
+			Expect(*written.body.Tags).To(ConsistOf(append(routeGoTags, legacyRouteTags...)))
 			Expect(*written.body.Protocols).To(Equal([]kong.CreatePluginForConsumerRequestProtocols{"grpc", "grpcs", "http", "https"}))
 			Expect(*written.body.InstanceName).To(Equal("legacy-instance"))
 			Expect(written.body.Service).To(BeNil())
@@ -99,7 +109,7 @@ var _ = Describe("Bound plugin discovery", func() {
 		It("creates a new plugin without the legacy tag when no legacy plugin matches", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, emptyPage)
+			expectList(api, legacyRouteQuery, nil, emptyPage)
 			expectRouteWrite(api, &written)
 
 			_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -169,15 +179,15 @@ var _ = Describe("Bound plugin discovery", func() {
 			plugin.route, plugin.consumer = nil, ptr("c1")
 			expectConsumerID(api, "c1", consumerID)
 			expectList(api, consumerTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil, (&pluginRecord{
-				id: legacyID, name: "acl", consumer: consumerID, tags: []string{legacyTag, "env--test"}, config: allowConfig,
+			expectList(api, legacyConsumerQuery, nil, pageOf(nil, (&pluginRecord{
+				id: legacyID, name: "acl", consumer: consumerID, tags: append(legacyConsumerTags, "env--test"), config: allowConfig,
 			}).json()))
 			expectConsumerWrite(api, "c1", &written)
 
 			_, err := client.CreateOrReplacePlugin(ctx, plugin)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(written.id).To(Equal(legacyID))
-			Expect(*written.body.Tags).To(ConsistOf(legacyTag, "env--test", "plugin--acl", "consumer--c1"))
+			Expect(*written.body.Tags).To(ConsistOf(legacyTag, "acl", "c1", "env--test", "plugin--acl", "consumer--c1"))
 		})
 
 		It("adopts a combined legacy plugin bound to exactly the route and consumer", func() {
@@ -185,10 +195,10 @@ var _ = Describe("Bound plugin discovery", func() {
 			expectRouteID(api)
 			expectConsumerID(api, "c1", consumerID)
 			expectList(api, combinedTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil,
-				(&pluginRecord{id: "route-wide", name: "acl", route: routeID, tags: []string{legacyTag}}).json(),
-				(&pluginRecord{id: "consumer-wide", name: "acl", consumer: consumerID, tags: []string{legacyTag}}).json(),
-				(&pluginRecord{id: legacyID, name: "acl", route: routeID, consumer: consumerID, tags: []string{legacyTag}}).json(),
+			expectList(api, legacyCombinedQuery, nil, pageOf(nil,
+				(&pluginRecord{id: "route-wide", name: "acl", route: routeID, tags: legacyCombinedTags}).json(),
+				(&pluginRecord{id: "consumer-wide", name: "acl", consumer: consumerID, tags: legacyCombinedTags}).json(),
+				(&pluginRecord{id: legacyID, name: "acl", route: routeID, consumer: consumerID, tags: legacyCombinedTags}).json(),
 			))
 			expectConsumerWrite(api, "c1", &written)
 
@@ -197,16 +207,16 @@ var _ = Describe("Bound plugin discovery", func() {
 			Expect(written.id).To(Equal(legacyID))
 			Expect(*written.body.Consumer).To(Equal("c1"))
 			Expect(*written.body.Route).To(Equal(map[string]any{"name": ptr("r1")}))
-			Expect(*written.body.Tags).To(ConsistOf(legacyTag, "env--test", "plugin--acl", "route--r1", "consumer--c1"))
+			Expect(*written.body.Tags).To(ConsistOf(legacyTag, "acl", "r1", "c1", "env--test", "plugin--acl", "route--r1", "consumer--c1"))
 		})
 
 		It("ignores legacy plugins of another slot, another name or bound to a service", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil,
-				(&pluginRecord{id: "a", name: "acl", route: otherRouteID, tags: []string{legacyTag}}).json(),
-				(&pluginRecord{id: "b", name: "acl", route: routeID, consumer: consumerID, tags: []string{legacyTag}}).json(),
-				(&pluginRecord{id: "c", name: "acl", route: routeID, service: serviceID, tags: []string{legacyTag}}).json(),
+			expectList(api, legacyRouteQuery, nil, pageOf(nil,
+				(&pluginRecord{id: "a", name: "acl", route: otherRouteID, tags: legacyRouteTags}).json(),
+				(&pluginRecord{id: "b", name: "acl", route: routeID, consumer: consumerID, tags: append(legacyRouteTags, "c1")}).json(),
+				(&pluginRecord{id: "c", name: "acl", route: routeID, service: serviceID, tags: legacyRouteTags}).json(),
 				`{"name":"`+unrelatedName+`"}`,
 			))
 			expectRouteWrite(api, &written)
@@ -219,8 +229,8 @@ var _ = Describe("Bound plugin discovery", func() {
 		It("rejects an in-slot legacy plugin with conflicting ownership tags", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil, (&pluginRecord{
-				id: legacyID, name: "acl", route: routeID, tags: []string{legacyTag, "route--other"},
+			expectList(api, legacyRouteQuery, nil, pageOf(nil, (&pluginRecord{
+				id: legacyID, name: "acl", route: routeID, tags: append(legacyRouteTags, "route--other"),
 			}).json()))
 
 			_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -231,9 +241,9 @@ var _ = Describe("Bound plugin discovery", func() {
 		It("rejects ambiguous legacy plugins in the same slot", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf(nil,
-				(&pluginRecord{id: "a", name: "acl", route: routeID, tags: []string{legacyTag}}).json(),
-				(&pluginRecord{id: "b", name: "acl", route: routeID, tags: []string{legacyTag}}).json(),
+			expectList(api, legacyRouteQuery, nil, pageOf(nil,
+				(&pluginRecord{id: "a", name: "acl", route: routeID, tags: legacyRouteTags}).json(),
+				(&pluginRecord{id: "b", name: "acl", route: routeID, tags: legacyRouteTags}).json(),
 			))
 
 			_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -408,8 +418,8 @@ var _ = Describe("Bound plugin discovery", func() {
 		It("rejects legacy plugins in the same slot spread across pages", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, pageOf("o1", (&pluginRecord{id: "a", name: "acl", route: routeID, tags: []string{legacyTag}}).json()))
-			expectList(api, legacyTag, ptr("o1"), pageOf(nil, (&pluginRecord{id: "b", name: "acl", route: routeID, tags: []string{legacyTag}}).json()))
+			expectList(api, legacyRouteQuery, nil, pageOf("o1", (&pluginRecord{id: "a", name: "acl", route: routeID, tags: legacyRouteTags}).json()))
+			expectList(api, legacyRouteQuery, ptr("o1"), pageOf(nil, (&pluginRecord{id: "b", name: "acl", route: routeID, tags: legacyRouteTags}).json()))
 
 			_, err := client.CreateOrReplacePlugin(ctx, plugin)
 			Expect(err).To(MatchError(ContainSubstring("found multiple")))
@@ -492,7 +502,7 @@ var _ = Describe("Bound plugin discovery", func() {
 		It("rejects and does not persist a write response with another ID", func() {
 			expectRouteID(api)
 			expectList(api, routeTags, nil, emptyPage)
-			expectList(api, legacyTag, nil, emptyPage)
+			expectList(api, legacyRouteQuery, nil, emptyPage)
 			api.EXPECT().UpsertPluginForRouteWithResponse(mock.Anything, "r1", mock.Anything, mock.Anything).Return(
 				&kong.UpsertPluginForRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, Body: echo("foreign")}, nil,
 			).Once()

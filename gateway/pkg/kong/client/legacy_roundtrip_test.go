@@ -22,8 +22,9 @@ import (
 )
 
 var _ = Describe("Legacy plugin discovery over the generated client", func() {
-	It("sends the legacy tag as one literal filter and adopts the plugin under its ID", func() {
+	It("sends the legacy tags as one literal filter and adopts the plugin under its ID", func() {
 		tag := clientpkg.LegacyPluginTag
+		legacyFilter := tag + ",acl,c1"
 
 		var (
 			mu         sync.Mutex
@@ -41,9 +42,9 @@ var _ = Describe("Legacy plugin discovery over the generated client", func() {
 			case r.Method == http.MethodGet && r.URL.Path == "/plugins":
 				filter := r.URL.Query().Get("tags")
 				tagFilters = append(tagFilters, filter)
-				if filter == tag {
+				if filter == legacyFilter {
 					_, _ = io.WriteString(w, pageOf(nil, (&pluginRecord{
-						id: "legacy-id", name: "acl", consumer: "consumer-id", tags: []string{tag},
+						id: "legacy-id", name: "acl", consumer: "consumer-id", tags: []string{tag, "acl", "c1"},
 						config: map[string]any{"allow": []any{"group-a"}},
 					}).json()))
 					return
@@ -70,8 +71,8 @@ var _ = Describe("Legacy plugin discovery over the generated client", func() {
 		_, err = client.CreateOrReplacePlugin(ctx, plugin)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(plugin.GetId()).To(Equal("legacy-id"))
-		Expect(tagFilters).To(Equal([]string{"env--test,plugin--acl,consumer--c1", tag}))
+		Expect(tagFilters).To(Equal([]string{"env--test,plugin--acl,consumer--c1", legacyFilter}))
 		Expect(putPath).To(Equal("/consumers/c1/plugins/legacy-id"))
-		Expect(putBody["tags"]).To(ConsistOf(tag, "env--test", "plugin--acl", "consumer--c1"))
+		Expect(putBody["tags"]).To(ConsistOf(tag, "acl", "c1", "env--test", "plugin--acl", "consumer--c1"))
 	})
 })
