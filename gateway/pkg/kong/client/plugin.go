@@ -7,7 +7,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -18,6 +17,12 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+)
+
+// Kinds of the Kong entities a plugin can be bound to.
+const (
+	parentConsumer = "consumer"
+	parentRoute    = "route"
 )
 
 func (c *kongClient) CreateOrReplacePlugin(ctx context.Context, plugin CustomPlugin) (*kong.Plugin, error) {
@@ -89,69 +94,14 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) erro
 	return nil
 }
 
-func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error {
-	log := logr.FromContextOrDiscard(ctx)
-
-	if route == nil && consumer == nil {
-		return errors.New("either route or consumer must be provided for cleanup")
-	}
-
-	tags := []string{
-		BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-	}
-	if route != nil {
-		tags = append(tags, BuildTag("route", route.GetName()))
-	}
-	if consumer != nil {
-		tags = append(tags, BuildTag("consumer", consumer.GetConsumerName()))
-	}
-
-	kongPlugins, err := getPluginsMatchingTags(ctx, c.client, tags)
-	if err != nil {
-		return fmt.Errorf("failed to list plugins: %w", err)
-	}
-
-	pluginIds := make([]string, 0, len(plugins))
-	for _, plugin := range plugins {
-		pluginIds = append(pluginIds, plugin.GetId())
-	}
-
-	log.Info("cleaning up plugins",
-		"found", len(kongPlugins),
-		"expected", len(pluginIds),
-		"need_cleanup", len(kongPlugins) != len(pluginIds),
-	)
-
-	for _, kongPlugin := range kongPlugins {
-		if kongPlugin.Id == nil {
-			return fmt.Errorf("plugin response ID is missing")
-		}
-		if !slices.Contains(pluginIds, *kongPlugin.Id) {
-			name := ""
-			if kongPlugin.Name != nil {
-				name = *kongPlugin.Name
-			}
-			log.V(1).Info("deleting plugin", "name", name, "id", *kongPlugin.Id)
-			response, err := c.client.DeletePluginWithResponse(ctx, *kongPlugin.Id)
-			if err != nil {
-				return fmt.Errorf("failed to delete plugin: %w", HandleClientError(err))
-			}
-			if err := CheckStatusCode(response, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
-				return fmt.Errorf("failed to delete plugin (%d): %s: %w", response.StatusCode(), summarizeBody(response.Body), err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func loadPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlugin) (*kong.Plugin, error) {
+// loadGlobalPlugin looks up a plugin bound to neither a route nor a consumer
+// by its stored ID and falls back to its ownership tags.
+func loadGlobalPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlugin) (*kong.Plugin, error) {
 	log := logr.FromContextOrDiscard(ctx).WithValues("plugin", plugin.GetName())
-	pluginId := plugin.GetId()
 
-	if pluginId != "" {
+	if pluginId := plugin.GetId(); pluginId != "" {
 		log.V(1).Info("loading plugin by id", "id", pluginId)
-		current, err := loadPluginById(ctx, api, plugin, pluginId)
+		current, err := fetchPlugin(ctx, api, pluginId)
 		if err != nil {
 			return nil, err
 		}
@@ -167,32 +117,12 @@ func loadPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlugin) (*ko
 	if err != nil {
 		return nil, err
 	}
-
 	if current != nil {
-		if current.Id == nil {
+		if current.Id == nil || *current.Id == "" {
 			return nil, fmt.Errorf("plugin response ID is missing")
 		}
 		log.V(1).Info("found plugin", "id", *current.Id)
-		pluginId = *current.Id
 	}
-	plugin.SetId(pluginId)
-	return current, nil
-}
-
-// loadPluginById returns nil without an error when Kong does not know the id.
-func loadPluginById(ctx context.Context, api KongAdminApi, plugin CustomPlugin, pluginId string) (*kong.Plugin, error) {
-	response, err := api.GetPluginWithResponse(ctx, pluginId)
-	if err != nil {
-		return nil, HandleClientError(err)
-	}
-	current, found, err := readOne("plugin", readResult[kong.Plugin]{response.StatusCode(), response.Body, response.JSON200})
-	if err != nil || !found {
-		return nil, err
-	}
-	if current.Id == nil {
-		return nil, fmt.Errorf("plugin response ID is missing")
-	}
-	plugin.SetId(*current.Id)
 	return current, nil
 }
 
@@ -205,40 +135,18 @@ func pluginTags(ctx context.Context, plugin CustomPlugin) []string {
 		BuildTag("plugin", plugin.GetName()),
 	}
 	if plugin.GetRoute() != nil {
-		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag(parentRoute, *plugin.GetRoute()))
 	}
 	if plugin.GetConsumer() != nil {
-		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag(parentConsumer, *plugin.GetConsumer()))
 	} else {
-		tags = append(tags, BuildTag("consumer", "none"))
+		tags = append(tags, BuildTag(parentConsumer, "none"))
 	}
 	return tags
 }
 
-func getPluginsMatchingTags(ctx context.Context, api KongAdminApi, tags []string) ([]kong.Plugin, error) {
-	// ListPluginsForRouteWithResponse does not work correctly with tags
-	response, err := api.ListPluginWithResponse(ctx, &kong.ListPluginParams{
-		Tags: encodeTags(tags),
-	})
-	if err != nil {
-		return nil, HandleClientError(err)
-	}
-	if err := CheckStatusCode(response, http.StatusOK); err != nil {
-		return nil, fmt.Errorf("failed to list plugins (%d): %s: %w", response.StatusCode(), summarizeBody(response.Body), err)
-	}
-
-	// ListPluginWithResponse does not return an array of plugins
-	var responseBody struct {
-		Data []kong.Plugin `json:"data"`
-	}
-	if err := json.Unmarshal(response.Body, &responseBody); err != nil {
-		return nil, err
-	}
-	return responseBody.Data, nil
-}
-
 func getPluginMatchingTags(ctx context.Context, api KongAdminApi, tags []string) (*kong.Plugin, error) {
-	plugins, err := getPluginsMatchingTags(ctx, api, tags)
+	plugins, err := listPlugins(ctx, api, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +159,53 @@ func getPluginMatchingTags(ctx context.Context, api KongAdminApi, tags []string)
 	default:
 		return nil, fmt.Errorf("found multiple plugins with tags: %s", *encodeTags(tags))
 	}
+}
+
+// resolveParentID returns the Kong ID of the route or consumer a plugin is
+// bound to. A missing parent is an error.
+func resolveParentID(ctx context.Context, api KongAdminApi, kind, name string) (string, error) {
+	id, found, err := lookupParentID(ctx, api, kind, name)
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", fmt.Errorf("%s %q does not exist in Kong", kind, name)
+	}
+	return id, nil
+}
+
+// lookupParentID returns the Kong ID of a route or consumer and whether Kong
+// knows it. A found parent without an ID is an error.
+func lookupParentID(ctx context.Context, api KongAdminApi, kind, name string) (string, bool, error) {
+	var id *string
+	switch kind {
+	case parentConsumer:
+		response, err := api.GetConsumerWithResponse(ctx, name)
+		if err != nil {
+			return "", false, fmt.Errorf("failed to get consumer %q: %w", name, HandleClientError(err))
+		}
+		consumer, found, err := readOne("consumer", readResult[kong.Consumer]{response.StatusCode(), response.Body, response.JSON200})
+		if err != nil || !found {
+			return "", false, err
+		}
+		id = consumer.Id
+	case parentRoute:
+		response, err := api.GetRouteWithResponse(ctx, name)
+		if err != nil {
+			return "", false, fmt.Errorf("failed to get route %q: %w", name, HandleClientError(err))
+		}
+		route, found, err := readOne("route", readResult[kong.Route]{response.StatusCode(), response.Body, response.JSON200})
+		if err != nil || !found {
+			return "", false, err
+		}
+		id = route.Id
+	default:
+		return "", false, fmt.Errorf("unknown plugin parent kind %q", kind)
+	}
+	if id == nil || *id == "" {
+		return "", false, fmt.Errorf("%s %q response ID is missing", kind, name)
+	}
+	return *id, true, nil
 }
 
 type pluginEntity struct {
@@ -268,58 +223,68 @@ var (
 
 func (e *pluginEntity) Name() string { return "plugin" }
 
-// Get reuses the existing lookup, which resolves the plugin by its stored id
-// and falls back to the ownership tags.
+func (e *pluginEntity) bound() bool {
+	return e.plugin.GetRoute() != nil || e.plugin.GetConsumer() != nil
+}
+
+// Get resolves the parents of a bound plugin and then looks the plugin up by
+// its stored ID, its ownership tags and LegacyPluginTag. A global
+// plugin is looked up by its stored ID and its ownership tags.
 func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
-	current, err := loadPlugin(ctx, e.client, e.plugin)
+	e.current = nil
+	e.consumerID = nil
+	e.routeID = nil
+
+	if !e.bound() {
+		current, err := loadGlobalPlugin(ctx, e.client, e.plugin)
+		if err != nil {
+			return nil, false, err
+		}
+		e.current = current
+		return current, current != nil, nil
+	}
+
+	identity := &boundPluginIdentity{
+		name: e.plugin.GetName(),
+		tags: pluginTags(ctx, e.plugin),
+	}
+	if e.plugin.GetConsumer() != nil {
+		consumerID, err := resolveParentID(ctx, e.client, parentConsumer, *e.plugin.GetConsumer())
+		if err != nil {
+			return nil, false, err
+		}
+		e.consumerID = &consumerID
+		identity.consumerID = consumerID
+	}
+	if e.plugin.GetRoute() != nil {
+		routeID, err := resolveParentID(ctx, e.client, parentRoute, *e.plugin.GetRoute())
+		if err != nil {
+			return nil, false, err
+		}
+		e.routeID = &routeID
+		identity.routeID = routeID
+	}
+
+	current, err := discoverBoundPlugin(ctx, e.client, e.plugin, identity)
 	if err != nil {
 		return nil, false, err
 	}
 	e.current = current
-	e.consumerID = nil
-	e.routeID = nil
-	if e.plugin.GetConsumer() != nil {
-		consumerID, err := resolvePluginBindingID(ctx, e.client, "consumer", *e.plugin.GetConsumer())
-		if err != nil {
-			return nil, false, err
-		}
-		e.consumerID = consumerID
-	}
-	if e.plugin.GetRoute() != nil {
-		routeID, err := resolvePluginBindingID(ctx, e.client, "route", *e.plugin.GetRoute())
-		if err != nil {
-			return nil, false, err
-		}
-		e.routeID = routeID
-	}
 	return current, current != nil, nil
 }
 
-func resolvePluginBindingID(ctx context.Context, api KongAdminApi, kind, name string) (*string, error) {
-	switch kind {
-	case "consumer":
-		response, err := api.GetConsumerWithResponse(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get consumer %q: %w", name, HandleClientError(err))
-		}
-		consumer, found, err := readOne("consumer", readResult[kong.Consumer]{response.StatusCode(), response.Body, response.JSON200})
-		if err != nil || !found {
-			return nil, err
-		}
-		return consumer.Id, nil
-	case "route":
-		response, err := api.GetRouteWithResponse(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get route %q: %w", name, HandleClientError(err))
-		}
-		route, found, err := readOne("route", readResult[kong.Route]{response.StatusCode(), response.Body, response.JSON200})
-		if err != nil || !found {
-			return nil, err
-		}
-		return route.Id, nil
-	default:
-		return nil, nil
+// effective returns the desired body for the plugin as it will be written. An
+// existing bound plugin keeps all its tags, its protocols and its instance
+// name. The config is the desired config and replaces the current one.
+func (e *pluginEntity) effective(desired kong.UpsertPluginJSONRequestBody) kong.UpsertPluginJSONRequestBody {
+	if e.current == nil || !e.bound() {
+		return desired
 	}
+	tags := append(slices.Clone(valueOrZero(e.current.Tags)), valueOrZero(desired.Tags)...)
+	desired.Tags = normalizeSet(&tags)
+	desired.Protocols = convertStringSet[kong.CreatePluginForConsumerRequestProtocols](e.current.Protocols)
+	desired.InstanceName = e.current.InstanceName
+	return desired
 }
 
 func (e *pluginEntity) Project(current *kong.Plugin) (kong.UpsertPluginJSONRequestBody, error) {
@@ -355,8 +320,10 @@ func (e *pluginEntity) Project(current *kong.Plugin) (kong.UpsertPluginJSONReque
 // the entity references that Kong reports as IDs. If Kong drifted the plugin to
 // a different route or consumer out-of-band, matching on the name would be a
 // false positive because the ownership tags alone do not make the plugin safe to
-// reuse.
+// reuse. An existing bound plugin is compared against its effective desired
+// body, so missing ownership tags still count as a change.
 func (e *pluginEntity) Equal(desired, current kong.UpsertPluginJSONRequestBody) bool {
+	desired = e.effective(desired)
 	desired.Service = nil
 	current.Service = nil
 	if e.consumerID != nil {
@@ -377,9 +344,14 @@ func (e *pluginEntity) Write(ctx context.Context, desired *kong.UpsertPluginJSON
 	log := logr.FromContextOrDiscard(ctx)
 
 	pluginId := uuid.NewString()
-	if e.current != nil && e.current.Id != nil {
+	if e.current != nil {
+		if e.current.Id == nil || *e.current.Id == "" {
+			return nil, fmt.Errorf("existing plugin ID is missing")
+		}
 		pluginId = *e.current.Id
 	}
+	effective := e.effective(*desired)
+	desired = &effective
 
 	// Order matters: a plugin with a consumer is created for that consumer, on
 	// the given route if one is set; a plugin with only a route is created for
@@ -423,6 +395,9 @@ func (e *pluginEntity) Write(ctx context.Context, desired *kong.UpsertPluginJSON
 		}
 		if written != nil && written.Id == nil {
 			written.Id = &pluginId
+		}
+		if written != nil && *written.Id != pluginId {
+			return nil, fmt.Errorf("plugin write for id %s returned id %s", pluginId, *written.Id)
 		}
 	}
 	return writeOne("plugin", readResult[kong.Plugin]{status, body, written}, http.StatusOK)
