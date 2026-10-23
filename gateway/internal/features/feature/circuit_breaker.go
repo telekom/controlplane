@@ -52,7 +52,8 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 	}
 
 	if route.IsProxy() {
-		return false
+		// a route that is no longer primary may still own the upstream of its former circuit breaker; Apply deletes it
+		return route.GetUpstreamId() != ""
 	}
 
 	if route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled {
@@ -86,7 +87,7 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 
 func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
 	// default configuration if CB is disabled
-	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
+	builder.SetUpstream(client.NewUpstreamOrDie(jumperUrl(builder)))
 
 	err := builder.GetKongClient().DeleteUpstream(ctx, route)
 	if err != nil {
@@ -100,13 +101,19 @@ func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route
 	return nil
 }
 
-func isDeleteScenario(route *gatewayv1.Route) bool {
-	// completely removed or turned to false
-	if (route.Spec.Traffic.CircuitBreaker != nil && !route.Spec.Traffic.CircuitBreaker.Enabled) && route.GetUpstreamId() != "" {
-		return true
-	} else {
-		return false
+// jumperUrl keeps the jumper /listener endpoint set by the RouteListener feature,
+// which runs before this feature, so circuit-breaker routes keep capturing events.
+func jumperUrl(builder features.FeaturesBuilder) string {
+	if len(builder.GetRouteListeners()) > 0 {
+		return plugin.LocalhostListenerUrl
 	}
+	return plugin.LocalhostProxyUrl
+}
+
+func isDeleteScenario(route *gatewayv1.Route) bool {
+	// completely removed, turned to false, or the route is no longer primary
+	cb := route.Spec.Traffic.CircuitBreaker
+	return (cb == nil || !cb.Enabled || route.IsProxy()) && route.GetUpstreamId() != ""
 }
 
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
@@ -118,7 +125,7 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 		Scheme: "http",
 		Host:   routeName,
 		Port:   8080,
-		Path:   "/proxy",
+		Path:   client.NewUpstreamOrDie(jumperUrl(builder)).GetPath(),
 	})
 
 	upstreamAlgorithm := kong.RoundRobin

@@ -30,6 +30,10 @@ spec:
 
 The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
+:::caution
+If `realmName` differs from the environment name, set [`spec.overwriteEnvironmentName`](#event-environment-name) to the same value on every EventConfig in the environment. Otherwise Horizon drops events, and Spectre Listeners are Blocked with `event environment mismatch`.
+:::
+
 :::tip
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
 :::
@@ -402,6 +406,15 @@ mesh:
   zoneNames:
     - dataplane2
     - dataplane3
+```
+
+### Event environment name
+
+`spec.overwriteEnvironmentName` overrides the environment name sent to Horizon. If omitted, the Control Plane environment name is used. It must equal the zone's realm (the Environment `spec.realmName`).
+
+```yaml
+spec:
+  overwriteEnvironmentName: default
 ```
 
 ### Overriding identity client defaults

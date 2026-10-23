@@ -86,11 +86,8 @@ var _ = Describe("EventSpecification Controller", func() {
 
 		It("should return an empty list if no EventSpecifications exist", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventspecifications", nil)
-			responseGroup, err := ExecuteRequest(req, groupToken)
+			responseGroup, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
-
-			responseTeam, err := ExecuteRequest(req, teamToken)
-			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
 		})
 	})
 
@@ -172,6 +169,11 @@ var _ = Describe("EventSpecification Controller", func() {
 					FileId:      eventSpecFileId,
 					ContentType: "application/json",
 				}, nil)
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, eventSpecFileId, mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+					_, _ = w.Write([]byte(specJson))
+					return &fileApi.FileDownloadResponse{ContentType: "application/json"}, nil
+				})
 
 			req := httptest.NewRequest(http.MethodPut, "/eventspecifications/eni--hyperion--tardis-horizon-demo-cetus-v1",
 				bytes.NewReader(eventSpecification))

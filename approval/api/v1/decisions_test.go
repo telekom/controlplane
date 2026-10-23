@@ -95,3 +95,65 @@ var _ = Describe("AppendDecision", func() {
 		Expect(decisionNames(approval.Spec.Decisions)).To(Equal([]string{"newest"}))
 	})
 })
+
+var _ = Describe("IsExpiredAfterSuspension", func() {
+	decision := func(state approvalv1.ApprovalState) approvalv1.Decision {
+		return approvalv1.Decision{Name: "d", ResultingState: state}
+	}
+	DescribeTable("derives a suspension before the expiry",
+		func(state, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision, expected bool) {
+			a := &approvalv1.Approval{}
+			a.Spec.State = state
+			a.Status.LastState = lastState
+			a.Spec.Decisions = decisions
+			Expect(a.IsExpiredAfterSuspension()).To(Equal(expected))
+		},
+		Entry("expiry not yet reconciled after a suspension", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateSuspended,
+			nil, true),
+		Entry("reconciled expiry after a suspension decision", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			[]approvalv1.Decision{decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateSuspended), decision(approvalv1.ApprovalStateExpired)}, true),
+		Entry("reconciled expiry after a grant", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			[]approvalv1.Decision{decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateExpired)}, false),
+		Entry("reconciled expiry without decisions", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			nil, false),
+		Entry("not expired", approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateSuspended,
+			[]approvalv1.Decision{decision(approvalv1.ApprovalStateSuspended)}, false),
+	)
+})
+
+var _ = Describe("IsExpiredAfterGrant", func() {
+	decisions := func(states ...approvalv1.ApprovalState) []approvalv1.Decision {
+		ds := make([]approvalv1.Decision, 0, len(states))
+		for _, state := range states {
+			ds = append(ds, approvalv1.Decision{Name: "d", ResultingState: state})
+		}
+		return ds
+	}
+	DescribeTable("derives a grant before the expiry",
+		func(state, lastState approvalv1.ApprovalState, ds []approvalv1.Decision, expected bool) {
+			a := &approvalv1.Approval{}
+			a.Spec.State = state
+			a.Status.LastState = lastState
+			a.Spec.Decisions = ds
+			Expect(a.IsExpiredAfterGrant()).To(Equal(expected))
+		},
+		Entry("expiry not yet reconciled after a grant", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted,
+			nil, true),
+		Entry("reconciled expiry after a grant", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateExpired), true),
+		Entry("reconciled expiry after a suspension and a resume", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateExpired), true),
+		Entry("reconciled expiry after a suspension", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateExpired), false),
+		Entry("reconciled expiry after a rejection", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateExpired), false),
+		Entry("reconciled expiry without decisions", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			nil, false),
+		Entry("reconciled expiry with only the expiry decision", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateExpired), false),
+		Entry("decision without a resulting state", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
+			decisions(approvalv1.ApprovalStateGranted, "", approvalv1.ApprovalStateExpired), false),
+		Entry("not expired", approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateGranted,
+			decisions(approvalv1.ApprovalStateGranted), false),
+	)
+})

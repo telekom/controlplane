@@ -9,6 +9,7 @@ import (
 	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -18,7 +19,26 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	spectre_handler "github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
+
+// ListenerApplicationIndexKey indexes Rovers by the names of the Applications
+// their listeners reference as consumer or provider.
+const ListenerApplicationIndexKey = "spec.listeners.application"
+
+func indexListenerApplications(obj client.Object) []string {
+	rover, ok := obj.(*roverv1.Rover)
+	if !ok {
+		return nil
+	}
+	names := make([]string, 0, 2*len(rover.Spec.Listeners))
+	for _, rl := range rover.Spec.Listeners {
+		names = append(names, spectre_handler.ApplicationName(rl.Consumer), spectre_handler.ApplicationName(rl.Provider))
+	}
+	return names
+}
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err := index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &apiapi.Api{})
@@ -91,6 +111,24 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &filev1.FileSubscription{})
 		if err != nil {
 			ctrl.Log.Error(err, "unable to create ownerIndex for FileSubscription")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeatureSpectre.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &spectrev1.SpectreApplication{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for SpectreApplication")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &spectrev1.Listener{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for Listener")
+			os.Exit(1)
+		}
+		err = mgr.GetFieldIndexer().IndexField(ctx, &roverv1.Rover{}, ListenerApplicationIndexKey, indexListenerApplications)
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create listener application index for Rover")
 			os.Exit(1)
 		}
 	}

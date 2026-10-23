@@ -10,6 +10,7 @@ resources:
 - bases/gateway.cp.ei.telekom.de_routes.yaml
 - bases/gateway.cp.ei.telekom.de_consumeroutes.yaml
 - bases/gateway.cp.ei.telekom.de_consumers.yaml
+- bases/gateway.cp.ei.telekom.de_routelisteners.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

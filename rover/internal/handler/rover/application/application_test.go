@@ -27,6 +27,12 @@ var _ = Describe("RoverNeedsClient", func() {
 			Spec:       roverv1.RoverSpec{Exposures: exps, Subscriptions: subs},
 		}
 	}
+	newListenerRover := func(sub *roverv1.ListenerSubscription, exps []roverv1.Exposure) *roverv1.Rover {
+		rover := newRover(exps, nil)
+		rover.Spec.Listeners = []roverv1.RoverListener{{Consumer: "consumer-app", Provider: "provider-app", ApiBasePath: "/echo/v1"}}
+		rover.Spec.ListenerSubscription = sub
+		return rover
+	}
 
 	// The concrete field values are irrelevant: Subscription.Type()/Exposure.Type()
 	// dispatch only on which pointer is non-nil.
@@ -52,5 +58,15 @@ var _ = Describe("RoverNeedsClient", func() {
 		// Mixed: file plus a non-file entry still forces a client (story edge case).
 		Entry("mixed file + api subscription", nil, []roverv1.Subscription{fileSub, apiSub}, true),
 		Entry("file subscription + event exposure", []roverv1.Exposure{eventExp}, []roverv1.Subscription{fileSub}, true),
+	)
+
+	DescribeTable("requires an Identity client for any Rover with listeners",
+		func(rover *roverv1.Rover) {
+			Expect(isClientNeeded(rover)).To(BeTrue())
+		},
+		Entry("listeners with default delivery", newListenerRover(nil, nil)),
+		Entry("listeners with server_sent_event delivery", newListenerRover(&roverv1.ListenerSubscription{DeliveryType: "server_sent_event"}, nil)),
+		Entry("listeners with callback delivery", newListenerRover(&roverv1.ListenerSubscription{DeliveryType: "callback", Callback: "https://example.com/listener"}, nil)),
+		Entry("listeners + file exposure", newListenerRover(nil, []roverv1.Exposure{fileExp})),
 	)
 })

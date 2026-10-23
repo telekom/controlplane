@@ -18,6 +18,7 @@ var (
 	DeciderTeamLabelKey      = config.BuildLabelKey("decider.team")
 	ActionLabelKey           = config.BuildLabelKey("action")
 	ApprovalStrategyLabelKey = config.BuildLabelKey("approval.strategy")
+	ApprovalKeyLabelKey      = config.BuildLabelKey("approval.key")
 )
 
 // SetApprovalLabels sets filtering labels on an ApprovalRequest or Approval resource.
@@ -33,5 +34,21 @@ func SetApprovalLabels(obj types.Object, target types.TypedObjectRef, requester,
 	labels[DeciderTeamLabelKey] = labelutil.NormalizeLabelValue(decider)
 	labels[ActionLabelKey] = labelutil.NormalizeLabelValue(action)
 	labels[ApprovalStrategyLabelKey] = labelutil.NormalizeLabelValue(strategy)
+	obj.SetLabels(labels)
+}
+
+// SetApprovalKeyLabel sets or removes the approval-key mirror label based on
+// the spec key value. A non-empty key sets the label; an empty/absent key
+// removes it. Unrelated labels are preserved.
+func SetApprovalKeyLabel(obj types.Object, approvalKey string) {
+	labels := obj.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if approvalKey != "" {
+		labels[ApprovalKeyLabelKey] = labelutil.NormalizeLabelValue(approvalKey)
+	} else {
+		delete(labels, ApprovalKeyLabelKey)
+	}
 	obj.SetLabels(labels)
 }

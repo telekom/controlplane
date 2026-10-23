@@ -44,6 +44,8 @@ type FeaturesBuilder interface {
 	GetGateway() *gatewayv1.Gateway
 	GetAllowedConsumers() []*gatewayv1.ConsumeRoute
 	AddAllowedConsumers(...*gatewayv1.ConsumeRoute)
+	GetRouteListeners() []*gatewayv1.RouteListener
+	AddRouteListeners(...*gatewayv1.RouteListener)
 
 	SetUpstream(client.Upstream)
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
@@ -70,6 +72,9 @@ type Builder struct {
 
 	// AllowedConsumers are the consumers that are allowed to consume the passed route
 	AllowedConsumers []*gatewayv1.ConsumeRoute
+
+	// routeListeners are the RouteListeners attached to the route
+	routeListeners []*gatewayv1.RouteListener
 
 	Route    *gatewayv1.Route
 	Consumer *gatewayv1.Consumer
@@ -137,6 +142,14 @@ func (b *Builder) GetAllowedConsumers() []*gatewayv1.ConsumeRoute {
 
 func (b *Builder) AddAllowedConsumers(consumers ...*gatewayv1.ConsumeRoute) {
 	b.AllowedConsumers = append(b.AllowedConsumers, consumers...)
+}
+
+func (b *Builder) GetRouteListeners() []*gatewayv1.RouteListener {
+	return b.routeListeners
+}
+
+func (b *Builder) AddRouteListeners(rls ...*gatewayv1.RouteListener) {
+	b.routeListeners = append(b.routeListeners, rls...)
 }
 
 func (b *Builder) RequestTransformerPlugin() *plugin.RequestTransformerPlugin {
@@ -289,8 +302,16 @@ func (b *Builder) Build(ctx context.Context) error {
 		return errors.New("upstream is not set")
 	}
 
-	// In case a plugin was used before but is not used anymore, we need to remove it
+	// In case a plugin was used before but is not used anymore, we need to remove it.
+	// The circuit-breaker IDs survive: the next reconcile needs them to delete the Kong upstream.
+	upstreamId, targetsId := b.Route.GetUpstreamId(), b.Route.GetTargetsId()
 	b.Route.Status.Properties = map[string]string{}
+	if upstreamId != "" {
+		b.Route.SetUpstreamId(upstreamId)
+	}
+	if targetsId != "" {
+		b.Route.SetTargetsId(targetsId)
+	}
 
 	// Ensure that the Routing and JumperConfig are set last
 	// ! We must ensure that the default (empty) value is null. Otherwise, Jumper will not work properly.
@@ -365,7 +386,7 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 // the higher the priority, the later the feature is applied
 // this is important because some features might depend on other features
 func sortFeatures(featureList []Feature) []Feature {
-	sort.Slice(featureList, func(i, j int) bool {
+	sort.SliceStable(featureList, func(i, j int) bool {
 		return featureList[i].Priority() < featureList[j].Priority()
 	})
 	return featureList

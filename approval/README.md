@@ -68,7 +68,9 @@ The Approval Workflow describes the process of creating, updating and managing A
 
 1. **Request Creation**: A user (requester) creates any `Subscription` resource, such as `ApiSubscriptions`. 
 The operator of the corresponding domain has to create an `ApprovalRequest` and updates it on any changes.
-The `Subscription` needs to be blocked until the `Approval` is granted.
+The `Subscription` is blocked while a decider must act on the `ApprovalRequest`.
+Once the `ApprovalRequest` is granted (always the case for `Auto`), the `Subscription` is processing until the approval controller issues the `Approval`.
+If no `Approval` is issued within 5 minutes of the grant, the `Subscription` is blocked with a message that points at the approval controller.
 
 2. **ApprovalRequest**: 
 The `ApprovalRequest` is created and contains information about the request, including the requester, the requested API, and the approval strategy.
@@ -88,6 +90,7 @@ configurations in the handler of the `Subscription` resource.
 
 6. **Changing Approval anytime**: The decider can also change the access by updating the `Approval` resource anytime. The approval can be paused, granted and rejected.
 By listing/watching the `Approval` resource, the `Subscription` resource can be updated to reflect those changes.
+For a keyed (scoped) `Approval`, a revocation (rejected, suspended, or expired after a suspension) is lifted only when a person fully grants another `ApprovalRequest` of the same gate after the revocation, as recorded by the decision timestamps. An automatic grant keeps the revocation. If a scoped `Approval` is deleted after it was issued, the `ApprovalRequest` it was issued for does not recreate it from an automatic grant; a new `ApprovalRequest` of the gate (for example, after an intent change) does. The control plane API lets teams only decide on an `Approval`; deleting one needs Kubernetes access to `Approval` resources.
 
 ### Approval Strategies
 There are three approval strategies supported by the `Approval` resource:
@@ -146,7 +149,7 @@ The `Approval` resource can be in one of the following states:
 - **Rejected**: The request has been rejected. This state indicates that a decider has denied access.
 - **Suspended**: The request has been suspended. This state indicates that the request is temporarily on hold and cannot be processed until further notice.
 - **SemiGranted**: The request has been approved by one decider in the `FourEyes` strategy, but requires a second approval from another decider to be fully granted.
-- **Expired**: The request has expired past its validity period.
+- **Expired**: The request has expired past its validity period. An `Approval` that was granted before it expired still grants access; one that was suspended before it expired denies access. The state before the expiry is read from `status.lastState` until the approval controller has reconciled the expiry, then from the recorded decisions. The expiration handler records that state as a decision when it sets `Expired`.
 
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 
