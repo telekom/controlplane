@@ -46,11 +46,13 @@ func TeamToTeamResponse(t *gql.ListTeamsTeamsTeamConnectionEdgesTeamEdgeNodeTeam
 	clientID := fmt.Sprintf("%s--team-user", t.Name)
 
 	resp := api.TeamResponse{
-		Name:     t.Name,
-		Email:    t.Email,
-		Members:  members,
-		ClientId: clientID,
-		Status:   mapStatusPhase(t.StatusPhase, t.StatusMessage),
+		Name:        t.Name,
+		DisplayName: deref(t.DisplayName),
+		Description: deref(t.Description),
+		Email:       t.Email,
+		Members:     members,
+		ClientId:    clientID,
+		Status:      mapStatusPhase(t.StatusPhase, t.StatusMessage),
 	}
 	if includeSecrets && t.TeamToken != nil {
 		resp.TeamToken = *t.TeamToken
@@ -72,17 +74,26 @@ func GetTeamToTeamResponse(t *gql.GetTeamTeamsTeamConnectionEdgesTeamEdgeNodeTea
 	clientID := fmt.Sprintf("%s--team-user", t.Name)
 
 	resp := api.TeamResponse{
-		Name:     t.Name,
-		Email:    t.Email,
-		Members:  members,
-		ClientId: clientID,
-		Status:   mapStatusPhase(t.StatusPhase, t.StatusMessage),
+		Name:        t.Name,
+		DisplayName: deref(t.DisplayName),
+		Description: deref(t.Description),
+		Email:       t.Email,
+		Members:     members,
+		ClientId:    clientID,
+		Status:      mapStatusPhase(t.StatusPhase, t.StatusMessage),
 	}
 	if includeSecrets && t.TeamToken != nil {
 		resp.TeamToken = *t.TeamToken
 	}
 
 	return resp
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // mapStatusPhase translates CP's statusPhase to the legacy Status shape.

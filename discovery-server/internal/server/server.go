@@ -67,20 +67,22 @@ type EventTypeController interface {
 // SecurityTemplates are the discovery-specific check-access comparison
 // templates. They are exported so cmd/main.go can inject them into the JWT
 // SecurityOpts when building each listener's security family.
+const applicationIDUserInputTemplate = "{{ .B.Environment }}--{{ .P.Applicationid }}"
+
 var SecurityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
-		UserInputTemplate: "{{ .B.Environment }}--{{ .P.Applicationid }}",
+		UserInputTemplate: applicationIDUserInputTemplate,
 		MatchType:         security.MatchTypePrefix,
 	},
 	security.ClientTypeGroup: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--",
-		UserInputTemplate: "{{ .B.Environment }}--{{ .P.Applicationid }}",
+		UserInputTemplate: applicationIDUserInputTemplate,
 		MatchType:         security.MatchTypePrefix,
 	},
 	security.ClientTypeAdmin: {
 		ExpectedTemplate:  "{{ .B.Environment }}--",
-		UserInputTemplate: "{{ .B.Environment }}--{{ .P.Applicationid }}",
+		UserInputTemplate: applicationIDUserInputTemplate,
 		MatchType:         security.MatchTypePrefix,
 	},
 }

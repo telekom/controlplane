@@ -156,8 +156,7 @@ type Machine2MachineAuthentication struct {
 }
 
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
-// Either client, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
+// Client and basic may be combined for an external IDP password grant.
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
@@ -170,10 +169,17 @@ type ConsumerMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=100
 	Scopes []string `json:"scopes,omitempty"`
+	// GrantType overrides the grant type derived from the consumer credentials for external IDP token requests
+	// +kubebuilder:validation:Optional
+	GrantType GrantType `json:"grantType,omitempty"`
+	// TokenRequest overrides the external IDP token endpoint authentication method for the consumer client credentials (RFC 7591)
+	// +kubebuilder:validation:Optional
+	TokenRequest TokenRequestMethod `json:"tokenRequest,omitempty"`
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || !has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// Username/password are only sent with the password grant; they may be combined with client credentials for client authentication.
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || (has(self.grantType) && self.grantType == 'password')", message="Username/password credentials require grant type \"password\""
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required

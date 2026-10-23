@@ -12030,6 +12030,8 @@ input UpdateTeamInput {
   email: String
   displayName: String
   description: String
+  "Replace the full membership list. Omitted or null preserves members. Team admission requires at least one member."
+  members: [MemberInput!]
 }
 
 input DeleteTeamInput {
@@ -12145,7 +12147,7 @@ type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): CreateTeamPayload!
 
-  "Update team metadata (email, description, displayName). Does not manage members."
+  "Update team metadata and optionally replace members. Reconciliation and projection remain asynchronous."
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
 
   "Delete a Team. Fails if the team still has resources (Rovers, ApiSpecs, etc.)."

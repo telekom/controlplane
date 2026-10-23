@@ -386,9 +386,7 @@ func (e *pluginEntity) Write(ctx context.Context, desired *kong.UpsertPluginJSON
 	// that route; otherwise it is global.
 	//
 	// Each variant has its own response type, so the branches unpack the status
-	// and the body and share the parsing below. The parsed JSON200 is unused:
-	// the consumer variant types it after a schema that truncates the plugin
-	// config to two fields.
+	// and the body and share the parsing below into the canonical kong.Plugin.
 	var status int
 	var body []byte
 	var err error

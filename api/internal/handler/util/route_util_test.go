@@ -119,6 +119,24 @@ var _ = Describe("Route Util", func() {
 					Basic:         &gatewayapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
 				}))
 			})
+
+			It("maps provider client and username/password credentials together for the password grant", func() {
+				mapped := mapExternalIDP(&apiapi.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token",
+					TokenRequest:  apiapi.TokenRequestClientSecretBasic,
+					GrantType:     apiapi.GrantTypePassword,
+					Client:        &apiapi.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"},
+					Basic:         &apiapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+				})
+
+				Expect(mapped).To(Equal(&gatewayapi.ExternalIdentityProvider{
+					TokenEndpoint: "https://idp.example/token",
+					TokenRequest:  gatewayapi.TokenRequestClientSecretBasic,
+					GrantType:     gatewayapi.GrantTypePassword,
+					Client:        &gatewayapi.OAuth2ClientCredentials{ClientId: "provider-client", ClientSecret: "provider-secret"},
+					Basic:         &gatewayapi.BasicAuthCredentials{Username: "provider-user", Password: "provider-pass"},
+				}))
+			})
 		})
 
 		Describe("mapConsumerSecurity", func() {
@@ -133,6 +151,53 @@ var _ = Describe("Route Util", func() {
 					Scopes: []string{"consumer:read", "consumer:write"},
 				}))
 			})
+
+			It("maps consumer client and username/password credentials together", func() {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: &apiapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &apiapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}})
+
+				Expect(mapped.M2M).To(Equal(&gatewayapi.ConsumerMachine2MachineAuthentication{
+					Client: &gatewayapi.OAuth2ClientCredentials{ClientId: "consumer", ClientSecret: "secret"},
+					Basic:  &gatewayapi.BasicAuthCredentials{Username: "user", Password: "password"},
+					Scopes: []string{"consumer:read"},
+				}))
+			})
+
+			DescribeTable("passes the consumer grant type through", func(grantType apiapi.GrantType, expected gatewayapi.GrantType) {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client:    &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret", RefreshToken: "rt"},
+					GrantType: grantType,
+				}})
+
+				Expect(mapped).NotTo(BeNil())
+				Expect(mapped.M2M).NotTo(BeNil())
+				Expect(mapped.M2M.GrantType).To(Equal(expected))
+			},
+				Entry("empty without defaulting", apiapi.GrantType(""), gatewayapi.GrantType("")),
+				Entry("password", apiapi.GrantTypePassword, gatewayapi.GrantTypePassword),
+				Entry("client_credentials", apiapi.GrantTypeClientCredentials, gatewayapi.GrantTypeClientCredentials),
+				Entry("authorization_code", apiapi.GrantTypeAuthorizationCode, gatewayapi.GrantTypeAuthorizationCode),
+				Entry("refresh_token", apiapi.GrantTypeRefreshToken, gatewayapi.GrantTypeRefreshToken),
+				Entry("unrecognized without validation", apiapi.GrantType("unrecognized"), gatewayapi.GrantType("unrecognized")),
+			)
+
+			DescribeTable("passes the consumer token request method through", func(tokenRequest apiapi.TokenRequestMethod, expected gatewayapi.TokenRequestMethod) {
+				mapped := mapConsumerSecurity(&apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client:       &apiapi.OAuth2ClientCredentials{ClientId: "consumer-id", ClientSecret: "consumer-secret"},
+					TokenRequest: tokenRequest,
+				}})
+
+				Expect(mapped).NotTo(BeNil())
+				Expect(mapped.M2M).NotTo(BeNil())
+				Expect(mapped.M2M.TokenRequest).To(Equal(expected))
+			},
+				Entry("empty without defaulting", apiapi.TokenRequestMethod(""), gatewayapi.TokenRequestMethod("")),
+				Entry("client_secret_basic", apiapi.TokenRequestClientSecretBasic, gatewayapi.TokenRequestClientSecretBasic),
+				Entry("client_secret_post", apiapi.TokenRequestClientSecretPost, gatewayapi.TokenRequestClientSecretPost),
+			)
 		})
 
 		Describe("ReturnReferenceOnly", func() {

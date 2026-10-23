@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/projector
 
-go 1.26.9
+go 1.26.10
 
 require (
 	entgo.io/ent v0.14.6
@@ -13,17 +13,17 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mattn/go-sqlite3 v1.14.50
-	github.com/onsi/ginkgo/v2 v2.33.0
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/gomega v1.44.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/time v0.15.0
-	k8s.io/api v0.37.0
-	k8s.io/apimachinery v0.37.0
-	k8s.io/client-go v0.37.0
-	sigs.k8s.io/controller-runtime v0.24.1
+	k8s.io/api v0.37.1
+	k8s.io/apimachinery v0.37.1
+	k8s.io/client-go v0.37.1
+	sigs.k8s.io/controller-runtime v0.25.2
 )
 
 require (
@@ -38,7 +38,7 @@ require (
 	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/permission/api v0.0.0-00010101000000-000000000000
-	k8s.io/apiextensions-apiserver v0.36.3
+	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 )
 
@@ -136,7 +136,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

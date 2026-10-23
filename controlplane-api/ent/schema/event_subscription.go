@@ -88,5 +88,8 @@ func (EventSubscription) Annotations() []schema.Annotation {
 func (EventSubscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("event_type").Edges("owner").Unique(),
+		// FK lookups for application -> subscriptions and exposure -> subscriptions traversals.
+		index.Edges("owner"),
+		index.Edges("target"),
 	}
 }

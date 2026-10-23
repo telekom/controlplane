@@ -2,9 +2,11 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map BasicAuth security correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: (*v1.OAuth2ClientCredentials)(nil),
-        Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
-        Scopes: nil,
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:       nil,
+        GrantType:    "",
+        TokenRequest: "",
     },
 }
 ---
@@ -12,9 +14,11 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 client credentials correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key", RefreshToken:"refreshToken"},
-        Basic:  (*v1.BasicAuthCredentials)(nil),
-        Scopes: nil,
+        Client:       &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key", RefreshToken:"refreshToken"},
+        Basic:        (*v1.BasicAuthCredentials)(nil),
+        Scopes:       nil,
+        GrantType:    "",
+        TokenRequest: "",
     },
 }
 ---
@@ -22,9 +26,11 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 username/password correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: (*v1.OAuth2ClientCredentials)(nil),
-        Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
-        Scopes: nil,
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:       nil,
+        GrantType:    "",
+        TokenRequest: "",
     },
 }
 ---
@@ -32,9 +38,11 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 scopes correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: (*v1.OAuth2ClientCredentials)(nil),
-        Basic:  (*v1.BasicAuthCredentials)(nil),
-        Scopes: {"read", "write"},
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        (*v1.BasicAuthCredentials)(nil),
+        Scopes:       {"read", "write"},
+        GrantType:    "",
+        TokenRequest: "",
     },
 }
 ---
@@ -42,9 +50,47 @@
 [Subscription Security Mapper mapSubscriptionSecurity must map combined OAuth2 configuration correctly - 1]
 &v1.SubscriberSecurity{
     M2M: &v1.SubscriberMachine2MachineAuthentication{
-        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"", RefreshToken:""},
-        Basic:  (*v1.BasicAuthCredentials)(nil),
-        Scopes: {"read", "write"},
+        Client:       &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"", RefreshToken:""},
+        Basic:        (*v1.BasicAuthCredentials)(nil),
+        Scopes:       {"read", "write"},
+        GrantType:    "",
+        TokenRequest: "",
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity normalizes the subscriber grant type omitted - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:       {"read"},
+        GrantType:    "",
+        TokenRequest: "",
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity normalizes the subscriber grant type uppercase - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:       {"read"},
+        GrantType:    "password",
+        TokenRequest: "",
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity normalizes the subscriber grant type lowercase - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client:       (*v1.OAuth2ClientCredentials)(nil),
+        Basic:        &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:       {"read"},
+        GrantType:    "refresh_token",
+        TokenRequest: "",
     },
 }
 ---
