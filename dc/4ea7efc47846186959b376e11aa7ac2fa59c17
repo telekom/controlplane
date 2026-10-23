@@ -1,0 +1,21 @@
+gateway/internal/features/feature/last_mile_security_test.go
+  s_6661f8ef56da2c::t_2988d1efdacc47 215
+gateway/internal/features/feature/last_mile_security.go
+  s_6661f8ef56da2c::t_2988d1efdacc47 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dc4ea7efc47846186959b376e11aa7ac2fa59c17",
+  "prompts": {},
+  "sessions": {
+    "s_6661f8ef56da2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9c06bbc8ffeV7tpZPL7cUYugq",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
