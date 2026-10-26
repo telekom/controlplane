@@ -1,0 +1,24 @@
+gateway/hack/legacy-route-seed.md
+  s_66b18834b21776::t_db624e3fe21a23 1-83
+gateway/hack/legacy-route-seed_test.sh
+  s_66b18834b21776::t_3bbf4220ad0d85 23-24,184,249,315
+  s_66b18834b21776::t_db624e3fe21a23 1-22,25-183,185-248,250-314,316-465
+gateway/hack/legacy-route-seed.sh
+  s_66b18834b21776::t_db624e3fe21a23 1-631
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d1bf9c5ba8f1be4fe0ec0ba677f6335c6d814cba",
+  "prompts": {},
+  "sessions": {
+    "s_66b18834b21776": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e886b5cd9ffeIbmdfH5NSt1l9W",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
