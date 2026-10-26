@@ -141,6 +141,9 @@ var _ = Describe("OIDC discovery", func() {
 	)
 })
 
+// skipTLSVerifyEnv is the legacy bypass variable that discovery must ignore.
+const skipTLSVerifyEnv = "SKIP_TLS_VERIFY"
+
 var _ = Describe("OIDC discovery TLS verification", func() {
 	var server *httptest.Server
 
@@ -151,25 +154,25 @@ var _ = Describe("OIDC discovery TLS verification", func() {
 		}))
 		DeferCleanup(server.Close)
 
-		previous, wasSet := os.LookupEnv("SKIP_TLS_VERIFY")
+		previous, wasSet := os.LookupEnv(skipTLSVerifyEnv)
 		DeferCleanup(func() {
 			if wasSet {
-				Expect(os.Setenv("SKIP_TLS_VERIFY", previous)).To(Succeed())
+				Expect(os.Setenv(skipTLSVerifyEnv, previous)).To(Succeed())
 				return
 			}
-			Expect(os.Unsetenv("SKIP_TLS_VERIFY")).To(Succeed())
+			Expect(os.Unsetenv(skipTLSVerifyEnv)).To(Succeed())
 		})
 	})
 
 	It("rejects an untrusted certificate without a custom CA", func() {
-		Expect(os.Unsetenv("SKIP_TLS_VERIFY")).To(Succeed())
+		Expect(os.Unsetenv(skipTLSVerifyEnv)).To(Succeed())
 		_, _, err := discoverPresetTokenURL(context.Background(), &HandlingContext{}, server.URL)
 		Expect(err).To(MatchError(ContainSubstring("certificate")))
 	})
 
 	DescribeTable("enforces verification regardless of the legacy bypass environment variable",
 		func(value string) {
-			Expect(os.Setenv("SKIP_TLS_VERIFY", value)).To(Succeed())
+			Expect(os.Setenv(skipTLSVerifyEnv, value)).To(Succeed())
 			_, _, err := discoverPresetTokenURL(context.Background(), &HandlingContext{}, server.URL)
 			Expect(err).To(MatchError(ContainSubstring("certificate")))
 		},

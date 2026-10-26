@@ -189,21 +189,32 @@ var _ = Describe("Zone CA bundle", func() {
 		}
 	})
 
-	It("keeps the last valid bundle and children when a source becomes invalid", func() {
-		provision(h, zone)
-		before := getManagedBundle(zone)
-		gatewayBefore := gatewaysOf(zone)
+	DescribeTable("keeps the last valid bundle and children when a source becomes invalid",
+		func(invalid func() string) {
+			provision(h, zone)
+			before := getManagedBundle(zone)
+			gatewayBefore := gatewaysOf(zone)
+			idpBefore := getZoneIdentityProvider(zone).Spec.TLS
 
-		upsertConfigMap(testNamespace, gatewaySrc, nil, map[string]string{"ca.pem": newTestCertPEM("leaf", false)})
-		zone.Spec.Gateways[0].Admin.Url = "https://changed.example.com/admin-api"
+			upsertConfigMap(testNamespace, gatewaySrc, nil, map[string]string{"ca.pem": invalid()})
+			zone.Spec.Gateways[0].Admin.Url = "https://changed.example.com/admin-api"
 
-		expectBlocked(h.CreateOrUpdate(newTestContext(zone), zone))
+			expectBlocked(h.CreateOrUpdate(newTestContext(zone), zone))
 
-		after := getManagedBundle(zone)
-		Expect(after.ResourceVersion).To(Equal(before.ResourceVersion))
-		Expect(after.Data).To(Equal(before.Data))
-		Expect(gatewaysOf(zone)).To(Equal(gatewayBefore))
-	})
+			after := getManagedBundle(zone)
+			Expect(after.ResourceVersion).To(Equal(before.ResourceVersion))
+			Expect(after.Data).To(Equal(before.Data))
+			Expect(gatewaysOf(zone)).To(Equal(gatewayBefore))
+			Expect(getZoneIdentityProvider(zone).Spec.TLS).To(Equal(idpBefore))
+		},
+		Entry("leaf certificate", func() string { return newTestCertPEM("leaf", false) }),
+		Entry("malformed block followed by a valid CA", func() string {
+			return "-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n" + newTestCertPEM("later", true)
+		}),
+		Entry("unmatched BEGIN followed by a valid CA", func() string {
+			return "-----BEGIN CERTIFICATE-----\nAAAA\n" + newTestCertPEM("later", true)
+		}),
+	)
 
 	It("blocks on a missing source ConfigMap or key without creating children", func() {
 		zone.Spec.IdentityProviders[0].TLS = tlsRef("does-not-exist", "ca.pem")

@@ -541,7 +541,7 @@ var _ = Describe("profile", func() {
 		Expect(p.Timeout).To(Equal(10 * time.Second))
 		Expect(p.MinTLSVersion).To(BeEquivalentTo(tls.VersionTLS13))
 		Expect(p.Transport).To(Equal(tlsclient.TransportRaw))
-		Expect(p.MetricsClientName).To(Equal("identity"))
+		Expect(p.ClientName).To(Equal("identity"))
 		Expect(p.ClassifyTokenError).NotTo(BeNil())
 	})
 

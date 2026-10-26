@@ -42,6 +42,9 @@ type cacheKey struct {
 }
 
 type entry struct {
+	// ready signals build completion. It is closed exactly once, after client
+	// and err have been assigned; the close broadcasts to all waiters and
+	// makes client and err safe to read without holding the mutex.
 	ready        chan struct{}
 	client       *Client
 	err          error
@@ -186,6 +189,7 @@ func (f *Factory) build(key cacheKey, e *entry, p Profile, s Spec, caPEM []byte)
 	if err != nil && f.entries[key] == e {
 		delete(f.entries, key)
 	}
+	// Broadcast completion to every waiter; must stay after the assignment above.
 	close(e.ready)
 }
 

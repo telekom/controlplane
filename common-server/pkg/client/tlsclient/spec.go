@@ -42,8 +42,10 @@ type Profile struct {
 	MaxIdleConnsPerHost int
 	// MinTLSVersion is applied if != 0.
 	MinTLSVersion uint16
-	// MetricsClientName enables the metrics wrapper with this client name if not empty.
-	MetricsClientName string
+	// ClientName identifies the client if not empty: it enables the metrics
+	// wrapper with this client name and is sent as User-Agent on API, token
+	// and unauthenticated requests that do not set a User-Agent themselves.
+	ClientName string
 	// MetricsReplacePatterns are used to redact metric paths.
 	MetricsReplacePatterns []string
 	// ClassifyTokenError converts token refresh and re-authentication errors
@@ -152,6 +154,10 @@ func validateURL(name, raw string) error {
 // fingerprint covers every input that influences the built client.
 func fingerprint(profile string, s Spec, caPEM []byte) string {
 	h := sha256.New()
+	// Each field is prefixed with its length so the encoding is injective:
+	// adjacent fields such as ("ab", "c") and ("a", "bc") cannot produce the
+	// same hash input. This is about unambiguous field boundaries, not about
+	// SHA-256 collision resistance.
 	ca := sha256.Sum256(caPEM)
 	for _, field := range []string{
 		profile, s.APIURL, string(s.Auth.Mode), s.Auth.TokenURL, s.Auth.ClientID,
@@ -159,7 +165,7 @@ func fingerprint(profile string, s Spec, caPEM []byte) string {
 	} {
 		var n [8]byte
 		binary.BigEndian.PutUint64(n[:], uint64(len(field)))
-		h.Write(n[:])
+		h.Write(n[:]) // hash.Hash.Write never returns an error
 		h.Write([]byte(field))
 	}
 	return hex.EncodeToString(h.Sum(nil))

@@ -54,6 +54,14 @@ var _ = Describe("Canonicalize", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("accepts CRLF line endings and blank lines between blocks", func() {
+		a, b := newCA("a"), newCA("b")
+		crlf := bytes.ReplaceAll(bytes.Join([][]byte{a, b}, []byte("\n\n")), []byte("\n"), []byte("\r\n"))
+		out, err := cabundle.Canonicalize(crlf)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(certCount(out)).To(Equal(2))
+	})
+
 	It("deduplicates and orders deterministically", func() {
 		a, b, c := newCA("a"), newCA("b"), newCA("c")
 		out1, err := cabundle.Canonicalize(bytes.Join([][]byte{a, b}, nil), bytes.Join([][]byte{c, a}, nil))
@@ -78,6 +86,23 @@ var _ = Describe("Canonicalize", func() {
 		Entry("trailing junk", func() []byte { return append(newCA("a"), []byte("junk")...) }),
 		Entry("malformed block", func() []byte {
 			return []byte("-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n")
+		}),
+		Entry("malformed block followed by a valid CA", func() []byte {
+			return append([]byte("-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n"), newCA("a")...)
+		}),
+		Entry("unmatched BEGIN followed by a valid CA", func() []byte {
+			return append([]byte("-----BEGIN CERTIFICATE-----\nAAAA\n"), newCA("a")...)
+		}),
+		Entry("unmatched BEGIN of another type followed by a valid CA", func() []byte {
+			return append([]byte("-----BEGIN PRIVATE KEY-----\nAAAA\n"), newCA("a")...)
+		}),
+		Entry("BEGIN line without newline", func() []byte { return []byte("-----BEGIN CERTIFICATE-----") }),
+		Entry("malformed BEGIN line", func() []byte {
+			return append([]byte("-----BEGIN CERTIFICATE\n"), newCA("a")...)
+		}),
+		Entry("content glued to an END line", func() []byte {
+			ca := newCA("a")
+			return append(bytes.TrimSpace(ca), []byte("junk\n")...)
 		}),
 		Entry("unparseable certificate", func() []byte {
 			return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("nope")})

@@ -294,7 +294,7 @@ Admin's OIDC discovery uses the same validated union directly, without waiting t
 
 #### Validation and last valid configuration
 
-Each referenced value must be nonempty and contain only parseable, header-free PEM `CERTIFICATE` blocks and whitespace. Certificates must be CAs with valid basic constraints and, when key usage is set, certificate-signing permission. Leaf certificates, private keys, malformed PEM, and unrelated content are not supported source material. Use clean CA exports rather than relying on validation to sanitize mixed files; see the [current parser limitation](../architecture/outbound-tls-clients.md#validation-limitation). Duplicate certificates are removed and the bundle is put in a stable order. The resulting bundle must fit within the ConfigMap's 1 MiB data limit, including its key.
+Each referenced value must be nonempty and contain only parseable, header-free PEM `CERTIFICATE` blocks and whitespace. Certificates must be CAs with valid basic constraints and, when key usage is set, certificate-signing permission. Leaf certificates, private keys, malformed PEM, unmatched `BEGIN` lines, and unrelated content are rejected, even when a valid CA follows them; see [strict PEM parsing](../architecture/outbound-tls-clients.md#strict-pem-parsing). Duplicate certificates are removed and the bundle is put in a stable order. The resulting bundle must fit within the ConfigMap's 1 MiB data limit, including its key.
 
 CA validity dates alone do not cause configuration rejection, which permits overlap during rotation. This does **not** disable validity-date checks during an HTTPS connection. Loading the system trust store must also succeed; the client does not silently switch to a custom-only trust store.
 

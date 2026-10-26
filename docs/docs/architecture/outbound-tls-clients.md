@@ -27,17 +27,17 @@ The bridge is a small interface owned by `tlsclient`: `Resolve(ctx context.Conte
 
 The HTTP layer extends the system certificate pool and fails if loading it fails. It does not modify the existing internal CA refresher or other shared HTTP-client helpers. Token and API requests use the same additive trust, with certificate and hostname verification enabled for operators.
 
-### Validation limitation
+### Strict PEM parsing
 
-The intended source contract allows only CA certificate blocks and whitespace. The current `cabundle.parseSet` checks the input prefix and then delegates to Go's `pem.Decode`, which can skip a malformed block or unmatched `BEGIN` line before a later valid block. Such mixed input is therefore not guaranteed to be rejected, despite the strict contract. Source files must be clean CA exports; the parser is not a sanitization boundary. This is an implementation gap, not support for mixed PEM content.
+The source contract allows only CA certificate blocks and whitespace. `cabundle` parses blocks strictly in sequence: each block must start at the current position, end with the `END` line matching its `BEGIN` type, contain no other `BEGIN` line, and decode as a whole. Malformed blocks, unmatched or nested `BEGIN` lines, and any content outside blocks invalidate the whole source, even when a valid CA follows. Go's `pem.Decode` alone would skip such content, so it is only applied to a block whose boundaries are already verified. LF and CRLF line endings are both accepted.
 
 ## Component profiles and callers
 
 | Component | Actual remote callers | Authentication and HTTP behavior |
 | --- | --- | --- |
 | Admin | OIDC discovery during Zone status population | Unauthenticated, 10-second timeout, cloned default transport with environment proxy support. Uses an uncached client with the validated in-memory Zone union and closes it after discovery. Existing discovery-result reuse remains. |
-| Gateway | Route and Consumer create/update/delete handlers | Client credentials; token URL remains the issuer plus `/protocol/openid-connect/token`. Raw transport, 10-second timeout, 100 maximum idle connections per host, existing Gateway metrics. |
-| Identity | Realm and Client create/update/delete handlers, including realm issuer discovery | Initial password grant is eager, followed by token refresh. Raw transport, TLS 1.3 minimum, 10-second timeout or `CLIENT_TIMEOUT`, existing Identity metrics. Issuer discovery shares the TLS transport and timeout without sending OAuth credentials. |
+| Gateway | Route and Consumer create/update/delete handlers | Client credentials; token URL remains the issuer plus `/protocol/openid-connect/token`. Raw transport, 10-second timeout, 100 maximum idle connections per host, client name `gateway` for the existing metrics and as `User-Agent`. |
+| Identity | Realm and Client create/update/delete handlers, including realm issuer discovery | Initial password grant is eager, followed by token refresh. Raw transport, TLS 1.3 minimum, 10-second timeout or `CLIENT_TIMEOUT`, client name `identity` for the existing metrics and as `User-Agent`. Issuer discovery shares the TLS transport and timeout without sending OAuth credentials. |
 
 Gateway and Identity each construct **one factory per operator process**, register it with the manager, and inject it across their remote-calling controllers. The Gateway and IdentityProvider handlers do not gain proactive CA validation or connectivity probes; failures are reported on the operation resource.
 
@@ -56,9 +56,11 @@ Handlers defer the returned release function immediately after successful acquis
 
 One cleanup loop per factory checks for unused clients every minute. A version is eligible for eviction after **30 minutes since its last acquisition**, and only with zero borrowers. Eviction cancels that client's token-source context and closes the underlying transport's idle connections, even when OAuth and metrics wrap it. Manager shutdown closes the factory and its clients; cleanup runs on every replica without requiring leadership.
 
+A profile's `ClientName` labels the client's metrics and is sent as `User-Agent` on API, token, and unauthenticated discovery requests. A `User-Agent` set by the caller on a request takes precedence. Without a client name, neither metrics nor a custom `User-Agent` are added. The header is set on a clone of the request, never on the caller's request.
+
 ## Context and authentication lifetime
 
-Cached token sources use the **operator lifetime**, never a reconciliation context retained from client construction. Each token HTTP request has the profile's timeout; there is no single construction deadline that expires the shared token source later. API requests still carry the current reconciliation context. A canceled caller may have to wait for a shared, timeout-bounded token refresh; there is no separate context-aware token broker.
+The context passed at construction bounds the token source and must stay valid for as long as the client is used. Cached token sources use the **operator lifetime**, never a reconciliation context retained from client construction. A standalone client from `tlsclient.New` may use the reconciliation context when it is closed before the reconciliation ends, as Admin does for OIDC discovery. Each token HTTP request has the profile's timeout; there is no single construction deadline that expires the shared token source later. API requests still carry the current reconciliation context. A canceled caller may have to wait for a shared, timeout-bounded token refresh; there is no separate context-aware token broker.
 
 Identity falls back to a password grant only when refresh returns HTTP 400 or 401. Transient refresh failures do not trigger password re-authentication. The Identity-supplied error classifier retains existing retry behavior, including the delay for HTTP 429 and retries for 5xx responses. Initial password-grant failures remain wrapped acquisition errors rather than passing through that refresh classifier.
 

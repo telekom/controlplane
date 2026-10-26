@@ -70,8 +70,14 @@ func WithInsecureSkipVerify(skip bool) Option {
 	}
 }
 
-// New builds an uncached client. ctx is used to resolve the CA and as
-// lifetime of the token source; the caller must call Close.
+// New builds an uncached client. ctx is used to resolve the CA and bounds the
+// lifetime of the token source, so it must stay valid for as long as the
+// client is used; the caller must call Close.
+//
+// A reconciliation context is suitable for a standalone client that is closed
+// before the reconciliation ends. Clients that outlive a reconciliation, such
+// as cached clients, need a context with the lifetime of their owner, e.g. the
+// operator; use a Factory for those.
 // Spec.Owner and Spec.Profile are ignored.
 func New(ctx context.Context, profile Profile, spec Spec, opts ...Option) (*Client, error) {
 	if err := profile.validate(); err != nil {
@@ -125,13 +131,17 @@ func newTransport(p Profile, caPEM []byte, insecure bool) (*http.Transport, erro
 }
 
 // build creates the client. lifeCtx bounds the token source lifetime and must
-// not be a reconciliation context.
+// outlive every use of the client (see New).
 func build(lifeCtx context.Context, p Profile, s Spec, caPEM []byte, insecure bool) (*Client, error) {
 	transport, err := newTransport(p, caPEM, insecure)
 	if err != nil {
 		return nil, err
 	}
-	base := &http.Client{Transport: transport, Timeout: p.timeout()}
+	var rt http.RoundTripper = transport
+	if p.ClientName != "" {
+		rt = &userAgentTransport{base: transport, userAgent: p.ClientName}
+	}
+	base := &http.Client{Transport: rt, Timeout: p.timeout()}
 
 	ctx, cancel := context.WithCancel(lifeCtx)
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, base)
@@ -164,11 +174,27 @@ func build(lifeCtx context.Context, p Profile, s Spec, caPEM []byte, insecure bo
 	}
 
 	c.doer = httpClient
-	if p.MetricsClientName != "" {
+	if p.ClientName != "" {
 		c.doer = metrics.WithMetrics(httpClient,
-			metrics.WithClientName(p.MetricsClientName),
+			metrics.WithClientName(p.ClientName),
 			metrics.WithReplacePatterns(p.MetricsReplacePatterns...),
 		)
 	}
 	return c, nil
+}
+
+// userAgentTransport sets the User-Agent on requests that do not carry one.
+// It clones the request before modifying it, as required by http.RoundTripper.
+type userAgentTransport struct {
+	base      http.RoundTripper
+	userAgent string
+}
+
+func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("User-Agent") != "" {
+		return t.base.RoundTrip(req)
+	}
+	clone := req.Clone(req.Context())
+	clone.Header.Set("User-Agent", t.userAgent)
+	return t.base.RoundTrip(clone)
 }

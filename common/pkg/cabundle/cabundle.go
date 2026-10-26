@@ -12,7 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -86,7 +86,7 @@ func Canonicalize(pemSets ...[]byte) ([]byte, error) {
 	for k := range unique {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool { return bytes.Compare(keys[i][:], keys[j][:]) < 0 })
+	slices.SortFunc(keys, func(a, b [sha256.Size]byte) int { return bytes.Compare(a[:], b[:]) })
 
 	var out bytes.Buffer
 	for _, k := range keys {
@@ -104,12 +104,9 @@ func parseSet(data []byte) ([][]byte, error) {
 	var ders [][]byte
 	rest := bytes.TrimSpace(data)
 	for len(rest) > 0 {
-		if !bytes.HasPrefix(rest, []byte("-----BEGIN ")) {
-			return nil, invalidf("unexpected content outside of PEM blocks")
-		}
-		block, next := pem.Decode(rest)
-		if block == nil {
-			return nil, invalidf("malformed PEM block")
+		block, next, err := decodeNext(rest)
+		if err != nil {
+			return nil, err
 		}
 		if block.Type != "CERTIFICATE" {
 			return nil, invalidf("unsupported PEM block type %q", block.Type)
@@ -131,6 +128,46 @@ func parseSet(data []byte) ([][]byte, error) {
 		return nil, invalidf("no certificates found")
 	}
 	return ders, nil
+}
+
+var (
+	pemBegin    = []byte("-----BEGIN ")
+	pemEnd      = []byte("-----END ")
+	pemBoundary = []byte("-----")
+)
+
+// decodeNext decodes the PEM block at the very start of data and returns the
+// remaining input. Unlike pem.Decode alone it never skips content: the block
+// must start at the beginning of data, end with the END line matching its
+// type, contain no other BEGIN line and decode as a whole.
+func decodeNext(data []byte) (*pem.Block, []byte, error) {
+	if !bytes.HasPrefix(data, pemBegin) {
+		return nil, nil, invalidf("unexpected content outside of PEM blocks")
+	}
+	lineEnd := bytes.IndexByte(data, '\n')
+	if lineEnd < 0 {
+		return nil, nil, invalidf("malformed PEM block")
+	}
+	typeLine := bytes.TrimRight(data[len(pemBegin):lineEnd], " \t\r")
+	typ, ok := bytes.CutSuffix(typeLine, pemBoundary)
+	if !ok || len(typ) == 0 {
+		return nil, nil, invalidf("malformed PEM BEGIN line")
+	}
+	endMarker := slices.Concat(pemEnd, typ, pemBoundary)
+	bodyEnd := bytes.Index(data[lineEnd:], endMarker)
+	if bodyEnd < 0 {
+		return nil, nil, invalidf("unmatched PEM BEGIN line for type %q", typ)
+	}
+	bodyEnd += lineEnd
+	if bytes.Contains(data[lineEnd:bodyEnd], pemBegin) {
+		return nil, nil, invalidf("nested or unmatched PEM BEGIN line")
+	}
+	blockEnd := bodyEnd + len(endMarker)
+	block, trailing := pem.Decode(data[:blockEnd])
+	if block == nil || len(bytes.TrimSpace(trailing)) > 0 {
+		return nil, nil, invalidf("malformed PEM block")
+	}
+	return block, data[blockEnd:], nil
 }
 
 func checkCA(cert *x509.Certificate) error {

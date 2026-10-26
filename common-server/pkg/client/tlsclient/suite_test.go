@@ -189,6 +189,26 @@ func (a *apiHandler) last() string {
 	return a.auth[len(a.auth)-1]
 }
 
+// uaRecorder records the User-Agent header and delegates to next.
+type uaRecorder struct {
+	mu   sync.Mutex
+	ua   []string
+	next http.Handler
+}
+
+func (u *uaRecorder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	u.mu.Lock()
+	u.ua = append(u.ua, r.Header.Get("User-Agent"))
+	u.mu.Unlock()
+	u.next.ServeHTTP(w, r)
+}
+
+func (u *uaRecorder) all() []string {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return append([]string(nil), u.ua...)
+}
+
 func get(c *Client, url string) (int, error) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	Expect(err).NotTo(HaveOccurred())
