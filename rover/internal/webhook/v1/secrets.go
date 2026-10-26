@@ -33,7 +33,14 @@ import (
 // spec.exposures.#.api.security.m2m.externalIDP.basic.password: Default password for externalIDP
 // spec.exposures.#.api.security.m2m.basic.password: Default password for basicAuth
 //
-// The same secrets are handled for spec.subscriptions.#.agentic and spec.exposures.#.agentic.
+// spec.subscriptions.#.agentic.security.m2m.client.clientSecret: Agentic consumer clientSecret for externalIDP
+// spec.subscriptions.#.agentic.security.m2m.client.clientKey: Agentic consumer clientKey for externalIDP
+// spec.subscriptions.#.agentic.security.m2m.basic.password: Agentic consumer password for externalIDP or basicAuth
+//
+// spec.exposures.#.agentic.security.m2m.externalIDP.client.clientSecret: Agentic default clientSecret for externalIDP
+// spec.exposures.#.agentic.security.m2m.externalIDP.client.clientKey: Agentic default clientKey for externalIDP
+// spec.exposures.#.agentic.security.m2m.externalIDP.basic.password: Agentic default password for externalIDP
+// spec.exposures.#.agentic.security.m2m.basic.password: Agentic default password for basicAuth
 
 func makeKey(basePath, secretName string) string {
 	return fmt.Sprintf("%s/%s/%s", "externalSecrets", labelutil.NormalizeValue(basePath), secretName)
@@ -92,6 +99,7 @@ func addSubscriptionExternalSecrets(secretMap map[string]string, subscription ro
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func addExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Exposure) {
 	if exposure.Api == nil || !exposure.Api.HasM2M() {
 		return
@@ -141,6 +149,7 @@ func setSubscriptionExternalSecrets(log logr.Logger, subscription *roverv1.Subsc
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func setExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, availableSecrets map[string]string) {
 	if exposure.Api == nil || !exposure.Api.HasM2M() {
 		return
@@ -192,6 +201,7 @@ func addAgenticSubscriptionExternalSecrets(secretMap map[string]string, subscrip
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func addAgenticExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Exposure) {
 	if exposure.Agentic == nil || exposure.Agentic.Security == nil || exposure.Agentic.Security.M2M == nil {
 		return
@@ -241,6 +251,7 @@ func setAgenticSubscriptionExternalSecrets(log logr.Logger, subscription *roverv
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func setAgenticExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, availableSecrets map[string]string) {
 	if exposure.Agentic == nil || exposure.Agentic.Security == nil || exposure.Agentic.Security.M2M == nil {
 		return
