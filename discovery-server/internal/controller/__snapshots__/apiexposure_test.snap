@@ -260,9 +260,9 @@
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
    "name": "eni-distr-v1",
    "security": {
-    "password": "subscriber-secret-password",
+    "password": "**********",
     "type": "basicAuth",
-    "username": "subscriber-user"
+    "username": "**********"
    },
    "status": "<Any value>",
    "team": {
@@ -302,9 +302,9 @@
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
    "name": "eni-distr-v1",
    "security": {
-    "password": "subscriber-secret-password",
+    "password": "**********",
     "type": "basicAuth",
-    "username": "subscriber-user"
+    "username": "**********"
    },
    "status": "<Any value>",
    "team": {
@@ -344,9 +344,9 @@
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
    "name": "eni-distr-v1",
    "security": {
-    "password": "subscriber-secret-password",
+    "password": "**********",
     "type": "basicAuth",
-    "username": "subscriber-user"
+    "username": "**********"
    },
    "status": "<Any value>",
    "team": {
@@ -388,7 +388,7 @@
    "security": {
     "password": "**********",
     "type": "basicAuth",
-    "username": "subscriber-user"
+    "username": "**********"
    },
    "status": "<Any value>",
    "team": {
