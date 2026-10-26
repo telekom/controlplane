@@ -204,6 +204,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 								M2M: &v1.Machine2MachineAuthentication{
 									ExternalIDP: &v1.ExternalIdentityProvider{
 										TokenEndpoint: "https://idp.example.com/token",
+										GrantType:     v1.GrantTypePassword,
 										Basic: &v1.BasicAuthCredentials{
 											Username: "user",
 											Password: "pass",
@@ -236,6 +237,96 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			}))
 
 		})
+
+		DescribeTable("validates provider username/password against the external IDP grant type",
+			func(grantType v1.GrantType, client *v1.OAuth2ClientCredentials, accepted bool) {
+				rover := new(v1.Rover)
+				rover.Name = "provider-password-rover"
+				rover.Namespace = "default"
+				rover.Spec = v1.RoverSpec{
+					Zone:         "test-zone",
+					ClientSecret: "topsecret",
+					Exposures: []v1.Exposure{{
+						Api: &v1.ApiExposure{
+							BasePath:   "/api",
+							Upstreams:  []v1.Upstream{{URL: "http://example.com"}},
+							Visibility: v1.VisibilityEnterprise,
+							Approval:   v1.Approval{Strategy: v1.ApprovalStrategyAuto},
+							Security: &v1.Security{M2M: &v1.Machine2MachineAuthentication{
+								ExternalIDP: &v1.ExternalIdentityProvider{
+									TokenEndpoint: "https://idp.example.com/token",
+									TokenRequest:  v1.TokenRequestClientSecretBasic,
+									GrantType:     grantType,
+									Basic:         &v1.BasicAuthCredentials{Username: "user", Password: "pass"},
+									Client:        client,
+								},
+							}},
+						},
+					}},
+				}
+
+				err := k8sClient.Create(ctx, rover)
+				if accepted {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(k8sClient.Delete(ctx, rover)).To(Succeed())
+					return
+				}
+				Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				statusErr, ok := err.(apierrors.APIStatus)
+				Expect(ok).To(BeTrue())
+				Expect(statusErr.Status().Details.Causes).To(ConsistOf(metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"object\": Username/password credentials require grant type \"password\"",
+					Field:   "spec.exposures[0].api.security.m2m.externalIDP",
+				}))
+			},
+			Entry("password grant", v1.GrantTypePassword, nil, true),
+			Entry("password grant with client credentials", v1.GrantTypePassword,
+				&v1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"}, true),
+			Entry("client_credentials grant", v1.GrantTypeClientCredentials, nil, false),
+			Entry("client_credentials grant with client credentials", v1.GrantTypeClientCredentials,
+				&v1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"}, false),
+			Entry("refresh_token grant", v1.GrantTypeRefreshToken, nil, false),
+		)
+
+		DescribeTable("validates subscriber external IDP credentials",
+			func(tokenRequest v1.TokenRequestMethod, accepted bool) {
+				rover := new(v1.Rover)
+				rover.Name = "subscriber-credentials-rover"
+				rover.Namespace = "default"
+				rover.Spec = v1.RoverSpec{
+					Zone:         "test-zone",
+					ClientSecret: "topsecret",
+					Subscriptions: []v1.Subscription{{
+						Api: &v1.ApiSubscription{
+							BasePath: "/api",
+							Security: &v1.SubscriberSecurity{M2M: &v1.SubscriberMachine2MachineAuthentication{
+								Client:       &v1.OAuth2ClientCredentials{ClientId: "client-id", ClientSecret: "client-secret"},
+								Basic:        &v1.BasicAuthCredentials{Username: "user", Password: "pass"},
+								Scopes:       []string{"scope1", "scope2"},
+								GrantType:    v1.GrantTypePassword,
+								TokenRequest: tokenRequest,
+							}},
+						},
+					}},
+				}
+
+				err := k8sClient.Create(ctx, rover)
+				if accepted {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(k8sClient.Delete(ctx, rover)).To(Succeed())
+					return
+				}
+				Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				statusErr, ok := err.(apierrors.APIStatus)
+				Expect(ok).To(BeTrue())
+				Expect(statusErr.Status().Details.Causes).To(ContainElement(HaveField("Field", "spec.subscriptions[0].api.security.m2m.tokenRequest")))
+			},
+			Entry("client and username/password for the password grant without a token request method", v1.TokenRequestMethod(""), true),
+			Entry("with a client_secret_basic token request method", v1.TokenRequestClientSecretBasic, true),
+			Entry("with a client_secret_post token request method", v1.TokenRequestClientSecretPost, true),
+			Entry("with an unsupported token request method", v1.TokenRequestMethod("body"), false),
+		)
 
 		It("should reject a Rover with oauth2 clientSecret and clientKey configured", func() {
 			rover := new(v1.Rover)

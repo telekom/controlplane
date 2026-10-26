@@ -318,7 +318,8 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		// and deduplicate (the downstream issuer may already be in the consumer failover list).
 		if len(options.TrustedIssuers) > 0 {
 			proxyRoute.Spec.Security.TrustedIssuers = append(
-				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...)
+				proxyRoute.Spec.Security.TrustedIssuers, options.TrustedIssuers...,
+			)
 			slices.Sort(proxyRoute.Spec.Security.TrustedIssuers)
 			proxyRoute.Spec.Security.TrustedIssuers = slices.Compact(proxyRoute.Spec.Security.TrustedIssuers)
 		}
@@ -768,7 +769,8 @@ func mapExternalIDP(externalIDP *apiapi.ExternalIdentityProvider) *gatewayapi.Ex
 			Username: externalIDP.Basic.Username,
 			Password: externalIDP.Basic.Password,
 		}
-	} else if externalIDP.Client != nil {
+	}
+	if externalIDP.Client != nil {
 		idp.Client = &gatewayapi.OAuth2ClientCredentials{
 			ClientId:     externalIDP.Client.ClientId,
 			ClientSecret: externalIDP.Client.ClientSecret,
@@ -789,7 +791,9 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 
 	if apiSecurity.M2M != nil {
 		security.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{
-			Scopes: apiSecurity.M2M.Scopes,
+			Scopes:       apiSecurity.M2M.Scopes,
+			GrantType:    gatewayapi.GrantType(apiSecurity.M2M.GrantType),
+			TokenRequest: gatewayapi.TokenRequestMethod(apiSecurity.M2M.TokenRequest),
 		}
 		if apiSecurity.M2M.Client != nil {
 			security.M2M.Client = &gatewayapi.OAuth2ClientCredentials{
@@ -798,7 +802,8 @@ func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.Con
 				ClientKey:    apiSecurity.M2M.Client.ClientKey,
 				RefreshToken: apiSecurity.M2M.Client.RefreshToken,
 			}
-		} else if apiSecurity.M2M.Basic != nil {
+		}
+		if apiSecurity.M2M.Basic != nil {
 			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
 				Username: apiSecurity.M2M.Basic.Username,
 				Password: apiSecurity.M2M.Basic.Password,

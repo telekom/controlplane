@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/secret-manager
 
-go 1.26.9
+go 1.26.10
 
 require github.com/telekom/controlplane/common-server v0.0.0
 
@@ -28,9 +28,9 @@ require (
 	github.com/valyala/fasttemplate v1.2.2
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.23.0
-	k8s.io/api v0.37.0
-	k8s.io/apimachinery v0.37.0
-	k8s.io/client-go v0.37.0
+	k8s.io/api v0.37.1
+	k8s.io/apimachinery v0.37.1
+	k8s.io/client-go v0.37.1
 	sigs.k8s.io/controller-runtime v0.25.2
 )
 

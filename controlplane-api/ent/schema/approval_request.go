@@ -49,6 +49,11 @@ func (ApprovalRequest) Fields() []ent.Field {
 func (ApprovalRequest) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("namespace", "name").Unique(),
+		// FK lookups for subscription -> approval requests traversals.
+		index.Edges("api_subscription"),
+		index.Edges("event_subscription"),
+		index.Edges("agentic_subscription"),
+		index.Edges("file_subscription"),
 	}
 }
 

@@ -88,7 +88,9 @@ func mapSubscriberSecurityToAgenticSecurity(roverSecurity *rover.SubscriberSecur
 
 	if roverSecurity.M2M != nil {
 		security.M2M = &agenticv1.SubscriberMachine2MachineAuthentication{
-			Scopes: roverSecurity.M2M.Scopes,
+			Scopes:       roverSecurity.M2M.Scopes,
+			GrantType:    agenticv1.GrantType(roverSecurity.M2M.GrantType),
+			TokenRequest: agenticv1.TokenRequestMethod(roverSecurity.M2M.TokenRequest),
 		}
 
 		if roverSecurity.M2M.Client != nil {

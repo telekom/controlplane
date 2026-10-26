@@ -34,5 +34,6 @@ func ConfigureAPIExposureStoreMock(testing ginkgo.FullGinkgoTInterface, mockedSt
 	).Return(
 		&store.ListResponse[*apiv1.ApiExposure]{
 			Items: []*apiv1.ApiExposure{apiExposure},
-		}, nil).Maybe()
+		}, nil,
+	).Maybe()
 }

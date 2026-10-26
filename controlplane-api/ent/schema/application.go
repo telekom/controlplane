@@ -123,5 +123,8 @@ func (Application) Annotations() []schema.Annotation {
 func (Application) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("name").Edges("owner_team").Unique(),
+		// FK lookup: the composite index above leads with name and cannot serve
+		// team -> applications traversals or the team filter interceptor.
+		index.Edges("owner_team"),
 	}
 }
