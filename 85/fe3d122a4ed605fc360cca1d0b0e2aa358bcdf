@@ -1,0 +1,47 @@
+admin/internal/handler/zone/oidc_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 144-146,157,160,163,168,175
+admin/internal/handler/zone/cabundle_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 192-217
+common-server/pkg/client/tlsclient/spec.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 45-48,157-160,168
+common-server/pkg/client/tlsclient/suite_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 192-211
+identity/pkg/keycloak/factory.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 25-29,110-114
+identity/pkg/keycloak/factory_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 544
+docs/docs/architecture/outbound-tls-clients.md
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 30,32,39-40,59-60,63
+common-server/pkg/client/tlsclient/build.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 73-80,134,140-144,177,179,185-200
+common-server/pkg/client/tlsclient/build_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 101-107,112,186-258
+  s_c1278f2f7e0a22::t_0f33a6c9d452b5 259
+common-server/pkg/client/tlsclient/factory.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 45-47,192
+common/pkg/cabundle/cabundle.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 15,89,107-109,133-170
+  s_c1278f2f7e0a22::t_8b932b484ecd4f 171-172
+docs/docs/admin-journey/environments-and-zones.md
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 297
+gateway/pkg/kongutil/client_factory.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 76
+common/pkg/cabundle/cabundle_test.go
+  s_c1278f2f7e0a22::t_2c36dd5e987c86 57-64,90-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "85fe3d122a4ed605fc360cca1d0b0e2aa358bcdf",
+  "prompts": {},
+  "sessions": {
+    "s_c1278f2f7e0a22": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e877ba8f9ffe2HkoZq34lY2YO3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

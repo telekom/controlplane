@@ -1,0 +1,19 @@
+tools/snapshotter/go.mod
+  s_d55a7caedc7982::t_5d3279a7921e73 16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "44c1358b68235dcb3b4b3a8e1763cf26bc6df7e0",
+  "prompts": {},
+  "sessions": {
+    "s_d55a7caedc7982": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e87764f14ffeciE5khag4syugz",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
