@@ -1,3 +1,46 @@
+## [0.42.1](https://github.com/telekom/controlplane/compare/v0.42.0...v0.42.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **rover:** Fix rover status reports ([#792](https://github.com/telekom/controlplane/issues/792)) ([d28fbe2](https://github.com/telekom/controlplane/commit/d28fbe21f299e363c6b3e7161e1a11c819bef97d))
+
+# [0.42.0](https://github.com/telekom/controlplane/compare/v0.41.5...v0.42.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **discovery-server:** correct Discovery OpenAPI metadata ([#801](https://github.com/telekom/controlplane/issues/801)) ([958e240](https://github.com/telekom/controlplane/commit/958e2405e69de1ebbe7f5ea0363d9211c596b303))
+* **gateway:** correct consumer plugin response schema ([#800](https://github.com/telekom/controlplane/issues/800)) ([ba4cfe4](https://github.com/telekom/controlplane/commit/ba4cfe425c7f759b548a3df2eda225d58c8f21fe))
+* **gateway:** identify outdated gateway mesh instances ([#804](https://github.com/telekom/controlplane/issues/804)) ([055ed09](https://github.com/telekom/controlplane/commit/055ed09d2c15729302c8a225c73f84345259847a))
+* **projector:** controlplane-api should return nil secret if client is not created ([#789](https://github.com/telekom/controlplane/issues/789)) ([78757a2](https://github.com/telekom/controlplane/commit/78757a2ab9536a25b1d8742e8d72f97afdc0e23f))
+
+
+### Features
+
+* externalIDP [#756](https://github.com/telekom/controlplane/issues/756) and [#721](https://github.com/telekom/controlplane/issues/721) combined ([#772](https://github.com/telekom/controlplane/issues/772)) ([621953c](https://github.com/telekom/controlplane/commit/621953c470d0b43149fef584522b83dacc010256))
+
+## [0.41.5](https://github.com/telekom/controlplane/compare/v0.41.4...v0.41.5) (2026-10-20)
+
+
+### Bug Fixes
+
+* **organization:** preserve fields in team and hub upserts ([#794](https://github.com/telekom/controlplane/issues/794)) ([0a7f88a](https://github.com/telekom/controlplane/commit/0a7f88ab15c74f44fbf86725228f0f2ee7f75a17))
+
+## [0.41.4](https://github.com/telekom/controlplane/compare/v0.41.3...v0.41.4) (2026-10-16)
+
+
+### Bug Fixes
+
+* **rover-server:** check agentic sub-resource statuses ([#791](https://github.com/telekom/controlplane/issues/791)) ([0396839](https://github.com/telekom/controlplane/commit/039683992e76545c51d29cb678d64f9372680ed5))
+
+## [0.41.3](https://github.com/telekom/controlplane/compare/v0.41.2...v0.41.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* **rover:** validate EventSpecification version suffix ([#790](https://github.com/telekom/controlplane/issues/790)) ([58b5ab7](https://github.com/telekom/controlplane/commit/58b5ab7c70590cdc343888d4980a71dcfdd588ae))
+
 ## [0.41.2](https://github.com/telekom/controlplane/compare/v0.41.1...v0.41.2) (2026-10-15)
 
 

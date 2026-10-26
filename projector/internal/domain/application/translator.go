@@ -51,7 +51,8 @@ func (t *Translator) ShouldSkip(_ *appv1.Application) (bool, string) {
 
 // Translate converts an Application CR into an ApplicationData DTO.
 // ClientID is nil when Status.ClientId is empty (populated asynchronously by
-// the identity controller).
+// the identity controller). ClientSecret is nil when the Application does not
+// need an identity client, even if Spec.Secret contains a value.
 func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*ApplicationData, error) {
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 
@@ -61,7 +62,7 @@ func (t *Translator) Translate(_ context.Context, obj *appv1.Application) (*Appl
 	}
 
 	var clientSecret *string
-	if obj.Spec.Secret != "" {
+	if obj.Spec.NeedsClient && obj.Spec.Secret != "" {
 		clientSecret = &obj.Spec.Secret
 	}
 

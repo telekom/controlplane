@@ -84,5 +84,7 @@ func (EventExposure) Annotations() []schema.Annotation {
 func (EventExposure) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("event_type").Edges("owner").Unique(),
+		// FK lookup for application -> exposures traversals.
+		index.Edges("owner"),
 	}
 }

@@ -48,5 +48,7 @@ func (Member) Indexes() []ent.Index {
 		index.Fields("email").Edges("team").Unique(),
 		// Lookup index: find all teams a user (by email) belongs to.
 		index.Fields("email"),
+		// FK lookup: list members of a team.
+		index.Edges("team"),
 	}
 }

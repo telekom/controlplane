@@ -4,14 +4,14 @@
 
 module github.com/telekom/controlplane/tools/e2e-tester
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/fatih/color v1.19.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
-	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/gomega v1.44.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0

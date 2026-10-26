@@ -164,6 +164,45 @@ var _ = Describe("StatusPoller", func() {
 			})
 		})
 
+		Context("when an initial delay is configured", func() {
+			It("should wait before the first poll", func() {
+				delay := 300 * time.Millisecond
+				delayedPoller := common.NewStatusPoller(handler, nil, timeout, interval, common.WithInitialDelay(delay))
+				completeStatus := &common.ObjectStatusResponse{OverallStatus: "complete"}
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(completeStatus, nil).Once()
+
+				start := time.Now()
+				result, err := delayedPoller.Start(testCtx, "test-resource")
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(completeStatus))
+				Expect(time.Since(start)).To(BeNumerically(">=", delay+interval))
+			})
+
+			It("should not count the delay towards the timeout", func() {
+				delay := 200 * time.Millisecond
+				delayedPoller := common.NewStatusPoller(handler, nil, 150*time.Millisecond, 50*time.Millisecond, common.WithInitialDelay(delay))
+				completeStatus := &common.ObjectStatusResponse{OverallStatus: "complete"}
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(completeStatus, nil).Once()
+
+				result, err := delayedPoller.Start(testCtx, "test-resource")
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(completeStatus))
+			})
+
+			It("should stop waiting when the context is cancelled", func() {
+				delayedPoller := common.NewStatusPoller(handler, nil, timeout, interval, common.WithInitialDelay(time.Minute))
+				ctx, cancel := context.WithTimeout(testCtx, 50*time.Millisecond)
+				defer cancel()
+
+				result, err := delayedPoller.Start(ctx, "test-resource")
+
+				Expect(err).To(MatchError(context.DeadlineExceeded))
+				Expect(result).To(BeNil())
+			})
+		})
+
 		Context("when no evaluation function is provided", func() {
 			It("should use the default eval function", func() {
 				// Create a poller with nil eval function (will use default)

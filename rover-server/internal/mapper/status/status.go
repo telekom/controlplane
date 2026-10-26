@@ -350,22 +350,23 @@ func CalculateOverallStatus(s api.State, ps api.ProcessingState) api.OverallStat
 }
 
 // statusPriority defines severity ordering for OverallStatus values.
-// Higher values indicate more severe statuses.
+// Higher values win in CompareAndReturn. Processing and Pending rank above Blocked so that
+// work that is still in progress is reported before a possibly temporary block.
 // Unknown or unmapped statuses get priority 0 (least severe), so they never
 // silently shadow a known status in CompareAndReturn.
 var statusPriority = map[api.OverallStatus]int{
 	api.OverallStatusInvalid:    7,
 	api.OverallStatusFailed:     6,
-	api.OverallStatusBlocked:    5,
-	api.OverallStatusProcessing: 4,
-	api.OverallStatusPending:    3,
+	api.OverallStatusProcessing: 5,
+	api.OverallStatusPending:    4,
+	api.OverallStatusBlocked:    3,
 	api.OverallStatusNone:       2,
 	api.OverallStatusComplete:   1,
 	api.OverallStatusDone:       1,
 }
 
 // CompareAndReturn returns the more severe of two OverallStatus values.
-// Priority (highest to lowest): Invalid > Failed > Blocked > Processing > Pending > None > Complete = Done.
+// Priority (highest to lowest): Invalid > Failed > Processing > Pending > Blocked > None > Complete = Done.
 // Unknown statuses are treated as least severe (priority 0).
 func CompareAndReturn(a, b api.OverallStatus) api.OverallStatus {
 	if statusPriority[a] >= statusPriority[b] {
