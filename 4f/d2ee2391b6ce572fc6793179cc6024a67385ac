@@ -1,0 +1,434 @@
+admin/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,33-35,136
+gateway/internal/features/feature/external_idp_password_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 22,159,175,178-386,428-444,455-485,498,513-515,519-538,548-565,568-569,595-619
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_consumeroutes.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 117-125,133-137
+  s_ffd53f97efb8b1::t_5b9f5d8afc2541 138-140
+controlplane-api/ent/schema/file_subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 84-86
+admin/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,13,71-72
+discovery-server/internal/mapper/apiexposure/out.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 84
+discovery-server/internal/server/server.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 70-71,75,80,85
+api/internal/handler/util/route_util_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 122-139,154-200
+gateway/pkg/kong/client/plugin.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 361
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 276-279,731-734,1389-1391,1441-1450,1459-1466,1545-1547,1597-1606,1615-1622
+rover-ctl/docs/roverctl_get-info.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 39
+rover-ctl/docs/roverctl.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 31
+rover-ctl/docs/roverctl_resource_list.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 36
+discovery-server/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,33,35-36
+sftp/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,30-32,151
+rover-server/internal/mapper/status/status_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 991-994
+discovery-server/internal/mapper/apisubscription/out.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 49,51-52,62-69,72-79
+controlplane-api/ent/schema/approval_request.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 52-56
+docs/docs/user-journey/features/security.mdx
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 143,145-155,237
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 299-302,520
+  s_ffd53f97efb8b1::t_58a597d79b660a 521-523
+rover/internal/handler/rover/agentic/subscription_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-48
+rover-ctl/docs/roverctl_get-secret.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 36
+gateway/api/v1/security_types.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 159,172-177,181-182
+tools/route-tester/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,21-22,83
+identity/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,35-36,151,157
+gateway/internal/features/feature/last_mile_security.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 72
+api/Makefile
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 141
+api/internal/controller/external_idp_password_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 13,28-30,56-58,62-142,144-145,150,152-166,168-204
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 36
+application/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,62-63
+agentic/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,25-27,124
+rover-server/internal/mapper/rover/out/subscription_security_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 14,19-36,183-309,311-352
+common-server/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,36-37,124
+gateway/pkg/kong/api/client.gen.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 14067,14099,20420,20460
+discovery-server/test/mocks/mocks_ApiSubscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+projector/internal/domain/application/translator_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 43-46,85-86,118-131
+  s_ffd53f97efb8b1::t_b5736baea23a3e 132-133
+rover/internal/controller/rover_controller_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 431-432,499
+rover-server/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,56-57,190
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 21-22,31,550-551,583-584,696-748
+discovery-server/api/openapi-merge.json
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 5,8,11-14
+file/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,40-41,138,144
+pubsub/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,24-25,128,133
+api/internal/handler/apisubscription/remote_cleanup_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-182
+rover-ctl/pkg/handlers/common/status_poller_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 167-205
+api/internal/handler/util/route_util.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 321-322,772-773,794-796,805-806
+sftp/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,71-72
+discovery-server/internal/mapper/token_request.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-22
+agentic/internal/handler/agenticsubscription/scope_validation_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 16,38-43,72-85,87-126
+gateway/internal/features/feature/external_idp.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 20-29,93-100,107-164,167-171,173-196,200,202,211,215,247-248,251,256,261,263,271,275-276,284-285,289
+controlplane-api/ent/schema/file_exposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 93-94
+file-manager/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,148,150-151
+discovery-server/test/mocks/mocks_ApiExposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+discovery-server/api/README.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 10-12,29-36
+  s_ffd53f97efb8b1::t_8976fa2a107b37 37
+rover-ctl/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7
+agentic/internal/handler/agentcard/handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 46-47
+discovery-server/test/mocks/mocks_EventExposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+rover-ctl/pkg/config/config.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 68
+approval/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,14-15,86
+file/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,60-61
+gateway/internal/features/feature/basic_auth.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 62,95,113-118,121-122
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 390-391
+api/api/v1/security_types.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 98,104-105,112-119,123-124
+api/config/crd/bases/api.cp.ei.telekom.de_apisubscriptions.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 90-92,137-146,154-161
+controlplane-api/ent/schema/event_exposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 87-88
+controlplane-api/ent/schema/api_exposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 95-96
+api/internal/handler/apisubscription/handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 45,79-83,91-92,135-136,192,382-383,385,392,403,409,461-475,477-483,487-488,492-513
+controlplane-api/ent/schema/team.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 13,78-81
+  s_ffd53f97efb8b1::t_5c9f075ef5633b 82-84
+identity/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,62-63
+notification/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,26-28,140
+organization/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,12,74-75
+.gitleaksignore
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 8
+rover/internal/handler/rover/agentic/subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 91-93
+event/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,28,30-31,143
+api/config/crd/bases/api.cp.ei.telekom.de_apiexposures.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 213-216
+notification/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,17,84-85
+projector/internal/domain/application/types.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 32
+rover-server/internal/mapper/status/problems_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 584
+organization/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,26-28,143
+permission/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,60-61
+rover-ctl/docs/roverctl_resource_get.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37
+agentic/internal/handler/agenticexposure/handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 191-192,232-233,248-249
+projector/internal/domain/application/translator.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 54-55,65
+pubsub/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,12,61-62
+rover-server/internal/mapper/status/status.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 353-354,360-362,369
+gateway/pkg/kong/api/openapi.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1888-1905,1907,1973-1990,1992
+api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,40-42,141
+agentic/internal/controller/token_endpoint_scopes_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 454-456,469-471,473-475
+rover/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,15-16,80
+agentic/internal/controller/external_idp_password_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 10,30-32,45,50,52,70,75-77,95,106,108-116,118-124,127-133,137-144,146-193,195,198,202-207,211,216-227
+secret-manager/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,31-33
+api/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,13,80-81
+agentic/config/crd/bases/agentic.cp.ei.telekom.de_agenticsubscriptions.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 100-102,142-150,158-165
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 78,80
+gateway/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,38-40,157
+api/internal/handler/apisubscription/handler_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 17,38-43,99,101,110,131,139-140,153-155,164-166,168-186,189-222
+  s_ffd53f97efb8b1::t_94ad8171ea893e 223
+api/internal/controller/token_endpoint_scopes_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 299-301,310-312,314-316
+rover-ctl/docs/roverctl_reset-secret.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 38
+rover-server/internal/mapper/rover/in/subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 9,170-172,306-309,318-325
+  s_ffd53f97efb8b1::t_1426b9211a3da6 326
+organization-server/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,77-79
+application/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,35-36,69,138
+controlplane-api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,35-36,146
+rover-server/internal/mapper/applicationinfo/variables_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 18,129-130
+rover/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,31-33,149
+rover-ctl/docs/roverctl_apply.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 35
+discovery-server/api/metadata-openapi.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-31
+agentic/internal/handler/util/route.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 354-358
+controlplane-api/ent/schema/agentic_subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 79-81
+discovery-server/internal/mapper/apisubscription/out_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 9,12,243-267,300-370
+api/config/crd/bases/api.cp.ei.telekom.de_remoteapisubscriptions.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 79-81,126-135,143-150
+agentic/internal/handler/util/route_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-48
+discovery-server/Makefile
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 61
+discovery-server/test/mocks/mocks_EventSubscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+discovery-server/internal/api/server.gen.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 710,747,786,826,869,904,1439-1589
+event/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,14,79-80
+install/overlays/default/kustomization.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 33,35,37,39,41,43,45,47,49,51,53,55,58,60,63,65
+rover/internal/handler/rover/api/subscription_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-50
+rover-ctl/docs/roverctl_resource_delete.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37
+rover-server/internal/mapper/applicationinfo/out.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 186-190
+rover-server/internal/mapper/rover/out/subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 108,125-128,132-137,193,211-215,220-227,236-239
+  s_ffd53f97efb8b1::t_f310594dde2f70 240-241
+common-server/helm/Chart.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 6,10
+gateway/pkg/kong/client/plugin_response_test.go
+  s_ffd53f97efb8b1::t_9d9b1d89b5625b 37
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-36,38-183
+projector/internal/domain/application/repository_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 360-379
+gateway/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,11,62-63
+agentic/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,13,78-79
+controlplane-api/ent/migrate/schema.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 108-112,164-173,260-264,317-326,378-382,510-529,575-579,634-643,734-738,803-812,929-933,992-997
+  s_ffd53f97efb8b1::t_0feca28c12689e 998
+controlplane-api/ent/schema/api_subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 87-89
+tools/snapshotter/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,23,108-109
+api/internal/controller/apisubscription_controller_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 10,630,752-809
+  s_ffd53f97efb8b1::t_1d2dc4f193cee9 810
+controlplane-api/ent/schema/event_subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 91-93
+gateway/internal/features/feature/last_mile_security_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 215
+rover/internal/handler/rover/api/subscription.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 99-103
+rover-server/internal/mapper/rover/in/subscription_security_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 18-60,229-257
+  s_ffd53f97efb8b1::t_52ce48ef72a890 258
+rover/api/v1/security_types.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 99,105-106,114-121,125-126
+agentic/internal/handler/agenticsubscription/handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 55-56,62-63,78-79,83-84,91-92,99-100,194,242-243,249-255,259,285-286,325-326,393-394,396,399,404,414,416
+discovery-server/test/mocks/mocks_EventType.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+agentic/Makefile
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 130
+rover/api/v1/rover_types_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 207,241-329
+  s_ffd53f97efb8b1::t_74c2164bd32c7f 330
+tools/e2e-tester/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7
+projector/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,23-25
+discovery-server/README.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 9,226-227
+rover-ctl/docs/roverctl_delete.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 35
+gateway/internal/features/feature/external_idp_test.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 459,482-483,506-702,1166-1167,1194,1202
+rover-ctl/docs/roverctl_resource.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 54
+discovery-server/test/mocks/mocks_Application.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 37-38
+CHANGELOG.md
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 1-15
+approval/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,20-22,125
+controlplane-api/ent/schema/member.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 51-52
+permission/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,16-18,122
+agentic/internal/handler/mcpserver/handler.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 46-47
+projector/internal/domain/application/repository.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 160-161
+agentic/api/v1/security_types.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 61,67-68,75-82,86-87
+agentic/config/crd/bases/agentic.cp.ei.telekom.de_agenticexposures.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 202-205
+controlplane-api/ent/schema/application.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 126-128
+cpapi/api/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7
+controlplane-api/ent/schema/agentic_exposure.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 102-103
+discovery-server/api/uber-openapi.yaml
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,9-10,13-15,17,20-25,27,29,46-47,67,70-73,75,90,119-121,133-135,140,147,164,167-170,173-178,185,216-218,230,233-238,243,250,272-275,278-283,305,308-311,314-319,354,357-360,377,406-407,420,427,434,451,454-457,460-461,472,503-504,517,520,522,530,532-533,537,559-562,565,567,592,595-598,601-602,641,644-647,650-655,691-692,694-697,699-704,706-718,729,731-733,735-736,738-739,741-789,792-795,804,819,836-838,850,857,859-860,864,886-889,913,916-919,1501,1504,1506-1507,1509-1510,1512-1543,1546-1551,1554-1843,2126,2130-2132,2136-2137,2147-2148,2151-2157,2159,2161-2164,2166-2169,2171-2174,2176-2178,2181-2184,2186-2188,2190-2193,2195
+rover-ctl/pkg/handlers/common/status_poller.go
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 42-43,46-56,60,67-70,74-81
+common/go.mod
+  s_ffd53f97efb8b1::t_cdb4c81c7ca8e8 7,17-19
+admin/api/go.sum
+  s_ffd53f97efb8b1::t_a9a208604c8a06 163-164,167-170
+admin/go.sum
+  s_ffd53f97efb8b1::t_7f71f5cf3328c0 263-264,267-268,271-272,279-280
+agentic/api/go.sum
+  s_ffd53f97efb8b1::t_5821bed606b788 181-182,185-188
+agentic/go.sum
+  s_ffd53f97efb8b1::t_81979fe3b7dc59 251-252,255-256,259-260,267-268
+api/api/go.sum
+  s_ffd53f97efb8b1::t_e3e26e8910f553 181-182,185-188
+api/go.sum
+  s_ffd53f97efb8b1::t_db3b79bf23a763 261-262,265-266,269-270,277-278
+application/api/go.sum
+  s_ffd53f97efb8b1::t_1fa619633e15ae 135-136,139-142
+application/go.sum
+  s_ffd53f97efb8b1::t_0826f0009c8565 263-264,267-268,271-272,279-280
+approval/api/go.sum
+  s_ffd53f97efb8b1::t_469255cd0a5466 193-194,197-200
+approval/go.sum
+  s_ffd53f97efb8b1::t_be39c81a44678a 251-252,255-256,259-260,267-268
+common-server/go.sum
+  s_ffd53f97efb8b1::t_db398bdafedec1 277-278,281-284
+common/go.sum
+  s_ffd53f97efb8b1::t_b015e4dac56e2c 227-228,231-234
+controlplane-api/go.sum
+  s_ffd53f97efb8b1::t_46ea445c6c6e01 323-324,327-330
+discovery-server/go.sum
+  s_ffd53f97efb8b1::t_5398d9c7c6aef7 430-431,434-437
+event/api/go.sum
+  s_ffd53f97efb8b1::t_92eaecfe7210cb 181-182,185-188
+event/go.sum
+  s_ffd53f97efb8b1::t_f698002c5eb181 263-264,267-268,271-272,279-280
+file-manager/go.sum
+  s_ffd53f97efb8b1::t_f92a701c48531d 432-433,436-439
+file/api/go.sum
+  s_ffd53f97efb8b1::t_f6a375a3dc3b6e 135-136,139-142
+file/go.sum
+  s_ffd53f97efb8b1::t_53f532f23f12e5 263-264,267-268,271-272,279-280
+gateway/api/go.sum
+  s_ffd53f97efb8b1::t_66ac228b13090d 135-136,139-142
+gateway/go.sum
+  s_ffd53f97efb8b1::t_9aad2e148ecbc5 415-416,419-420,423-424,431-432
+identity/api/go.sum
+  s_ffd53f97efb8b1::t_b764b9626ba63b 135-136,139-142
+identity/go.sum
+  s_ffd53f97efb8b1::t_da09d92d77bb52 414-415,418-419,422-423,430-431
+notification/api/go.sum
+  s_ffd53f97efb8b1::t_60dbc54f3cb8ef 183-184,187-190
+notification/go.sum
+  s_ffd53f97efb8b1::t_222e56303efaca 282-283,286-287,290-291,298-299
+organization-server/go.sum
+  s_ffd53f97efb8b1::t_22072fc44ba255 393-394,397-400
+organization/api/go.sum
+  s_ffd53f97efb8b1::t_6738e02b0e911f 161-162,165-168
+organization/go.sum
+  s_ffd53f97efb8b1::t_acad68c7ff80ed 270-271,274-275,278-279,286-287
+permission/api/go.sum
+  s_ffd53f97efb8b1::t_3b24bb78364221 135-136,139-142
+permission/go.sum
+  s_ffd53f97efb8b1::t_c805bb670b652a 251-252,255-256,259-260,267-268
+projector/go.sum
+  s_ffd53f97efb8b1::t_f67b0ce2195e29 284-285,288-291
+pubsub/api/go.sum
+  s_ffd53f97efb8b1::t_19e3e7b58a02ca 135-136,139-142
+pubsub/go.sum
+  s_ffd53f97efb8b1::t_bb7741a89e0c1b 263-264,267-268,271-272,279-280
+rover-server/go.sum
+  s_ffd53f97efb8b1::t_c2912f2103db46 445-446,449-452
+rover-server/internal/mapper/applicationinfo/__snapshots__/out_test.snap
+  s_ffd53f97efb8b1::t_c26848c9eca242 94
+rover-server/internal/mapper/rover/in/__snapshots__/subscription_security_test.snap
+  s_ffd53f97efb8b1::t_3be358bd3048f3 5-9,17-21,29-33,41-45,53-93
+rover-server/internal/mapper/rover/out/__snapshots__/subscription_security_test.snap
+  s_ffd53f97efb8b1::t_40a7d2c42db168 56-72
+rover/api/go.sum
+  s_ffd53f97efb8b1::t_6e448b591bfa7e 179-180,183-186
+rover/go.sum
+  s_ffd53f97efb8b1::t_c713a3a8218eb1 265-266,269-270,273-274,281-282
+secret-manager/go.sum
+  s_ffd53f97efb8b1::t_ce42cce36e1dcb 459-460,463-466
+sftp/api/go.sum
+  s_ffd53f97efb8b1::t_9616c4e2e46e49 159-160,163-166
+sftp/go.sum
+  s_ffd53f97efb8b1::t_962339fdae568a 413-414,417-418,421-422,429-430
+tools/route-tester/go.sum
+  s_ffd53f97efb8b1::t_b8e31eb387d3b6 149-150,153-156
+tools/snapshotter/go.sum
+  s_ffd53f97efb8b1::t_4d70fe574dd786 232-237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4fd2ee2391b6ce572fc6793179cc6024a67385ac",
+  "prompts": {},
+  "sessions": {
+    "s_ffd53f97efb8b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e88a01f5bffeMJ6NhbzF9ZOwAY",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
