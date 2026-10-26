@@ -1,3 +1,10 @@
+## [0.42.1](https://github.com/telekom/controlplane/compare/v0.42.0...v0.42.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **rover:** Fix rover status reports ([#792](https://github.com/telekom/controlplane/issues/792)) ([d28fbe2](https://github.com/telekom/controlplane/commit/d28fbe21f299e363c6b3e7161e1a11c819bef97d))
+
 # [0.42.0](https://github.com/telekom/controlplane/compare/v0.41.5...v0.42.0) (2026-10-22)
 
 
