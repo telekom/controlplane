@@ -1,0 +1,20 @@
+gateway/pkg/kong/client/plugin_response_test.go
+  s_ffd53f97efb8b1::t_67c413a07adfa5 69
+  s_ffd53f97efb8b1::t_6a7a1ecfd8a8c6 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ccada8752303ef7746894f2dbab109830e8333fb",
+  "prompts": {},
+  "sessions": {
+    "s_ffd53f97efb8b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e88a01f5bffeMJ6NhbzF9ZOwAY",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
