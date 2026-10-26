@@ -299,6 +299,115 @@ var _ = Describe("Secrets Handling", func() {
 			Expect(secrets).To(HaveLen(1))
 			Expect(secrets).To(HaveKeyWithValue("externalSecrets/api1/password", "password"))
 		})
+
+		It("should extract clientKey secrets from subscriptions and exposures", func() {
+			rover := &roverv1.Rover{
+				Spec: roverv1.RoverSpec{
+					Subscriptions: []roverv1.Subscription{
+						{
+							Api: &roverv1.ApiSubscription{
+								BasePath: "/api1",
+								Security: &roverv1.SubscriberSecurity{
+									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+										Client: &roverv1.OAuth2ClientCredentials{
+											ClientKey: "sub-private-key",
+										},
+									},
+								},
+							},
+						},
+					},
+					Exposures: []roverv1.Exposure{
+						{
+							Api: &roverv1.ApiExposure{
+								BasePath: "/api2",
+								Security: &roverv1.Security{
+									M2M: &roverv1.Machine2MachineAuthentication{
+										ExternalIDP: &roverv1.ExternalIdentityProvider{
+											Client: &roverv1.OAuth2ClientCredentials{
+												ClientKey: "exp-private-key",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			secrets := GetExternalSecrets(context.Background(), rover)
+			Expect(secrets).To(Equal(map[string]string{
+				"externalSecrets/api1/clientKey":             "sub-private-key",
+				"externalSecrets/api2/externalIDP/clientKey": "exp-private-key",
+			}))
+		})
+
+		It("should extract secrets from agentic subscriptions and exposures", func() {
+			rover := &roverv1.Rover{
+				Spec: roverv1.RoverSpec{
+					Subscriptions: []roverv1.Subscription{
+						{
+							Agentic: &roverv1.AgenticSubscription{
+								BasePath: "/mcp1",
+								Security: &roverv1.SubscriberSecurity{
+									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+										Client: &roverv1.OAuth2ClientCredentials{
+											ClientSecret: "sub-secret",
+											RefreshToken: "sub-token",
+										},
+										Basic: &roverv1.BasicAuthCredentials{
+											Password: "sub-password",
+										},
+									},
+								},
+							},
+						},
+					},
+					Exposures: []roverv1.Exposure{
+						{
+							Agentic: &roverv1.AgenticExposure{
+								BasePath: "/mcp2",
+								Security: &roverv1.Security{
+									M2M: &roverv1.Machine2MachineAuthentication{
+										ExternalIDP: &roverv1.ExternalIdentityProvider{
+											Client: &roverv1.OAuth2ClientCredentials{
+												ClientKey: "exp-private-key",
+											},
+											Basic: &roverv1.BasicAuthCredentials{
+												Password: "idp-password",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Agentic: &roverv1.AgenticExposure{
+								BasePath: "/mcp3",
+								Security: &roverv1.Security{
+									M2M: &roverv1.Machine2MachineAuthentication{
+										Basic: &roverv1.BasicAuthCredentials{
+											Password: "basic-password",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			secrets := GetExternalSecrets(context.Background(), rover)
+			Expect(secrets).To(Equal(map[string]string{
+				"externalSecrets/mcp1/clientSecret":          "sub-secret",
+				"externalSecrets/mcp1/refreshToken":          "sub-token",
+				"externalSecrets/mcp1/password":              "sub-password",
+				"externalSecrets/mcp2/externalIDP/clientKey": "exp-private-key",
+				"externalSecrets/mcp2/externalIDP/password":  "idp-password",
+				"externalSecrets/mcp3/basicAuth/password":    "basic-password",
+			}))
+		})
 	})
 
 	Context("SetExternalSecrets", func() {
@@ -360,6 +469,61 @@ var _ = Describe("Secrets Handling", func() {
 			err := SetExternalSecrets(context.Background(), rover, availableSecrets)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rover.Spec.Exposures[0].Api.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("$<some:id:extSecret:checksum>"))
+		})
+
+		It("should replace clientKey values with refs for api and agentic", func() {
+			rover := &roverv1.Rover{
+				Spec: roverv1.RoverSpec{
+					Subscriptions: []roverv1.Subscription{
+						{
+							Api: &roverv1.ApiSubscription{
+								BasePath: "/api1",
+								Security: &roverv1.SubscriberSecurity{
+									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+										Client: &roverv1.OAuth2ClientCredentials{ClientKey: "sub-private-key"},
+									},
+								},
+							},
+						},
+						{
+							Agentic: &roverv1.AgenticSubscription{
+								BasePath: "/mcp1",
+								Security: &roverv1.SubscriberSecurity{
+									M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+										Client: &roverv1.OAuth2ClientCredentials{ClientKey: "agentic-sub-private-key"},
+									},
+								},
+							},
+						},
+					},
+					Exposures: []roverv1.Exposure{
+						{
+							Agentic: &roverv1.AgenticExposure{
+								BasePath: "/mcp2",
+								Security: &roverv1.Security{
+									M2M: &roverv1.Machine2MachineAuthentication{
+										ExternalIDP: &roverv1.ExternalIdentityProvider{
+											Client: &roverv1.OAuth2ClientCredentials{ClientKey: "agentic-exp-private-key"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			availableSecrets := map[string]string{
+				"externalSecrets/api1/clientKey":             "id:api1:clientKey:cs",
+				"externalSecrets/mcp1/clientKey":             "id:mcp1:clientKey:cs",
+				"externalSecrets/mcp2/externalIDP/clientKey": "id:mcp2:extCK:cs",
+			}
+
+			err := SetExternalSecrets(context.Background(), rover, availableSecrets)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rover.Spec.Subscriptions[0].Api.Security.M2M.Client.ClientKey).To(Equal("$<id:api1:clientKey:cs>"))
+			Expect(rover.Spec.Subscriptions[1].Agentic.Security.M2M.Client.ClientKey).To(Equal("$<id:mcp1:clientKey:cs>"))
+			Expect(rover.Spec.Exposures[0].Agentic.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("$<id:mcp2:extCK:cs>"))
 		})
 
 		It("should replace multiple secrets across subscriptions and exposures", func() {
