@@ -21,18 +21,46 @@ This API allows you to manage secrets. You can get and set secrets. The API is d
 
 ```go
 // Global default API
-api.Get(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>}}")
-api.Set(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>}}", "my-new-value")
+api.API().Get(ctx, "$<poc:eni--hyperion:my-foo-app:clientSecret:>")
+api.API().Set(ctx, "$<poc:eni--hyperion:my-foo-app:clientSecret:>", "my-new-value")
 
-// API with custom options
-// Note: This API needs the clean ID of the secret without the start and end tags
+// Separate client (accepts optional configuration)
 secretsApi := api.NewSecrets()
-secretsApi.Set(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>", "my-new-value")
-secretsApi.Get(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>")
+secretsApi.Set(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:", "my-new-value")
+secretsApi.Get(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:")
 ```
 
-The global API is automatically initialized with the default options. It is recommended to use the global API for most use cases.
+Both clients accept raw secret IDs or `$<...>` references. The package-level helpers `api.Get` and `api.Set` only
+contact Secret Manager for `$<...>` references; other inputs are returned unchanged without a read or write.
+
+The global API is initialized on first use with the default options. It is recommended for most use cases.
 It will detect if the service is running in a local or Kubernetes environment and use the appropriate configuration.
+
+#### Resolving a value together with its canonical reference
+
+`Resolve` reads a secret and returns a `ResolvedSecret` with the `Value` and the canonical `Ref` (`$<id>`) that the
+secret manager reported for that same read. The input may be a raw ID or a `$<...>` reference; with default backend
+settings, its checksum suffix may be missing or stale. The client's `Get` is unchanged and returns only the value of
+`Resolve`. Both perform a single read and never write, onboard or rotate.
+
+```go
+resolved, err := api.API().Resolve(ctx, "$<poc:eni--hyperion:my-foo-app:externalSecrets/foo:>")
+// resolved.Value -> secret value
+// resolved.Ref   -> $<poc:eni--hyperion:my-foo-app:externalSecrets/foo:<checksum>>
+```
+
+The checksum suffix of `Ref` is backend-specific:
+
+- Kubernetes: nested secrets (e.g. `externalSecrets/foo`) use the checksum of the returned value; top-level secrets use
+  the `resourceVersion` of the Kubernetes Secret.
+- Conjur: the checksum of the returned value.
+
+With caching enabled the returned pair is the cached observation, so `Value` and `Ref` always belong together, but they
+may lag behind the latest backend state until the cache entry is invalidated or expires.
+
+> [!NOTE]
+> The returned `Ref` round-trips with default backend settings. The Kubernetes backend's internal `MatchResourceVersion`
+> mode is off by default, unavailable through deployment configuration, and incompatible with nested checksum references.
 
 ### Onboarding API
 

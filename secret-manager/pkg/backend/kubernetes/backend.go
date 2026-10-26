@@ -63,18 +63,21 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 		if !result.Exists() {
 			return res, backend.ErrSecretNotFound(secretId)
 		}
-		return backend.NewDefaultSecret(secretId, result.String()), nil
+		value := result.String()
+		// Nested secrets use the value checksum, matching onboarding.
+		return backend.NewDefaultSecret(secretId.CopyWithChecksum(backend.MakeChecksum(value)), value), nil
 	}
 	data, ok := obj.Data[path]
 	if !ok {
 		return res, backend.ErrSecretNotFound(secretId)
 	}
-	return backend.NewDefaultSecret(secretId, string(data)), nil
+	// Top-level secrets use the object resourceVersion, matching onboarding.
+	return backend.NewDefaultSecret(secretId.CopyWithChecksum(obj.GetResourceVersion()), string(data)), nil
 }
 
 func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue backend.SecretValue, _ ...backend.WriteOption) (res backend.DefaultSecret[Id], err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	secret, err := k.Get(ctx, secretId)
+	current, err := k.Get(ctx, secretId)
 	if err != nil {
 		// If the secret is not found, we can create it
 		// For all other cases, we return an error immediately
@@ -82,6 +85,8 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 			return res, err
 		}
 	}
+	// No-op writes keep returning the requested id; only Get canonicalizes it.
+	secret := backend.NewDefaultSecret(secretId, current.Value())
 
 	if secret.Value() != backend.NoValue && !secretValue.AllowChange() {
 		return secret, nil

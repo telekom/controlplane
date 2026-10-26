@@ -10,9 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
-	"strings"
-	"sync"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,6 +34,7 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 )
 
 const (
@@ -186,121 +184,21 @@ func newTestContextWithClient(zone *adminv1.Zone, c client.Client) context.Conte
 	return testCtx
 }
 
-// newTestHandler installs a fresh in-memory secret-manager for the current spec and
-// returns a ZoneHandler.
-func newTestHandler() *ZoneHandler {
-	useSecretManager()
+// newTestHandler installs a secret-manager mock expecting the zone's rover secret to be
+// created once and returns a ZoneHandler.
+func newTestHandler(zone *adminv1.Zone) *ZoneHandler {
+	expectNewRoverSecret(useSecretManager(), zone)
 	return &ZoneHandler{}
 }
 
-// useSecretManager installs a fresh in-memory secret-manager as the global secret-manager
-// API for the current spec.
-func useSecretManager() *memorySecretManager {
-	sm := newMemorySecretManager()
+// useSecretManager installs a generated secret-manager mock without expectations as the
+// global API for the current spec; any call not expected by the spec fails it.
+func useSecretManager() *fake.MockSecretManager {
+	sm := fake.NewMockSecretManager(GinkgoT())
 	original := secretsapi.API
 	secretsapi.API = func() secretsapi.SecretManager { return sm }
 	DeferCleanup(func() { secretsapi.API = original })
 	return sm
-}
-
-// memorySecretManager is an in-memory secret-manager storing environment secrets by path.
-type memorySecretManager struct {
-	mu        sync.Mutex
-	values    map[string]string
-	published []string
-	version   int
-	failNext  int
-	getErr    error
-}
-
-func newMemorySecretManager() *memorySecretManager {
-	return &memorySecretManager{values: map[string]string{}}
-}
-
-// memoryKey maps a secret ID (env:team:app:path:checksum) to its storage key, ignoring the checksum.
-func memoryKey(ref string) string {
-	id, _ := secretsapi.FromRef(ref)
-	parts := strings.Split(id, ":")
-	Expect(parts).To(HaveLen(5), "invalid secret id %q", id)
-	return parts[0] + ":" + parts[3]
-}
-
-func (m *memorySecretManager) UpsertEnvironment(_ context.Context, envID string, opts ...secretsapi.OnboardingOption) (map[string]string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	options := &secretsapi.OnboardingOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	if m.failNext > 0 {
-		m.failNext--
-		return nil, fmt.Errorf("secret-manager unavailable")
-	}
-	available := map[string]string{}
-	for path, value := range options.SecretValues {
-		str, ok := value.(string)
-		Expect(ok).To(BeTrue())
-		m.version++
-		m.values[envID+":"+path] = str
-		m.published = append(m.published, str)
-		available[path] = fmt.Sprintf("%s:::%s:%d", envID, path, m.version)
-	}
-	return available, nil
-}
-
-func (m *memorySecretManager) Get(_ context.Context, ref string) (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.getErr != nil {
-		return "", m.getErr
-	}
-	value, ok := m.values[memoryKey(ref)]
-	if !ok {
-		return "", secretsapi.ErrNotFound
-	}
-	return value, nil
-}
-
-func (m *memorySecretManager) valueOf(ref string) string {
-	GinkgoHelper()
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	Expect(secretsapi.IsRef(ref)).To(BeTrue(), "expected a secret-manager reference")
-	return m.values[memoryKey(ref)]
-}
-
-func (m *memorySecretManager) publishedValues() []string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return slices.Clone(m.published)
-}
-
-func (m *memorySecretManager) Set(context.Context, string, string) (string, error) {
-	return "", fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) Rotate(context.Context, string) (string, error) {
-	return "", fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) UpsertTeam(context.Context, string, string, ...secretsapi.OnboardingOption) (map[string]string, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) UpsertApplication(context.Context, string, string, string, ...secretsapi.OnboardingOption) (map[string]string, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) DeleteEnvironment(context.Context, string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) DeleteTeam(context.Context, string, string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (m *memorySecretManager) DeleteApplication(context.Context, string, string, string) error {
-	return fmt.Errorf("not implemented")
 }
 
 // newTestHandlingContext creates a HandlingContext by running the constructor

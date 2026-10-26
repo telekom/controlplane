@@ -53,25 +53,56 @@ func ensureRoverClient(ctx context.Context, hc *HandlingContext) (*identityapi.C
 		return nil, ctrlerrors.RetryableErrorf("failed to read rover admin client %s: %s", key, err)
 	}
 
-	var clientSecret string
-	if err == nil {
-		if existing.Spec.ClientSecret == "" {
-			return nil, ctrlerrors.BlockedErrorf("rover admin client %s has no client secret", key)
+	if apierrors.IsNotFound(err) {
+		clientSecret, secretErr := roverClientSecret(ctx, hc)
+		if secretErr != nil {
+			return nil, secretErr
 		}
-		clientSecret = existing.Spec.ClientSecret
-	} else {
-		clientSecret, err = roverClientSecret(ctx, hc)
-		if err != nil {
-			return nil, err
-		}
+		return applyRoverClient(ctx, hc, key, "", clientSecret)
 	}
 
-	return applyRoverClient(ctx, hc, key, clientSecret)
+	if existing.Spec.ClientSecret == "" {
+		return nil, ctrlerrors.BlockedErrorf("rover admin client %s has no client secret", key)
+	}
+	if !cconfig.FeatureSecretManager.IsEnabled() || existing.Spec.ClientSecret != roverLookupRef(hc) {
+		return applyRoverClient(ctx, hc, key, "", "")
+	}
+
+	// The Client holds the checksum-less lookup reference; replace it with the canonical
+	// reference of the same stored secret.
+	canonical, err := resolveRoverSecretRef(ctx, hc)
+	if err != nil {
+		return nil, err
+	}
+	logr.FromContextOrDiscard(ctx).Info("Normalizing rover admin client secret reference", "secretPath", roverSecretManagerPath(hc.Zone.Name))
+	return applyRoverClient(ctx, hc, key, existing.Spec.ClientSecret, canonical)
 }
 
-// roverClientSecret returns the secret for a new rover Client: the reference of the value
-// already stored in the secret-manager, a newly stored value, or an inline generated value
-// when the secret-manager is disabled.
+// roverLookupRef is the checksum-less reference used only to look up the zone's stored
+// rover client secret.
+func roverLookupRef(hc *HandlingContext) string {
+	return environmentSecretRef(hc.Environment.Name, roverSecretManagerPath(hc.Zone.Name))
+}
+
+// resolveRoverSecretRef returns the canonical reference of the stored rover client secret.
+// A missing secret is returned as secretsapi.ErrNotFound.
+func resolveRoverSecretRef(ctx context.Context, hc *HandlingContext) (string, error) {
+	resolved, err := secretsapi.API().Resolve(ctx, roverLookupRef(hc))
+	if errors.Is(err, secretsapi.ErrNotFound) {
+		return "", err
+	}
+	if err != nil {
+		return "", ctrlerrors.RetryableErrorf("failed to read rover client secret of zone %q: %s", hc.Zone.Name, err)
+	}
+	if !secretsapi.IsRef(resolved.Ref) {
+		return "", ctrlerrors.RetryableErrorf("rover client secret reference of zone %q not returned by secret-manager", hc.Zone.Name)
+	}
+	return resolved.Ref, nil
+}
+
+// roverClientSecret returns the secret for a new rover Client: the canonical reference of
+// the value already stored in the secret-manager, a newly stored value, or an inline
+// generated value when the secret-manager is disabled.
 func roverClientSecret(ctx context.Context, hc *HandlingContext) (string, error) {
 	if !cconfig.FeatureSecretManager.IsEnabled() {
 		generated, err := secretsapi.GenerateSecret()
@@ -82,14 +113,13 @@ func roverClientSecret(ctx context.Context, hc *HandlingContext) (string, error)
 	}
 
 	path := roverSecretManagerPath(hc.Zone.Name)
-	ref := environmentSecretRef(hc.Environment.Name, path)
-	_, err := secretsapi.API().Get(ctx, ref)
+	ref, err := resolveRoverSecretRef(ctx, hc)
 	if err == nil {
 		logr.FromContextOrDiscard(ctx).V(1).Info("Reusing stored rover admin client secret", "secretPath", path)
 		return ref, nil
 	}
 	if !errors.Is(err, secretsapi.ErrNotFound) {
-		return "", ctrlerrors.RetryableErrorf("failed to read rover client secret of zone %q: %s", hc.Zone.Name, err)
+		return "", err
 	}
 
 	generated, err := secretsapi.GenerateSecret()
@@ -110,10 +140,11 @@ func roverClientSecret(ctx context.Context, hc *HandlingContext) (string, error)
 	return stored, nil
 }
 
-// applyRoverClient creates the Client or reconciles its non-secret settings. The secret of
-// an existing Client is never replaced; if the Client appeared since it was read as missing,
-// the create fails with AlreadyExists and the reconciliation is retried.
-func applyRoverClient(ctx context.Context, hc *HandlingContext, key client.ObjectKey, clientSecret string) (*identityapi.Client, error) {
+// applyRoverClient creates the Client or reconciles its non-secret settings. The secret is
+// set to clientSecret only when the Client has none or still holds expectedSecret (if
+// non-empty); any other secret of an existing Client is kept. If the Client appeared since
+// it was read as missing, the create fails with AlreadyExists and the reconciliation is retried.
+func applyRoverClient(ctx context.Context, hc *HandlingContext, key client.ObjectKey, expectedSecret, clientSecret string) (*identityapi.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	adminClient := &identityapi.Client{
 		ObjectMeta: metav1.ObjectMeta{Name: key.Name, Namespace: key.Namespace},
@@ -128,7 +159,7 @@ func applyRoverClient(ctx context.Context, hc *HandlingContext, key client.Objec
 		adminClient.Labels[cconfig.DomainLabelKey] = domainName
 
 		secret := adminClient.Spec.ClientSecret
-		if secret == "" {
+		if secret == "" || (expectedSecret != "" && secret == expectedSecret) {
 			secret = clientSecret
 		}
 		adminClient.Spec = identityapi.ClientSpec{

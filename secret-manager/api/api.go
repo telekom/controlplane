@@ -75,7 +75,19 @@ func WithReplaceStrategy() OnboardingOption {
 	return WithStrategy(gen.Replace)
 }
 
+// ResolvedSecret is a secret value together with the canonical reference
+// returned by the secret manager for that same read.
+type ResolvedSecret struct {
+	// Value is the plain secret value.
+	Value string
+	// Ref is the canonical secret reference in the form $<id>.
+	Ref string
+}
+
 type SecretsApi interface {
+	// Resolve reads a secret and returns its value with the canonical reference
+	// reported by the secret manager. secretID may be a raw ID or a $<...> reference.
+	Resolve(ctx context.Context, secretID string) (ResolvedSecret, error)
 	Get(ctx context.Context, secretID string) (value string, err error)
 	Set(ctx context.Context, secretID string, secretValue string) (newID string, err error)
 	Rotate(ctx context.Context, secretID string) (newID string, err error)
@@ -109,22 +121,30 @@ func NewSecretManagerFromClient(client gen.ClientWithResponsesInterface) SecretM
 }
 
 func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value string, err error) {
+	resolved, err := s.Resolve(ctx, secretID)
+	if err != nil {
+		return "", err
+	}
+	return resolved.Value, nil
+}
+
+func (s *secretManagerAPI) Resolve(ctx context.Context, secretID string) (ResolvedSecret, error) {
 	// Remove the tags from the secret ID if it is a placeholder.
 	// If it is not a placeholder, we just assume that it is a valid secret ID.
 	secretID, _ = FromRef(secretID)
 	res, err := s.client.GetSecretWithResponse(ctx, secretID)
 	if err != nil {
-		return "", fmt.Errorf("secret-manager request failed for %q: %w", secretID, client.RetryableErrorf("network error: %s", err))
+		return ResolvedSecret{}, fmt.Errorf("secret-manager request failed for %q: %w", secretID, client.RetryableErrorf("network error: %s", err))
 	}
 	switch res.StatusCode() {
 	case http.StatusOK:
-		return res.JSON200.Value, nil
+		return ResolvedSecret{Value: res.JSON200.Value, Ref: ToRef(res.JSON200.Id)}, nil
 	case http.StatusNotFound:
-		return "", ErrNotFound
+		return ResolvedSecret{}, ErrNotFound
 	case http.StatusUnauthorized:
-		return "", client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
+		return ResolvedSecret{}, client.BlockedErrorf("unauthorized (%d): %s", res.StatusCode(), string(res.Body))
 	default:
-		return "", handleError(res.StatusCode(), string(res.Body))
+		return ResolvedSecret{}, handleError(res.StatusCode(), string(res.Body))
 	}
 }
 func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
