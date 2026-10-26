@@ -1,0 +1,21 @@
+discovery-server/internal/controller/eventsubscription.go
+  s_0e3d90a5ad490f::t_271a74779183f9 5
+discovery-server/internal/controller/apisubscription.go
+  s_0e3d90a5ad490f::t_271a74779183f9 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "397b7738e639529e34080e3d08609f348de8110c",
+  "prompts": {},
+  "sessions": {
+    "s_0e3d90a5ad490f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e87a603deffeZd8Kq2FRtE0tQJ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
