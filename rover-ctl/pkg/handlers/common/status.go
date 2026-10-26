@@ -16,7 +16,7 @@ type ObjectStatusResponse struct {
 	ProcessingState types.ProcessingState `json:"processingState"`
 	Errors          []types.StatusInfo    `json:"errors"`
 	Warnings        []types.StatusInfo    `json:"warnings"`
-	Info            []types.StatusInfo    `json:"info"`
+	Info            []types.StatusInfo    `json:"infos"`
 }
 
 func (o *ObjectStatusResponse) GetOverallStatus() types.OverallStatus {

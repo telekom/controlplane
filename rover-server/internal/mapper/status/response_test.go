@@ -600,4 +600,92 @@ var _ = Describe("Response Mapper", func() {
 			Expect(resp.Errors).To(HaveLen(1))
 		})
 	})
+
+	Context("MapRoverResponse parent diagnostics", func() {
+		roverIdentity := api.ResourceRef{
+			ApiVersion: "rover.cp.ei.telekom.de/v1",
+			Kind:       "Rover",
+			Name:       "my-rover",
+			Namespace:  "ns",
+		}
+
+		newRover := func(conditions []metav1.Condition, subs []types.ObjectRef) *v1.Rover {
+			return &v1.Rover{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "Rover"},
+				ObjectMeta: metav1.ObjectMeta{Name: "my-rover", Namespace: "ns", UID: "rover-uid", Generation: 1},
+				Status:     v1.RoverStatus{Conditions: conditions, ApiSubscriptions: subs},
+			}
+		}
+
+		readyErrorConditions := []metav1.Condition{
+			{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Failed", Message: "Failed", ObservedGeneration: 1},
+			{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Error", Message: "Scopes and basic authentication cannot be used together", ObservedGeneration: 1},
+		}
+
+		It("returns the parent Ready=False/Error diagnostic when there are no child problems", func() {
+			resp, err := MapRoverResponse(ctx, newRover(readyErrorConditions, nil), &store.Stores{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.State).To(Equal(api.Invalid))
+			Expect(resp.ProcessingState).To(Equal(api.ProcessingStateFailed))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.Errors).To(ConsistOf(api.Problem{
+				Cause:    "Error",
+				Message:  "Scopes and basic authentication cannot be used together",
+				Resource: roverIdentity,
+			}))
+		})
+
+		It("retains both parent and child diagnostics", func() {
+			subMock := new(MockObjectStore[*apiv1.ApiSubscription])
+			failedSub := &apiv1.ApiSubscription{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "ApiSubscription"},
+				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "ns", Generation: 1},
+				Status: apiv1.ApiSubscriptionStatus{Conditions: []metav1.Condition{
+					{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Blocked", ObservedGeneration: 1},
+					{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "NoApproval", Message: "Approval missing", ObservedGeneration: 1},
+				}},
+			}
+			subMock.On("List", mock.Anything, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{Items: []*apiv1.ApiSubscription{failedSub}}, nil)
+
+			resp, err := MapRoverResponse(ctx,
+				newRover(readyErrorConditions, []types.ObjectRef{{Name: "sub-1", Namespace: "ns"}}),
+				&store.Stores{APISubscriptionStore: subMock})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.Errors).To(HaveLen(2))
+			Expect(resp.Errors[0].Resource).To(Equal(roverIdentity))
+			Expect(resp.Errors[0].Message).To(Equal("Scopes and basic authentication cannot be used together"))
+			Expect(resp.Errors[1].Resource.Kind).To(Equal("ApiSubscription"))
+			Expect(resp.Errors[1].Message).To(Equal("Approval missing"))
+		})
+
+		It("propagates parent warnings and infos", func() {
+			conditions := []metav1.Condition{
+				{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionTrue, Reason: "Processing", Message: "Working on it", ObservedGeneration: 1},
+				{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Pending", Message: "Not ready yet", ObservedGeneration: 1},
+			}
+
+			resp, err := MapRoverResponse(ctx, newRover(conditions, nil), &store.Stores{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.Errors).To(BeEmpty())
+			for _, p := range append(append([]api.Problem{}, resp.Warnings...), resp.Infos...) {
+				Expect(p.Resource).To(Equal(roverIdentity))
+				Expect(p.Message).NotTo(BeEmpty())
+			}
+			Expect(len(resp.Warnings) + len(resp.Infos)).To(BeNumerically(">", 0))
+		})
+
+		It("returns no diagnostics for a ready rover", func() {
+			resp, err := MapRoverResponse(ctx, newRover(completeConditions(1), nil), &store.Stores{})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusComplete))
+			Expect(resp.Errors).To(BeEmpty())
+			Expect(resp.Warnings).To(BeEmpty())
+		})
+	})
 })

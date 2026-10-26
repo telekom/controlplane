@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -183,6 +184,87 @@ spec:
 
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
+			})
+		})
+
+		Context("when the final status is failed", func() {
+			const diagnostic = "Scopes and basic authentication cannot be used together"
+
+			BeforeEach(func() {
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Apply(mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("*types.UnstructuredObject")).Return(nil)
+
+				status := &common.ObjectStatusResponse{
+					OverallStatus:   types.OverallStatusFailed,
+					ProcessingState: types.ProcessingStateFailed,
+					Errors: []types.StatusInfo{{
+						Cause:    "Error",
+						Message:  diagnostic,
+						Resource: types.ObjectRef{Kind: "Rover", Name: "test-rover"},
+					}},
+				}
+				mockHandler.EXPECT().WaitForReady(mock.AnythingOfType("*context.valueCtx"), "test-rover").Return(status, nil)
+			})
+
+			DescribeTable("should print the diagnostics once and fail without an HTTP 500",
+				func(format string, failFast bool) {
+					viper.Set("log.format", format)
+					args := []string{"--file", yamlFile}
+					if failFast {
+						args = append(args, "--fail-fast")
+					}
+					cmd.SetArgs(args)
+
+					err := cmd.Execute()
+
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(`finished with status "failed"`))
+					_, isApiErr := common.AsApiError(err)
+					Expect(isApiErr).To(BeFalse())
+					Expect(strings.Count(stdout.String(), diagnostic)).To(Equal(1))
+					Expect(stderr.String()).NotTo(ContainSubstring(diagnostic))
+					Expect(stdout.String() + stderr.String()).NotTo(ContainSubstring("InternalError"))
+					Expect(stdout.String() + stderr.String()).NotTo(ContainSubstring("500"))
+				},
+				Entry("console output without fail-fast", "console", false),
+				Entry("console output with fail-fast", "console", true),
+				Entry("json output without fail-fast", "json", false),
+				Entry("json output with fail-fast", "json", true),
+			)
+		})
+
+		Context("when waiting fails with a genuine API error", func() {
+			BeforeEach(func() {
+				mockHandler.EXPECT().Priority().Return(100).Maybe()
+				mockHandler.EXPECT().Apply(mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("*types.UnstructuredObject")).Return(nil)
+				apiErr := &common.ApiError{Type: "InternalError", Status: 500, Title: "Internal Server Error", Detail: "boom"}
+				mockHandler.EXPECT().WaitForReady(mock.AnythingOfType("*context.valueCtx"), "test-rover").Return(nil, apiErr)
+			})
+
+			expectApiErrorPrinted := func() {
+				Expect(stderr.String()).To(ContainSubstring("InternalError"))
+				Expect(stderr.String()).To(ContainSubstring("500"))
+				Expect(stderr.String()).To(ContainSubstring("Internal Server Error"))
+				Expect(stderr.String()).To(ContainSubstring("boom"))
+			}
+
+			It("should print the API error and continue without fail-fast", func() {
+				cmd.SetArgs([]string{"--file", yamlFile})
+
+				Expect(cmd.Execute()).To(Succeed())
+				expectApiErrorPrinted()
+			})
+
+			It("should print the API error and fail with fail-fast", func() {
+				cmd.SetArgs([]string{"--file", yamlFile, "--fail-fast"})
+
+				err := cmd.Execute()
+
+				Expect(err).To(HaveOccurred())
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Status).To(Equal(500))
+				expectApiErrorPrinted()
 			})
 		})
 
