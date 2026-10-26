@@ -1,0 +1,53 @@
+discovery-server/internal/controller/apiexposure_masking_test.go
+  s_27e9d94d180a35::t_72a1a694222984 13,296-297
+  s_0e3d90a5ad490f::t_faacd31354a60f 24,245,263-265,268-269,272-274
+  s_27e9d94d180a35::t_512acfee1178ea 144,148,162
+  s_0e3d90a5ad490f::t_641b734d235860 246
+  s_0e3d90a5ad490f::t_cf05e6d069f254 78-127
+  s_27e9d94d180a35::t_1a93165c5c6678 326,332-339
+  s_27e9d94d180a35::t_6a509dcc814dd3 262,266,271,321-322
+  s_0e3d90a5ad490f::t_19686bc99256c0 180
+  s_27e9d94d180a35::t_1d11ffe786999f 1-12,14-23,25-77,128-143,145-147,149-161,163-172,174-179,181-194,196-202,204-210,212-244,247-261,267,270,275-295,298-320,323-325,327-331,340-362
+  s_27e9d94d180a35::t_6156a111ae6e92 173
+  s_27e9d94d180a35::t_300ba2d374372d 195
+  s_27e9d94d180a35::t_b92cc60bfc2aa6 203
+  s_27e9d94d180a35::t_6b1d6f4849ccf8 211
+discovery-server/internal/controller/apiexposure.go
+  s_27e9d94d180a35::t_2483fd6846ad19 11
+  s_27e9d94d180a35::t_89fdebc6363f62 141-143,145
+  s_0e3d90a5ad490f::t_faacd31354a60f 14,28-37,162,166-170
+discovery-server/internal/controller/__snapshots__/apiexposure_test.snap
+  s_55687908c80001::t_cde9fc9526e67e 263,265,305,307,347,349,391
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bbb1152552ecf2a93dc72057036aacdbf0163271",
+  "prompts": {},
+  "sessions": {
+    "s_0e3d90a5ad490f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e87a603deffeZd8Kq2FRtE0tQJ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_27e9d94d180a35": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e877c1b58ffeBKqzGKls0erBUC",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_55687908c80001": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e871cb04dffekcjLAux2L25DsU",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
