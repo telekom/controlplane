@@ -448,3 +448,42 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		)
 	})
 })
+
+var _ = Describe("DeleteUpstream", func() {
+	var (
+		api    *mockclient.MockKongAdminApi
+		client clientpkg.KongClient
+		route  *v1.Route
+	)
+
+	BeforeEach(func() {
+		api = mockclient.NewMockKongAdminApi(GinkgoT())
+		client = clientpkg.NewKongClient(api)
+		route = &v1.Route{ObjectMeta: metav1.ObjectMeta{Name: "test-route"}}
+		route.SetUpstreamId("upstream-id")
+		route.SetTargetsId("target-id")
+	})
+
+	DescribeTable("deletes only the upstream because Kong deletes its targets with it",
+		func(status int) {
+			api.EXPECT().DeleteUpstreamWithResponse(mock.Anything, "test-route").Return(
+				&kong.DeleteUpstreamResponse{HTTPResponse: &http.Response{StatusCode: status}}, nil,
+			)
+
+			Expect(client.DeleteUpstream(context.Background(), route)).To(Succeed())
+		},
+		Entry("deleted", http.StatusNoContent),
+		Entry("already gone", http.StatusNotFound),
+	)
+
+	It("reports a failed upstream delete", func() {
+		api.EXPECT().DeleteUpstreamWithResponse(mock.Anything, "test-route").Return(
+			&kong.DeleteUpstreamResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusInternalServerError},
+				Body:         []byte(`{"message":"An unexpected error occurred"}`),
+			}, nil,
+		)
+
+		Expect(client.DeleteUpstream(context.Background(), route)).To(MatchError(ContainSubstring("failed to delete upstream (500)")))
+	})
+})

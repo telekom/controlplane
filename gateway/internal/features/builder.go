@@ -290,14 +290,11 @@ func (b *Builder) Build(ctx context.Context) error {
 	}
 
 	// In case a plugin was used before but is not used anymore, we need to remove it.
-	// The circuit-breaker IDs survive: the next reconcile needs them to delete the Kong upstream.
-	upstreamId, targetsId := b.Route.GetUpstreamId(), b.Route.GetTargetsId()
+	// The circuit-breaker upstream ID survives: the next reconcile needs it to delete the Kong upstream.
+	upstreamId := b.Route.GetUpstreamId()
 	b.Route.Status.Properties = map[string]string{}
 	if upstreamId != "" {
 		b.Route.SetUpstreamId(upstreamId)
-	}
-	if targetsId != "" {
-		b.Route.SetTargetsId(targetsId)
 	}
 
 	// Ensure that the Routing and JumperConfig are set last

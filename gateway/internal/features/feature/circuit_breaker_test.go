@@ -215,6 +215,8 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				err := f.Apply(ctx, builder)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("upstream not found"))
+				// the upstream ID survives so the next reconcile retries the deletion
+				Expect(route.GetUpstreamId()).To(Equal("existing-upstream-id"))
 			})
 		})
 
@@ -264,7 +266,6 @@ var _ = Describe("CircuitBreakerFeature", func() {
 			func(routeType gatewayv1.RouteType, cb *gatewayv1.CircuitBreaker) {
 				build()
 				Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
-				Expect(route.GetTargetsId()).To(Equal("target-id"))
 
 				route.Spec.Type = routeType
 				route.Spec.Traffic.CircuitBreaker = cb

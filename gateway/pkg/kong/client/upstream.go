@@ -52,6 +52,7 @@ func (c *kongClient) CreateOrReplaceUpstream(ctx context.Context, route CustomRo
 	return nil
 }
 
+// DeleteUpstream deletes the upstream of the route. Kong deletes its targets with it.
 func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) error {
 	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, route.GetName())
 	if err != nil {
@@ -59,17 +60,6 @@ func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) erro
 	}
 	if err := CheckStatusCode(upstreamResponse, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
 		return fmt.Errorf("failed to delete upstream (%d): %s: %w", upstreamResponse.StatusCode(), summarizeBody(upstreamResponse.Body), err)
-	}
-
-	if route.GetTargetsId() != "" {
-		// targets don't have names, so we use the ID directly
-		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, route.GetName(), route.GetTargetsId())
-		if err != nil {
-			return fmt.Errorf("failed to delete upstream targets: %w", HandleClientError(err))
-		}
-		if err := CheckStatusCode(targetsResponse, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
-			return fmt.Errorf("failed to delete upstream targets (%d): %s: %w", targetsResponse.StatusCode(), summarizeBody(targetsResponse.Body), err)
-		}
 	}
 	return nil
 }
