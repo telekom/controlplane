@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -21,6 +22,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
 // RouteReconciler reconciles a Route object
@@ -28,11 +30,14 @@ type RouteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	// KongClients is the operator wide Kong client factory.
+	KongClients *kongutil.ClientFactory
 
 	cc.Controller[*gatewayv1.Route]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes/finalizers,verbs=update
@@ -43,8 +48,11 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.KongClients == nil {
+		return errors.New("kong client factory is required")
+	}
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&routehandler.RouteHandler{KongClients: r.KongClients}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor,

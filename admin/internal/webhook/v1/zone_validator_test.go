@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,6 +96,21 @@ var _ = Describe("Zone validation", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
+	})
+
+	It("accepts valid TLS references and rejects invalid ones", func() {
+		zone := validZone()
+		zone.Spec.Gateways[0].TLS = &ctypes.TLSConfig{ConfigMapRef: ctypes.ConfigMapKeyRef{Name: "custom-ca", Key: "ca.pem"}}
+		zone.Spec.IdentityProviders[0].TLS = &ctypes.TLSConfig{ConfigMapRef: ctypes.ConfigMapKeyRef{Name: "custom-ca", Key: "ca.pem"}}
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+
+		zone.Spec.Gateways[0].TLS.ConfigMapRef.Name = "Invalid_Name"
+		zone.Spec.IdentityProviders[0].TLS.ConfigMapRef.Key = ""
+		_, err = validator.ValidateCreate(ctx, zone)
+		Expect(apierrors.IsInvalid(err)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("spec.gateways[0].tls.configMapRef.name")))
+		Expect(err).To(MatchError(ContainSubstring("spec.identityProviders[0].tls.configMapRef.key")))
 	})
 
 	DescribeTable("validates aggregated gateway route limits on create and update",

@@ -126,15 +126,10 @@ var _ = BeforeSuite(func() {
 
 	By("Setting up the required mocks")
 	discoveryServer = newDiscoveryServer()
-	mockFactory := keycloak.ServiceFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-		if mockKeycloak {
-			mockClient := utils.NewKeycloakClientMock(GinkgoT())
-			utils.ConfigureKeycloakClientMock(mockClient)
-			return keycloak.NewKeycloakService(mockClient,
-				keycloak.WithIssuerDiscovery(discoveryServer.Client(), discoveryServer.URL+"/auth/admin/realms/")), nil
-		}
-		return keycloak.NewKeycloakServiceFor(&realmStatus)
-	})
+	realFactory, err := keycloak.NewServiceFactory(ctx, k8sManager.GetClient())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(k8sManager.Add(realFactory)).To(Succeed())
+	mockFactory := suiteServiceFactory{real: realFactory}
 
 	err = (&ClientReconciler{
 		Client:        k8sManager.GetClient(),
@@ -170,3 +165,19 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+// suiteServiceFactory returns mocked services unless mockKeycloak is disabled.
+type suiteServiceFactory struct {
+	real keycloak.ServiceFactory
+}
+
+//nolint:gocritic // ServiceFactory keeps a value-based status for callers.
+func (f suiteServiceFactory) ServiceFor(ctx context.Context, realm *identityv1.Realm, status identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+	if mockKeycloak {
+		mockClient := utils.NewKeycloakClientMock(GinkgoT())
+		utils.ConfigureKeycloakClientMock(mockClient)
+		return keycloak.NewKeycloakService(mockClient,
+			keycloak.WithIssuerDiscovery(discoveryServer.Client(), discoveryServer.URL+"/auth/admin/realms/")), func() {}, nil
+	}
+	return f.real.ServiceFor(ctx, realm, status)
+}

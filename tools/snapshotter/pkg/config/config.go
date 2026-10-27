@@ -13,16 +13,18 @@ import (
 )
 
 type SourceConfig struct {
-	Environment  string                         `mapstructure:"environment" validate:"required"`
-	Zone         string                         `mapstructure:"zone" validate:"required"`
-	Url          string                         `mapstructure:"url" validate:"required,url"`
-	TokenUrl     string                         `mapstructure:"tokenUrl" validate:"required,url"`
-	ClientId     string                         `mapstructure:"clientId" validate:"required"`
-	ClientSecret string                         `mapstructure:"clientSecret" validate:"required"`
-	Scopes       []string                       `mapstructure:"scopes"`
-	Tags         []string                       `mapstructure:"tags"`
-	Obfuscators  []obfuscator.ObfuscationTarget `mapstructure:"obfuscators"`
-	Decoders     []decoder.DecoderTarget        `mapstructure:"decoders"`
+	Environment  string `mapstructure:"environment" validate:"required"`
+	Zone         string `mapstructure:"zone" validate:"required"`
+	Url          string `mapstructure:"url" validate:"required,url"`
+	TokenUrl     string `mapstructure:"tokenUrl" validate:"required,url"`
+	ClientId     string `mapstructure:"clientId" validate:"required"`
+	ClientSecret string `mapstructure:"clientSecret" validate:"required"`
+	// InsecureSkipVerify disables TLS verification for the token and API endpoints.
+	InsecureSkipVerify bool                           `mapstructure:"insecureSkipVerify"`
+	Scopes             []string                       `mapstructure:"scopes"`
+	Tags               []string                       `mapstructure:"tags"`
+	Obfuscators        []obfuscator.ObfuscationTarget `mapstructure:"obfuscators"`
+	Decoders           []decoder.DecoderTarget        `mapstructure:"decoders"`
 }
 
 // AdminClientId implements kongutil.GatewayAdminConfig.

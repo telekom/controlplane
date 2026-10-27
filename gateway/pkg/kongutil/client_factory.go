@@ -6,23 +6,19 @@ package kongutil
 
 import (
 	"context"
-	"crypto/sha256"
-	"crypto/tls"
+	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
-	"os"
-	"strings"
-	"sync"
-	"time"
 
-	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
+	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
+	"github.com/telekom/controlplane/common-server/pkg/client/tlsclient"
+	"github.com/telekom/controlplane/common/pkg/cabundle"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 )
 
 type GatewayAdminConfig interface {
@@ -64,101 +60,153 @@ func NewGatewayConfig(rawUrl, clientId, clientSecret, issuer string) GatewayAdmi
 	}
 }
 
-var (
-	rootCtx      = context.Background()
+const (
 	tokenUrlPath = "/protocol/openid-connect/token"
-
-	clientCache      = make(map[string]client.KongClient)
-	urlToKey         = make(map[string]string) // AdminUrl -> current cache key for stale eviction
-	clientCacheMutex sync.Mutex
+	profileName  = "gateway"
+	ownerKind    = "gateway.cp.ei.telekom.de/Gateway"
 )
 
-// cacheKey produces a SHA-256 hex digest of all connection parameters.
-// When any parameter (including the secret) changes, the key changes,
-// causing an automatic cache miss and fresh client creation.
-func cacheKey(gwCfg GatewayAdminConfig) string {
-	key := fmt.Sprintf("%s\x00%s\x00%s\x00%s",
-		gwCfg.AdminUrl(), gwCfg.AdminClientId(),
-		gwCfg.AdminClientSecret(), gwCfg.AdminIssuer())
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(key)))
+// profile holds the HTTP settings of all Gateway admin API clients.
+func profile() tlsclient.Profile {
+	return tlsclient.Profile{
+		Name:                profileName,
+		Transport:           tlsclient.TransportRaw,
+		Timeout:             tlsclient.DefaultTimeout,
+		MaxIdleConnsPerHost: 100,
+		MetricsClientName:   "gateway",
+		MetricsReplacePatterns: []string{
+			`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID,
+		},
+	}
 }
 
-var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
-	clientCacheMutex.Lock()
-	defer clientCacheMutex.Unlock()
-
-	key := cacheKey(gwCfg)
-
-	if c, ok := clientCache[key]; ok {
-		return c, nil
+func specFor(gwCfg GatewayAdminConfig) (tlsclient.Spec, error) {
+	tokenUrl, err := url.JoinPath(gwCfg.AdminIssuer(), tokenUrlPath)
+	if err != nil {
+		return tlsclient.Spec{}, fmt.Errorf("failed to construct token URL: %w", err)
 	}
 
-	apiClient, err := NewClientFor(gwCfg)
+	return tlsclient.Spec{
+		Profile: profileName,
+		APIURL:  gwCfg.AdminUrl(),
+		Auth: tlsclient.Auth{
+			Mode:         tlsclient.AuthClientCredentials,
+			TokenURL:     tokenUrl,
+			ClientID:     gwCfg.AdminClientId(),
+			ClientSecret: gwCfg.AdminClientSecret(),
+		},
+	}, nil
+}
+
+// ClientFactory provides Kong clients for Gateways. A single instance is
+// shared by all controllers of the operator and must be added to the manager.
+type ClientFactory struct {
+	clients *tlsclient.Factory
+	reader  client.Reader
+}
+
+// NewClientFactory creates the factory. ctx is the operator lifetime and
+// reader is used to read CA bundle ConfigMaps (the manager cached client).
+func NewClientFactory(ctx context.Context, reader client.Reader, opts ...tlsclient.FactoryOption) (*ClientFactory, error) {
+	clients, err := tlsclient.NewFactory(ctx, []tlsclient.Profile{profile()}, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("creating kong client factory: %w", err)
+	}
+	return &ClientFactory{clients: clients, reader: reader}, nil
+}
+
+// Start runs the cleanup of idle clients. It implements manager.Runnable.
+func (f *ClientFactory) Start(ctx context.Context) error {
+	return f.clients.Start(ctx)
+}
+
+// NeedLeaderElection lets the cleanup run on every replica.
+func (f *ClientFactory) NeedLeaderElection() bool {
+	return false
+}
+
+// ClientFor returns a Kong client for the Gateway and a release function
+// that must be called once the client is no longer used.
+// Invalid CA configuration results in a blocked error.
+func (f *ClientFactory) ClientFor(ctx context.Context, gw *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+	lease, err := f.acquire(ctx, gw)
+	if err != nil {
+		return nil, nil, err
+	}
+	apiClient, err := kong.NewClientWithResponses(lease.Client().APIURL(), kong.WithHTTPClient(lease.Client().Doer()))
+	if err != nil {
+		lease.Release()
+		return nil, nil, fmt.Errorf("creating kong client: %w", err)
+	}
+	return kongclient.NewKongClient(apiClient), lease.Release, nil
+}
+
+func (f *ClientFactory) acquire(ctx context.Context, gw *gatewayv1.Gateway) (*tlsclient.Lease, error) {
+	if gw == nil {
+		return nil, errors.New("gateway is required")
+	}
+	spec, err := specFor(gw)
 	if err != nil {
 		return nil, err
 	}
-	c := client.NewKongClient(apiClient)
-
-	// Evict stale entry for the same URL (previous credentials).
-	adminUrl := gwCfg.AdminUrl()
-	if oldKey, ok := urlToKey[adminUrl]; ok && oldKey != key {
-		delete(clientCache, oldKey)
+	spec.Owner = tlsclient.Owner{
+		Kind:      ownerKind,
+		Namespace: gw.Namespace,
+		Name:      gw.Name,
+		UID:       string(gw.UID),
 	}
-	urlToKey[adminUrl] = key
-	clientCache[key] = c
+	if gw.Spec.TLS != nil {
+		if f.reader == nil {
+			return nil, fmt.Errorf("gateway %s/%s references a CA bundle but no resolver is configured", gw.Namespace, gw.Name)
+		}
+		spec.CA = cabundle.NewResolver(f.reader, gw.Namespace, gw.Spec.TLS.ConfigMapRef)
+	}
 
-	return c, nil
+	lease, err := f.clients.Acquire(ctx, spec)
+	if err != nil {
+		return nil, classifyAcquireError(gw, err)
+	}
+	return lease, nil
 }
 
-// EnvSkipTlsVerify is the environment variable that disables TLS
-// certificate and hostname verification for Kong Admin API and OAuth
-// token requests. Only the value "true" (case-insensitive) enables it.
-const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
-
-func skipTlsVerify() bool {
-	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+// classifyAcquireError blocks on invalid CA configuration. Other errors are
+// returned wrapped and retried.
+func classifyAcquireError(gw *gatewayv1.Gateway, err error) error {
+	if errors.Is(err, cabundle.ErrInvalidBundle) ||
+		errors.Is(err, cabundle.ErrSourceNotFound) ||
+		errors.Is(err, cabundle.ErrSourceForbidden) ||
+		errors.Is(err, tlsclient.ErrInvalidCA) {
+		return ctrlerrors.BlockedErrorf("invalid CA configuration of gateway %s/%s: %s", gw.Namespace, gw.Name, err)
+	}
+	return fmt.Errorf("acquiring kong client for gateway %s/%s: %w", gw.Namespace, gw.Name, err)
 }
 
-var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInterface, error) {
-	transport := &http.Transport{
-		MaxIdleConnsPerHost: 100,
+// GetClientFor returns a leased Kong client of factory for the Gateway.
+// The returned release function must be called when done. It is a test seam.
+var GetClientFor = func(ctx context.Context, factory *ClientFactory, gw *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+	if factory == nil {
+		return nil, nil, errors.New("kong client factory is not configured")
 	}
-	if skipTlsVerify() {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // explicit opt-in via SKIP_TLS_VERIFY
-	}
-	baseClient := &http.Client{
-		Transport: transport,
-		Timeout:   10 * time.Second,
-	}
+	return factory.ClientFor(ctx, gw)
+}
 
-	tokenUrl, err := url.JoinPath(gwCfg.AdminIssuer(), tokenUrlPath)
+// NewStandaloneClient creates an uncached Kong admin API client for
+// long-running tools. ctx bounds the token source lifetime; the returned
+// close function releases its resources. insecureSkipVerify disables TLS
+// verification for the token and API endpoints.
+func NewStandaloneClient(ctx context.Context, gwCfg GatewayAdminConfig, insecureSkipVerify bool) (kong.ClientWithResponsesInterface, func(), error) {
+	spec, err := specFor(gwCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to construct token URL")
+		return nil, nil, err
 	}
-
-	tokenCfg := clientcredentials.Config{
-		ClientID:     gwCfg.AdminClientId(),
-		ClientSecret: gwCfg.AdminClientSecret(),
-		TokenURL:     tokenUrl,
-	}
-
-	ctx := context.WithValue(rootCtx, oauth2.HTTPClient, baseClient)
-
-	url, err := url.Parse(gwCfg.AdminUrl())
+	c, err := tlsclient.New(ctx, profile(), spec, tlsclient.WithInsecureSkipVerify(insecureSkipVerify))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse gateway URL")
+		return nil, nil, fmt.Errorf("creating kong http client: %w", err)
 	}
-
-	httpClient := tokenCfg.Client(ctx)
-	metricsClient := metrics.WithMetrics(httpClient,
-		metrics.WithClientName("gateway"),
-		metrics.WithReplacePatterns(`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID),
-	)
-
-	apiClient, err := kong.NewClientWithResponses(url.String(), kong.WithHTTPClient(metricsClient))
+	apiClient, err := kong.NewClientWithResponses(c.APIURL(), kong.WithHTTPClient(c.Doer()))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create kong client")
+		c.Close()
+		return nil, nil, fmt.Errorf("creating kong client: %w", err)
 	}
-
-	return apiClient, nil
+	return apiClient, c.Close, nil
 }

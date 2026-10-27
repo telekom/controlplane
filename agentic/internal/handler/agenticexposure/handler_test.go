@@ -783,7 +783,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
 			// The primary route trusts the LMS issuer of each proxy zone once
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
-				"https://lms.subscriber.example.com", "https://lms.telecontext.example.com"))
+				"https://lms.subscriber.example.com", "https://lms.telecontext.example.com",
+			))
 		})
 
 		It("should add the Telecontext consumer to the primary route when Telecontext is local and another zone subscribes", func() {
@@ -860,7 +861,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// The primary route serves the proxy gateway and Telecontext directly
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
-				"https://issuer.example.com", "https://lms.subscriber.example.com"))
+				"https://issuer.example.com", "https://lms.subscriber.example.com",
+			))
 		})
 
 		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedTags []string) {
