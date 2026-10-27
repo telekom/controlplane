@@ -51,6 +51,14 @@ Admin also creates an owned `<gateway>--zone-health` passthrough route for every
 
 Zone admission and reconciliation share aggregation, normalized path construction, and cardinality validation in `admin/internal/routeinputs`. Create/update admission rejects excessive inputs with field-specific errors; the controller retains a defensive blocked-error check for existing invalid Zones. Fixed identity and health suffixes preserve the number of distinct normalized base paths, so validation does not depend on provisioned realm names or visibility.
 
+### Custom CA publication
+
+Before changing child connections, Admin validates all gateway and identity-provider CA references in the Zone namespace and publishes their union as `zone-ca-bundle/ca-bundle.pem` in the generated namespace. Every generated Gateway and IdentityProvider uses that local bundle; OIDC discovery uses the same validated bytes in memory. Invalid sources block reconciliation without replacing the last valid bundle or child connection settings. Bundle and child writes are ordered, not transactional.
+
+Source ConfigMap watches enqueue referencing Zones, and managed-bundle watches support repair. Reads remain eventually consistent through the manager cache. Removing all source references returns managed children to system-only trust; bundle retirement waits for retained child and Realm snapshot references. Zone deletion retains the bundle alongside the children.
+
+See [Custom CA Certificates](../admin-journey/environments-and-zones.md#custom-ca-certificates) for configuration and recovery, and [Outbound TLS Clients](./outbound-tls-clients.md) for implementation boundaries and cache behavior.
+
 ### Secret onboarding (defaulting webhook)
 
 A Zone **defaulting webhook** processes a zone's sensitive fields before the resource is stored — the IDP admin password and the Redis password. The gateway admin (`rover`) client secret is managed separately during Zone provisioning, as described above.

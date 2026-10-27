@@ -15,6 +15,7 @@ import (
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -125,6 +126,8 @@ var _ = Describe("ApplicationInfo variables", func() {
 
 	It("includes application, subscription, and event publish variables in the final response", func() {
 		eventStore := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+		eventStore.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&commonStore.ListResponse[*eventv1.EventExposure]{}, nil).Once()
 		eventStore.EXPECT().Get(mock.Anything, "test", "event").Return(&eventv1.EventExposure{
 			Status: eventv1.EventExposureStatus{PublishURL: "https://events.example.com/publish"},
 		}, nil).Once()

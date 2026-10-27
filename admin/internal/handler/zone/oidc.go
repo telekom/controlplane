@@ -13,6 +13,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"github.com/telekom/controlplane/common-server/pkg/client/tlsclient"
 )
 
 type oidcMetadata struct {
@@ -25,8 +28,49 @@ const maxOIDCMetadataSize = 1 << 20
 // ReasonOIDCIssuerMismatch is the Zone event reason for a discovered issuer that differs from the configured one.
 const ReasonOIDCIssuerMismatch = "OIDCIssuerMismatch"
 
+// discoveryProfile matches the former default discovery client: default
+// transport (proxy from environment) and a 10s timeout.
+var discoveryProfile = tlsclient.Profile{
+	Name:      "admin-oidc-discovery",
+	Transport: tlsclient.TransportDefault,
+	Timeout:   10 * time.Second,
+}
+
+type httpDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// staticCA serves an already validated canonical bundle.
+type staticCA []byte
+
+func (s staticCA) Resolve(context.Context) ([]byte, error) {
+	return s, nil
+}
+
+// discoveryClient returns the doer for OIDC discovery of issuerURL and a func
+// releasing it. HandlingContext.HTTPClient takes precedence; otherwise a
+// standalone client trusts the system roots and the zone CA bundle.
+func discoveryClient(ctx context.Context, hc *HandlingContext, issuerURL string) (httpDoer, func(), error) {
+	if hc.HTTPClient != nil {
+		return hc.HTTPClient, func() {}, nil
+	}
+	var ca tlsclient.CAResolver
+	if hc.CABundle != nil {
+		ca = staticCA(hc.CABundle)
+	}
+	c, err := tlsclient.New(ctx, discoveryProfile, tlsclient.Spec{
+		APIURL: issuerURL,
+		Auth:   tlsclient.Auth{Mode: tlsclient.AuthNone},
+		CA:     ca,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating OIDC discovery client: %w", err)
+	}
+	return c.Doer(), c.Close, nil
+}
+
 // discoverTokenURL returns the validated token endpoint and the issuer advertised in the OIDC metadata.
-func discoverTokenURL(ctx context.Context, client *http.Client, issuerURL string) (tokenURL, advertisedIssuer string, err error) {
+func discoverTokenURL(ctx context.Context, client httpDoer, issuerURL string) (tokenURL, advertisedIssuer string, err error) {
 	if client == nil {
 		return "", "", fmt.Errorf("OIDC discovery HTTP client is nil")
 	}

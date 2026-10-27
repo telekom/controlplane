@@ -62,10 +62,11 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	}
 	mapToClientStatus(&realm.Status, realm.Spec.AllowedOrigins, &client.Status)
 
-	realmClient, err := h.ServiceFactory.ServiceFor(realm.Status)
+	realmClient, release, err := h.ServiceFactory.ServiceFor(ctx, realm, realm.Status)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
+	defer release()
 
 	// Use a copy of the client with the resolved secret so the original
 	// client.Spec.ClientSecret (which may be a secret-manager reference)
@@ -240,10 +241,11 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 		return nil
 	}
 
-	svc, err := h.ServiceFactory.ServiceFor(realm.Status)
+	svc, release, err := h.ServiceFactory.ServiceFor(ctx, realm, realm.Status)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
+	defer release()
 
 	err = svc.DeleteClient(ctx, realm.Name, obj)
 	if err != nil {

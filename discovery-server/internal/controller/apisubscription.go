@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // parallel structure with eventsubscription.go; controllers use different API types and stores
 package controller
 
 import (
@@ -51,7 +52,6 @@ func (c *apiSubscriptionController) Get(ctx context.Context, applicationId, apiS
 	return subscriptionmapper.MapResponse(ctx, sub, c.stores), nil
 }
 
-//nolint:dupl // type-specific list methods share structure but differ in types and stores
 func (c *apiSubscriptionController) GetAll(ctx context.Context, applicationId string, params api.GetAllApiSubscriptionsParams) (*api.ApiSubscriptionListResponse, error) {
 	appInfo, err := mapper.ParseApplicationId(ctx, applicationId)
 	if err != nil {

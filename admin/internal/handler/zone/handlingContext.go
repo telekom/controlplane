@@ -38,7 +38,14 @@ type HandlingContext struct {
 
 	// Shared configuration derived once at initialization
 	DefaultClaims []identityapi.ClaimConfig
-	HTTPClient    *http.Client
+	// HTTPClient overrides the OIDC discovery client. Nil uses a client trusting CABundle.
+	HTTPClient *http.Client
+	// KubeClient is the manager client. It reads ConfigMaps that carry no environment label.
+	KubeClient client.Client
+
+	// CABundle is the validated canonical union of all CA sources of the zone.
+	// Nil means system roots only.
+	CABundle []byte
 
 	// Intermediate resources — populated by steps as they execute
 	IdentityProvider      *identityapi.IdentityProvider
@@ -54,7 +61,7 @@ type HandlingContext struct {
 
 // newHandlingContext fetches the Environment, creates/updates the zone Namespace,
 // and builds the shared claims configuration.
-func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http.Client) (*HandlingContext, error) {
+func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http.Client, kubeClient client.Client) (*HandlingContext, error) {
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
@@ -118,6 +125,7 @@ func newHandlingContext(ctx context.Context, obj *adminv1.Zone, httpClient *http
 		Namespace:        namespace,
 		DefaultClaims:    defaultClaims,
 		HTTPClient:       httpClient,
+		KubeClient:       kubeClient,
 		Gateways:         make(map[string]*gatewayapi.Gateway),
 		GatewayConsumers: make(map[string]*gatewayapi.Consumer),
 		DefaultPreset:    defaultPreset,

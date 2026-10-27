@@ -8,8 +8,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	exposuremapper "github.com/telekom/controlplane/discovery-server/internal/mapper/apiexposure"
@@ -22,6 +24,16 @@ import (
 
 // Compile-time interface check.
 var _ server.ApiExposureController = (*apiExposureController)(nil)
+
+// Projected JSON paths mask existing fields without creating missing credentials.
+var subscriberCredentialPaths = []string{
+	"items.#.security.username",
+	"items.#.security.password",
+	"items.#.security.clientId",
+	"items.#.security.clientSecret",
+	"items.#.security.refreshToken",
+	"items.#.security.rotateToken",
+}
 
 type apiExposureController struct {
 	stores *sstore.Stores
@@ -126,8 +138,11 @@ func (c *apiExposureController) GetSubscriptions(ctx context.Context, applicatio
 
 	// Fetch all subscriptions (cross-namespace — no prefix, no app label filter)
 	// and filter by basePath. Subscribers come from different teams/apps.
+	// Exposure access does not authorize disclosure of subscriber credentials:
+	// the plain store is used so no secrets are resolved, and every response is
+	// masked regardless of the caller's scope.
 	listOpts := store.NewListOpts()
-	allSubs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionSecretStore, listOpts)
+	allSubs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +159,13 @@ func (c *apiExposureController) GetSubscriptions(ctx context.Context, applicatio
 	basePath := fmt.Sprintf("/applications/%s/apiexposures/%s/apisubscriptions", applicationId, apiExposureName)
 	result := pagination.Paginate(matchingSubs, params.Offset, params.Limit, basePath)
 
-	return &api.ApiSubscriptionListResponse{
+	resp := &api.ApiSubscriptionListResponse{
 		Items:           result.Items,
 		Paging:          result.Paging,
 		UnderscoreLinks: result.Links,
-	}, nil
+	}
+	if _, err = secrets.NewObfuscator().ReplaceAll(ctx, resp, subscriberCredentialPaths); err != nil {
+		return nil, problems.InternalServerError("Internal Server Error", "failed to mask subscriber credentials")
+	}
+	return resp, nil
 }

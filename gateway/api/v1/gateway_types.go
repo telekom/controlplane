@@ -30,6 +30,11 @@ type GatewaySpec struct {
 	Admin AdminConfig  `json:"admin"`
 
 	Features []FeatureType `json:"features,omitempty"`
+
+	// TLS configures additional CA certificates trusted for the admin API and token endpoint.
+	// The referenced ConfigMap must be in the namespace of the Gateway.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway

@@ -155,7 +155,7 @@ var _ = Describe("Realm attribute validation", func() {
 
 	DescribeTable("should reject invalid attributes",
 		func(attributes map[string]string, expectedMessage string) {
-			err := k8sClient.Create(ctx, newRealmWithAttributes("invalid-attributes", attributes))
+			err := k8sClient.Create(ctx, newRealmWithAttributes("invalid-attributes", attributes), client.DryRunAll)
 			Expect(err).To(HaveOccurred())
 			Expect(errors.IsInvalid(err)).To(BeTrue(), "expected an invalid error, got %v", err)
 			Expect(err.Error()).To(ContainSubstring(expectedMessage))
@@ -166,6 +166,7 @@ var _ = Describe("Realm attribute validation", func() {
 	DescribeTable("should accept attributes, including a malformed frontendUrl",
 		func(attributes map[string]string) {
 			realm := newRealmWithAttributes("valid-attributes", attributes)
+			// Validate admission without racing controller finalizer setup and cleanup.
 			Expect(k8sClient.Create(ctx, realm, client.DryRunAll)).To(Succeed())
 		},
 		Entry("generic attribute", map[string]string{"displayName": "My Realm"}),

@@ -117,6 +117,27 @@ type RealmSpec struct {
 	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
+// RealmConnection describes the IdentityProvider connection of a Realm.
+type RealmConnection struct {
+	// IdentityProvider identifies the IdentityProvider including its UID.
+	// +kubebuilder:validation:Required
+	IdentityProvider types.ObjectRef `json:"identityProvider"`
+	// TLS references the CA bundle trusted for the connection. Absent means system roots only.
+	// +optional
+	TLS *RealmConnectionTLS `json:"tls,omitempty"`
+}
+
+// RealmConnectionTLS references a CA bundle together with the namespace it is read from.
+type RealmConnectionTLS struct {
+	// Namespace of the referenced ConfigMap, the namespace of the IdentityProvider.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Namespace string `json:"namespace"`
+	// ConfigMapRef references the PEM encoded CA certificates.
+	// +kubebuilder:validation:Required
+	ConfigMapRef types.ConfigMapKeyRef `json:"configMapRef"`
+}
+
 // RealmStatus defines the observed state of Realm
 type RealmStatus struct {
 	IssuerUrl     string `json:"issuerUrl"`
@@ -132,6 +153,10 @@ type RealmStatus struct {
 	// +optional
 	// +listType=set
 	ManagedAttributes []string `json:"managedAttributes,omitempty"`
+	// Connection identifies the IdentityProvider and CA bundle the admin connection
+	// fields above were derived from. Absent for realms reconciled before it was introduced.
+	// +optional
+	Connection *RealmConnection `json:"connection,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

@@ -44,10 +44,12 @@ type Stores struct {
 var SecretsForKinds = map[string][]string{
 	"ApiSubscription": {
 		"spec.security.m2m.client.clientSecret",
+		"spec.security.m2m.client.clientKey",
 		"spec.security.m2m.basic.password",
 	},
 	"ApiExposure": {
 		"spec.security.m2m.externalIDP.client.clientSecret",
+		"spec.security.m2m.externalIDP.client.clientKey",
 		"spec.security.m2m.externalIDP.basic.password",
 		"spec.security.m2m.basic.password",
 	},

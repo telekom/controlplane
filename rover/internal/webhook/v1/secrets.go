@@ -25,11 +25,22 @@ import (
 // spec.clientSecret: ClientSecret for the application (secretManager-name="clientSecret")
 //
 // spec.subscriptions.#.api.security.m2m.client.clientSecret: Consumer clientSecret for externalIDP
+// spec.subscriptions.#.api.security.m2m.client.clientKey: Consumer clientKey for externalIDP
 // spec.subscriptions.#.api.security.m2m.basic.password: Consumer password for externalIDP or basicAuth
 //
 // spec.exposures.#.api.security.m2m.externalIDP.client.clientSecret: Default clientSecret for externalIDP
+// spec.exposures.#.api.security.m2m.externalIDP.client.clientKey: Default clientKey for externalIDP
 // spec.exposures.#.api.security.m2m.externalIDP.basic.password: Default password for externalIDP
 // spec.exposures.#.api.security.m2m.basic.password: Default password for basicAuth
+//
+// spec.subscriptions.#.agentic.security.m2m.client.clientSecret: Agentic consumer clientSecret for externalIDP
+// spec.subscriptions.#.agentic.security.m2m.client.clientKey: Agentic consumer clientKey for externalIDP
+// spec.subscriptions.#.agentic.security.m2m.basic.password: Agentic consumer password for externalIDP or basicAuth
+//
+// spec.exposures.#.agentic.security.m2m.externalIDP.client.clientSecret: Agentic default clientSecret for externalIDP
+// spec.exposures.#.agentic.security.m2m.externalIDP.client.clientKey: Agentic default clientKey for externalIDP
+// spec.exposures.#.agentic.security.m2m.externalIDP.basic.password: Agentic default password for externalIDP
+// spec.exposures.#.agentic.security.m2m.basic.password: Agentic default password for basicAuth
 
 func makeKey(basePath, secretName string) string {
 	return fmt.Sprintf("%s/%s/%s", "externalSecrets", labelutil.NormalizeValue(basePath), secretName)
@@ -41,10 +52,12 @@ func GetExternalSecrets(ctx context.Context, rover *roverv1.Rover) map[string]st
 
 	for _, subscription := range rover.Spec.Subscriptions {
 		addSubscriptionExternalSecrets(secretMap, subscription)
+		addAgenticSubscriptionExternalSecrets(secretMap, subscription)
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
 		addExposureExternalSecrets(secretMap, exposure)
+		addAgenticExposureExternalSecrets(secretMap, exposure)
 	}
 
 	return secretMap
@@ -57,10 +70,12 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 
 	for i := range rover.Spec.Subscriptions {
 		setSubscriptionExternalSecrets(log, &rover.Spec.Subscriptions[i], availableSecrets)
+		setAgenticSubscriptionExternalSecrets(log, &rover.Spec.Subscriptions[i], availableSecrets)
 	}
 
 	for i := range rover.Spec.Exposures {
 		setExposureExternalSecrets(log, &rover.Spec.Exposures[i], availableSecrets)
+		setAgenticExposureExternalSecrets(log, &rover.Spec.Exposures[i], availableSecrets)
 	}
 
 	return nil
@@ -73,6 +88,9 @@ func addSubscriptionExternalSecrets(secretMap map[string]string, subscription ro
 	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
 		secretMap[makeKey(subscription.Api.BasePath, "clientSecret")] = subscription.Api.Security.M2M.Client.ClientSecret
 	}
+	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientKey != "" {
+		secretMap[makeKey(subscription.Api.BasePath, "clientKey")] = subscription.Api.Security.M2M.Client.ClientKey
+	}
 	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.RefreshToken != "" {
 		secretMap[makeKey(subscription.Api.BasePath, "refreshToken")] = subscription.Api.Security.M2M.Client.RefreshToken
 	}
@@ -81,6 +99,7 @@ func addSubscriptionExternalSecrets(secretMap map[string]string, subscription ro
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func addExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Exposure) {
 	if exposure.Api == nil || !exposure.Api.HasM2M() {
 		return
@@ -88,6 +107,9 @@ func addExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Ex
 	if exposure.Api.Security.M2M.ExternalIDP != nil {
 		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
 			secretMap[makeKey(exposure.Api.BasePath, "externalIDP/clientSecret")] = exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret
+		}
+		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientKey != "" {
+			secretMap[makeKey(exposure.Api.BasePath, "externalIDP/clientKey")] = exposure.Api.Security.M2M.ExternalIDP.Client.ClientKey
 		}
 		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.RefreshToken != "" {
 			secretMap[makeKey(exposure.Api.BasePath, "externalIDP/refreshToken")] = exposure.Api.Security.M2M.ExternalIDP.Client.RefreshToken
@@ -110,6 +132,11 @@ func setSubscriptionExternalSecrets(log logr.Logger, subscription *roverv1.Subsc
 			subscription.Api.Security.M2M.Client.ClientSecret = secretRef
 		})
 	}
+	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientKey != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Api.BasePath, "clientKey"), "clientKey not found in available secrets", func(secretRef string) {
+			subscription.Api.Security.M2M.Client.ClientKey = secretRef
+		})
+	}
 	if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.RefreshToken != "" {
 		updateSecretRef(log, availableSecrets, makeKey(subscription.Api.BasePath, "refreshToken"), "refreshToken not found in available secrets", func(secretRef string) {
 			subscription.Api.Security.M2M.Client.RefreshToken = secretRef
@@ -122,6 +149,7 @@ func setSubscriptionExternalSecrets(log logr.Logger, subscription *roverv1.Subsc
 	}
 }
 
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
 func setExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, availableSecrets map[string]string) {
 	if exposure.Api == nil || !exposure.Api.HasM2M() {
 		return
@@ -130,6 +158,11 @@ func setExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, ava
 		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
 			updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"), "externalIDP clientSecret not found in available secrets", func(secretRef string) {
 				exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
+			})
+		}
+		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientKey != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientKey"), "externalIDP clientKey not found in available secrets", func(secretRef string) {
+				exposure.Api.Security.M2M.ExternalIDP.Client.ClientKey = secretRef
 			})
 		}
 		if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.RefreshToken != "" {
@@ -146,6 +179,108 @@ func setExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, ava
 	if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
 		updateSecretRef(log, availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"), "basicAuth password not found in available secrets", func(secretRef string) {
 			exposure.Api.Security.M2M.Basic.Password = secretRef
+		})
+	}
+}
+
+func addAgenticSubscriptionExternalSecrets(secretMap map[string]string, subscription roverv1.Subscription) {
+	if subscription.Agentic == nil || subscription.Agentic.Security == nil || subscription.Agentic.Security.M2M == nil {
+		return
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.ClientSecret != "" {
+		secretMap[makeKey(subscription.Agentic.BasePath, "clientSecret")] = subscription.Agentic.Security.M2M.Client.ClientSecret
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.ClientKey != "" {
+		secretMap[makeKey(subscription.Agentic.BasePath, "clientKey")] = subscription.Agentic.Security.M2M.Client.ClientKey
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.RefreshToken != "" {
+		secretMap[makeKey(subscription.Agentic.BasePath, "refreshToken")] = subscription.Agentic.Security.M2M.Client.RefreshToken
+	}
+	if subscription.Agentic.Security.M2M.Basic != nil && subscription.Agentic.Security.M2M.Basic.Password != "" {
+		secretMap[makeKey(subscription.Agentic.BasePath, "password")] = subscription.Agentic.Security.M2M.Basic.Password
+	}
+}
+
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
+func addAgenticExposureExternalSecrets(secretMap map[string]string, exposure roverv1.Exposure) {
+	if exposure.Agentic == nil || exposure.Agentic.Security == nil || exposure.Agentic.Security.M2M == nil {
+		return
+	}
+	if exposure.Agentic.Security.M2M.ExternalIDP != nil {
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
+			secretMap[makeKey(exposure.Agentic.BasePath, "externalIDP/clientSecret")] = exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientSecret
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientKey != "" {
+			secretMap[makeKey(exposure.Agentic.BasePath, "externalIDP/clientKey")] = exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientKey
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.RefreshToken != "" {
+			secretMap[makeKey(exposure.Agentic.BasePath, "externalIDP/refreshToken")] = exposure.Agentic.Security.M2M.ExternalIDP.Client.RefreshToken
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Basic != nil && exposure.Agentic.Security.M2M.ExternalIDP.Basic.Password != "" {
+			secretMap[makeKey(exposure.Agentic.BasePath, "externalIDP/password")] = exposure.Agentic.Security.M2M.ExternalIDP.Basic.Password
+		}
+	}
+	if exposure.Agentic.Security.M2M.Basic != nil && exposure.Agentic.Security.M2M.Basic.Password != "" {
+		secretMap[makeKey(exposure.Agentic.BasePath, "basicAuth/password")] = exposure.Agentic.Security.M2M.Basic.Password
+	}
+}
+
+func setAgenticSubscriptionExternalSecrets(log logr.Logger, subscription *roverv1.Subscription, availableSecrets map[string]string) {
+	if subscription.Agentic == nil || subscription.Agentic.Security == nil || subscription.Agentic.Security.M2M == nil {
+		return
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.ClientSecret != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Agentic.BasePath, "clientSecret"), "agentic clientSecret not found in available secrets", func(secretRef string) {
+			subscription.Agentic.Security.M2M.Client.ClientSecret = secretRef
+		})
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.ClientKey != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Agentic.BasePath, "clientKey"), "agentic clientKey not found in available secrets", func(secretRef string) {
+			subscription.Agentic.Security.M2M.Client.ClientKey = secretRef
+		})
+	}
+	if subscription.Agentic.Security.M2M.Client != nil && subscription.Agentic.Security.M2M.Client.RefreshToken != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Agentic.BasePath, "refreshToken"), "agentic refreshToken not found in available secrets", func(secretRef string) {
+			subscription.Agentic.Security.M2M.Client.RefreshToken = secretRef
+		})
+	}
+	if subscription.Agentic.Security.M2M.Basic != nil && subscription.Agentic.Security.M2M.Basic.Password != "" {
+		updateSecretRef(log, availableSecrets, makeKey(subscription.Agentic.BasePath, "password"), "agentic password not found in available secrets", func(secretRef string) {
+			subscription.Agentic.Security.M2M.Basic.Password = secretRef
+		})
+	}
+}
+
+//nolint:dupl // API and agentic variants are intentionally parallel; covered by the generic-refactor TODO on GetExternalSecrets/SetExternalSecrets.
+func setAgenticExposureExternalSecrets(log logr.Logger, exposure *roverv1.Exposure, availableSecrets map[string]string) {
+	if exposure.Agentic == nil || exposure.Agentic.Security == nil || exposure.Agentic.Security.M2M == nil {
+		return
+	}
+	if exposure.Agentic.Security.M2M.ExternalIDP != nil {
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Agentic.BasePath, "externalIDP/clientSecret"), "agentic externalIDP clientSecret not found in available secrets", func(secretRef string) {
+				exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
+			})
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientKey != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Agentic.BasePath, "externalIDP/clientKey"), "agentic externalIDP clientKey not found in available secrets", func(secretRef string) {
+				exposure.Agentic.Security.M2M.ExternalIDP.Client.ClientKey = secretRef
+			})
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Client != nil && exposure.Agentic.Security.M2M.ExternalIDP.Client.RefreshToken != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Agentic.BasePath, "externalIDP/refreshToken"), "agentic externalIDP refreshToken not found in available secrets", func(secretRef string) {
+				exposure.Agentic.Security.M2M.ExternalIDP.Client.RefreshToken = secretRef
+			})
+		}
+		if exposure.Agentic.Security.M2M.ExternalIDP.Basic != nil && exposure.Agentic.Security.M2M.ExternalIDP.Basic.Password != "" {
+			updateSecretRef(log, availableSecrets, makeKey(exposure.Agentic.BasePath, "externalIDP/password"), "agentic externalIDP password not found in available secrets", func(secretRef string) {
+				exposure.Agentic.Security.M2M.ExternalIDP.Basic.Password = secretRef
+			})
+		}
+	}
+	if exposure.Agentic.Security.M2M.Basic != nil && exposure.Agentic.Security.M2M.Basic.Password != "" {
+		updateSecretRef(log, availableSecrets, makeKey(exposure.Agentic.BasePath, "basicAuth/password"), "agentic basicAuth password not found in available secrets", func(secretRef string) {
+			exposure.Agentic.Security.M2M.Basic.Password = secretRef
 		})
 	}
 }
