@@ -1,3 +1,10 @@
+## [0.42.2](https://github.com/telekom/controlplane/compare/v0.42.1...v0.42.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **discovery-server:** prevent exposure subscriber credential disclosure ([#808](https://github.com/telekom/controlplane/issues/808)) ([3f98b60](https://github.com/telekom/controlplane/commit/3f98b604a17f448eefbd6ef1b6c494e1cefe145f))
+
 ## [0.42.1](https://github.com/telekom/controlplane/compare/v0.42.0...v0.42.1) (2026-10-26)
 
 
