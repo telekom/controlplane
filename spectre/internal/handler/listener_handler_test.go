@@ -597,9 +597,10 @@ var _ = Describe("ListenerHandler", func() {
 			Return(nil).Once()
 	}
 
-	// mockListRoutes stubs the gateway Route lookup and the subsequent
-	// ApiExposure list call used by verifyProviderBinding.
-	mockListRoutes := func() {
+	// mockListRoutesWithApproval stubs the gateway Route lookup and the
+	// subsequent ApiExposure list call used by verifyProviderBinding; the
+	// exposure carries the given approval settings.
+	mockListRoutesWithApproval := func(approval apiv1.Approval) {
 		routeName := util.MakeRouteName(testApiBasePath)
 		mockGetCaptureRoute()
 
@@ -619,13 +620,77 @@ var _ = Describe("ListenerHandler", func() {
 									cconfig.BuildLabelKey("application"): providerAppName,
 								},
 							},
-							Spec: apiv1.ApiExposureSpec{ApiBasePath: testApiBasePath},
+							Spec: apiv1.ApiExposureSpec{ApiBasePath: testApiBasePath, Approval: approval},
 							Status: apiv1.ApiExposureStatus{
 								Active: true,
 								Route:  &ctypes.ObjectRef{Name: routeName, Namespace: listenerZoneStatus},
 							},
 						},
 					},
+				}
+			}).
+			Return(nil).Once()
+	}
+
+	// mockListRoutes is mockListRoutesWithApproval for an exposure without
+	// approval settings.
+	mockListRoutes := func() {
+		mockListRoutesWithApproval(apiv1.Approval{})
+	}
+
+	// mockGate sets up a gate whose ApprovalRequest is in serverState on the
+	// server and whose Approval, unless approvalState is empty, is bound to it.
+	// The strategy the builder requests is written to strategy.
+	// mockGate stubs one gate: its ApprovalRequest in serverState and, unless
+	// approvalState is empty, its Approval in approvalState bound to that request;
+	// rebind changes the bound reference.
+	mockGate := func(
+		approvalKey string, serverState, approvalState approvalv1.ApprovalState, strategy *approvalv1.ApprovalStrategy,
+		rebind ...func(*ctypes.ObjectRef),
+	) {
+		var capturedAR approvalv1.ApprovalRequest
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				req := obj.(*approvalv1.ApprovalRequest)
+				req.Spec.State = serverState
+				_ = mutate()
+				*strategy = req.Spec.Strategy
+				capturedAR = *req.DeepCopy()
+			}).
+			Return(controllerutil.OperationResultUpdated, nil).Once()
+
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
+
+		if approvalState == "" {
+			fakeClient.EXPECT().
+				Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+				Return(errors.NewNotFound(schema.GroupResource{Group: "approval.cp.ei.telekom.de", Resource: "approvals"}, "")).Once()
+			return
+		}
+		fakeClient.EXPECT().
+			Get(ctx, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Approval")).
+			Run(func(_ context.Context, key k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				approval := out.(*approvalv1.Approval)
+				approval.Name = key.Name
+				approval.Namespace = key.Namespace
+				approval.OwnerReferences = []metav1.OwnerReference{listenerControllerRef()}
+				approval.Spec.State = approvalState
+				approval.Spec.Strategy = capturedAR.Spec.Strategy
+				approval.Spec.ApprovalKey = approvalKey
+				approval.Spec.Target = capturedAR.Spec.Target
+				approval.Spec.ApprovedRequest = &ctypes.ObjectRef{
+					Name:      capturedAR.Name,
+					Namespace: capturedAR.Namespace,
+					UID:       capturedAR.UID,
+				}
+				for _, f := range rebind {
+					f(approval.Spec.ApprovedRequest)
+				}
+				for _, f := range rebind {
+					f(approval.Spec.ApprovedRequest)
 				}
 			}).
 			Return(nil).Once()
@@ -2308,6 +2373,162 @@ var _ = Describe("ListenerHandler", func() {
 			})
 		})
 
+		// The provider gate escalates to FourEyes when the provider's API
+		// requires four eyes and the observer belongs to another team. An
+		// exposure's Auto or Simple is never copied, and trusted teams do not
+		// skip the listener approval.
+		Context("four-eyes provider gate", func() {
+			var providerStrategy, consumerStrategy approvalv1.ApprovalStrategy
+
+			setup := func(providerApp *applicationv1.Application, approval apiv1.Approval) {
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(providerApp)
+				mockGetSpectreApp(makeSpectreAppPtr())
+				mockGetObserverApp(makeConsumerApp()) // A==C: observer resolves to consumer
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutesWithApproval(approval)
+				mockNoStaleChildren()
+			}
+
+			expectBlocked := func(listener *spectrev1.Listener, message string) {
+				procCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(procCond).ToNot(BeNil())
+				Expect(procCond.Reason).To(Equal(condition.ReasonBlocked))
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonApprovalPending))
+				Expect(readyCond.Message).To(Equal(message))
+				Expect(listener.Status.RouteListener).To(BeNil())
+				Expect(listener.Status.EventSubscriptions).To(BeEmpty())
+			}
+
+			It("requests FourEyes on the provider gate for a foreign observer and leaves the consumer gate unchanged", func() {
+				listener := newListener()
+				setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockGate("provider", "", "", &providerStrategy)
+				mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				Expect(providerStrategy).To(Equal(approvalv1.ApprovalStrategyFourEyes))
+				Expect(consumerStrategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+				expectBlocked(listener, "Waiting for approval decision (provider gate)")
+			})
+
+			It("still requests FourEyes when the observer's team is trusted by the API", func() {
+				listener := newListener()
+				setup(makeProviderApp(), apiv1.Approval{
+					Strategy:     apiv1.ApprovalStrategyFourEyes,
+					TrustedTeams: []string{consumerTeam},
+				})
+				mockGate("provider", "", "", &providerStrategy)
+				mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				Expect(providerStrategy).To(Equal(approvalv1.ApprovalStrategyFourEyes))
+				expectBlocked(listener, "Waiting for approval decision (provider gate)")
+			})
+
+			It("keeps Auto for an observer of the provider's team", func() {
+				listener := newListener()
+				providerApp := makeProviderApp()
+				providerApp.Spec.Team = consumerTeam
+				setup(providerApp, apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockGate("provider", "", "", &providerStrategy)
+				mockGate("consumer", "", "", &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				Expect(providerStrategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+				Expect(consumerStrategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+			})
+
+			for _, exposureStrategy := range []apiv1.ApprovalStrategy{apiv1.ApprovalStrategyAuto, apiv1.ApprovalStrategySimple} {
+				It(fmt.Sprintf("requests Simple for a foreign observer when the API strategy is %s", exposureStrategy), func() {
+					listener := newListener()
+					setup(makeProviderApp(), apiv1.Approval{Strategy: exposureStrategy})
+					mockGate("provider", "", "", &providerStrategy)
+					mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+					Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+					Expect(providerStrategy).To(Equal(approvalv1.ApprovalStrategySimple))
+					expectBlocked(listener, "Waiting for approval decision (provider gate)")
+				})
+			}
+
+			It("waits for the second approval while the ApprovalRequest is Semigranted", func() {
+				listener := newListener()
+				setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockGate("provider", approvalv1.ApprovalStateSemigranted, "", &providerStrategy)
+				mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				expectBlocked(listener, "Waiting for a second approval (provider gate)")
+			})
+
+			// A re-grant of a revoked FourEyes Approval passes through Semigranted
+			// while its bound request stays Granted.
+			It("waits for the second approval while the bound Approval is Semigranted", func() {
+				listener := newListener()
+				setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockGate("provider", approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSemigranted, &providerStrategy)
+				mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				expectBlocked(listener, "Waiting for a second approval (provider gate)")
+			})
+
+			// The first approval of a revoked Approval re-grants it for the request
+			// it is bound to; a newer request still waits for its own decision.
+			for name, rebind := range map[string]func(*ctypes.ObjectRef){
+				"an older request":           func(ref *ctypes.ObjectRef) { ref.Name = "older-request" },
+				"a request of the same name": func(ref *ctypes.ObjectRef) { ref.UID = "recreated-request-uid" },
+			} {
+				It("waits for a decision when the Semigranted Approval is bound to "+name, func() {
+					listener := newListener()
+					setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+					mockGate("provider", approvalv1.ApprovalStatePending, approvalv1.ApprovalStateSemigranted, &providerStrategy, rebind)
+					mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+
+					Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+					expectBlocked(listener, "Waiting for approval decision (provider gate)")
+				})
+			}
+
+			It("requests Simple on the consumer gate when the observer is of another team than the consumer", func() {
+				listener := newListener()
+				observerApp := makeConsumerApp()
+				observerApp.Name = "observer-app"
+				observerApp.Spec.Team = "team-gamma"
+				spectreApp := makeSpectreAppPtr()
+				spectreApp.Spec.Application.Name = observerApp.Name
+				mockGetConsumerApp(makeConsumerApp())
+				mockGetProviderApp(makeProviderApp())
+				mockGetSpectreApp(spectreApp)
+				mockGetObserverApp(observerApp)
+				mockGetZone()
+				mockListEventConfigs([]eventv1.EventConfig{makeListenerEventConfig()})
+				mockGetEventStore(makeListenerEventStore())
+				mockListRoutesWithApproval(apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockNoStaleChildren()
+				mockGate("provider", "", "", &providerStrategy)
+				mockGate("consumer", "", "", &consumerStrategy)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				Expect(providerStrategy).To(Equal(approvalv1.ApprovalStrategyFourEyes))
+				Expect(consumerStrategy).To(Equal(approvalv1.ApprovalStrategySimple))
+				expectBlocked(listener, "Waiting for approval decision (provider and consumer gate)")
+			})
+		})
+
 		Context("dual-gate: provider Denied + consumer Granted", func() {
 			It("should checkpoint the drain before deleting anything and set AccessDenied", func() {
 				listener := newListener()
@@ -3605,6 +3826,21 @@ var _ = Describe("ListenerHandler", func() {
 				ready := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
 				Expect(ready).ToNot(BeNil())
 				Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			})
+
+			// A Semigranted Approval is the first approval of a re-grant after a
+			// revocation Spectre may not have seen; capture must not run on it.
+			It("stops capture on a Semigranted Approval only the Reader sees", func() {
+				h.Reader = crfake.NewClientBuilder().WithScheme(scheme).WithObjects(
+					liveApproval(providerApproval, liveEnv, approvalv1.ApprovalStateSemigranted),
+					liveApproval(consumerApproval, liveEnv, approvalv1.ApprovalStateGranted),
+				).Build()
+				listener := appliedListener()
+				mockOwnedLists(ownedRL, nil)
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("early restriction (provider gate)"))
 			})
 
 			// cacheShows offers a stale obj on the cached mock without requiring

@@ -67,6 +67,8 @@ type gateResult struct {
 	// grantedRequest is the ApprovalRequest of a pending gate when it is already
 	// granted (always the case for Auto) while its Approval is not issued yet.
 	grantedRequest *approvalapi.ApprovalRequest
+	// awaitingSecond marks a pending FourEyes gate that has its first approval.
+	awaitingSecond bool
 }
 
 // dualApprovalResult carries the aggregate outcome of both gates.
@@ -84,7 +86,9 @@ type dualApprovalResult struct {
 // Consumer gate: requester=observer(A), decider=consumer(C), action="listen-consumer"
 //
 // Both builders use WithApprovalKey(key), enabling multiple builders per owner
-// CR via Phase 1's keyed scoped cleanup.
+// CR via Phase 1's keyed scoped cleanup. providerFourEyes reports that the
+// provider's ApiExposure requires FourEyes approval, which the provider gate
+// then requires from an observer of another team.
 //
 // On partial failure, the populated result AND the error are returned so
 // callers can process known denials before returning the combined error.
@@ -95,12 +99,13 @@ func (h *ListenerHandler) ensureApprovals(
 	consumerApp *applicationv1.Application,
 	providerApp *applicationv1.Application,
 	intent *authorizationIntent,
+	providerFourEyes bool,
 ) (*dualApprovalResult, error) {
 	// Build both gates independently — do NOT stop after the first error.
 	providerGate := h.buildScopedGate(ctx, listener, observerApp, providerApp, intent,
-		"provider", "listen-provider")
+		"provider", "listen-provider", providerFourEyes)
 	consumerGate := h.buildScopedGate(ctx, listener, observerApp, consumerApp, intent,
-		"consumer", "listen-consumer")
+		"consumer", "listen-consumer", false)
 
 	// Write all four status references before evaluating outcome.
 	listener.Status.ProviderApproval = providerGate.approval
@@ -147,11 +152,12 @@ func (h *ListenerHandler) buildScopedGate(
 	intent *authorizationIntent,
 	key string,
 	action string,
+	fourEyes bool,
 ) *gateResult {
 	c := cclient.ClientFromContextOrDie(ctx)
 	result := &gateResult{}
 
-	strategy := computeStrategy(requesterApp.Spec.Team, deciderApp.Spec.Team)
+	strategy := computeStrategy(requesterApp.Spec.Team, deciderApp.Spec.Team, fourEyes)
 
 	requesterRef := ctypes.TypedObjectRefFromObject(requesterApp, c.Scheme())
 	deciderRef := ctypes.TypedObjectRefFromObject(deciderApp, c.Scheme())
@@ -211,17 +217,22 @@ func (h *ListenerHandler) buildScopedGate(
 	}
 
 	// Map builder result to outcome.
-	switch buildResult {
-	case builder.ApprovalResultGranted:
+	ar := ab.GetApprovalRequest()
+	switch {
+	case buildResult == builder.ApprovalResultGranted:
 		result.outcome = outcomeGranted
-	case builder.ApprovalResultPending:
+	case (buildResult == builder.ApprovalResultPending || buildResult == builder.ApprovalResultNone) &&
+		awaitsSecondApproval(ar, ab.GetApproval()):
 		result.outcome = outcomePending
-		if ar := ab.GetApprovalRequest(); ar.Spec.State == approvalapi.ApprovalStateGranted {
+		result.awaitingSecond = true
+	case buildResult == builder.ApprovalResultPending:
+		result.outcome = outcomePending
+		if ar.Spec.State == approvalapi.ApprovalStateGranted {
 			result.grantedRequest = ar
 		}
-	case builder.ApprovalResultDenied:
+	case buildResult == builder.ApprovalResultDenied:
 		result.outcome = outcomeDenied
-	case builder.ApprovalResultRequestDenied:
+	case buildResult == builder.ApprovalResultRequestDenied:
 		result.outcome = outcomeRequestDenied
 	default:
 		result.outcome = outcomeError
@@ -229,6 +240,19 @@ func (h *ListenerHandler) buildScopedGate(
 	}
 
 	return result
+}
+
+// awaitsSecondApproval reports whether a FourEyes gate has one of its two
+// approvals: its ApprovalRequest is Semigranted, or the Approval bound to it is
+// (a re-grant of a revoked Approval passes through Semigranted while its request
+// stays Granted).
+func awaitsSecondApproval(ar *approvalapi.ApprovalRequest, approval *approvalapi.Approval) bool {
+	if ar.Spec.State == approvalapi.ApprovalStateSemigranted {
+		return true
+	}
+	bound := approval.Spec.ApprovedRequest
+	return approval.Spec.State == approvalapi.ApprovalStateSemigranted &&
+		bound != nil && bound.Equals(ar) && bound.UID == ar.UID
 }
 
 // computeAggregateOutcome applies the dual-gate aggregate table (fail-closed).
@@ -311,13 +335,23 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 	case outcomePending:
 		// Only a gate whose ApprovalRequest still waits for a decider blocks; a
 		// granted request is turned into its Approval by the approval controller.
-		gate := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending && g.grantedRequest == nil })
-		if gate == "" {
+		first := gateNames(result, func(g *gateResult) bool {
+			return g.outcome == outcomePending && g.grantedRequest == nil && !g.awaitingSecond
+		})
+		second := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending && g.awaitingSecond })
+		if first == "" && second == "" {
 			h.awaitIssuedApprovals(ctx, listener, result)
 			return
 		}
-		logger.Info("Approval pending", "gate", gate)
-		message := fmt.Sprintf("Waiting for approval decision (%s gate)", gate)
+		var waits []string
+		if first != "" {
+			waits = append(waits, fmt.Sprintf("Waiting for approval decision (%s gate)", first))
+		}
+		if second != "" {
+			waits = append(waits, fmt.Sprintf("Waiting for a second approval (%s gate)", second))
+		}
+		message := strings.Join(waits, "; ")
+		logger.Info("Approval pending", "message", message)
 		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, message))
 		listener.SetCondition(condition.NewBlockedCondition(message))
 
@@ -447,13 +481,16 @@ func gateNames(result *dualApprovalResult, match func(*gateResult) bool) string 
 }
 
 // computeStrategy returns Auto if both teams are the same and neither is empty,
-// Simple otherwise. Empty or unresolved team identity must never produce Auto.
-func computeStrategy(requesterTeam, deciderTeam string) approvalapi.ApprovalStrategy {
-	if requesterTeam == "" || deciderTeam == "" {
+// otherwise FourEyes when fourEyes is set, else Simple. Empty or unresolved team
+// identity must never produce Auto. The decider's own strategy only escalates:
+// copying an exposure's Auto would grant foreign requesters automatically.
+func computeStrategy(requesterTeam, deciderTeam string, fourEyes bool) approvalapi.ApprovalStrategy {
+	switch {
+	case requesterTeam != "" && requesterTeam == deciderTeam:
+		return approvalapi.ApprovalStrategyAuto
+	case fourEyes:
+		return approvalapi.ApprovalStrategyFourEyes
+	default:
 		return approvalapi.ApprovalStrategySimple
 	}
-	if requesterTeam == deciderTeam {
-		return approvalapi.ApprovalStrategyAuto
-	}
-	return approvalapi.ApprovalStrategySimple
 }

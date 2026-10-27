@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1237,16 +1238,171 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			}, 3*time.Second, testInterval).Should(Succeed())
 		})
 	})
+
+	Describe("Listener reconcile on a four-eyes API", func() {
+		It("should require two approvals of the provider gate from a foreign observer, also after a revocation", func() {
+			const name = "four-eyes-listener"
+
+			// Only the manager's Listener controller reconciles this Listener. The
+			// observer's team is trusted by the API, which must not skip approval.
+			nn, rlKey, subKeys := createCrossTeamListener(ctx, name, "four-eyes", apiv1.Approval{
+				Strategy:     apiv1.ApprovalStrategyFourEyes,
+				TrustedTeams: []string{consumerTeamName},
+			})
+			expectWaiting := func(message string) {
+				Eventually(func(g Gomega) {
+					current := &spectrev1.Listener{}
+					g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+					ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+					g.Expect(ready).NotTo(BeNil())
+					g.Expect(ready.Reason).To(Equal(condition.ReasonApprovalPending))
+					g.Expect(ready.Message).To(Equal(message))
+					g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).To(BeTrue())
+				}, testTimeout, testInterval).Should(Succeed())
+			}
+			expectCapture := func() {
+				Eventually(func(g Gomega) {
+					g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+					for _, key := range subKeys {
+						g.Expect(directClient.Get(ctx, key, &pubsubv1.Subscriber{})).To(Succeed())
+					}
+					current := &spectrev1.Listener{}
+					g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+					g.Expect(current.Status.AppliedPlacement).NotTo(BeNil())
+				}, testTimeout, testInterval).Should(Succeed())
+			}
+			updateProviderRequest := func(state approvalv1.ApprovalState, decider string) {
+				Eventually(func(g Gomega) {
+					ar := ownedApprovalRequest(ctx, g, name, "provider")
+					ar.Spec.State = state
+					ar.AppendDecision(approvalv1.Decision{Name: decider, Email: deciderEmail(decider), ResultingState: state})
+					g.Expect(directClient.Update(ctx, ar)).To(Succeed())
+				}, testTimeout, testInterval).Should(Succeed())
+			}
+			updateProviderApproval := func(state approvalv1.ApprovalState, decider string) {
+				Eventually(func(g Gomega) {
+					ar := ownedApprovalRequest(ctx, g, name, "provider")
+					approvalName, err := approvalv1.ScopedApprovalName(ar.Spec.Target, ar.Spec.ApprovalKey)
+					g.Expect(err).NotTo(HaveOccurred())
+					approval := &approvalv1.Approval{}
+					g.Expect(directClient.Get(ctx, types.NamespacedName{Name: approvalName, Namespace: ar.Namespace}, approval)).To(Succeed())
+					approval.Spec.State = state
+					approval.AppendDecision(approvalv1.Decision{Name: decider, Email: deciderEmail(decider), ResultingState: state})
+					g.Expect(directClient.Update(ctx, approval)).To(Succeed())
+				}, testTimeout, testInterval).Should(Succeed())
+			}
+
+			By("Requesting FourEyes on the provider gate only")
+			Eventually(func(g Gomega) {
+				provider := ownedApprovalRequest(ctx, g, name, "provider")
+				g.Expect(provider.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyFourEyes))
+				g.Expect(provider.Spec.State).To(Equal(approvalv1.ApprovalStatePending))
+				consumer := ownedApprovalRequest(ctx, g, name, "consumer")
+				g.Expect(consumer.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+			}, testTimeout, testInterval).Should(Succeed())
+			expectWaiting("Waiting for approval decision (provider gate)")
+
+			By("Waiting for the second approval after the first")
+			updateProviderRequest(approvalv1.ApprovalStateSemigranted, "Provider One")
+			expectWaiting("Waiting for a second approval (provider gate)")
+
+			By("Provisioning once the second approval grants the request and the Approvals are issued")
+			updateProviderRequest(approvalv1.ApprovalStateGranted, "Provider Two")
+			grantApprovalsForListener(ctx, name, true)
+			expectCapture()
+
+			By("Keeping the decided strategy when the API's strategy changes")
+			var requestName string
+			Eventually(func(g Gomega) {
+				requestName = ownedApprovalRequest(ctx, g, name, "provider").Name
+				exposure := &apiv1.ApiExposure{}
+				g.Expect(directClient.Get(ctx, types.NamespacedName{Name: providerName + "--api-v1-four-eyes", Namespace: testNamespace}, exposure)).To(Succeed())
+				exposure.Spec.Approval.Strategy = apiv1.ApprovalStrategySimple
+				g.Expect(directClient.Update(ctx, exposure)).To(Succeed())
+			}, testTimeout, testInterval).Should(Succeed())
+			Consistently(func(g Gomega) {
+				provider := ownedApprovalRequest(ctx, g, name, "provider")
+				g.Expect(provider.Name).To(Equal(requestName))
+				g.Expect(provider.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyFourEyes))
+				g.Expect(provider.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+			}, 2*time.Second, testInterval).Should(Succeed())
+
+			By("Revoking the provider gate's Approval")
+			updateProviderApproval(approvalv1.ApprovalStateRejected, "Provider One")
+			Eventually(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).To(BeTrue())
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, nn, current)).To(Succeed())
+				g.Expect(current.Status.Draining).To(BeNil())
+				ready := meta.FindStatusCondition(current.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			}, testTimeout, testInterval).Should(Succeed())
+
+			By("Waiting for the second approval when the Approval is granted again once")
+			// A FourEyes re-grant passes through Semigranted while the bound
+			// request stays Granted.
+			updateProviderApproval(approvalv1.ApprovalStateSemigranted, "Provider One")
+			expectWaiting("Waiting for a second approval (provider gate)")
+
+			By("Resuming capture after the second approval")
+			updateProviderApproval(approvalv1.ApprovalStateGranted, "Provider Two")
+			expectCapture()
+
+			By("Stopping capture when the Approval is found half re-granted without its revocation")
+			// Spectre may miss the Rejected state between a revocation and the
+			// first approval of a re-grant; that approval alone must not keep capture.
+			updateProviderApproval(approvalv1.ApprovalStateSemigranted, "Provider One")
+			expectWaiting("Waiting for a second approval (provider gate)")
+
+			By("Resuming capture after the second approval")
+			updateProviderApproval(approvalv1.ApprovalStateGranted, "Provider Two")
+			expectCapture()
+		})
+	})
 })
 
-// provisionCrossTeamListener creates an ApiExposure with its primary Route on
-// /api/v1/<suffix> and a cross-team Listener named name observing it, grants
-// both gates and reconciles r until the RouteListener and both bridge
-// Subscribers exist. It returns the Listener's key and those children's keys.
+// deciderEmail returns the email address of the person named name.
+func deciderEmail(name string) string {
+	return strings.ToLower(strings.ReplaceAll(name, " ", ".")) + "@example.com"
+}
+
+// provisionCrossTeamListener creates a cross-team Listener named name on an
+// Auto API (createCrossTeamListener), grants both gates and reconciles r until
+// the RouteListener and both bridge Subscribers exist. It returns the
+// Listener's key and those children's keys.
 func provisionCrossTeamListener(
 	ctx context.Context,
 	r reconcile.Reconciler,
 	name, suffix string,
+) (nn, rlKey types.NamespacedName, subKeys []types.NamespacedName) {
+	nn, rlKey, subKeys = createCrossTeamListener(ctx, name, suffix, apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto})
+
+	By("Granting both gates and waiting for capture to be provisioned")
+	Eventually(func(g Gomega) {
+		_, _ = r.Reconcile(ctx, reconcile.Request{NamespacedName: nn})
+		ownedApprovalRequest(ctx, g, name, "provider")
+		ownedApprovalRequest(ctx, g, name, "consumer")
+	}, testTimeout, testInterval).Should(Succeed())
+	grantApprovalsForListener(ctx, name, true)
+	reconcileUntilReady(ctx, r, nn, func(g Gomega) {
+		g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+		for _, key := range subKeys {
+			g.Expect(directClient.Get(ctx, key, &pubsubv1.Subscriber{})).To(Succeed())
+		}
+	})
+	return nn, rlKey, subKeys
+}
+
+// createCrossTeamListener creates an ApiExposure with the given approval
+// settings and its primary Route on /api/v1/<suffix>, and a cross-team Listener
+// named name observing it. It returns the Listener's key and the keys of the
+// RouteListener and both bridge Subscribers it provisions once granted.
+func createCrossTeamListener(
+	ctx context.Context,
+	name, suffix string,
+	approval apiv1.Approval,
 ) (nn, rlKey types.NamespacedName, subKeys []types.NamespacedName) {
 	basePath := "/api/v1/" + suffix
 	routeName := "api-v1-" + suffix
@@ -1266,7 +1422,7 @@ func provisionCrossTeamListener(
 			ApiBasePath: basePath,
 			Upstreams:   []apiv1.Upstream{{Url: "https://" + host}},
 			Visibility:  apiv1.VisibilityZone,
-			Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+			Approval:    approval,
 			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
 		},
 	}
@@ -1330,20 +1486,6 @@ func provisionCrossTeamListener(
 		{Name: util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, basePath, "rq")), Namespace: zoneStatusNs},
 		{Name: util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, basePath, "rp")), Namespace: zoneStatusNs},
 	}
-
-	By("Granting both gates and waiting for capture to be provisioned")
-	Eventually(func(g Gomega) {
-		_, _ = r.Reconcile(ctx, reconcile.Request{NamespacedName: nn})
-		ownedApprovalRequest(ctx, g, name, "provider")
-		ownedApprovalRequest(ctx, g, name, "consumer")
-	}, testTimeout, testInterval).Should(Succeed())
-	grantApprovalsForListener(ctx, name, true)
-	reconcileUntilReady(ctx, r, nn, func(g Gomega) {
-		g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
-		for _, key := range subKeys {
-			g.Expect(directClient.Get(ctx, key, &pubsubv1.Subscriber{})).To(Succeed())
-		}
-	})
 	return nn, rlKey, subKeys
 }
 

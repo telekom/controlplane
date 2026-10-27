@@ -131,6 +131,24 @@ var _ = Describe("verifyProviderBinding", func() {
 			Expect(binding.ApplicationName).To(Equal(applicationName))
 			Expect(binding.IsPrimaryRoute).To(BeTrue())
 			Expect(binding.ProxyRoutes).To(BeEmpty())
+			Expect(binding.ApprovalStrategy).To(BeEmpty())
+		})
+
+		It("should carry the exposure's approval strategy", func() {
+			route := makeRoute(exposureUID)
+			exposure := makeExposure(
+				exposureUID,
+				applicationName,
+				true,
+				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				nil,
+			)
+			exposure.Spec.Approval = apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes}
+			mockListExposures([]apiv1.ApiExposure{exposure})
+
+			binding, err := h.VerifyProviderBinding(ctx, route, makeProvider())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(binding.ApprovalStrategy).To(Equal(apiv1.ApprovalStrategyFourEyes))
 		})
 	})
 

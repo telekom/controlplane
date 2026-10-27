@@ -13,23 +13,36 @@ import (
 
 var _ = Describe("computeStrategy", func() {
 	It("should return Auto when both teams are the same", func() {
-		Expect(computeStrategy("teamA", "teamA")).To(Equal(approvalapi.ApprovalStrategyAuto))
+		Expect(computeStrategy("teamA", "teamA", false)).To(Equal(approvalapi.ApprovalStrategyAuto))
 	})
 
 	It("should return Simple when teams differ", func() {
-		Expect(computeStrategy("teamA", "teamB")).To(Equal(approvalapi.ApprovalStrategySimple))
+		Expect(computeStrategy("teamA", "teamB", false)).To(Equal(approvalapi.ApprovalStrategySimple))
 	})
 
 	It("should return Simple when both teams are empty", func() {
-		Expect(computeStrategy("", "")).To(Equal(approvalapi.ApprovalStrategySimple))
+		Expect(computeStrategy("", "", false)).To(Equal(approvalapi.ApprovalStrategySimple))
 	})
 
 	It("should return Simple when requester team is empty", func() {
-		Expect(computeStrategy("", "teamA")).To(Equal(approvalapi.ApprovalStrategySimple))
+		Expect(computeStrategy("", "teamA", false)).To(Equal(approvalapi.ApprovalStrategySimple))
 	})
 
 	It("should return Simple when decider team is empty", func() {
-		Expect(computeStrategy("teamA", "")).To(Equal(approvalapi.ApprovalStrategySimple))
+		Expect(computeStrategy("teamA", "", false)).To(Equal(approvalapi.ApprovalStrategySimple))
+	})
+
+	It("should return FourEyes when teams differ and the API requires four eyes", func() {
+		Expect(computeStrategy("teamA", "teamB", true)).To(Equal(approvalapi.ApprovalStrategyFourEyes))
+	})
+
+	It("should return Auto when teams are the same even if the API requires four eyes", func() {
+		Expect(computeStrategy("teamA", "teamA", true)).To(Equal(approvalapi.ApprovalStrategyAuto))
+	})
+
+	It("should return FourEyes when a team is empty and the API requires four eyes", func() {
+		Expect(computeStrategy("", "", true)).To(Equal(approvalapi.ApprovalStrategyFourEyes))
+		Expect(computeStrategy("teamA", "", true)).To(Equal(approvalapi.ApprovalStrategyFourEyes))
 	})
 })
 
@@ -138,8 +151,8 @@ var _ = Describe("five team relationships", func() {
 
 	computeGateStrategies := func(observerTeam, consumerTeam, providerTeam string) gateStrategies {
 		return gateStrategies{
-			provider: computeStrategy(observerTeam, providerTeam),
-			consumer: computeStrategy(observerTeam, consumerTeam),
+			provider: computeStrategy(observerTeam, providerTeam, false),
+			consumer: computeStrategy(observerTeam, consumerTeam, false),
 		}
 	}
 

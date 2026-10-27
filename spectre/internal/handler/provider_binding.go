@@ -44,6 +44,8 @@ type ProviderBinding struct {
 	// ProxyRoutes is a copy of the exposure's status.proxyRoutes: one per
 	// cross-zone subscriber zone, whose traffic transits the primary route.
 	ProxyRoutes []ctypes.ObjectRef
+	// ApprovalStrategy is the exposure's spec.approval.strategy.
+	ApprovalStrategy apiv1.ApprovalStrategy
 }
 
 // routeOffPathError reports that a Route is not referenced by the provider's
@@ -153,6 +155,7 @@ func (h *ListenerHandler) verifyProviderBinding(
 		ApiBasePath:          exposure.Spec.ApiBasePath,
 		IsPrimaryRoute:       isPrimaryRoute(route, exposure),
 		ProxyRoutes:          slices.Clone(exposure.Status.ProxyRoutes),
+		ApprovalStrategy:     exposure.Spec.Approval.Strategy,
 	}, nil
 }
 

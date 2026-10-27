@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -297,7 +298,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	}
 
 	// Step 6: Evaluate dual-gate approval (provider + consumer).
-	dual, err := h.ensureApprovals(ctx, listener, observerApp, consumerApp, providerApp, &intent)
+	dual, err := h.ensureApprovals(ctx, listener, observerApp, consumerApp, providerApp, &intent,
+		binding.ApprovalStrategy == apiv1.ApprovalStrategyFourEyes)
 	if err != nil && dual == nil {
 		return errors.Wrap(err, "failed to ensure approvals")
 	}
@@ -665,7 +667,8 @@ func (h *ListenerHandler) resolveGatewayCredentials(ctx context.Context, zone *a
 
 // checkEarlyRestriction reads the Approvals referenced by the Listener's
 // persisted status and returns the gate of one that is conclusively revoked
-// (Rejected, Suspended, or Expired-from-Suspended). While capture is applied it
+// (Rejected, Suspended, Expired-from-Suspended, or Semigranted, i.e. half
+// re-granted). While capture is applied it
 // also reads the referenced current ApprovalRequests and returns the gate of a
 // Rejected one; a ref with a UID must match the live request, so NotFound or a
 // recreated request is not a rejection. This is a READ-ONLY check that works
@@ -702,8 +705,10 @@ func (h *ListenerHandler) checkEarlyRestriction(
 		if gate.approval == nil || !get(gate.approval, approval) {
 			continue
 		}
-		if approval.Spec.State == approvalapi.ApprovalStateRejected ||
-			approval.Spec.State == approvalapi.ApprovalStateSuspended {
+		// Semigranted is reached only from Rejected (or Pending): the first
+		// approval of a re-grant does not lift a revocation.
+		switch approval.Spec.State {
+		case approvalapi.ApprovalStateRejected, approvalapi.ApprovalStateSuspended, approvalapi.ApprovalStateSemigranted:
 			return gate.key, "", firstErr
 		}
 		// Expired-from-Suspended = also denied.
