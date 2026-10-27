@@ -42,10 +42,10 @@ type Profile struct {
 	MaxIdleConnsPerHost int
 	// MinTLSVersion is applied if != 0.
 	MinTLSVersion uint16
-	// ClientName identifies the client if not empty: it enables the metrics
-	// wrapper with this client name and is sent as User-Agent on API, token
-	// and unauthenticated requests that do not set a User-Agent themselves.
-	ClientName string
+	// MetricsClientName names the client's use case (e.g. "gateway" or "identity")
+	// for the "client" label on outbound HTTP metrics. It is not the operator's
+	// name or the HTTP User-Agent. An empty value disables metrics wrapping.
+	MetricsClientName string
 	// MetricsReplacePatterns are used to redact metric paths.
 	MetricsReplacePatterns []string
 	// ClassifyTokenError converts token refresh and re-authentication errors

@@ -73,7 +73,7 @@ func profile() tlsclient.Profile {
 		Transport:           tlsclient.TransportRaw,
 		Timeout:             tlsclient.DefaultTimeout,
 		MaxIdleConnsPerHost: 100,
-		ClientName:          "gateway",
+		MetricsClientName:   "gateway",
 		MetricsReplacePatterns: []string{
 			`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID,
 		},

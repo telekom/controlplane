@@ -109,7 +109,7 @@ var _ = Describe("Profile and Spec", func() {
 
 var _ = Describe("New", func() {
 	var ctx context.Context
-	profile := Profile{Name: "test", Timeout: 2 * time.Second, ClientName: "tlsclient-test", MetricsReplacePatterns: []string{"[0-9]+"}}
+	profile := Profile{Name: "test", Timeout: 2 * time.Second, MetricsClientName: "tlsclient-test", MetricsReplacePatterns: []string{"[0-9]+"}}
 
 	BeforeEach(func() {
 		var cancel context.CancelFunc
@@ -181,80 +181,6 @@ var _ = Describe("New", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(t.Proxy).NotTo(BeNil())
 		Expect(t.TLSClientConfig.RootCAs).NotTo(BeNil())
-	})
-
-	Context("user agent", func() {
-		var (
-			ca      *testCA
-			ts      *uaRecorder
-			api     *uaRecorder
-			spec    Spec
-			withUA  Profile
-			request = func(doer interface {
-				Do(*http.Request) (*http.Response, error)
-			}, ua string,
-			) {
-				req, err := http.NewRequestWithContext(ctx, http.MethodGet, spec.APIURL, nil)
-				Expect(err).NotTo(HaveOccurred())
-				if ua != "" {
-					req.Header.Set("User-Agent", ua)
-				}
-				resp, err := doer.Do(req)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.Body.Close()).To(Succeed())
-				Expect(req.Header.Get("User-Agent")).To(Equal(ua), "caller request must not be mutated")
-			}
-		)
-
-		BeforeEach(func() {
-			ca = newTestCA("ca")
-			ts = &uaRecorder{next: &tokenServer{}}
-			api = &uaRecorder{next: &apiHandler{}}
-			tokenURL := startTLSServer(ca.serverCert(""), ts).URL
-			apiURL := startTLSServer(ca.serverCert(""), api).URL
-			spec = Spec{APIURL: apiURL, Auth: Auth{Mode: AuthClientCredentials, TokenURL: tokenURL, ClientID: "id", ClientSecret: "secret"}, CA: &staticCA{pem: ca.pem}}
-			withUA = Profile{Name: "p", ClientName: "my-client"}
-		})
-
-		It("sends the client name on API, token and unauthenticated requests", func() {
-			c, err := New(ctx, withUA, spec)
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(c.Close)
-
-			request(c.Doer(), "")
-			Expect(ts.all()).To(ConsistOf("my-client"))
-			request(c.UnauthenticatedDoer(), "")
-			Expect(api.all()).To(Equal([]string{"my-client", "my-client"}))
-		})
-
-		It("keeps a User-Agent set by the caller", func() {
-			c, err := New(ctx, withUA, spec)
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(c.Close)
-
-			request(c.Doer(), "caller")
-			request(c.UnauthenticatedDoer(), "caller")
-			Expect(api.all()).To(Equal([]string{"caller", "caller"}))
-		})
-
-		It("leaves the default User-Agent without a client name", func() {
-			c, err := New(ctx, Profile{Name: "p"}, spec)
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(c.Close)
-
-			request(c.Doer(), "")
-			Expect(api.all()).To(ConsistOf(HavePrefix("Go-http-client")))
-			Expect(ts.all()).To(ConsistOf(HavePrefix("Go-http-client")))
-		})
-
-		It("still closes idle connections of the wrapped transport", func() {
-			c, err := New(ctx, withUA, spec)
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(c.Close)
-			wrapper, ok := c.UnauthenticatedDoer().Transport.(*userAgentTransport)
-			Expect(ok).To(BeTrue())
-			Expect(wrapper.base).To(BeIdenticalTo(c.transport))
-		})
 	})
 
 	Context("client credentials", func() {

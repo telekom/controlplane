@@ -137,11 +137,7 @@ func build(lifeCtx context.Context, p Profile, s Spec, caPEM []byte, insecure bo
 	if err != nil {
 		return nil, err
 	}
-	var rt http.RoundTripper = transport
-	if p.ClientName != "" {
-		rt = &userAgentTransport{base: transport, userAgent: p.ClientName}
-	}
-	base := &http.Client{Transport: rt, Timeout: p.timeout()}
+	base := &http.Client{Transport: transport, Timeout: p.timeout()}
 
 	ctx, cancel := context.WithCancel(lifeCtx)
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, base)
@@ -174,27 +170,11 @@ func build(lifeCtx context.Context, p Profile, s Spec, caPEM []byte, insecure bo
 	}
 
 	c.doer = httpClient
-	if p.ClientName != "" {
+	if p.MetricsClientName != "" {
 		c.doer = metrics.WithMetrics(httpClient,
-			metrics.WithClientName(p.ClientName),
+			metrics.WithClientName(p.MetricsClientName),
 			metrics.WithReplacePatterns(p.MetricsReplacePatterns...),
 		)
 	}
 	return c, nil
-}
-
-// userAgentTransport sets the User-Agent on requests that do not carry one.
-// It clones the request before modifying it, as required by http.RoundTripper.
-type userAgentTransport struct {
-	base      http.RoundTripper
-	userAgent string
-}
-
-func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get("User-Agent") != "" {
-		return t.base.RoundTrip(req)
-	}
-	clone := req.Clone(req.Context())
-	clone.Header.Set("User-Agent", t.userAgent)
-	return t.base.RoundTrip(clone)
 }

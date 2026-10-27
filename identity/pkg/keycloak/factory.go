@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	profileName    = "identity"
-	realmOwnerKind = "identity.cp.ei.telekom.de/Realm"
-	idpOwnerKind   = "identity.cp.ei.telekom.de/IdentityProvider"
-	defaultTimeout = 10 * time.Second
-	clientName     = "identity"
+	profileName       = "identity"
+	realmOwnerKind    = "identity.cp.ei.telekom.de/Realm"
+	idpOwnerKind      = "identity.cp.ei.telekom.de/IdentityProvider"
+	defaultTimeout    = 10 * time.Second
+	metricsClientName = "identity"
 )
 
 // ServiceFactory creates KeycloakService instances for the admin connection
@@ -107,11 +107,11 @@ func profile(rawTimeout string) (tlsclient.Profile, error) {
 		}
 	}
 	return tlsclient.Profile{
-		Name:          profileName,
-		Transport:     tlsclient.TransportRaw,
-		Timeout:       timeout,
-		MinTLSVersion: tls.VersionTLS13,
-		ClientName:    clientName,
+		Name:              profileName,
+		Transport:         tlsclient.TransportRaw,
+		Timeout:           timeout,
+		MinTLSVersion:     tls.VersionTLS13,
+		MetricsClientName: metricsClientName,
 		MetricsReplacePatterns: []string{
 			`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID,
 		},

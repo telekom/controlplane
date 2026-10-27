@@ -36,8 +36,8 @@ The source contract allows only CA certificate blocks and whitespace. `cabundle`
 | Component | Actual remote callers | Authentication and HTTP behavior |
 | --- | --- | --- |
 | Admin | OIDC discovery during Zone status population | Unauthenticated, 10-second timeout, cloned default transport with environment proxy support. Uses an uncached client with the validated in-memory Zone union and closes it after discovery. Existing discovery-result reuse remains. |
-| Gateway | Route and Consumer create/update/delete handlers | Client credentials; token URL remains the issuer plus `/protocol/openid-connect/token`. Raw transport, 10-second timeout, 100 maximum idle connections per host, client name `gateway` for the existing metrics and as `User-Agent`. |
-| Identity | Realm and Client create/update/delete handlers, including realm issuer discovery | Initial password grant is eager, followed by token refresh. Raw transport, TLS 1.3 minimum, 10-second timeout or `CLIENT_TIMEOUT`, client name `identity` for the existing metrics and as `User-Agent`. Issuer discovery shares the TLS transport and timeout without sending OAuth credentials. |
+| Gateway | Route and Consumer create/update/delete handlers | Client credentials; token URL remains the issuer plus `/protocol/openid-connect/token`. Raw transport, 10-second timeout, 100 maximum idle connections per host, existing Gateway metrics. |
+| Identity | Realm and Client create/update/delete handlers, including realm issuer discovery | Initial password grant is eager, followed by token refresh. Raw transport, TLS 1.3 minimum, 10-second timeout or `CLIENT_TIMEOUT`, existing Identity metrics. Issuer discovery shares the TLS transport and timeout without sending OAuth credentials. |
 
 Gateway and Identity each construct **one factory per operator process**, register it with the manager, and inject it across their remote-calling controllers. The Gateway and IdentityProvider handlers do not gain proactive CA validation or connectivity probes; failures are reported on the operation resource.
 
@@ -55,8 +55,6 @@ Concurrent acquisitions of the same version share construction. Distinct owners 
 Handlers defer the returned release function immediately after successful acquisition, on create/update and deletion paths alike. Keep a lease only for the short operation; do not retain it between reconciliations or use its client after release. Callers release leased clients rather than closing them.
 
 One cleanup loop per factory checks for unused clients every minute. A version is eligible for eviction after **30 minutes since its last acquisition**, and only with zero borrowers. Eviction cancels that client's token-source context and closes the underlying transport's idle connections, even when OAuth and metrics wrap it. Manager shutdown closes the factory and its clients; cleanup runs on every replica without requiring leadership.
-
-A profile's `ClientName` labels the client's metrics and is sent as `User-Agent` on API, token, and unauthenticated discovery requests. A `User-Agent` set by the caller on a request takes precedence. Without a client name, neither metrics nor a custom `User-Agent` are added. The header is set on a clone of the request, never on the caller's request.
 
 ## Context and authentication lifetime
 
