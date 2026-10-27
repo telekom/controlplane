@@ -336,10 +336,11 @@ func (h *ApprovalRequestHandler) resolveScopedGrantSource(ctx context.Context, a
 }
 
 // isScopedApprovalRevoked reports whether a scoped Approval is revoked: Rejected,
-// Suspended, or Expired after a suspension.
+// Suspended, Expired after a suspension, or Semigranted, i.e. with the first of
+// two approvals of a re-grant after a revocation.
 func isScopedApprovalRevoked(approvalObj *approvalv1.Approval) bool {
 	switch approvalObj.Spec.State {
-	case approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateSuspended:
+	case approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateSemigranted:
 		return true
 	case approvalv1.ApprovalStateExpired:
 		return approvalObj.IsExpiredAfterSuspension()
@@ -354,8 +355,10 @@ var errScopedApprovalDeleted = stderrors.New("scoped approval was deleted after 
 
 // liftsScopedRevocation reports whether approvalReq replaces the revocation of a
 // scoped Approval: only a request other than the one the Approval was granted for,
-// fully granted by a person after the revocation. Both times come from decision
-// timestamps; when either is unknown the revocation is kept. A timestamp is set
+// fully granted by a person after the revocation; under FourEyes both approvals
+// must follow it. Times come from decision timestamps; when one is unknown the
+// revocation is kept. A Semigranted Approval counts as revoked when its first
+// re-grant approval was given. A timestamp is set
 // by its writer (the control plane API uses server time) or, when empty,
 // defaulted by the mutating webhook, so other writers can supply any value. An
 // automatic grant keeps the revocation, and so does a FourEyes request that is
@@ -367,18 +370,31 @@ func liftsScopedRevocation(approvalObj *approvalv1.Approval, approvalReq *approv
 	if bound := approvalObj.Spec.ApprovedRequest; bound != nil && bound.UID == approvalReq.UID {
 		return false
 	}
-	grantedAt := latestGrantTime(approvalReq.Spec.Decisions)
+	grantedAt := grantTime(approvalReq.Spec.Strategy, approvalReq.Spec.Decisions)
 	revokedAt := revocationTime(approvalObj)
 	return grantedAt != nil && revokedAt != nil && grantedAt.After(revokedAt.Time)
 }
 
-// latestGrantTime returns the timestamp of the latest decision resulting in
-// Granted, or nil when there is none or it has no timestamp.
-func latestGrantTime(decisions []approvalv1.Decision) *metav1.Time {
+// grantTime returns the timestamp of the earliest approval of the latest grant:
+// the latest decision resulting in Granted and, under FourEyes, the Semigranted
+// decision before it. It returns nil when a decision is missing or has no
+// timestamp.
+func grantTime(strategy approvalv1.ApprovalStrategy, decisions []approvalv1.Decision) *metav1.Time {
 	for i := len(decisions) - 1; i >= 0; i-- {
-		if decisions[i].ResultingState == approvalv1.ApprovalStateGranted {
+		if decisions[i].ResultingState != approvalv1.ApprovalStateGranted {
+			continue
+		}
+		if strategy != approvalv1.ApprovalStrategyFourEyes {
 			return decisions[i].Timestamp
 		}
+		if i == 0 || decisions[i-1].ResultingState != approvalv1.ApprovalStateSemigranted ||
+			decisions[i].Timestamp == nil || decisions[i-1].Timestamp == nil {
+			return nil
+		}
+		if decisions[i].Timestamp.Before(decisions[i-1].Timestamp) {
+			return decisions[i].Timestamp
+		}
+		return decisions[i-1].Timestamp
 	}
 	return nil
 }

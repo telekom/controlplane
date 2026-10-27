@@ -61,6 +61,11 @@ var _ = Describe("liftsScopedRevocation", func() {
 		{Name: approvalv1.SystemDecisionName, ResultingState: approvalv1.ApprovalStateExpired, Timestamp: &revokedAt},
 	}
 
+	// halfRegranted is a revoked FourEyes Approval with the first approval of a
+	// re-grant.
+	halfRegranted := revoked(approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStateRejected, &before,
+		approvalv1.Decision{Name: "Carol", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &revokedAt})
+
 	DescribeTable("decides whether a request replaces a revocation",
 		func(approval *approvalv1.Approval, ar *approvalv1.ApprovalRequest, lifts bool) {
 			Expect(isScopedApprovalRevoked(approval)).To(BeTrue())
@@ -84,6 +89,21 @@ var _ = Describe("liftsScopedRevocation", func() {
 			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &after},
 				grantAt(&after)), true),
+		Entry("FourEyes request whose first approval predates the revocation", rejected,
+			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &before},
+				grantAt(&after)), false),
+		Entry("FourEyes request whose second approval is dated before the revocation", rejected,
+			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted,
+				approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &after},
+				grantAt(&before)), false),
+		Entry("FourEyes request granted without a first approval", rejected,
+			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted, grantAt(&after)), false),
+		Entry("Semigranted after a revocation, newer request granted by a person after the first re-grant approval",
+			halfRegranted,
+			request("new-uid", approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, grantAt(&after)), true),
+		Entry("Semigranted after a revocation, automatic grant", halfRegranted,
+			request("new-uid", approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, grantAt(&after)), false),
 		Entry("FourEyes request only Semigranted", rejected,
 			request("new-uid", approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted,
 				approvalv1.Decision{Name: "Bob", ResultingState: approvalv1.ApprovalStateSemigranted, Timestamp: &after}), false),

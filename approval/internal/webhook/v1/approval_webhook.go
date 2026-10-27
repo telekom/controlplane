@@ -11,6 +11,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -25,7 +26,7 @@ var approvallog = logf.Log.WithName("approval-resource")
 func SetupApprovalWebhookWithManager(mgr ctrl.Manager, operatorServiceAccount string) error {
 	return ctrl.NewWebhookManagedBy(mgr, &approvalv1.Approval{}).
 		WithDefaulter(&ApprovalCustomDefaulter{}).
-		WithValidator(&ApprovalCustomValidator{OperatorServiceAccount: operatorServiceAccount}).
+		WithValidator(&ApprovalCustomValidator{OperatorServiceAccount: operatorServiceAccount, Reader: mgr.GetAPIReader()}).
 		Complete()
 }
 
@@ -67,6 +68,9 @@ type ApprovalCustomValidator struct {
 	// (e.g. "system:serviceaccount:system:controller-manager"). Only this identity
 	// is permitted to transition an Approval to the Expired state.
 	OperatorServiceAccount string
+	// Reader is an uncached API reader for the ApprovalRequest a scoped Approval
+	// is rebound to.
+	Reader client.Reader
 }
 
 var _ admission.Validator[*approvalv1.Approval] = &ApprovalCustomValidator{}
@@ -96,8 +100,15 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
+	// A scoped Approval rebound to another ApprovalRequest, which happens when a
+	// grant of a newer request lifts a revocation, is validated against that
+	// request instead.
 	if stateChanged {
-		err = a.validateStateTransition(ctx, oldObj, newObj)
+		if isScopedRebind(oldObj, newObj) {
+			err = a.validateRebind(ctx, newObj)
+		} else {
+			err = a.validateStateTransition(ctx, oldObj, newObj)
+		}
 		if err != nil {
 			return warnings, err
 		}
@@ -151,6 +162,52 @@ func (a *ApprovalCustomValidator) validateStateTransition(ctx context.Context, o
 	// Transition to Expired is reserved for the operator — no manual expiry.
 	if newObj.Spec.State == approvalv1.ApprovalStateExpired {
 		return a.validateOperatorOnly(ctx, newObj)
+	}
+	return nil
+}
+
+// isScopedRebind reports whether an update binds a scoped Approval to another
+// ApprovalRequest than before.
+func isScopedRebind(oldObj, newObj *approvalv1.Approval) bool {
+	oldRef, newRef := oldObj.Spec.ApprovedRequest, newObj.Spec.ApprovedRequest
+	return newObj.Spec.ApprovalKey != "" && newRef != nil &&
+		(oldRef == nil || *oldRef != *newRef)
+}
+
+// validateRebind allows a scoped Approval to be granted for the ApprovalRequest
+// it is rebound to only when that live request is Granted with the same
+// strategy for the same target and gate, and, under FourEyes, by two distinct
+// deciders. Whether the request may lift a revocation is decided by the
+// ApprovalRequest handler.
+func (a *ApprovalCustomValidator) validateRebind(ctx context.Context, newObj *approvalv1.Approval) error {
+	ref := newObj.Spec.ApprovedRequest
+	if newObj.Spec.State != approvalv1.ApprovalStateGranted {
+		return apierrors.NewBadRequest("an Approval rebound to another ApprovalRequest must be Granted")
+	}
+	if ref.Namespace != newObj.Namespace {
+		return apierrors.NewBadRequest("the approved ApprovalRequest must be in the namespace of the Approval")
+	}
+	if a.Reader == nil {
+		return apierrors.NewInternalError(fmt.Errorf("no reader for the approved ApprovalRequest"))
+	}
+	ar := &approvalv1.ApprovalRequest{}
+	if err := a.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, ar); err != nil {
+		if apierrors.IsNotFound(err) {
+			return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s not found", ref.Name))
+		}
+		return apierrors.NewInternalError(fmt.Errorf("reading approved ApprovalRequest %s: %w", ref.Name, err))
+	}
+	switch {
+	case ar.UID != ref.UID:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has UID %s, not %s", ref.Name, ar.UID, ref.UID))
+	case ar.DeletionTimestamp != nil || ar.Spec.State != approvalv1.ApprovalStateGranted:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s is not granted", ref.Name))
+	case !approvalv1.ScopedIdentityMatch(ar.Spec.Target, newObj.Spec.Target, ar.Spec.ApprovalKey, newObj.Spec.ApprovalKey):
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has another scope", ref.Name))
+	case ar.Spec.Strategy != newObj.Spec.Strategy:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has strategy %s, not %s", ref.Name, ar.Spec.Strategy, newObj.Spec.Strategy))
+	case ar.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes:
+		return validateDistinctDeciders(ar.Spec.Decisions)
 	}
 	return nil
 }
