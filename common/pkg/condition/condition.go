@@ -108,8 +108,8 @@ func NewNotReadyCondition(reason, message string) metav1.Condition {
 }
 
 // MessageWaitingForTakeover describes automatic recovery from an active-instance conflict.
-const MessageWaitingForTakeover = "Once the conflict is resolved, this instance will be reconsidered automatically. " +
-	"No resubmission is needed."
+const MessageWaitingForTakeover = "When the existing instance is deleted, this instance will be processed automatically. " +
+	"You do not need to submit it again."
 
 // Identifier labels used in active-instance conflict messages.
 const (

@@ -132,8 +132,8 @@ var _ = Describe("Condition Tests", func() {
 		It("should describe a base path conflict with the owning team", func() {
 			Expect(NewWaitingForTakeoverMessage("Api", ConflictIdentifierBasePath, "/eni/test/v1", "team-a", NoApplication)).To(Equal(
 				`Another Api with base path "/eni/test/v1" already exists and prevents this instance from becoming active. It is owned by team "team-a". ` +
-					"Once the conflict is resolved, this instance will be reconsidered automatically. " +
-					"No resubmission is needed."))
+					"When the existing instance is deleted, this instance will be processed automatically. " +
+					"You do not need to submit it again."))
 		})
 
 		It("should describe a type conflict with the owning team", func() {
