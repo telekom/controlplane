@@ -1167,9 +1167,9 @@ var _ = Describe("HandlerClient", func() {
 				return "", secretErr
 			})
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
 				Fail("Keycloak service must not be requested when realm lookup fails")
-				return nil, nil
+				return nil, nil, nil
 			})
 
 			handler := NewHandlerClient(factory)
