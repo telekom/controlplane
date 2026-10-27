@@ -205,9 +205,10 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.Strategy = currentStrategy
 		} else if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
-			// Record the grant unless the latest decision already is one, so
-			// earlier decisions (e.g. a decider comment) don't hide when it
-			// turned Auto, and reconciles don't add it again.
+			// Record when it turned Auto, even after earlier decisions (e.g. a
+			// decider comment). Reconciles don't add it again because the state
+			// is no longer Pending after the first write; the latest-Granted
+			// check is only a guard against a duplicate grant.
 			if n := len(approvalReq.Spec.Decisions); n == 0 || approvalReq.Spec.Decisions[n-1].ResultingState != v1.ApprovalStateGranted {
 				approvalReq.AppendDecision(v1.Decision{
 					Name:           v1.SystemDecisionName,

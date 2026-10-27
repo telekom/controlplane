@@ -113,12 +113,13 @@ func (a *Approval) AppendDecision(d Decision) {
 
 // stateBeforeExpiry returns the state the Approval was in before it expired.
 // The expiration handler records that state as a decision before the Expired
-// decision, so the latest decision not resulting in Expired is authoritative.
+// decision, so the latest decision resulting in a state other than Expired is
+// authoritative; decisions without a resulting state (e.g. comments) are skipped.
 // Status.LastState is only the fallback without such a decision, as it can be
 // stale (e.g. a resume not yet reconciled, or failed notifications).
 func (a *Approval) stateBeforeExpiry() ApprovalState {
 	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
-		if state := a.Spec.Decisions[i].ResultingState; state != ApprovalStateExpired {
+		if state := a.Spec.Decisions[i].ResultingState; state != "" && state != ApprovalStateExpired {
 			return state
 		}
 	}
