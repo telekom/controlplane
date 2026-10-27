@@ -120,9 +120,9 @@ func truncate(s string, n int) string {
 // grantedAt returns the time of the latest decision that granted request. It
 // falls back to the creation time of request, and to now if neither is known.
 //
-// A pending request that turns Auto because its requester became trusted keeps
-// its earlier decisions and gets no System decision. If those decisions carry
-// no timestamp, the creation time is used and the bound may already be reached.
+// A Granted decision without a timestamp is skipped, so a request granted only
+// by such a decision falls back to its creation time and the bound may already
+// be reached.
 func grantedAt(request *approvalv1.ApprovalRequest) time.Time {
 	var latest time.Time
 	for _, d := range request.Spec.Decisions {

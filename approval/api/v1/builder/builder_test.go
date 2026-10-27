@@ -5,6 +5,8 @@
 package builder
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -352,6 +354,58 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(ar.Labels[approvalv1.TargetNameLabelKey]).To(Equal("apisub"))
 			Expect(ar.Labels[approvalv1.RequesterTeamLabelKey]).To(Equal("trustedteam"))
 			Expect(ar.Labels[approvalv1.ApprovalStrategyLabelKey]).To(Equal("auto"))
+		})
+	})
+
+	Context("Pending request turning Auto", func() {
+		It("records a timestamped System grant once, after earlier decisions", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			trustedRequester := &approvalv1.Requester{
+				TeamName:  "TrustedTeam",
+				TeamEmail: "trusted.team@telekom.de",
+				Reason:    "I need access to this API!!",
+			}
+			Expect(trustedRequester.SetProperties(properties)).To(Succeed())
+			build := func(trusted ...string) *approvalv1.ApprovalRequest {
+				builder := NewApprovalBuilder(jclient, owner)
+				builder.WithHashValue(trustedRequester.Properties)
+				builder.WithRequester(trustedRequester)
+				builder.WithStrategy(approvalv1.ApprovalStrategySimple)
+				builder.WithTrustedRequesters(trusted)
+				_, err := builder.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				ar := &approvalv1.ApprovalRequest{}
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(builder.GetApprovalRequest()), ar)).To(Succeed())
+				return ar
+			}
+
+			By("creating a pending request with a decider comment")
+			ar := build()
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStatePending))
+			ar.Spec.Decisions = []approvalv1.Decision{{
+				Name: "Decider", Comment: "Looking into it", ResultingState: approvalv1.ApprovalStatePending,
+				Timestamp: &metav1.Time{Time: time.Now().Add(-time.Hour)},
+			}}
+			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+
+			By("trusting the requester")
+			ar = build("TrustedTeam")
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(ar.Spec.Decisions).To(HaveLen(2))
+			granted := ar.Spec.Decisions[1]
+			Expect(granted.Name).To(Equal(approvalv1.SystemDecisionName))
+			Expect(granted.Comment).To(Equal(approvalv1.AutoApprovedComment))
+			Expect(granted.ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(granted.Timestamp).NotTo(BeNil())
+			Expect(grantedAt(ar)).To(Equal(granted.Timestamp.Time))
+
+			By("reconciling again without adding another grant")
+			Expect(build("TrustedTeam").Spec.Decisions).To(Equal(ar.Spec.Decisions))
 		})
 	})
 

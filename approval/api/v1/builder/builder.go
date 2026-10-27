@@ -205,10 +205,14 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.Strategy = currentStrategy
 		} else if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
-			if len(approvalReq.Spec.Decisions) == 0 {
+			// Record the grant unless the latest decision already is one, so
+			// earlier decisions (e.g. a decider comment) don't hide when it
+			// turned Auto, and reconciles don't add it again.
+			if n := len(approvalReq.Spec.Decisions); n == 0 || approvalReq.Spec.Decisions[n-1].ResultingState != v1.ApprovalStateGranted {
 				approvalReq.AppendDecision(v1.Decision{
-					Name:           "System",
+					Name:           v1.SystemDecisionName,
 					Comment:        v1.AutoApprovedComment,
+					Timestamp:      &metav1.Time{Time: time.Now()},
 					ResultingState: v1.ApprovalStateGranted,
 				})
 			}
