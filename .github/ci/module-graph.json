@@ -18,7 +18,8 @@
       "common",
       "common-server",
       "gateway",
-      "identity"
+      "identity",
+      "organization"
     ]
   },
   "api": {
@@ -96,6 +97,7 @@
       "common-server",
       "gateway",
       "identity",
+      "organization",
       "pubsub",
       "secret-manager"
     ]
@@ -110,6 +112,7 @@
       "common-server",
       "gateway",
       "identity",
+      "organization",
       "secret-manager",
       "sftp"
     ]
