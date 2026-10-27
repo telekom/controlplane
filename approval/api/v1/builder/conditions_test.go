@@ -16,6 +16,7 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/test"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -70,6 +71,25 @@ var _ = Describe("SetPendingConditions", func() {
 		Expect(ready().Reason).To(Equal(ReasonApprovalPending))
 		Expect(processing().Reason).To(Equal(condition.ReasonBlocked))
 	})
+
+	DescribeTable("waits for the second approval of a semigranted Approval bound to the granted ApprovalRequest",
+		func(boundTo, expectedMessage string) {
+			ab := newBuilder(approvalv1.ApprovalStateGranted, grantedAt(pastBound))
+			ab.GetApprovalRequest().Name = "ar"
+			ab.(*approvalBuilder).Approval = &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{
+				State:           approvalv1.ApprovalStateSemigranted,
+				ApprovedRequest: &ctypes.ObjectRef{Name: boundTo},
+			}}
+			SetPendingConditions(hintCtx, owner, ab, "Waiting for approval decision")
+
+			Expect(ready().Reason).To(Equal(ReasonApprovalPending))
+			Expect(processing().Reason).To(Equal(condition.ReasonBlocked))
+			Expect(strings.HasPrefix(ready().Message, expectedMessage)).To(BeTrue(), ready().Message)
+		},
+		Entry("bound to the request", "ar", "Waiting for approval decision"),
+		// The approval controller replaces the Approval of another request.
+		Entry("bound to another request", "other", "ApprovalRequest ar was granted at"),
+	)
 
 	It("reports processing while a granted ApprovalRequest waits for its Approval", func() {
 		ab := newBuilder(approvalv1.ApprovalStateGranted, grantedAt(time.Now().Add(-time.Minute)))

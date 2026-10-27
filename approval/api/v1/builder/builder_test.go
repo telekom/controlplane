@@ -15,6 +15,7 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -630,6 +631,37 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				[]approvalv1.ApprovalState{approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateExpired},
 				ApprovalResultNone, metav1.ConditionStatus("")),
 		)
+
+		It("should treat a Semigranted Approval bound to the current request as Pending", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating a FourEyes approval that is re-granted after a rejection")
+			approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: "apisub--5c65994fcc", Namespace: testNamespace})
+			ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
+
+			Expect(requester.SetProperties(properties)).To(Succeed())
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
+			Expect(res).To(Equal(ApprovalResultPending))
+			cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Pending")
+			Expect(cond.Message).To(Equal("Approval is waiting for a second approval"))
+
+			By("reporting the owner as waiting for the approval, not for the approval controller")
+			SetPendingConditions(ctx, owner, builder, "Waiting for approval decision")
+			ready := meta.FindStatusCondition(owner.GetConditions(), condition.ConditionTypeReady)
+			Expect(ready.Reason).To(Equal(ReasonApprovalPending))
+			Expect(ready.Message).To(Equal("Waiting for approval decision"))
+		})
 
 		It("should ignore approvals for a different state", func() {
 			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))

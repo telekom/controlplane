@@ -148,7 +148,7 @@ func (b *approvalBuilder) WithLabels(labels map[string]string) ApprovalBuilder {
 // Prioritization of results:
 // 1. If the Approval is rejected or suspended --> Denied (must delete all child resources)
 // 2. If the ApprovalRequest is rejected --> RequestDenied (child resources must remain untouched)
-// 3. If the ApprovalRequest is pending --> Pending (must not provision child resources)
+// 3. If the ApprovalRequest or the Approval is pending or semigranted --> Pending (must not provision child resources)
 // 4. If the Approval is granted --> Granted (can provision child resources)
 func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult, err error) {
 	if b.ran.Load() {
@@ -294,6 +294,14 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
 		log.V(1).Info("Approval is not for this request. Returning early")
 		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
+		return ApprovalResultPending, nil
+	}
+
+	// A FourEyes Approval that is re-granted after a rejection is semigranted
+	// until the second decider allows it.
+	if b.Approval.Spec.State == v1.ApprovalStateSemigranted {
+		log.V(1).Info("Approval is semigranted and waits for a second approval")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is waiting for a second approval"))
 		return ApprovalResultPending, nil
 	}
 
