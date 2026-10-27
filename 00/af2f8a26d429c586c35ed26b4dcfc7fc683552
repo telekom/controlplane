@@ -1,0 +1,19 @@
+.github/ci/module-graph.json
+  s_516da554ec277a::t_ae719b2f494433 21-22,100,115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "00af2f8a26d429c586c35ed26b4dcfc7fc683552",
+  "prompts": {},
+  "sessions": {
+    "s_516da554ec277a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83b39045ffenn0VqKvrt8hWB6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
