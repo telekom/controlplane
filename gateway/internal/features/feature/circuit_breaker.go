@@ -52,7 +52,8 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 	}
 
 	if route.IsProxy() {
-		return false
+		// a route that is no longer primary may still own the upstream of its former circuit breaker; Apply deletes it
+		return route.GetUpstreamId() != ""
 	}
 
 	if route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled {
@@ -101,12 +102,9 @@ func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route
 }
 
 func isDeleteScenario(route *gatewayv1.Route) bool {
-	// completely removed or turned to false
-	if (route.Spec.Traffic.CircuitBreaker != nil && !route.Spec.Traffic.CircuitBreaker.Enabled) && route.GetUpstreamId() != "" {
-		return true
-	} else {
-		return false
-	}
+	// completely removed, turned to false, or the route is no longer primary
+	cb := route.Spec.Traffic.CircuitBreaker
+	return (cb == nil || !cb.Enabled || route.IsProxy()) && route.GetUpstreamId() != ""
 }
 
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
