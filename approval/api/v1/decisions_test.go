@@ -116,6 +116,10 @@ var _ = Describe("IsExpiredAfterSuspension", func() {
 			[]approvalv1.Decision{decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateExpired)}, false),
 		Entry("reconciled expiry without decisions", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
 			nil, false),
+		Entry("stale suspended LastState after a resume", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateSuspended,
+			[]approvalv1.Decision{decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateSuspended), decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateExpired)}, false),
+		Entry("stale granted LastState after a suspension", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted,
+			[]approvalv1.Decision{decision(approvalv1.ApprovalStateGranted), decision(approvalv1.ApprovalStateSuspended), decision(approvalv1.ApprovalStateExpired)}, true),
 		Entry("not expired", approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateSuspended,
 			[]approvalv1.Decision{decision(approvalv1.ApprovalStateSuspended)}, false),
 	)
@@ -153,6 +157,10 @@ var _ = Describe("IsExpiredAfterGrant", func() {
 			decisions(approvalv1.ApprovalStateExpired), false),
 		Entry("decision without a resulting state", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateExpired,
 			decisions(approvalv1.ApprovalStateGranted, "", approvalv1.ApprovalStateExpired), false),
+		Entry("stale suspended LastState after a resume", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateSuspended,
+			decisions(approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateExpired), true),
+		Entry("stale granted LastState after a suspension", approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted,
+			decisions(approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateExpired), false),
 		Entry("not expired", approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateGranted,
 			decisions(approvalv1.ApprovalStateGranted), false),
 	)
