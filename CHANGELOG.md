@@ -1,3 +1,10 @@
+# [0.43.0](https://github.com/telekom/controlplane/compare/v0.42.2...v0.43.0) (2026-10-27)
+
+
+### Features
+
+* **tls:** support custom CA bundles for outbound clients ([#777](https://github.com/telekom/controlplane/issues/777)) ([ca5570e](https://github.com/telekom/controlplane/commit/ca5570e5c99a366623c7222a8c64a8fc12fb0f84))
+
 ## [0.42.2](https://github.com/telekom/controlplane/compare/v0.42.1...v0.42.2) (2026-10-27)
 
 
