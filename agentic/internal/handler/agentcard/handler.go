@@ -71,11 +71,11 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 
 		if obj.Spec.BasePath == activeCard.Spec.BasePath {
 			// Exact same basePath — another AgentCard is older
-			obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotActive", "AgentCard is not active"))
-			obj.SetCondition(condition.NewBlockedCondition(
-				fmt.Sprintf("AgentCard is blocked, another AgentCard with the same BasePath %q is active. "+
-					"It will be automatically processed, if the other AgentCard will be deleted.", obj.Spec.BasePath),
-			))
+			msg := condition.NewWaitingForTakeoverMessage(
+				fmt.Sprintf("AgentCard is blocked, another AgentCard with the same BasePath %q is active", obj.Spec.BasePath),
+			)
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+			obj.SetCondition(condition.NewBlockedCondition(msg))
 			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath is already active.")
 		} else {
 			// Case conflict (e.g. /MyAgent vs /myagent)

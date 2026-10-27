@@ -117,7 +117,15 @@ var _ = Describe("AgentCardHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgentCardNotActive"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+			Expect(readyCond.Message).To(HavePrefix(`AgentCard is blocked, another AgentCard with the same BasePath "/agent/assistant/v1" is active. `))
+			Expect(readyCond.Message).To(HaveSuffix(condition.MessageWaitingForTakeover))
+
+			processingCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processingCond).NotTo(BeNil())
+			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should set Active=true when it is the oldest AgentCard for basePath", func() {

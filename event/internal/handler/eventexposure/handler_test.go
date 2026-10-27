@@ -511,6 +511,12 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(ContainSubstring("is already exposed by team"))
+			Expect(readyCond.Message).To(HaveSuffix(". " + condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should return error when GetZone fails", func() {

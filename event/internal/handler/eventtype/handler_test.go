@@ -184,6 +184,10 @@ var _ = Describe("EventTypeHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Blocked"))
+
+			Expect(readyCond.Message).To(Equal(
+				"Another EventType with the same type identifier is already active. " + condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should skip deletion-marked candidates and activate the next non-deleted one", func() {

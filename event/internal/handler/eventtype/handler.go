@@ -62,7 +62,7 @@ func (h *EventTypeHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Even
 		logger.V(1).Info("EventType is active", "type", obj.Spec.Type)
 	} else {
 		obj.Status.Active = false
-		msg := "Another EventType with the same type identifier is already active"
+		msg := condition.NewWaitingForTakeoverMessage("Another EventType with the same type identifier is already active")
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg))
 		logger.V(1).Info("EventType is not active (blocked by older resource)", "type", obj.Spec.Type)

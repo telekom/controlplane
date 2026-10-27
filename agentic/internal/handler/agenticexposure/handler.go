@@ -209,9 +209,10 @@ func checkCompetingExposures(ctx context.Context, obj *agenticv1.AgenticExposure
 	if existingFound && existingExposure.UID != obj.UID {
 		obj.Status.Active = false
 		obj.SetCondition(NewAgenticExposureActiveCondition(false))
-		msg := fmt.Sprintf("BasePath %q is already exposed by team %q.", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace)
-		obj.SetCondition(condition.NewNotReadyCondition("AgenticExposureAlreadyExists", msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg + " AgenticExposure will be automatically processed when the existing one is deleted"))
+		msg := condition.NewWaitingForTakeoverMessage(
+			fmt.Sprintf("BasePath %q is already exposed by team %q", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace))
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return true, nil
 	}
 

@@ -150,6 +150,14 @@ var _ = Describe("FileExposureHandler", func() {
 			Expect(k8smeta.IsStatusConditionFalse(exposure.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(exposure.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+			Expect(ready.Message).To(HavePrefix("Another FileExposure already provides this FileType. "))
+			Expect(ready.Message).To(HaveSuffix(condition.MessageWaitingForTakeover))
+
+			processing := k8smeta.FindStatusCondition(exposure.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processing).NotTo(BeNil())
+			Expect(processing.Status).To(Equal(metav1.ConditionFalse))
+			Expect(processing.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(processing.Message).To(Equal(ready.Message))
 		})
 
 		It("blocks when FileType is not found", func() {

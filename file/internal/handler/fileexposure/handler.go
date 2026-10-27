@@ -36,8 +36,9 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 		obj.Status.Active = false
 		obj.Status.ServiceURL = ""
 		obj.Status.ServiceExternalURL = ""
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Another FileExposure already provides this FileType"))
-		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
+		msg := condition.NewWaitingForTakeoverMessage("Another FileExposure already provides this FileType")
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
 

@@ -5,6 +5,8 @@
 package condition
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -103,6 +105,15 @@ func NewNotReadyCondition(reason, message string) metav1.Condition {
 	condition.Reason = reason
 	condition.Message = message
 	return condition
+}
+
+// MessageWaitingForTakeover describes automatic recovery from an active-instance conflict.
+const MessageWaitingForTakeover = "This instance will be processed automatically after the existing one is deleted" +
+	" and take over as the active instance if no other instance has priority."
+
+// NewWaitingForTakeoverMessage adds recovery guidance to a conflict description.
+func NewWaitingForTakeoverMessage(conflict string) string {
+	return strings.TrimSuffix(strings.TrimSpace(conflict), ".") + ". " + MessageWaitingForTakeover
 }
 
 func SetToUnknown(cond metav1.Condition) metav1.Condition { //nolint:gocritic // hugeParam: intentional value copy for functional transformation

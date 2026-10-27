@@ -59,9 +59,10 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	if existingFound && existingExposure.UID != obj.UID {
 		// Another exposure already owns this event type
 		obj.Status.Active = false
-		msg := fmt.Sprintf("Event-Type %q is already exposed by team %q.", obj.Spec.EventType, existingExposure.Spec.Provider.Namespace)
+		msg := condition.NewWaitingForTakeoverMessage(
+			fmt.Sprintf("Event-Type %q is already exposed by team %q", obj.Spec.EventType, existingExposure.Spec.Provider.Namespace))
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg + " EventExposure will be automatically processed when the existing EventExposure is deleted"))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
 

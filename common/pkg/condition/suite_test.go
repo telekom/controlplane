@@ -127,4 +127,17 @@ var _ = Describe("Condition Tests", func() {
 		})
 
 	})
+
+	Context("NewWaitingForTakeoverMessage function", func() {
+		It("should append generic takeover guidance to the conflict", func() {
+			Expect(NewWaitingForTakeoverMessage("Resource is already active")).To(Equal(
+				"Resource is already active. This instance will be processed automatically after the existing one is deleted" +
+					" and take over as the active instance if no other instance has priority."))
+		})
+
+		It("should handle a trailing period and whitespace", func() {
+			Expect(NewWaitingForTakeoverMessage(" Resource is already active. ")).To(Equal(
+				"Resource is already active. " + MessageWaitingForTakeover))
+		})
+	})
 })

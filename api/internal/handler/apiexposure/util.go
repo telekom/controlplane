@@ -38,7 +38,7 @@ func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
 		fmt.Fprintf(&sb, "by your Application %q", applicationName)
 	}
 
-	msg := sb.String()
+	msg := condition.NewWaitingForTakeoverMessage(sb.String())
 
 	candidate.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	candidate.SetCondition(condition.NewBlockedCondition(msg))

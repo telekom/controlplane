@@ -75,11 +75,9 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 
 		if obj.Spec.BasePath == activeAPI.Spec.BasePath {
 			// The exact same API (case matches)
-			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Api is not active"))
-			obj.SetCondition(condition.NewBlockedCondition(
-				"Api is blocked, another Api with the same BasePath is active. " +
-					"It will be automatically processed, if the other Api will be deleted.",
-			))
+			msg := condition.NewWaitingForTakeoverMessage("Api is blocked, another Api with the same BasePath is active")
+			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+			obj.SetCondition(condition.NewBlockedCondition(msg))
 			logger.Info("❌ Api is blocked, another Api with the same BasePath is already active.")
 
 		} else {

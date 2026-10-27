@@ -117,7 +117,15 @@ var _ = Describe("McpServerHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("McpServerNotActive"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+			Expect(readyCond.Message).To(HavePrefix(`McpServer is blocked, another McpServer with the same BasePath "/mcp/weather/v1" is active. `))
+			Expect(readyCond.Message).To(HaveSuffix(condition.MessageWaitingForTakeover))
+
+			processingCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processingCond).NotTo(BeNil())
+			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should set Active=true when it is the oldest McpServer for basePath", func() {
