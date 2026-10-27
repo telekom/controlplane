@@ -90,8 +90,9 @@ var _ = Describe("Api Controller", Ordered, func() {
 
 				readyCond := meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady)
 				g.Expect(readyCond).NotTo(BeNil())
-				g.Expect(readyCond.Message).To(HavePrefix("Api is blocked, another Api with the same BasePath is active. "))
-				g.Expect(readyCond.Message).To(HaveSuffix(condition.MessageWaitingForTakeover))
+				g.Expect(readyCond.Message).To(Equal(
+					`Another Api with base path "/apictrl/test/v1" already exists and prevents this instance from becoming active. It is owned by team "dev--api". ` +
+						condition.MessageWaitingForTakeover))
 
 				processingCond := meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeProcessing)
 				g.Expect(processingCond).NotTo(BeNil())

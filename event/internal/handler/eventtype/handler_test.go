@@ -97,6 +97,10 @@ var _ = Describe("EventTypeHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Blocked"))
+
+			Expect(readyCond.Message).To(Equal(`No non-deleted EventType candidate was found for type "de.telekom.test.v1".`))
+			Expect(readyCond.Message).NotTo(ContainSubstring(condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should set Active=true with Ready and DoneProcessing when this obj is the only candidate", func() {
@@ -159,7 +163,9 @@ var _ = Describe("EventTypeHandler", func() {
 			t2 := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 
 			older := newEventType("et-older", "de.telekom.test.v1", "uid-older", t1)
+			older.Namespace = "prod--events--owner-team"
 			obj := newEventType("et-newer", "de.telekom.test.v1", "uid-newer", t2)
+			obj.Namespace = "prod--events--new-team"
 
 			fakeClient.EXPECT().
 				List(ctx, &eventv1.EventTypeList{}).
@@ -186,7 +192,8 @@ var _ = Describe("EventTypeHandler", func() {
 			Expect(processingCond.Reason).To(Equal("Blocked"))
 
 			Expect(readyCond.Message).To(Equal(
-				"Another EventType with the same type identifier is already active. " + condition.MessageWaitingForTakeover))
+				`Another EventType with type "de.telekom.test.v1" already exists and prevents this instance from becoming active. It is owned by team "events--owner-team". ` +
+					condition.MessageWaitingForTakeover))
 			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
@@ -253,6 +260,11 @@ var _ = Describe("EventTypeHandler", func() {
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Reason).To(Equal("Blocked"))
+
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+			Expect(readyCond.Message).To(Equal(`No non-deleted EventType candidate was found for type "de.telekom.test.v1".`))
+			Expect(readyCond.Message).NotTo(ContainSubstring(condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 	})
 

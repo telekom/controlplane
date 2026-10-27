@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*agenticv1.McpServer] = &McpServerHandler{}
@@ -72,8 +73,8 @@ func (h *McpServerHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Mc
 		if obj.Spec.BasePath == activeServer.Spec.BasePath {
 			// Exact same basePath — another McpServer is older
 			msg := condition.NewWaitingForTakeoverMessage(
-				fmt.Sprintf("McpServer is blocked, another McpServer with the same BasePath %q is active", obj.Spec.BasePath),
-			)
+				"McpServer", condition.ConflictIdentifierBasePath, obj.Spec.BasePath,
+				organizationv1.TeamNameFromNamespace(activeServer.Namespace), condition.NoApplication)
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 			obj.SetCondition(condition.NewBlockedCondition(msg))
 			logger.Info("McpServer is blocked, another McpServer with the same BasePath is already active.")

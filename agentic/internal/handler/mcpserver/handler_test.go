@@ -98,7 +98,9 @@ var _ = Describe("McpServerHandler", func() {
 		It("should set Active=false when another older McpServer exists for same basePath", func() {
 			now := time.Now()
 			existing := newMcpServer("mcp-existing", "/mcp/weather/v1", "uid-existing", now.Add(-time.Hour))
+			existing.Namespace = "prod--platform--mcp-team"
 			obj := newMcpServer("mcp-new", "/mcp/weather/v1", "uid-new", now)
+			obj.Namespace = "prod--platform--consumer-team"
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
@@ -118,8 +120,9 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
-			Expect(readyCond.Message).To(HavePrefix(`McpServer is blocked, another McpServer with the same BasePath "/mcp/weather/v1" is active. `))
-			Expect(readyCond.Message).To(HaveSuffix(condition.MessageWaitingForTakeover))
+			Expect(readyCond.Message).To(Equal(
+				`Another McpServer with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "platform--mcp-team". ` +
+					condition.MessageWaitingForTakeover))
 
 			processingCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeProcessing)
 			Expect(processingCond).NotTo(BeNil())

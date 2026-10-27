@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*agenticv1.AgentCard] = &AgentCardHandler{}
@@ -72,8 +73,8 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 		if obj.Spec.BasePath == activeCard.Spec.BasePath {
 			// Exact same basePath — another AgentCard is older
 			msg := condition.NewWaitingForTakeoverMessage(
-				fmt.Sprintf("AgentCard is blocked, another AgentCard with the same BasePath %q is active", obj.Spec.BasePath),
-			)
+				"AgentCard", condition.ConflictIdentifierBasePath, obj.Spec.BasePath,
+				organizationv1.TeamNameFromNamespace(activeCard.Namespace), condition.NoApplication)
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 			obj.SetCondition(condition.NewBlockedCondition(msg))
 			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath is already active.")

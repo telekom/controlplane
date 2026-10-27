@@ -7,7 +7,6 @@ package apiexposure
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -17,28 +16,14 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	organizationapi "github.com/telekom/controlplane/organization/api/v1"
 )
 
-// setAlreadyExposedConditions sets NotReady and Blocked conditions on the new ApiExposure
-// indicating that the API is already exposed by another ApiExposure.
-// It will include information about the team and application that owns the existing ApiExposure.
-// e.g. 'API is already exposed by Team "team-a" and their Application "app-1"' or
-// 'API is already exposed by your Application "app-1"'
+// setAlreadyExposedConditions identifies the active exposure's owner and explains automatic takeover.
 func setAlreadyExposedConditions(existing, candidate *apiv1.ApiExposure) {
-	sb := strings.Builder{}
-	sb.WriteString("API is already exposed ")
-
 	applicationName := existing.GetLabels()[config.BuildLabelKey("application")]
-
-	if existing.Namespace != candidate.Namespace {
-		teamName := existing.Namespace // TODO: should probably be a label
-		str := fmt.Sprintf("by Team %q and their Application %q", teamName, applicationName)
-		sb.WriteString(str)
-	} else {
-		fmt.Fprintf(&sb, "by your Application %q", applicationName)
-	}
-
-	msg := condition.NewWaitingForTakeoverMessage(sb.String())
+	msg := condition.NewWaitingForTakeoverMessage("ApiExposure", condition.ConflictIdentifierBasePath,
+		candidate.Spec.ApiBasePath, organizationapi.TeamNameFromNamespace(existing.Namespace), applicationName)
 
 	candidate.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 	candidate.SetCondition(condition.NewBlockedCondition(msg))

@@ -328,7 +328,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
-					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
+					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "prod--ai--other-team"},
 				},
 				Status: agenticv1.AgenticExposureStatus{
 					Active: true,
@@ -348,8 +348,41 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
-			Expect(readyCond.Message).To(ContainSubstring(`is already exposed by team "other-ns". `))
-			Expect(readyCond.Message).To(HaveSuffix(". " + condition.MessageWaitingForTakeover))
+			Expect(readyCond.Message).To(Equal(
+				`Another AgenticExposure with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "ai--other-team", application "other-app". ` +
+					condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
+		})
+
+		It("should omit the application when the existing AgenticExposure has no provider name", func() {
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			mockListMcpServers([]agenticv1.McpServer{server})
+
+			existingExposure := agenticv1.AgenticExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "other-exposure",
+					Namespace:         "default",
+					UID:               "other-uid",
+					CreationTimestamp: metav1.Now(),
+				},
+				Spec: agenticv1.AgenticExposureSpec{
+					BasePath: "/mcp/weather/v1",
+					Provider: ctypes.ObjectRef{Namespace: "prod--ai--other-team"},
+				},
+				Status: agenticv1.AgenticExposureStatus{Active: true},
+			}
+			mockListAgenticExposures([]agenticv1.AgenticExposure{existingExposure})
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(Equal(
+				`Another AgenticExposure with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "ai--other-team". ` +
+					condition.MessageWaitingForTakeover))
 			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 

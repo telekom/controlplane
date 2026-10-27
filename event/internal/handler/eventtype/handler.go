@@ -6,6 +6,7 @@ package eventtype
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*eventv1.EventType] = &EventTypeHandler{}
@@ -60,9 +62,16 @@ func (h *EventTypeHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Even
 			"EventType is the active singleton for its type"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("EventType is active"))
 		logger.V(1).Info("EventType is active", "type", obj.Spec.Type)
+	} else if activeCandidate == nil {
+		obj.Status.Active = false
+		msg := fmt.Sprintf("No non-deleted EventType candidate was found for type %q.", obj.Spec.Type)
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
+		logger.V(1).Info("EventType is not active (no non-deleted candidate found)", "type", obj.Spec.Type)
 	} else {
 		obj.Status.Active = false
-		msg := condition.NewWaitingForTakeoverMessage("Another EventType with the same type identifier is already active")
+		msg := condition.NewWaitingForTakeoverMessage("EventType", condition.ConflictIdentifierType,
+			obj.Spec.Type, organizationv1.TeamNameFromNamespace(activeCandidate.Namespace), condition.NoApplication)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg))
 		logger.V(1).Info("EventType is not active (blocked by older resource)", "type", obj.Spec.Type)

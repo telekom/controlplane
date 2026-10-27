@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var _ handler.Handler[*agenticv1.AgenticExposure] = &AgenticExposureHandler{}
@@ -209,8 +210,9 @@ func checkCompetingExposures(ctx context.Context, obj *agenticv1.AgenticExposure
 	if existingFound && existingExposure.UID != obj.UID {
 		obj.Status.Active = false
 		obj.SetCondition(NewAgenticExposureActiveCondition(false))
-		msg := condition.NewWaitingForTakeoverMessage(
-			fmt.Sprintf("BasePath %q is already exposed by team %q", obj.Spec.BasePath, existingExposure.Spec.Provider.Namespace))
+		msg := condition.NewWaitingForTakeoverMessage("AgenticExposure", condition.ConflictIdentifierBasePath,
+			obj.Spec.BasePath, organizationv1.TeamNameFromNamespace(existingExposure.Spec.Provider.Namespace),
+			existingExposure.Spec.Provider.Name)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return true, nil

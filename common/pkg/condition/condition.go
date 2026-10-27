@@ -5,7 +5,7 @@
 package condition
 
 import (
-	"strings"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -108,12 +108,27 @@ func NewNotReadyCondition(reason, message string) metav1.Condition {
 }
 
 // MessageWaitingForTakeover describes automatic recovery from an active-instance conflict.
-const MessageWaitingForTakeover = "This instance will be processed automatically after the existing one is deleted" +
-	" and take over as the active instance if no other instance has priority."
+const MessageWaitingForTakeover = "Once the conflict is resolved, this instance will be reconsidered automatically. " +
+	"No resubmission is needed."
 
-// NewWaitingForTakeoverMessage adds recovery guidance to a conflict description.
-func NewWaitingForTakeoverMessage(conflict string) string {
-	return strings.TrimSuffix(strings.TrimSpace(conflict), ".") + ". " + MessageWaitingForTakeover
+// Identifier labels used in active-instance conflict messages.
+const (
+	ConflictIdentifierBasePath = "base path"
+	ConflictIdentifierType     = "type"
+)
+
+// NoApplication omits the application from a takeover conflict message.
+const NoApplication = ""
+
+// NewWaitingForTakeoverMessage describes an active-instance conflict and automatic recovery.
+// Pass NoApplication when no owning application is available.
+func NewWaitingForTakeoverMessage(kind, identifierLabel, identifier, owningTeam, owningApplication string) string {
+	owner := fmt.Sprintf("team %q", owningTeam)
+	if owningApplication != NoApplication {
+		owner += fmt.Sprintf(", application %q", owningApplication)
+	}
+	return fmt.Sprintf("Another %s with %s %q already exists and prevents this instance from becoming active. It is owned by %s. ",
+		kind, identifierLabel, identifier, owner) + MessageWaitingForTakeover
 }
 
 func SetToUnknown(cond metav1.Condition) metav1.Condition { //nolint:gocritic // hugeParam: intentional value copy for functional transformation
