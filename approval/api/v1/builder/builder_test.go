@@ -663,6 +663,30 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(ready.Message).To(Equal("Waiting for approval decision"))
 		})
 
+		It("should report a Semigranted Approval bound to another request as not for the current request", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: "apisub--5c65994fee", Namespace: testNamespace})
+			ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
+
+			Expect(requester.SetProperties(properties)).To(Succeed())
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
+			Expect(res).To(Equal(ApprovalResultPending))
+			cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Pending")
+			Expect(cond.Message).To(Equal("Approval is not for the current ApprovalRequest"))
+		})
+
 		It("should ignore approvals for a different state", func() {
 			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
 			By("creating an approval-request")
