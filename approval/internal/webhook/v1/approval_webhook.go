@@ -7,6 +7,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -104,12 +105,19 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 		}
 	}
 
-	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
-	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
-		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
+	// FourEyes: completing a half-approved Approval (Semigranted -> Granted) needs
+	// a second, different person. The one-step grants the FSM allows (Expired ->
+	// Granted renewal, Suspended -> Granted resume) need one person's granting decision.
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes &&
+		stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
+		if oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
 			if distinctErr := validateDistinctDeciders(newObj.Spec.Decisions); distinctErr != nil {
 				return warnings, distinctErr
 			}
+		} else if last := newObj.Spec.Decisions[len(newObj.Spec.Decisions)-1]; strings.TrimSpace(last.Email) == "" ||
+			last.ResultingState != approvalv1.ApprovalStateGranted {
+			return warnings, apierrors.NewBadRequest(
+				"FourEyes strategy requires a granting decision with a non-empty email address")
 		}
 	}
 
