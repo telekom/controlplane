@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	"github.com/telekom/controlplane/file/internal/handler/util"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	sftpv1 "github.com/telekom/controlplane/sftp/api/v1"
 )
 
@@ -36,8 +37,11 @@ func (h *FileExposureHandler) CreateOrUpdate(ctx context.Context, obj *filev1.Fi
 		obj.Status.Active = false
 		obj.Status.ServiceURL = ""
 		obj.Status.ServiceExternalURL = ""
-		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, "Another FileExposure already provides this FileType"))
-		obj.SetCondition(condition.NewBlockedCondition("FileExposure will be processed when the active FileExposure is deleted"))
+		msg := condition.NewWaitingForTakeoverMessage("FileExposure", condition.ConflictIdentifierType,
+			obj.Spec.FileType, organizationv1.TeamNameFromNamespace(activeExposure.Spec.Provider.Namespace),
+			activeExposure.Spec.Provider.Name)
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
 

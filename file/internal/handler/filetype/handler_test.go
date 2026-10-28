@@ -152,5 +152,27 @@ var _ = Describe("FileTypeHandler", func() {
 
 			Expect(err).To(MatchError(ContainSubstring("zone config unavailable")))
 		})
+
+		It("sets Ready with reason Provisioned on success", func() {
+			fileType := testFileType()
+			exposure := testFileExposure()
+			ctx, mockClient := newTestContext()
+
+			mockListExposures(mockClient, []filev1.FileExposure{*exposure})
+			mockGetZone(mockClient)
+			mockClient.EXPECT().
+				List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*filev1.ZoneServiceConfigList) = filev1.ZoneServiceConfigList{Items: []filev1.ZoneServiceConfig{{}}}
+				}).
+				Return(nil).Once()
+
+			err := handler.CreateOrUpdate(ctx, fileType)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8smeta.IsStatusConditionTrue(fileType.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			ready := k8smeta.FindStatusCondition(fileType.Status.Conditions, condition.ConditionTypeReady)
+			Expect(ready.Reason).To(Equal(condition.ReasonProvisioned))
+		})
 	})
 })

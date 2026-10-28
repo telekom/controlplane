@@ -14,6 +14,7 @@ require (
 	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 	github.com/telekom/controlplane/sftp/api v0.0.0
 )
@@ -28,6 +29,7 @@ replace (
 	github.com/telekom/controlplane/file/api => ./api
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 	github.com/telekom/controlplane/sftp/api => ../sftp/api
 )

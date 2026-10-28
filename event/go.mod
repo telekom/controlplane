@@ -15,6 +15,7 @@ require (
 	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/pubsub/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 )
@@ -41,6 +42,7 @@ replace (
 	github.com/telekom/controlplane/event/api => ./api
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/pubsub/api => ../pubsub/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )

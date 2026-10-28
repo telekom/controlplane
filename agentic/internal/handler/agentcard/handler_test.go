@@ -98,7 +98,9 @@ var _ = Describe("AgentCardHandler", func() {
 		It("should set Active=false when another older AgentCard exists for same basePath", func() {
 			now := time.Now()
 			existing := newAgentCard("agent-existing", "/agent/assistant/v1", "uid-existing", now.Add(-time.Hour))
+			existing.Namespace = "prod--platform--agent-team"
 			obj := newAgentCard("agent-new", "/agent/assistant/v1", "uid-new", now)
+			obj.Namespace = "prod--platform--consumer-team"
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
@@ -117,7 +119,16 @@ var _ = Describe("AgentCardHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeReady)
 			Expect(readyCond).NotTo(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgentCardNotActive"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+			Expect(readyCond.Message).To(Equal(
+				`Another AgentCard with base path "/agent/assistant/v1" already exists and prevents this instance from becoming active. It is owned by team "platform--agent-team". ` +
+					condition.MessageWaitingForTakeover))
+
+			processingCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeProcessing)
+			Expect(processingCond).NotTo(BeNil())
+			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should set Active=true when it is the oldest AgentCard for basePath", func() {

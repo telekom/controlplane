@@ -87,6 +87,18 @@ var _ = Describe("Api Controller", Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), condition.ReasonPreconditionNotMet)
 				g.Expect(secondApi.Status.Active).To(BeFalse())
+
+				readyCond := meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady)
+				g.Expect(readyCond).NotTo(BeNil())
+				g.Expect(readyCond.Message).To(Equal(
+					`Another Api with base path "/apictrl/test/v1" already exists and prevents this instance from becoming active. It is owned by team "dev--api". ` +
+						condition.MessageWaitingForTakeover))
+
+				processingCond := meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeProcessing)
+				g.Expect(processingCond).NotTo(BeNil())
+				g.Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+				g.Expect(processingCond.Reason).To(Equal(condition.ReasonBlocked))
+				g.Expect(processingCond.Message).To(Equal(readyCond.Message))
 			}, timeout, interval).Should(Succeed())
 		})
 

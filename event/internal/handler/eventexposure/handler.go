@@ -6,7 +6,6 @@ package eventexposure
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
 
@@ -59,9 +59,11 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	if existingFound && existingExposure.UID != obj.UID {
 		// Another exposure already owns this event type
 		obj.Status.Active = false
-		msg := fmt.Sprintf("Event-Type %q is already exposed by team %q.", obj.Spec.EventType, existingExposure.Spec.Provider.Namespace)
+		msg := condition.NewWaitingForTakeoverMessage("EventExposure", condition.ConflictIdentifierType,
+			obj.Spec.EventType, organizationv1.TeamNameFromNamespace(existingExposure.Spec.Provider.Namespace),
+			existingExposure.Spec.Provider.Name)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
-		obj.SetCondition(condition.NewBlockedCondition(msg + " EventExposure will be automatically processed when the existing EventExposure is deleted"))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
 		return nil
 	}
 
