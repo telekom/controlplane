@@ -427,9 +427,8 @@ var _ = Describe("Zone Handler", func() {
 			}
 			Expect(err).To(HaveOccurred())
 		},
-		Entry("explicit hostname", adminv1.IdentityProviderConfig{Name: "primary", IssuerHostname: "issuer.example.com"}, "issuer.example.com", true),
-		Entry("admin URL fallback", adminv1.IdentityProviderConfig{Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "admin.example.com", true),
-		Entry("missing values", adminv1.IdentityProviderConfig{Name: "primary"}, "", false),
+		Entry("explicit hostname", adminv1.IdentityProviderConfig{Name: "primary", IssuerHostname: "issuer.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "issuer.example.com", true),
+		Entry("missing hostname despite admin URL", adminv1.IdentityProviderConfig{Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "", false),
 	)
 
 	It("builds the realm frontend URL from the issuer hostname", func() {

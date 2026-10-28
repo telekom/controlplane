@@ -16,7 +16,6 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
-	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -33,6 +32,9 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
 	}
+	if idp.Admin.Url == nil || *idp.Admin.Url == "" {
+		return ctrlerrors.BlockedErrorf("identity provider %q must define admin.url", idp.Name)
+	}
 	identityProvider := &identityapi.IdentityProvider{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      naming.ForIdentityProvider(hc.Zone, idp.Name),
@@ -48,15 +50,8 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 		identityProvider.Labels[cconfig.DomainLabelKey] = domainName
 
-		adminURL := ""
-		if idp.Admin.Url != nil {
-			adminURL = *idp.Admin.Url
-		} else if idp.IssuerHostname != "" {
-			adminURL = urls.ForIdentityProviderAdminUrl("https://" + idp.IssuerHostname)
-		}
-
 		identityProvider.Spec = identityapi.IdentityProviderSpec{
-			AdminUrl:      adminURL,
+			AdminUrl:      *idp.Admin.Url,
 			AdminPassword: idp.Admin.Password,
 			AdminClientId: idp.Admin.ClientId,
 			AdminUserName: idp.Admin.UserName,
@@ -134,17 +129,10 @@ func internalIssuerURL(hc *HandlingContext) (string, error) {
 }
 
 func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
-	if idp.IssuerHostname != "" {
-		return idp.IssuerHostname, nil
+	if idp.IssuerHostname == "" {
+		return "", fmt.Errorf("identity provider %q must define issuerHostname", idp.Name)
 	}
-	if idp.Admin.Url == nil {
-		return "", fmt.Errorf("identity provider %q has neither issuerHostname nor admin.url", idp.Name)
-	}
-	u, err := url.Parse(*idp.Admin.Url)
-	if err != nil || u.Hostname() == "" {
-		return "", fmt.Errorf("identity provider %q has invalid admin.url", idp.Name)
-	}
-	return u.Hostname(), nil
+	return idp.IssuerHostname, nil
 }
 
 // realmFrontendURL returns the Keycloak frontend (base) URL for the issuer

@@ -67,10 +67,9 @@ type RedisConfig struct {
 
 type IdentityProviderAdminConfig struct {
 	// Url is the base URL of the identity provider admin API.
-	// If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
-	Url *string `json:"url,omitempty"`
+	Url *string `json:"url"`
 	// ClientId is the client ID to authenticate with the identity provider admin API.
 	ClientId string `json:"clientId"`
 	// UserName is the username to authenticate with the identity provider admin API.
@@ -110,7 +109,8 @@ type IdentityProviderConfig struct {
 	Admin IdentityProviderAdminConfig `json:"admin"`
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Format=hostname
-	IssuerHostname string `json:"issuerHostname,omitempty"`
+	// +kubebuilder:validation:Required
+	IssuerHostname string `json:"issuerHostname"`
 	// +kubebuilder:validation:Format=uri
 	TokenUrl       string                `json:"tokenUrl,omitempty"`
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`

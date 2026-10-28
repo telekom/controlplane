@@ -233,8 +233,11 @@ var _ = Describe("Preset OIDC status", func() {
 	newContext := func(client *http.Client) *HandlingContext {
 		zone := &adminv1.Zone{
 			Spec: adminv1.ZoneSpec{
-				IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "issuer.example.com"}},
-				Gateways:          []adminv1.GatewayConfig{{Name: "standard"}},
+				IdentityProviders: []adminv1.IdentityProviderConfig{{
+					Name: "primary", IssuerHostname: "issuer.example.com",
+					Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth/admin/realms")},
+				}},
+				Gateways: []adminv1.GatewayConfig{{Name: "standard"}},
 				Presets: []adminv1.Preset{
 					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "api.example.com", BasePath: "/"}}},
 					{Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com", BasePath: "/"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},

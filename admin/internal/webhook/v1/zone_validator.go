@@ -157,16 +157,18 @@ func validateZoneFields(zone *adminv1.Zone) field.ErrorList { //nolint:gocyclo /
 	for i := range zone.Spec.IdentityProviders {
 		identityProvider := &zone.Spec.IdentityProviders[i]
 		idpPath := specPath.Child("identityProviders").Index(i)
-		if identityProvider.Admin.Url != nil {
+		if identityProvider.Admin.Url == nil || *identityProvider.Admin.Url == "" {
+			errs = append(errs, field.Required(idpPath.Child("admin", "url"), "must be set"))
+		} else {
 			errs = append(errs, validateHTTPSURL(idpPath.Child("admin", "url"), *identityProvider.Admin.Url)...)
 		}
 		if identityProvider.TokenUrl != "" {
 			errs = append(errs, validateTokenURL(idpPath.Child("tokenUrl"), identityProvider.TokenUrl)...)
 		}
-		if identityProvider.IssuerHostname != "" {
+		if identityProvider.IssuerHostname == "" {
+			errs = append(errs, field.Required(idpPath.Child("issuerHostname"), "must be set"))
+		} else {
 			errs = append(errs, validateHostname(idpPath.Child("issuerHostname"), identityProvider.IssuerHostname)...)
-		} else if identityProvider.Admin.Url == nil || !hasUsableURLHostname(*identityProvider.Admin.Url) {
-			errs = append(errs, field.Required(idpPath.Child("issuerHostname"), "must be set when admin.url has no usable hostname"))
 		}
 	}
 
@@ -280,14 +282,6 @@ func validateUniqueNames(path *field.Path, kind string, names func(func(string, 
 		seen[name] = struct{}{}
 	})
 	return errs
-}
-
-func hasUsableURLHostname(rawURL string) bool {
-	u, err := url.ParseRequestURI(rawURL)
-	if err != nil || !u.IsAbs() || u.Hostname() == "" {
-		return false
-	}
-	return len(validateHostname(field.NewPath("hostname"), u.Hostname())) == 0
 }
 
 func validateHTTPSURL(path *field.Path, rawURL string) field.ErrorList {

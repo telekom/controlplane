@@ -551,24 +551,21 @@ var _ = Describe("Zone validation", func() {
 		Entry("hidden-only URL list", func(z *adminv1.Zone) { z.Spec.Presets[0].Urls[0].Hidden = true }, "non-hidden URL"),
 	)
 
-	It("requires an admin URL hostname when issuerHostname is absent", func() {
+	It("requires admin.url even when issuerHostname is present", func() {
 		zone := validZone()
-		zone.Spec.IdentityProviders[0].IssuerHostname = ""
 		zone.Spec.IdentityProviders[0].Admin.Url = nil
 		_, err := validator.ValidateCreate(ctx, zone)
-		Expect(err).To(MatchError(ContainSubstring("issuerHostname")))
+		Expect(err).To(MatchError(ContainSubstring("admin.url")))
 		Expect(apierrors.IsInvalid(err)).To(BeTrue())
 	})
 
-	It("does not require issuerHostname when an invalid-scheme admin URL has a usable hostname", func() {
+	It("requires issuerHostname even when admin.url has a usable hostname", func() {
 		zone := validZone()
 		zone.Spec.IdentityProviders[0].IssuerHostname = ""
-		adminURL := "http://idp.example.com/admin"
-		zone.Spec.IdentityProviders[0].Admin.Url = &adminURL
 
 		_, err := validator.ValidateCreate(ctx, zone)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("admin.url"))
-		Expect(err.Error()).NotTo(ContainSubstring("issuerHostname"))
+		Expect(err.Error()).To(ContainSubstring("issuerHostname"))
+		Expect(apierrors.IsInvalid(err)).To(BeTrue())
 	})
 })

@@ -19,13 +19,18 @@ func TestZoneTypes(t *testing.T) {
 
 var _ = Describe("Zone preset resolution", func() {
 	zoneSpec := func() *ZoneSpec {
+		adminURL := "https://idp.example.com/auth/admin/realms"
 		return &ZoneSpec{
 			Features: []Feature{{Name: FeatureBasicAuth, Enabled: true}},
 			Gateways: []GatewayConfig{
 				{Name: "standard", Admin: GatewayAdminConfig{IdentityProviderRef: "primary"}},
 				{Name: "ai", Admin: GatewayAdminConfig{IdentityProviderRef: "primary"}},
 			},
-			IdentityProviders: []IdentityProviderConfig{{Name: "primary"}},
+			IdentityProviders: []IdentityProviderConfig{{
+				Name:           "primary",
+				Admin:          IdentityProviderAdminConfig{Url: &adminURL},
+				IssuerHostname: "idp.example.com",
+			}},
 			Presets: []Preset{
 				{Name: "default", Type: GatewayTypeAPI, Default: true, GatewayRef: "standard", IdentityProviderRef: "primary"},
 				{Name: "failover", Type: GatewayTypeAPI, GatewayRef: "standard", IdentityProviderRef: "primary", Features: []Feature{{Name: FeatureConsumerFailover, Enabled: true}}},
