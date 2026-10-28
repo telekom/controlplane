@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -15,9 +16,11 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
+	"github.com/telekom/controlplane/discovery-server/internal/pagination"
 	sstore "github.com/telekom/controlplane/discovery-server/pkg/store"
 )
 
@@ -90,14 +93,9 @@ func mapFailover(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 		return
 	}
 
-	// Build namespace→zone lookup from all zones.
-	zones, err := zoneStore.List(ctx, store.ListOpts{Limit: 100})
-	if err != nil || zones == nil {
+	nsByZone, err := zonesByStatusNamespace(ctx, in.Status.FailoverRoutes, zoneStore)
+	if err != nil {
 		return
-	}
-	nsByZone := make(map[string]*adminv1.Zone, len(zones.Items))
-	for i := range zones.Items {
-		nsByZone[zones.Items[i].Status.Namespace] = zones.Items[i]
 	}
 
 	failover := make(api.SubscriptionFailover, 0, len(in.Status.FailoverRoutes))
@@ -116,6 +114,30 @@ func mapFailover(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 		failover = append(failover, entry)
 	}
 	out.Failover = failover
+}
+
+// zonesByStatusNamespace queries each distinct route namespace and drains its results.
+func zonesByStatusNamespace(ctx context.Context, routes []ctypes.ObjectRef, zoneStore store.ObjectStore[*adminv1.Zone]) (map[string]*adminv1.Zone, error) {
+	zonesByNamespace := make(map[string]*adminv1.Zone, len(routes))
+	queried := make(map[string]struct{}, len(routes))
+	for _, route := range routes {
+		if _, done := queried[route.Namespace]; done {
+			continue
+		}
+		queried[route.Namespace] = struct{}{}
+		opts := store.NewListOpts()
+		opts.Filters = []store.Filter{{Path: "status.namespace", Op: store.OpEqual, Value: route.Namespace}}
+		zones, err := pagination.FetchAll(ctx, zoneStore, opts)
+		if err != nil {
+			return nil, fmt.Errorf("listing zones for namespace %q: %w", route.Namespace, err)
+		}
+		for _, zone := range zones {
+			if zone != nil && zone.Status.Namespace == route.Namespace {
+				zonesByNamespace[route.Namespace] = zone
+			}
+		}
+	}
+	return zonesByNamespace, nil
 }
 
 func mapGatewayUrl(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse, zoneStore store.ObjectStore[*adminv1.Zone]) {

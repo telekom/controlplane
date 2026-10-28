@@ -184,12 +184,22 @@ var _ = Describe("ApiExposure subscriptions credential masking", func() {
 		plain.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 			func(_ context.Context, opts csstore.ListOpts) (*csstore.ListResponse[*apiv1.ApiSubscription], error) {
 				plainListCalls.Add(1)
+				Expect(opts.Filters).To(Equal([]csstore.Filter{{Path: "spec.apiBasePath", Op: csstore.OpEqual, Value: "/eni/distr/v1"}}))
+				matching := func(items []*apiv1.ApiSubscription) []*apiv1.ApiSubscription {
+					var result []*apiv1.ApiSubscription
+					for _, sub := range items {
+						if sub.Spec.ApiBasePath == "/eni/distr/v1" {
+							result = append(result, sub)
+						}
+					}
+					return result
+				}
 				if opts.Cursor == storeCursorPage2 {
-					return &csstore.ListResponse[*apiv1.ApiSubscription]{Items: page2}, nil
+					return &csstore.ListResponse[*apiv1.ApiSubscription]{Items: matching(page2)}, nil
 				}
 				Expect(opts.Cursor).To(BeEmpty())
 				return &csstore.ListResponse[*apiv1.ApiSubscription]{
-					Items: page1,
+					Items: matching(page1),
 					Links: csstore.ListResponseLinks{Next: storeCursorPage2},
 				}, nil
 			},
