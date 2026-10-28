@@ -15,7 +15,6 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -632,60 +631,35 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				ApprovalResultNone, metav1.ConditionStatus("")),
 		)
 
-		It("should treat a Semigranted Approval bound to the current request as Pending", func() {
-			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
-			By("creating a FourEyes approval that is re-granted after a rejection")
-			approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: "apisub--5c65994fcc", Namespace: testNamespace})
-			ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
+		// A FourEyes Approval is semigranted only on its way back from Rejected,
+		// so its access must stay revoked until the second decider grants it.
+		DescribeTable("should deny a Semigranted Approval",
+			func(approvedRequest string) {
+				jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+				approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: approvedRequest, Namespace: testNamespace})
+				ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
 
-			Expect(requester.SetProperties(properties)).To(Succeed())
-			owner := test.NewObject("apisub", testNamespace)
-			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
-			owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
+				Expect(requester.SetProperties(properties)).To(Succeed())
+				owner := test.NewObject("apisub", testNamespace)
+				owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+				owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
 
-			builder := NewApprovalBuilder(jclient, owner)
-			builder.WithHashValue(requester.Properties)
-			builder.WithRequester(requester)
-			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+				builder := NewApprovalBuilder(jclient, owner)
+				builder.WithHashValue(requester.Properties)
+				builder.WithRequester(requester)
+				builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
 
-			res, err := builder.Build(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
-			Expect(res).To(Equal(ApprovalResultPending))
-			cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
-			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Pending")
-			Expect(cond.Message).To(Equal("Approval is waiting for a second approval"))
-
-			By("reporting the owner as waiting for the approval, not for the approval controller")
-			SetPendingConditions(ctx, owner, builder, "Waiting for approval decision")
-			ready := meta.FindStatusCondition(owner.GetConditions(), condition.ConditionTypeReady)
-			Expect(ready.Reason).To(Equal(ReasonApprovalPending))
-			Expect(ready.Message).To(Equal("Waiting for approval decision"))
-		})
-
-		It("should report a Semigranted Approval bound to another request as not for the current request", func() {
-			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
-			approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: "apisub--5c65994fee", Namespace: testNamespace})
-			ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
-
-			Expect(requester.SetProperties(properties)).To(Succeed())
-			owner := test.NewObject("apisub", testNamespace)
-			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
-			owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
-
-			builder := NewApprovalBuilder(jclient, owner)
-			builder.WithHashValue(requester.Properties)
-			builder.WithRequester(requester)
-			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
-
-			res, err := builder.Build(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
-			Expect(res).To(Equal(ApprovalResultPending))
-			cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
-			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Pending")
-			Expect(cond.Message).To(Equal("Approval is not for the current ApprovalRequest"))
-		})
+				res, err := builder.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
+				Expect(res).To(Equal(ApprovalResultDenied))
+				cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
+				testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Semigranted")
+				Expect(cond.Message).To(Equal("Approval is waiting for a second approval; access stays revoked until it is granted"))
+			},
+			Entry("bound to the current request", "apisub--5c65994fcc"),
+			Entry("bound to another request", "apisub--5c65994fee"),
+		)
 
 		It("should ignore approvals for a different state", func() {
 			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))

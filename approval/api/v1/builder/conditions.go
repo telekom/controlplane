@@ -71,15 +71,14 @@ func newApprovalGrantedCondition(state approvalv1.ApprovalState, msg string) met
 // SetPendingConditions sets the Ready and Processing conditions of obj for an
 // ApprovalResultPending result of ab. message describes the wait for a decision.
 //
-// A request that still waits for a decider, or whose semigranted Approval waits
-// for a second decider, blocks obj with ReasonApprovalPending.
+// A request that still waits for a decider blocks obj with ReasonApprovalPending.
 // A granted request (always the case for Auto) only waits for the approval
 // controller to issue its Approval, so obj is processing and requeued. Once
 // approvalIssueTimeout has passed since the grant, obj is blocked with
 // ReasonApprovalPending and a message that points at the approval controller.
 func SetPendingConditions(ctx context.Context, obj types.Object, ab ApprovalBuilder, message string) {
 	request := ab.GetApprovalRequest()
-	if request == nil || request.Spec.State != approvalv1.ApprovalStateGranted || waitsForSecondApproval(ab.GetApproval(), request) {
+	if request == nil || request.Spec.State != approvalv1.ApprovalStateGranted {
 		obj.SetCondition(condition.NewNotReadyCondition(ReasonApprovalPending, message))
 		obj.SetCondition(condition.NewBlockedCondition(message))
 		return
@@ -107,14 +106,6 @@ func SetPendingConditions(ctx context.Context, obj types.Object, ab ApprovalBuil
 	log.FromContext(ctx).Info("Approval not issued within timeout", "approvalRequest", request.Name, "grantedAt", granted)
 	obj.SetCondition(condition.NewNotReadyCondition(ReasonApprovalPending, notIssued))
 	obj.SetCondition(condition.NewBlockedCondition(notIssued))
-}
-
-// waitsForSecondApproval reports whether approval is a semigranted Approval of
-// request. A FourEyes Approval re-granted after a rejection waits there for its
-// second decider while request stays granted.
-func waitsForSecondApproval(approval *approvalv1.Approval, request *approvalv1.ApprovalRequest) bool {
-	return approval != nil && approval.Spec.State == approvalv1.ApprovalStateSemigranted &&
-		approval.Spec.ApprovedRequest != nil && approval.Spec.ApprovedRequest.Equals(request)
 }
 
 // truncate cuts s to at most n runes and marks a cut with an ellipsis.

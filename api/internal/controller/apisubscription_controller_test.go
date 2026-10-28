@@ -1073,3 +1073,91 @@ var _ = Describe("ApiSubscription with an expired Approval", Ordered, func() {
 		}, timeout, interval).Should(Succeed())
 	})
 })
+
+var _ = Describe("ApiSubscription with a FourEyes Approval waiting for its second approval", Ordered, func() {
+	basePath := "/apisubsemigranted/test/v1"
+	zoneName := "apisub-semigranted"
+	apiExpAppName := "semigranted-app-exp"
+	apiSubAppName := "semigranted-app-sub"
+
+	var apiExpApplication *applicationapi.Application
+	var apiSubApplication *applicationapi.Application
+	var api *apiapi.Api
+	var apiExposure *apiapi.ApiExposure
+	var apiSubscription *apiapi.ApiSubscription
+
+	setApprovalState := func(approval *approvalapi.Approval, state approvalapi.ApprovalState) {
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(approval), approval)).To(Succeed())
+			approval.Spec.State = state
+			g.Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+			approval.Status.LastState = state
+			g.Expect(k8sClient.Status().Update(ctx, approval)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+	}
+
+	BeforeAll(func() {
+		CreateZone(zoneName)
+		apiExpApplication = CreateApplication(apiExpAppName)
+		apiSubApplication = CreateApplication(apiSubAppName)
+		api = NewApi(basePath)
+		Expect(k8sClient.Create(ctx, api)).To(Succeed())
+		apiExposure = NewApiExposure(basePath, zoneName, apiExpAppName)
+		apiExposure.Spec.Approval.Strategy = apiapi.ApprovalStrategyFourEyes
+		Expect(k8sClient.Create(ctx, apiExposure)).To(Succeed())
+	})
+
+	AfterAll(func() {
+		Expect(k8sClient.Delete(ctx, apiSubscription)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiExposure)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, api)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiSubApplication)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, apiExpApplication)).To(Succeed())
+	})
+
+	It("should revoke the ConsumeRoute while the re-grant waits and restore it once granted", func() {
+		apiSubscription = NewApiSubscription(basePath, zoneName, apiSubAppName)
+		Expect(k8sClient.Create(ctx, apiSubscription)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(apiSubscription.Status.ApprovalRequest).ToNot(BeNil())
+		}, timeout, interval).Should(Succeed())
+		approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+		approval := ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+		Expect(approval.Spec.Strategy).To(Equal(approvalapi.ApprovalStrategyFourEyes))
+		CompleteSubscriptionChildren(apiSubscription)
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
+		consumeRouteKey := apiSubscription.Status.ConsumeRoute.K8s()
+
+		By("moving the Approval to Semigranted while its ConsumeRoute still exists")
+		// The ApiSubscription never sees the Rejected state in between, as if
+		// the revocation failed or the two updates were coalesced.
+		setApprovalState(approval, approvalapi.ApprovalStateSemigranted)
+
+		Eventually(func(g Gomega) {
+			consumeRoute := &gatewayapi.ConsumeRoute{}
+			err := k8sClient.Get(ctx, consumeRouteKey, consumeRoute)
+			g.Expect(err != nil || consumeRoute.DeletionTimestamp != nil).To(BeTrue(), "ConsumeRoute must be revoked")
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(apiSubscription.Status.ConsumeRoute).To(BeNil())
+			ready := meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady)
+			g.Expect(ready.Reason).To(Equal(condition.ReasonAccessDenied))
+			granted := meta.FindStatusCondition(apiSubscription.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
+			g.Expect(granted).ToNot(BeNil())
+			g.Expect(granted.Status).To(Equal(metav1.ConditionFalse))
+			g.Expect(granted.Message).To(Equal("Approval is waiting for a second approval; access stays revoked until it is granted"))
+		}, timeout, interval).Should(Succeed())
+
+		By("granting the Approval with the second decision")
+		setApprovalState(approval, approvalapi.ApprovalStateGranted)
+		CompleteSubscriptionChildren(apiSubscription)
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
+			g.Expect(condition.IsReady(apiSubscription)).To(BeTrue())
+			g.Expect(k8sClient.Get(ctx, consumeRouteKey, &gatewayapi.ConsumeRoute{})).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+	})
+})
