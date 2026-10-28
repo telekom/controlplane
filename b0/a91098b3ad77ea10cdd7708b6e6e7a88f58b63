@@ -1,0 +1,110 @@
+event/internal/handler/eventexposure/handler_test.go
+  s_516da554ec277a::t_183e4f454f1e0b 493
+  s_516da554ec277a::t_e04e81fda14412 518,551
+  s_516da554ec277a::t_1089ef7fe9c36f 519-550
+organization/api/v1/suite_test.go
+  s_516da554ec277a::t_183e4f454f1e0b 1-17
+organization/api/Makefile
+  s_516da554ec277a::t_183e4f454f1e0b 1-20
+agentic/internal/handler/agentcard/handler_test.go
+  s_516da554ec277a::t_1089ef7fe9c36f 124
+  s_516da554ec277a::t_183e4f454f1e0b 101,103
+  s_516da554ec277a::t_e04e81fda14412 123,125
+file/go.mod
+  s_516da554ec277a::t_183e4f454f1e0b 17,32
+organization/api/v1/team_types.go
+  s_516da554ec277a::t_183e4f454f1e0b 179-188
+organization/api/v1/team_types_test.go
+  s_516da554ec277a::t_183e4f454f1e0b 1-27
+api/internal/handler/apiexposure/util_test.go
+  s_516da554ec277a::t_183e4f454f1e0b 70,116-123
+  s_516da554ec277a::t_e04e81fda14412 20,89,91,95-111,113-115,124
+  s_516da554ec277a::t_1089ef7fe9c36f 90,112
+agentic/internal/handler/agenticexposure/handler.go
+  s_516da554ec277a::t_183e4f454f1e0b 27,214
+  s_516da554ec277a::t_e04e81fda14412 213
+  s_516da554ec277a::t_1089ef7fe9c36f 215
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_516da554ec277a::t_183e4f454f1e0b 331
+  s_516da554ec277a::t_e04e81fda14412 351,385
+  s_516da554ec277a::t_1089ef7fe9c36f 352-384
+api/internal/handler/apiexposure/util.go
+  s_516da554ec277a::t_183e4f454f1e0b 19,26
+  s_516da554ec277a::t_e04e81fda14412 22,25
+event/internal/handler/eventexposure/handler.go
+  s_516da554ec277a::t_e04e81fda14412 62
+  s_516da554ec277a::t_183e4f454f1e0b 26,63
+  s_516da554ec277a::t_1089ef7fe9c36f 64
+agentic/internal/handler/mcpserver/handler.go
+  s_516da554ec277a::t_183e4f454f1e0b 23,76-77
+api/internal/handler/api/handler.go
+  s_516da554ec277a::t_183e4f454f1e0b 22,80-81
+  s_516da554ec277a::t_e04e81fda14412 79
+api/internal/controller/api_controller_test.go
+  s_516da554ec277a::t_1089ef7fe9c36f 94
+  s_516da554ec277a::t_e04e81fda14412 93,95
+common/pkg/condition/condition.go
+  s_516da554ec277a::t_e04e81fda14412 8,114-119,123,125-126,128-129,131
+  s_516da554ec277a::t_665d7129d9ae46 111-112
+  s_516da554ec277a::t_5508d389c94996 120-122,124,127
+  s_516da554ec277a::t_1089ef7fe9c36f 130
+event/internal/handler/eventtype/handler.go
+  s_516da554ec277a::t_e04e81fda14412 9,65-70,73
+  s_516da554ec277a::t_183e4f454f1e0b 19,74
+agentic/internal/handler/mcpserver/handler_test.go
+  s_516da554ec277a::t_e04e81fda14412 123,125
+  s_516da554ec277a::t_1089ef7fe9c36f 124
+  s_516da554ec277a::t_183e4f454f1e0b 101,103
+file/internal/handler/fileexposure/handler.go
+  s_516da554ec277a::t_e04e81fda14412 40
+  s_516da554ec277a::t_1089ef7fe9c36f 42
+  s_516da554ec277a::t_183e4f454f1e0b 20,41
+organization/api/go.mod
+  s_fa5eb7e977f8c4::t_71fa71c1034126 20,43,47,69,72,77
+  s_516da554ec277a::t_183e4f454f1e0b 10
+agentic/go.mod
+  s_516da554ec277a::t_183e4f454f1e0b 17,143
+event/go.mod
+  s_516da554ec277a::t_183e4f454f1e0b 18,45
+agentic/internal/handler/agentcard/handler.go
+  s_516da554ec277a::t_183e4f454f1e0b 23,76-77
+common/pkg/condition/suite_test.go
+  s_516da554ec277a::t_5508d389c94996 133,140
+  s_516da554ec277a::t_1089ef7fe9c36f 134,141,147,153
+  s_516da554ec277a::t_e04e81fda14412 132,139,142-146,148-152,154
+  s_516da554ec277a::t_665d7129d9ae46 135-136
+event/internal/handler/eventtype/handler_test.go
+  s_516da554ec277a::t_e04e81fda14412 100-103,196,263-267
+  s_516da554ec277a::t_183e4f454f1e0b 166,168
+  s_516da554ec277a::t_1089ef7fe9c36f 195
+file/internal/handler/fileexposure/handler_test.go
+  s_516da554ec277a::t_e04e81fda14412 156,158
+  s_516da554ec277a::t_1089ef7fe9c36f 10,145,157,159-195
+  s_516da554ec277a::t_183e4f454f1e0b 146
+organization/api/go.sum
+  s_fa5eb7e977f8c4::t_47600e60f7cf6c 21-26,69-70,80-81,88-91,139-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b0a91098b3ad77ea10cdd7708b6e6e7a88f58b63",
+  "prompts": {},
+  "sessions": {
+    "s_516da554ec277a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83b39045ffenn0VqKvrt8hWB6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fa5eb7e977f8c4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e832c232dffens37vpSBShoDwf",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

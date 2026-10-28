@@ -1,0 +1,19 @@
+event/internal/handler/eventtype/handler.go
+  s_313bb6a7aa59ac::t_53f6bb558ad824 59-60,66,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "998c8ece52ec3dd087d7ab4dfd3801f6c34e047f",
+  "prompts": {},
+  "sessions": {
+    "s_313bb6a7aa59ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e826a1335ffeVoFkvaegZNPu01",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

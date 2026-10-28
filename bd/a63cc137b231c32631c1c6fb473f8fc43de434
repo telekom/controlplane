@@ -1,0 +1,73 @@
+agentic/internal/handler/agenticexposure/handler.go
+  s_516da554ec277a::t_002c3ce96f5106 215
+  s_516da554ec277a::t_cd9a0d6743a5ff 214
+  s_516da554ec277a::t_33648dc15e5fd7 212-213
+api/internal/handler/api/handler.go
+  s_516da554ec277a::t_1ea89a55182ec9 78-80
+agentic/internal/handler/agentcard/handler.go
+  s_516da554ec277a::t_1ea89a55182ec9 74-76,78
+  s_516da554ec277a::t_cd9a0d6743a5ff 77
+agentic/internal/handler/mcpserver/handler.go
+  s_516da554ec277a::t_cd9a0d6743a5ff 77
+  s_516da554ec277a::t_1ea89a55182ec9 74-76,78
+common/pkg/condition/condition.go
+  s_516da554ec277a::t_33648dc15e5fd7 8-9,110-116
+  s_516da554ec277a::t_1ecffb7aafc886 117-118
+file/internal/handler/filetype/handler_test.go
+  s_516da554ec277a::t_e6d66264315121 155-176
+file/internal/handler/filetype/handler.go
+  s_516da554ec277a::t_3b1168bc81e215 47
+api/internal/handler/apiexposure/util.go
+  s_516da554ec277a::t_33648dc15e5fd7 41
+api/internal/controller/api_controller_test.go
+  s_516da554ec277a::t_1ea89a55182ec9 90-100
+agentic/internal/handler/agentcard/handler_test.go
+  s_516da554ec277a::t_1ea89a55182ec9 121-128
+  s_516da554ec277a::t_cd9a0d6743a5ff 120
+event/internal/handler/eventexposure/handler_test.go
+  s_516da554ec277a::t_4e0c768781e827 514
+  s_516da554ec277a::t_33648dc15e5fd7 515-519
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_516da554ec277a::t_4e0c768781e827 348
+  s_516da554ec277a::t_33648dc15e5fd7 349-353
+  s_516da554ec277a::t_cd9a0d6743a5ff 347
+event/internal/handler/eventtype/handler_test.go
+  s_516da554ec277a::t_4e0c768781e827 187-188,190
+  s_516da554ec277a::t_33648dc15e5fd7 189
+agentic/internal/handler/mcpserver/handler_test.go
+  s_516da554ec277a::t_cd9a0d6743a5ff 120
+  s_516da554ec277a::t_1ea89a55182ec9 121-128
+file/internal/handler/fileexposure/handler.go
+  s_516da554ec277a::t_1ea89a55182ec9 39-41
+file/internal/handler/fileexposure/handler_test.go
+  s_516da554ec277a::t_1ea89a55182ec9 153-160
+agentic/internal/controller/token_endpoint_scopes_test.go
+  s_516da554ec277a::t_02817db9df01ff 373
+common/pkg/condition/suite_test.go
+  s_516da554ec277a::t_33648dc15e5fd7 130-142
+event/internal/handler/eventexposure/handler.go
+  s_516da554ec277a::t_002c3ce96f5106 65
+  s_516da554ec277a::t_33648dc15e5fd7 62-63
+event/internal/handler/eventtype/handler.go
+  s_516da554ec277a::t_33648dc15e5fd7 65
+api/internal/handler/apiexposure/util_test.go
+  s_516da554ec277a::t_4e0c768781e827 12-13,19,66-83
+  s_516da554ec277a::t_33648dc15e5fd7 84-90
+  s_516da554ec277a::t_efb1f9d30e6bfd 91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bda63cc137b231c32631c1c6fb473f8fc43de434",
+  "prompts": {},
+  "sessions": {
+    "s_516da554ec277a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83b39045ffenn0VqKvrt8hWB6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
