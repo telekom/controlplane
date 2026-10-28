@@ -638,12 +638,10 @@ var _ = Describe("ListenerHandler", func() {
 		mockListRoutesWithApproval(apiv1.Approval{})
 	}
 
-	// mockGate sets up a gate whose ApprovalRequest is in serverState on the
-	// server and whose Approval, unless approvalState is empty, is bound to it.
-	// The strategy the builder requests is written to strategy.
 	// mockGate stubs one gate: its ApprovalRequest in serverState and, unless
 	// approvalState is empty, its Approval in approvalState bound to that request;
-	// rebind changes the bound reference.
+	// rebind changes the bound reference. The strategy the builder requests is
+	// written to strategy.
 	mockGate := func(
 		approvalKey string, serverState, approvalState approvalv1.ApprovalState, strategy *approvalv1.ApprovalStrategy,
 		rebind ...func(*ctypes.ObjectRef),
@@ -685,9 +683,6 @@ var _ = Describe("ListenerHandler", func() {
 					Name:      capturedAR.Name,
 					Namespace: capturedAR.Namespace,
 					UID:       capturedAR.UID,
-				}
-				for _, f := range rebind {
-					f(approval.Spec.ApprovedRequest)
 				}
 				for _, f := range rebind {
 					f(approval.Spec.ApprovedRequest)
@@ -2484,6 +2479,27 @@ var _ = Describe("ListenerHandler", func() {
 				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
 
 				expectBlocked(listener, "Waiting for a second approval (provider gate)")
+			})
+
+			// A rejected request is final, while the re-grant only waits: the
+			// Listener names the rejection. The consumer gate never requests
+			// FourEyes, so the mirror case cannot occur.
+			It("names the rejected consumer request while the provider re-grant waits for its second approval", func() {
+				listener := newListener()
+				listener.Status.RouteListener = &ctypes.ObjectRef{Name: "applied-rl", Namespace: listenerZoneStatus}
+				setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
+				mockGate("provider", approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSemigranted, &providerStrategy)
+				mockGate("consumer", approvalv1.ApprovalStateRejected, "", &consumerStrategy)
+				mockOwnedLists(nil, nil) // drainCapture inventory: only the status ref
+
+				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
+
+				readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+				Expect(readyCond.Message).To(Equal("ApprovalRequest has been denied (consumer gate)"))
+				Expect(listener.Status.Draining).ToNot(BeNil())
+				Expect(listener.Status.Draining.Reason).To(Equal("approval request rejected (consumer gate)"))
 			})
 
 			// The first approval of a revoked Approval re-grants it only for the

@@ -121,6 +121,12 @@ func (h *ListenerHandler) ensureApprovals(
 		consumer: consumerGate,
 	}
 	result.outcome = computeAggregateOutcome(providerGate.outcome, consumerGate.outcome)
+	// A semigranted re-grant only waits for its second approval, while a
+	// rejected request of the other gate is final: that rejection is the answer.
+	if result.outcome == outcomeDenied && !isDenied(providerGate) && !isDenied(consumerGate) &&
+		requestDeniedGates(result) != "" {
+		result.outcome = outcomeRequestDenied
+	}
 
 	// Combine errors.
 	var combinedErr error
@@ -313,14 +319,13 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		}
 
 	case outcomeDenied:
-		denied := func(g *gateResult) bool { return g != nil && g.outcome == outcomeDenied && !g.awaitingSecond }
-		if !denied(result.provider) && !denied(result.consumer) {
+		if !isDenied(result.provider) && !isDenied(result.consumer) {
 			// Only semigranted re-grants deny: capture is stopped all the same.
 			setWaitConditions(ctx, listener, waitMessage(result))
 			return
 		}
 		gate := "provider"
-		if denied(result.consumer) {
+		if isDenied(result.consumer) {
 			gate = "consumer"
 		}
 		logger.Info("Approval denied", "gate", gate)
@@ -467,6 +472,12 @@ func grantedSince(ar *approvalapi.ApprovalRequest, now time.Time) time.Time {
 		return ar.CreationTimestamp.Time
 	}
 	return now
+}
+
+// isDenied reports whether g is denied other than by a semigranted re-grant,
+// which waits for its second approval.
+func isDenied(g *gateResult) bool {
+	return g != nil && g.outcome == outcomeDenied && !g.awaitingSecond
 }
 
 // requestDeniedGates names the gate(s) whose current ApprovalRequest was rejected.
