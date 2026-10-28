@@ -6,6 +6,7 @@ package server
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
@@ -24,9 +25,13 @@ func (s *Server) GetAllRovers(c *fiber.Ctx) error {
 		return server.ReturnWithProblem(c, nil, err)
 	}
 
-	res.UnderscoreLinks.Self = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Self)
+	query, err := url.ParseQuery(string(c.Request().URI().QueryString()))
+	if err != nil {
+		return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
+	}
+	res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Self)
 	if res.UnderscoreLinks.Next != "" {
-		res.UnderscoreLinks.Next = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Next)
+		res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Next)
 	}
 
 	return c.JSON(res)
@@ -112,6 +117,16 @@ func (s *Server) GetManyApplicationInfo(c *fiber.Ctx) error {
 	res, err := s.Rovers.GetApplicationsInfo(c.UserContext(), params)
 	if err != nil {
 		return server.ReturnWithProblem(c, nil, err)
+	}
+	if len(params.Names) == 0 {
+		query, err := url.ParseQuery(string(c.Request().URI().QueryString()))
+		if err != nil {
+			return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
+		}
+		res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Self)
+		if res.UnderscoreLinks.Next != "" {
+			res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Next)
+		}
 	}
 
 	return c.JSON(res)

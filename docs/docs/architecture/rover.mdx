@@ -76,6 +76,14 @@ Validation rules enforced by the Rover webhook:
 
 Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, a client is still required.
 
+## Rover and Application Info Pagination
+
+`GET /rovers` and `GET /rovers/info` read one page per request. The default and maximum `limit` are **20**; the minimum is **1**. Follow `_links.next` until it is empty to retrieve subsequent pages. Continuation URLs retain the page size and encode the cursor. Authorization scope is enforced on every request; application-info listing requires a team client.
+
+For `GET /rovers/info?names=app-a&names=app-b`, the server directly looks up the named Rovers in the caller's team. Up to **100 names** are accepted, duplicates are returned once, and missing names are skipped. All matches are returned in name order without pagination links. In this mode, `limit` and `cursor` do not affect selection, although supplied query values must still pass validation.
+
+`roverctl get-info` follows application-info continuation links automatically when no names are supplied. Explicit-name lookups use a single request. Other endpoints retain their existing page-size limits. The `sort` and `shallowInfo` behavior is unchanged by this pagination update.
+
 ## Related Pages
 
 - [User Journey: Onboarding](../user-journey/onboarding.md)
