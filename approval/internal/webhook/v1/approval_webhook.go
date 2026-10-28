@@ -123,8 +123,10 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	}
 
 	// FourEyes: completing a half-approved Approval (Semigranted -> Granted) needs
-	// a second, different person. The one-step grants the FSM allows (Expired ->
-	// Granted renewal, Suspended -> Granted resume) need one person's granting decision.
+	// a second, different person. Any other grant needs one person's granting
+	// decision: the one-step renewal (Expired -> Granted) and resume (Suspended ->
+	// Granted) the FSM allows, and a rebind, which validateRebind checked against
+	// the request it is rebound to instead of the FSM.
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes &&
 		stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
 		if oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
