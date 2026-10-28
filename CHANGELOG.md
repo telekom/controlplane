@@ -1,3 +1,11 @@
+## [0.43.1](https://github.com/telekom/controlplane/compare/v0.43.0...v0.43.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **conditions:** improve customer usability and self-service messages ([#809](https://github.com/telekom/controlplane/issues/809)) ([3bd8f78](https://github.com/telekom/controlplane/commit/3bd8f78d7ab97eeb5a993942b390a154d8082cd0))
+* **gateway:** circuit-breaker upstream cleanup and target create response ([#724](https://github.com/telekom/controlplane/issues/724)) ([45222ba](https://github.com/telekom/controlplane/commit/45222ba1b1e62d91d8e8aee2d99e84322f80f7a4))
+
 # [0.43.0](https://github.com/telekom/controlplane/compare/v0.42.2...v0.43.0) (2026-10-27)
 
 
