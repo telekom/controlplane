@@ -10,6 +10,6 @@ type Links struct {
 }
 
 type ListResponse struct {
-	Links Links
+	Links Links `json:"_links"`
 	Items []any `json:"items"`
 }

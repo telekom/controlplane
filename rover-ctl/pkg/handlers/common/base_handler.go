@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -275,14 +276,21 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 
 func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListResponse, error) {
 	h.Setup(ctx)
-	url := h.GetRequestUrl("", "", "")
+	reqURL := h.GetRequestUrl("", "", "")
 
-	// Add cursor parameter if provided
 	if cursor != "" {
-		url += "?cursor=" + cursor
+		parsed, err := url.Parse(cursor)
+		if err == nil && parsed.IsAbs() {
+			reqURL, err = trustedPageURL(reqURL, cursor)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			reqURL += "?" + url.Values{"cursor": {cursor}}.Encode()
+		}
 	}
 
-	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, reqURL)
 	if err != nil {
 		return nil, err
 	}
@@ -382,10 +390,90 @@ func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error)
 		reqUrl += "?" + params.Encode()
 	}
 
-	return h.execInfoRequest(ctx, reqUrl)
+	if len(names) > 0 {
+		return h.execInfoRequest(ctx, reqUrl)
+	}
+	return h.execPagedInfoRequest(ctx, reqUrl)
+}
+
+// execPagedInfoRequest combines application pages, retaining first-page metadata.
+func (h *BaseHandler) execPagedInfoRequest(ctx context.Context, firstURL string) (any, error) {
+	var result map[string]any
+	applications := make([]any, 0)
+	visited := map[string]bool{}
+	for next := firstURL; next != ""; {
+		if visited[next] {
+			return nil, errors.New("server repeated an application-info page")
+		}
+		visited[next] = true
+		page, err := h.fetchInfo(ctx, next)
+		if err != nil {
+			return nil, err
+		}
+		if page == nil {
+			return nil, errors.New("server returned an invalid application-info page")
+		}
+		if result == nil {
+			result = page
+		}
+		raw, exists := page["applications"]
+		if !exists {
+			return nil, errors.New("server omitted application-info items")
+		}
+		if raw != nil {
+			items, ok := raw.([]any)
+			if !ok {
+				return nil, errors.New("server returned invalid application-info items")
+			}
+			applications = append(applications, items...)
+		}
+		next = ""
+		if rawLinks, exists := page["_links"]; exists {
+			links, ok := rawLinks.(map[string]any)
+			if !ok {
+				return nil, errors.New("server returned invalid pagination links")
+			}
+			if rawNext, exists := links["next"]; exists {
+				next, ok = rawNext.(string)
+				if !ok {
+					return nil, errors.New("server returned an invalid pagination continuation")
+				}
+			}
+		}
+		if next != "" {
+			next, err = trustedPageURL(firstURL, next)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	result["applications"] = applications
+	delete(result, "_links")
+	return result, nil
+}
+
+// trustedPageURL confines continuation requests to the original endpoint.
+func trustedPageURL(first, next string) (string, error) {
+	base, err := url.Parse(first)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing request URL")
+	}
+	u, err := url.Parse(next)
+	if err != nil || !u.IsAbs() || u.Scheme != base.Scheme || !strings.EqualFold(u.Host, base.Host) || u.Path != base.Path || u.User != nil || u.Fragment != "" {
+		return "", errors.New("server returned an untrusted pagination link")
+	}
+	return u.String(), nil
 }
 
 func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
+	info, err := h.fetchInfo(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (h *BaseHandler) fetchInfo(ctx context.Context, url string) (map[string]any, error) {
 	h.logger.V(1).Info("Executing info request", "url", url)
 
 	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
