@@ -123,6 +123,10 @@ func (b *approvalBuilder) setWithHash() error {
 	b.Request.Spec.Target = target
 	b.Request.Namespace = b.Owner.GetNamespace()
 
+	// Scoped (two-party) path: one target needs separate decisions from two
+	// parties, e.g. the provider and the consumer. Each approvalKey gets its own
+	// Approval and its own ApprovalRequest per intent, so the two gates never
+	// overwrite each other. Spectre Listeners use this today.
 	if b.approvalKey != "" {
 		if !b.hashValueSet {
 			return fmt.Errorf("scoped builder: WithHashValue is required when approvalKey is set")
