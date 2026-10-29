@@ -429,10 +429,10 @@ var _ = Describe("FileSubscriptionHandler", func() {
 					obj.(*approvalv1.ApprovalRequest).Spec.State = approvalv1.ApprovalStateGranted
 				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
-			// Approval builder cleans up old requests
+			// Approval builder lists owner ApprovalRequests for scoped cleanup
 			mockClient.EXPECT().
-				Cleanup(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-				Return(0, nil).Once()
+				List(mock.Anything, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+				Return(nil).Once()
 			// Approval does not exist yet → Pending
 			mockClient.EXPECT().
 				Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Approval")).

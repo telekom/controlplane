@@ -324,8 +324,8 @@ var _ = Describe("AgenticSubscriptionHandler", func() {
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		fakeClient.EXPECT().
 			Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
