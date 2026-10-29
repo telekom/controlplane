@@ -40,13 +40,19 @@ const (
 const ReasonApprovalRevoked = "Revoked"
 
 // ConditionTypeForKey returns the condition type for the given approval key.
-// An empty key returns the canonical unscoped type; a non-empty key appends
-// "-<key>" so that two gates on the same owner use distinct condition types.
+// An empty key returns the canonical unscoped type; the provider and consumer
+// keys return ApprovalGrantedProvider and ApprovalGrantedConsumer, so that two
+// gates on the same owner use distinct condition types.
 func ConditionTypeForKey(key string) string {
-	if key == "" {
+	switch key {
+	case approvalv1.ApprovalKeyProvider:
+		return ConditionTypeApprovalGranted + "Provider"
+	case approvalv1.ApprovalKeyConsumer:
+		return ConditionTypeApprovalGranted + "Consumer"
+	default:
+		// Unscoped. The scoped builder rejects any other key before it sets a condition.
 		return ConditionTypeApprovalGranted
 	}
-	return ConditionTypeApprovalGranted + "-" + key
 }
 
 // approvalIssueTimeout bounds how long a granted ApprovalRequest may wait for

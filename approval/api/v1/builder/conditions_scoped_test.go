@@ -28,8 +28,8 @@ func TestConditionTypeForKey(t *testing.T) {
 		expected string
 	}{
 		{"", ConditionTypeApprovalGranted},
-		{"provider", ConditionTypeApprovalGranted + "-provider"},
-		{"consumer", ConditionTypeApprovalGranted + "-consumer"},
+		{"provider", "ApprovalGrantedProvider"},
+		{"consumer", "ApprovalGrantedConsumer"},
 	}
 
 	for _, tc := range cases {
