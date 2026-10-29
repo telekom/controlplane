@@ -11,6 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Approval keys of the two gates of a Spectre Listener.
+const (
+	ApprovalKeyProvider = "provider"
+	ApprovalKeyConsumer = "consumer"
+)
+
 // +kubebuilder:validation:XValidation:rule="(has(self.approvalKey) ? self.approvalKey : '') == (has(oldSelf.approvalKey) ? oldSelf.approvalKey : '')",message="spec.approvalKey is immutable after creation"
 
 // ApprovalSpec defines the desired state of Approval
@@ -52,8 +58,7 @@ type ApprovalSpec struct {
 	// Empty or absent preserves the legacy unscoped approval contract.
 	// Its non-empty value cannot be added, removed or changed after creation.
 	// +optional
-	// +kubebuilder:validation:MaxLength=32
-	// +kubebuilder:validation:Pattern="^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$"
+	// +kubebuilder:validation:XValidation:rule="self in ['', 'provider', 'consumer']",message="spec.approvalKey must be empty, provider or consumer"
 	ApprovalKey string `json:"approvalKey,omitempty"`
 }
 

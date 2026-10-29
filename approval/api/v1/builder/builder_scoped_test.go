@@ -390,7 +390,7 @@ var _ = Describe("Scoped approval builder", func() {
 		b.WithApprovalKey("INVALID_KEY!!").WithHashValue("whatever").WithRequester(&approvalv1.Requester{TeamName: "T", TeamEmail: "t@t.de", Reason: "r"})
 		_, err := b.Build(ctx)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("DNS label"))
+		Expect(err.Error()).To(ContainSubstring("must be provider or consumer"))
 	})
 
 	It("rejects keyed builder with omitted hash", func() {

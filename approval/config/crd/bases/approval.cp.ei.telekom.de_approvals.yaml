@@ -64,9 +64,10 @@ spec:
                   ApprovalKey identifies an independent decision for the same target.
                   Empty or absent preserves the legacy unscoped approval contract.
                   Its non-empty value cannot be added, removed or changed after creation.
-                maxLength: 32
-                pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$
                 type: string
+                x-kubernetes-validations:
+                - message: spec.approvalKey must be empty, provider or consumer
+                  rule: self in ['', 'provider', 'consumer']
               approvedRequest:
                 description: ApprovedRequest contains the reference to the request
                   that was approved with this approval

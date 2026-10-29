@@ -284,6 +284,13 @@ func TestScopedApprovalName(t *testing.T) {
 		}
 	})
 
+	t.Run("validation_unknown_key", func(t *testing.T) {
+		_, err := ScopedApprovalName(baseTarget(), "foo")
+		if err == nil {
+			t.Fatal("expected error for a key other than provider or consumer")
+		}
+	})
+
 	t.Run("validation_invalid_key_uppercase", func(t *testing.T) {
 		_, err := ScopedApprovalName(baseTarget(), "Provider")
 		if err == nil {

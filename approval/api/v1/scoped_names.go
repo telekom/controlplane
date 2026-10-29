@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"regexp"
 
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -21,10 +20,6 @@ const (
 	scopedHashLen        = 48 // 48 hex chars = 192 bits of SHA-256
 	scopedNameLen        = 6 + scopedHashLen // prefix + digest = 54
 )
-
-// dnsLabelRe validates that a key is a DNS label: lowercase alphanumeric,
-// may contain hyphens, must not start or end with hyphen, max 32 chars.
-var dnsLabelRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$`)
 
 // scopedHashInput is the deterministic JSON-serialized struct whose encoding
 // is fed into SHA-256. Field order is fixed by the struct declaration and
@@ -119,8 +114,8 @@ func validateTarget(target types.TypedObjectRef, key string) (string, error) {
 	if key == "" {
 		return "", fmt.Errorf("scoped name: key must not be empty")
 	}
-	if len(key) > 32 || !dnsLabelRe.MatchString(key) {
-		return "", fmt.Errorf("scoped name: key %q must be a DNS label of at most 32 characters", key)
+	if key != ApprovalKeyProvider && key != ApprovalKeyConsumer {
+		return "", fmt.Errorf("scoped name: key %q must be %s or %s", key, ApprovalKeyProvider, ApprovalKeyConsumer)
 	}
 
 	gv, err := schema.ParseGroupVersion(target.APIVersion)

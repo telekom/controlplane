@@ -572,7 +572,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
 
 			By("Computing the expected scoped Approval name")
-			expectedApprovalName, err := approvalv1.ScopedApprovalName(target, "gate-a")
+			expectedApprovalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(expectedApprovalName).To(HavePrefix("ag-v1-"))
 
@@ -588,7 +588,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "gate-a",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -613,7 +613,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				}, a)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				g.Expect(a.Spec.ApprovalKey).To(Equal("gate-a"))
+				g.Expect(a.Spec.ApprovalKey).To(Equal(approvalv1.ApprovalKeyProvider))
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
 				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar.GetName()))
@@ -633,7 +633,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 				target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-				approvalName, err := approvalv1.ScopedApprovalName(target, suffix+"-key")
+				approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Pre-creating a Granted scoped Approval at the deterministic name")
@@ -649,7 +649,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 					Spec: approvalv1.ApprovalSpec{
 						State:       approvalv1.ApprovalStateGranted,
 						Target:      target,
-						ApprovalKey: suffix + "-key",
+						ApprovalKey: approvalv1.ApprovalKeyProvider,
 						Strategy:    approvalv1.ApprovalStrategySimple,
 						Action:      "subscribe",
 						Requester:   requester,
@@ -679,7 +679,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 					Strategy:    approvalv1.ApprovalStrategyAuto,
 					State:       approvalv1.ApprovalStateGranted,
 					Action:      "subscribe",
-					ApprovalKey: suffix + "-key",
+					ApprovalKey: approvalv1.ApprovalKeyProvider,
 					Decisions: []approvalv1.Decision{
 						{
 							Name:           approvalv1.SystemDecisionName,
@@ -880,7 +880,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "revoke-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Pre-creating a Rejected scoped Approval")
@@ -895,7 +895,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Spec: approvalv1.ApprovalSpec{
 					State:       approvalv1.ApprovalStateRejected,
 					Target:      target,
-					ApprovalKey: "revoke-key",
+					ApprovalKey: approvalv1.ApprovalKeyProvider,
 					Strategy:    approvalv1.ApprovalStrategySimple,
 					Action:      "subscribe",
 					Requester:   requester,
@@ -919,7 +919,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "revoke-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -965,12 +965,12 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "lift-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
 
 			By("Granting the first request by a person")
-			ar1 := newScopedRequest(src, "scoped-lift-a", &target, "lift-key", &requester, &decider,
+			ar1 := newScopedRequest(src, "scoped-lift-a", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", ResultingState: approvalv1.ApprovalStateGranted})
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
@@ -995,7 +995,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 			By("Replacing the first request with a newer one, as an intent change does")
 			deleteRequest(ar1)
-			ar2 := newScopedRequest(src, "scoped-lift-b", &target, "lift-key", &requester, &decider,
+			ar2 := newScopedRequest(src, "scoped-lift-b", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending)
 			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
 
@@ -1042,12 +1042,12 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "stale-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
 
 			By("Granting the first request by a person")
-			ar1 := newScopedRequest(src, "scoped-stale-a", &target, "stale-key", &requester, &decider,
+			ar1 := newScopedRequest(src, "scoped-stale-a", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: "Alice", Email: "alice@decider.com", ResultingState: approvalv1.ApprovalStateGranted})
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
@@ -1062,7 +1062,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			revokeApproval(approvalKey)
 			deleteRequest(ar1)
 			grantedBefore := metav1.NewTime(time.Now().Add(-time.Hour))
-			ar2 := newScopedRequest(src, "scoped-stale-b", &target, "stale-key", &requester, &decider,
+			ar2 := newScopedRequest(src, "scoped-stale-b", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: "Bob", Email: "bob@decider.com", Timestamp: &grantedBefore, ResultingState: approvalv1.ApprovalStateGranted})
 			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
@@ -1092,12 +1092,12 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "deleted-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
 
 			By("Auto-granting a request, which creates the Approval the first time")
-			ar := newScopedRequest(src, "scoped-deleted-a", &target, "deleted-key", &requester, &decider,
+			ar := newScopedRequest(src, "scoped-deleted-a", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted,
 				approvalv1.Decision{Name: approvalv1.SystemDecisionName, Comment: approvalv1.AutoApprovedComment, ResultingState: approvalv1.ApprovalStateGranted})
 			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
@@ -1144,7 +1144,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			// Only the request the Approval was issued for does not recreate it; a
 			// request for a new intent has never been bound and creates it again.
 			// Deleting an Approval needs operator or admin rights.
-			gate := newScopedGate("scoped-recreated-src", "recreated-key")
+			gate := newScopedGate("scoped-recreated-src")
 			ar1 := newScopedRequest(gate.src, "scoped-recreated-a", &gate.target, gate.approvalKey, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
@@ -1163,7 +1163,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		})
 
 		It("keeps an Approval that expired while suspended revoked once the expiry is reconciled", func() {
-			gate := newScopedGate("scoped-expired-src", "expired-key")
+			gate := newScopedGate("scoped-expired-src")
 			ar1 := newScopedRequest(gate.src, "scoped-expired-a", &gate.target, gate.approvalKey, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
@@ -1203,7 +1203,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		})
 
 		It("keeps an Approval that expired after a suspension without a decision revoked", func() {
-			gate := newScopedGate("scoped-silent-expired-src", "silent-expired-key")
+			gate := newScopedGate("scoped-silent-expired-src")
 			ar1 := newScopedRequest(gate.src, "scoped-silent-expired-a", &gate.target, gate.approvalKey, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoGrant())
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
@@ -1242,7 +1242,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		})
 
 		It("keeps a revocation made without a decision when an older grant arrives", func() {
-			gate := newScopedGate("scoped-decisionless-src", "decisionless-key")
+			gate := newScopedGate("scoped-decisionless-src")
 			grantedAt := metav1.NewTime(time.Now().Add(-3 * time.Hour))
 			ar1 := newScopedRequest(gate.src, "scoped-decisionless-a", &gate.target, gate.approvalKey, &requester, &decider,
 				approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted,
@@ -1298,7 +1298,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "regrant-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 			approvalKey := client.ObjectKey{Name: approvalName, Namespace: testNamespace}
 			autoDecision := approvalv1.Decision{
@@ -1308,7 +1308,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}
 
 			By("Auto-granting the first request")
-			ar1 := newScopedRequest(src, "scoped-regrant-a", &target, "regrant-key", &requester, &decider,
+			ar1 := newScopedRequest(src, "scoped-regrant-a", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoDecision)
 			Expect(k8sClient.Create(ctx, ar1)).To(Succeed())
 			Eventually(func(g Gomega) {
@@ -1321,7 +1321,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			By("Revoking the Approval and auto-granting a newer request")
 			revokeApproval(approvalKey)
 			deleteRequest(ar1)
-			ar2 := newScopedRequest(src, "scoped-regrant-b", &target, "regrant-key", &requester, &decider,
+			ar2 := newScopedRequest(src, "scoped-regrant-b", &target, approvalv1.ApprovalKeyProvider, &requester, &decider,
 				approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoDecision)
 			Expect(k8sClient.Create(ctx, ar2)).To(Succeed())
 
@@ -1372,7 +1372,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "idem-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating a keyed auto-approved ApprovalRequest")
@@ -1387,7 +1387,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "idem-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1439,7 +1439,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "idem-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1478,7 +1478,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "stale-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating a keyed Simple ApprovalRequest in Granted state")
@@ -1493,7 +1493,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategySimple,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "stale-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{Name: "Alice", Email: "alice@example.com", Comment: "Approved", ResultingState: approvalv1.ApprovalStateGranted},
 				},
@@ -1567,7 +1567,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
-			approvalName, err := approvalv1.ScopedApprovalName(target, "rebind-key")
+			approvalName, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating the first keyed auto-approved AR (intent A)")
@@ -1582,7 +1582,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "rebind-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1632,7 +1632,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "rebind-key",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1791,7 +1791,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	Context("Spectre configuration", func() {
-		It("isolates notifications for listen-provider and listen-consumer on the same target with same action", func() {
+		It("isolates notifications for the provider and consumer keys on the same target with same action", func() {
 			By("Creating a single source resource")
 			src := test.NewObject("spectre-cfg-src", testNamespace)
 			src.SetLabels(map[string]string{
@@ -1802,13 +1802,13 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 			target := *ctypes.TypedObjectRefFromObject(src, k8sClient.Scheme())
 
-			nameP, err := approvalv1.ScopedApprovalName(target, "listen-provider")
+			nameP, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyProvider)
 			Expect(err).NotTo(HaveOccurred())
-			nameC, err := approvalv1.ScopedApprovalName(target, "listen-consumer")
+			nameC, err := approvalv1.ScopedApprovalName(target, approvalv1.ApprovalKeyConsumer)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(nameP).NotTo(Equal(nameC))
 
-			By("Creating the listen-provider keyed ApprovalRequest")
+			By("Creating the provider keyed ApprovalRequest")
 			arP := approvalv1.NewApprovalRequest(src, "spectre-provider")
 			arP.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
@@ -1820,7 +1820,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "listen-provider",
+				ApprovalKey: approvalv1.ApprovalKeyProvider,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1831,7 +1831,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, arP)).To(Succeed())
 
-			By("Creating the listen-consumer keyed ApprovalRequest on the SAME target with SAME action")
+			By("Creating the consumer keyed ApprovalRequest on the SAME target with SAME action")
 			arC := approvalv1.NewApprovalRequest(src, "spectre-consumer")
 			arC.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
@@ -1843,7 +1843,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Strategy:    approvalv1.ApprovalStrategyAuto,
 				State:       approvalv1.ApprovalStateGranted,
 				Action:      "subscribe",
-				ApprovalKey: "listen-consumer",
+				ApprovalKey: approvalv1.ApprovalKeyConsumer,
 				Decisions: []approvalv1.Decision{
 					{
 						Name:           approvalv1.SystemDecisionName,
@@ -1858,13 +1858,13 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				aP := &approvalv1.Approval{}
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: nameP, Namespace: testNamespace}, aP)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(aP.Spec.ApprovalKey).To(Equal("listen-provider"))
+				g.Expect(aP.Spec.ApprovalKey).To(Equal(approvalv1.ApprovalKeyProvider))
 				g.Expect(aP.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 
 				aC := &approvalv1.Approval{}
 				err = k8sClient.Get(ctx, client.ObjectKey{Name: nameC, Namespace: testNamespace}, aC)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(aC.Spec.ApprovalKey).To(Equal("listen-consumer"))
+				g.Expect(aC.Spec.ApprovalKey).To(Equal(approvalv1.ApprovalKeyConsumer))
 				g.Expect(aC.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 
 				By("Verifying both ARs have notification refs")
@@ -1947,8 +1947,9 @@ type scopedGate struct {
 	key         client.ObjectKey
 }
 
-// newScopedGate creates the source resource name and returns its gate key.
-func newScopedGate(name, approvalKey string) scopedGate {
+// newScopedGate creates the source resource name and returns its provider gate.
+func newScopedGate(name string) scopedGate {
+	approvalKey := approvalv1.ApprovalKeyProvider
 	src := test.NewObject(name, testNamespace)
 	src.SetLabels(map[string]string{
 		config.EnvironmentLabelKey: testEnvironment,

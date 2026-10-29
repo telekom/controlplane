@@ -50,8 +50,7 @@ type ApprovalRequestSpec struct {
 	// Empty or absent preserves the legacy unscoped approval contract.
 	// Its non-empty value cannot be added, removed or changed after creation.
 	// +optional
-	// +kubebuilder:validation:MaxLength=32
-	// +kubebuilder:validation:Pattern="^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$"
+	// +kubebuilder:validation:XValidation:rule="self in ['', 'provider', 'consumer']",message="spec.approvalKey must be empty, provider or consumer"
 	ApprovalKey string `json:"approvalKey,omitempty"`
 }
 

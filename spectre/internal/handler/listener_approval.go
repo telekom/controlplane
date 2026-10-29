@@ -105,9 +105,9 @@ func (h *ListenerHandler) ensureApprovals(
 ) (*dualApprovalResult, error) {
 	// Build both gates independently — do NOT stop after the first error.
 	providerGate := h.buildScopedGate(ctx, listener, observerApp, providerApp, intent,
-		"provider", "listen-provider", providerFourEyes)
+		approvalapi.ApprovalKeyProvider, "listen-provider", providerFourEyes)
 	consumerGate := h.buildScopedGate(ctx, listener, observerApp, consumerApp, intent,
-		"consumer", "listen-consumer", false)
+		approvalapi.ApprovalKeyConsumer, "listen-consumer", false)
 
 	// Write all four status references before evaluating outcome.
 	listener.Status.ProviderApproval = providerGate.approval

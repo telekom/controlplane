@@ -245,7 +245,7 @@ var _ = Describe("loadSoleLiveScopedGrantSource", func() {
 			result, err := h.loadSoleLiveScopedGrantSource(ctx, sole)
 			Expect(err).NotTo(HaveOccurred())
 
-			result.Spec.ApprovalKey = "mutated"
+			result.Spec.ApprovalKey = approvalv1.ApprovalKeyConsumer
 			Expect(sole.Spec.ApprovalKey).To(Equal("provider"))
 		})
 	})
