@@ -70,6 +70,9 @@ var _ = Describe("Cleanup characterization", func() {
 	// Case 1: Two sequential unscoped builders, same owner, different hashes.
 	// The first AR is removed by cleanup; the second survives; the durable
 	// Approval name is unchanged across both calls.
+	// A new hash happens when the hashed requester properties change: basePath
+	// or M2M scopes of an API subscription, event type or scopes of an event
+	// subscription. Filters are not hashed.
 	// -------------------------------------------------------------------
 	It("replaces the first request when a second builder uses a different hash (same JanitorClient)", func() {
 		ownerName := uniqueOwnerName("seqsame")
