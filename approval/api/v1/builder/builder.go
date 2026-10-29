@@ -153,7 +153,7 @@ func (b *approvalBuilder) setWithHash() error {
 		return nil
 	}
 
-	// Legacy unscoped path — unchanged behaviour.
+	// Unscoped path: one request per owner and hash.
 	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
 	return nil
 }

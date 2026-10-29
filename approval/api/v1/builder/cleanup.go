@@ -23,7 +23,7 @@ import (
 // approvalKey) as the desired request are candidates for deletion. Requests in
 // other partitions are retained unconditionally.
 //
-// For the legacy (unscoped) path (approvalKey == ""), this replaces the previous
+// For the unscoped path (approvalKey == ""), this replaces the previous
 // JanitorClient.Cleanup call while preserving its semantics: all owner-scoped
 // ARs that are not the desired one are deleted, but only those with an empty
 // approvalKey — scoped ARs on the same owner are not touched.

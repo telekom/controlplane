@@ -75,7 +75,7 @@ type NotificationData struct {
 	Actor                  Actor
 	Action                 string
 	// ApprovalKey isolates notification names for scoped approvals.
-	// Empty preserves the legacy unscoped notification naming.
+	// Empty keeps the unscoped notification naming.
 	ApprovalKey string
 }
 
@@ -180,7 +180,7 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 
 	// Build the notification base name.
 	// Scoped (non-empty ApprovalKey): deterministic hash of source identity + key + purpose.
-	// Unscoped: legacy format <purpose>--<targetName>.
+	// Unscoped: <purpose>--<targetName>.
 	var name string
 	if data.ApprovalKey != "" {
 		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))
@@ -280,7 +280,7 @@ func SendReminderNotification(ctx context.Context, data *ReminderNotificationDat
 
 	// Build the notification base name.
 	// Scoped (non-empty ApprovalKey): deterministic hash of source identity + key + purpose.
-	// Unscoped: legacy format <purpose>--<targetName>.
+	// Unscoped: <purpose>--<targetName>.
 	var name string
 	if data.ApprovalKey != "" {
 		name, err = scopedNotificationBaseName(data.Owner, data.ApprovalKey, strings.ToLower(purpose))

@@ -55,8 +55,9 @@ type ApprovalSpec struct {
 	ApprovedRequest *types.ObjectRef `json:"approvedRequest,omitempty"`
 
 	// ApprovalKey identifies an independent decision for the same target.
-	// Empty or absent preserves the legacy unscoped approval contract.
-	// Its non-empty value cannot be added, removed or changed after creation.
+	// Empty: one Approval per target, as used by API, Event and File subscriptions.
+	// Spectre sets provider or consumer to keep the two gates of a Listener apart.
+	// It cannot be added, removed or changed after creation.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self in ['', 'provider', 'consumer']",message="spec.approvalKey must be empty, provider or consumer"
 	ApprovalKey string `json:"approvalKey,omitempty"`

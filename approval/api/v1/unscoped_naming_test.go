@@ -11,11 +11,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/hash"
 )
 
-// TestLegacyApprovalNames freezes the legacy naming convention for Approval and
-// ApprovalRequest resources. Phase 2 migration tests compare against these
-// baselines to guarantee the old names are preserved during the dual-gate
-// transition.
-func TestLegacyApprovalNames(t *testing.T) {
+// TestUnscopedApprovalNames freezes the names of unscoped Approval and
+// ApprovalRequest resources, which existing API, Event and File subscriptions
+// rely on.
+func TestUnscopedApprovalNames(t *testing.T) {
 	t.Run("ApprovalName/Listener", func(t *testing.T) {
 		got := ApprovalName("Listener", "my-listener")
 		want := "listener--my-listener"

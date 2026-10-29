@@ -196,7 +196,7 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 		// Scoped requests load a validated fresh copy from the API server (which
 		// also enforces the ambiguity guard) BEFORE the idempotency check so that
 		// an already-bound request cannot bypass the guard.
-		// Unscoped requests fall through to the legacy idempotency + liveness path.
+		// Unscoped requests run the idempotency and liveness check instead.
 		source := approvalReq
 		if isKeyed {
 			scopedSource, skip, scopedErr := h.resolveScopedGrantSource(ctx, approvalObj, approvalReq)
@@ -205,9 +205,9 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			}
 			source = scopedSource
 		} else {
-			skip, legacyErr := h.checkLegacyGrantSource(ctx, approvalObj, approvalReq)
-			if legacyErr != nil || skip {
-				return legacyErr
+			skip, unscopedErr := h.checkUnscopedGrantSource(ctx, approvalObj, approvalReq)
+			if unscopedErr != nil || skip {
+				return unscopedErr
 			}
 		}
 
@@ -418,17 +418,17 @@ func revocationTime(approvalObj *approvalv1.Approval) *metav1.Time {
 	return decisions[i].Timestamp
 }
 
-// checkLegacyGrantSource applies the unscoped idempotency check and verifies the
+// checkUnscopedGrantSource applies the unscoped idempotency check and verifies the
 // source request is still live and granted. skip is true when the request has
 // already been processed.
-func (h *ApprovalRequestHandler) checkLegacyGrantSource(ctx context.Context, approvalObj *approvalv1.Approval, approvalReq *approvalv1.ApprovalRequest) (skip bool, err error) {
-	// Legacy (unscoped) idempotency check.
+func (h *ApprovalRequestHandler) checkUnscopedGrantSource(ctx context.Context, approvalObj *approvalv1.Approval, approvalReq *approvalv1.ApprovalRequest) (skip bool, err error) {
+	// Unscoped idempotency check.
 	if approvalObj.Spec.ApprovedRequest != nil && approvalObj.Spec.ApprovedRequest.Name == approvalReq.Name {
 		log.FromContext(ctx).Info("Approval has already been processed for this request")
 		return true, nil
 	}
 
-	// Legacy (unscoped): re-read via uncached reader to verify liveness.
+	// Unscoped: re-read via uncached reader to verify liveness.
 	freshAR := &approvalv1.ApprovalRequest{}
 	if err = h.Reader.Get(ctx, ctrlclient.ObjectKeyFromObject(approvalReq), freshAR); err != nil {
 		return false, fmt.Errorf("re-reading source request: %w", err)
