@@ -57,11 +57,12 @@ type NoCacheInformer struct {
 	mutex sync.Mutex // Protects access to shared fields and serializes watcher (re)starts
 
 	// knownKeys maps the keys of all objects passed to the event handler or
-	// reported with Track and not yet deleted to the trackSeq of their last
-	// tracking, so a relist can emit DELETED for objects that are gone.
+	// reported with Track and whose deletion was not yet handled to the
+	// trackSeq of their last tracking, so a relist can emit DELETED for
+	// objects that are gone.
 	// A relist only considers keys tracked before it began.
 	knownKeys map[types.NamespacedName]uint64
-	// trackSeq counts the trackKey calls that add or refresh a key.
+	// trackSeq counts the trackKey calls.
 	trackSeq uint64
 	// nextDropRelist is the earliest time of the next relist after a dropped event.
 	nextDropRelist time.Time
@@ -160,6 +161,7 @@ func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource,
 type event struct {
 	typ string
 	obj *unstructured.Unstructured
+	seq uint64 // trackSeq when a DELETED event was queued
 }
 
 func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
@@ -180,6 +182,10 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 				i.log.Info("Unknown event type", "type", e.typ)
 			}
 
+			if err == nil && e.typ == "DELETED" {
+				// Forgotten only once handled, so a relist retries a failed delete.
+				i.untrackKey(objectKey(e.obj), e.seq)
+			}
 			if err != nil {
 				i.log.Error(err, "Failed to handle event", "type", e.typ, "name", e.obj.GetName())
 				counter.WithLabelValues(i.name, e.typ, "1").Inc()
@@ -258,7 +264,7 @@ func (i *NoCacheInformer) list(ctx context.Context) error {
 				if err := i.send(ctx, event{typ: "ADDED", obj: &item}); err != nil {
 					return err
 				}
-				i.trackKey(watch.Added, key)
+				i.trackKey(key)
 			}
 
 			// Give the system a small breather between batches
@@ -278,10 +284,9 @@ func (i *NoCacheInformer) list(ctx context.Context) error {
 		obj := &unstructured.Unstructured{}
 		obj.SetNamespace(key.Namespace)
 		obj.SetName(key.Name)
-		if err := i.send(ctx, event{typ: "DELETED", obj: obj}); err != nil {
+		if err := i.send(ctx, event{typ: "DELETED", obj: obj, seq: listStart}); err != nil {
 			return err
 		}
-		i.untrackKey(key, listStart)
 	}
 
 	// Only a complete list yields a resource version to watch from, so a
@@ -363,9 +368,12 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 			case i.queueFor(objectKey(obj)) <- event{
 				typ: string(e.Type),
 				obj: obj,
+				seq: i.currentTrackSeq(),
 			}:
 				queueSize.WithLabelValues(i.name).Inc()
-				i.trackKey(e.Type, objectKey(obj))
+				if e.Type != watch.Deleted {
+					i.trackKey(objectKey(obj))
+				}
 				// Advance only for queued events, so a restarted watch resends the others.
 				i.setResourceVersion(obj.GetResourceVersion())
 			case <-time.After(i.enqueueTimeout):
@@ -586,17 +594,13 @@ func objectKey(obj *unstructured.Unstructured) types.NamespacedName {
 // gone. The event handler must call it for objects it writes itself, as the
 // watch may miss their deletion.
 func (i *NoCacheInformer) Track(obj *unstructured.Unstructured) {
-	i.trackKey(watch.Added, objectKey(obj))
+	i.trackKey(objectKey(obj))
 }
 
 // trackKey records an object passed to the event handler or reported with Track.
-func (i *NoCacheInformer) trackKey(typ watch.EventType, key types.NamespacedName) {
+func (i *NoCacheInformer) trackKey(key types.NamespacedName) {
 	i.stateMutex.Lock()
 	defer i.stateMutex.Unlock()
-	if typ == watch.Deleted {
-		delete(i.knownKeys, key)
-		return
-	}
 	i.trackSeq++
 	i.knownKeys[key] = i.trackSeq
 }
