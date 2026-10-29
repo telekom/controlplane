@@ -367,6 +367,19 @@ var _ = Describe("NoCacheInformer", func() {
 				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
 			})
 
+			It("should list everything on resync", func() {
+				fakeWatches(mockClient)
+				listCalls := pagedLists(mockClient, func(string) ([]string, string, error) {
+					return []string{"a"}, "", nil
+				})
+
+				options := informer.DefaultNoCacheInformerOptions()
+				options.ResyncPeriod = 200 * time.Millisecond
+				start(options)
+
+				Eventually(listCalls.Load, timeout, 20*time.Millisecond).Should(BeNumerically(">=", 2))
+			})
+
 			It("should leave objects tracked during a list to the next relist", func() {
 				current, watchCalls := fakeWatches(mockClient)
 				var inf atomic.Pointer[informer.NoCacheInformer]
