@@ -12,6 +12,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/internal/informer"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +34,14 @@ type mockEventHandler struct {
 	events    []ReceivedEvent
 	NextError error
 	gate      chan struct{}
+	failOnce  string
+}
+
+// FailOnce makes the next call of action fail.
+func (m *mockEventHandler) FailOnce(action string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.failOnce = action
 }
 
 // Block makes the handler wait in every call until Unblock is called.
@@ -65,7 +74,7 @@ func (m *mockEventHandler) OnCreate(ctx context.Context, obj *unstructured.Unstr
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.events = append(m.events, ReceivedEvent{Action: "create", Object: obj})
-	return m.NextError
+	return m.err("create")
 }
 
 func (m *mockEventHandler) OnDelete(ctx context.Context, obj *unstructured.Unstructured) error {
@@ -73,7 +82,7 @@ func (m *mockEventHandler) OnDelete(ctx context.Context, obj *unstructured.Unstr
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.events = append(m.events, ReceivedEvent{Action: "delete", Object: obj})
-	return m.NextError
+	return m.err("delete")
 }
 
 func (m *mockEventHandler) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
@@ -81,6 +90,14 @@ func (m *mockEventHandler) OnUpdate(ctx context.Context, obj *unstructured.Unstr
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.events = append(m.events, ReceivedEvent{Action: "update", Object: obj})
+	return m.err("update")
+}
+
+func (m *mockEventHandler) err(action string) error {
+	if m.failOnce == action {
+		m.failOnce = ""
+		return errors.New("FAKE_ERROR")
+	}
 	return m.NextError
 }
 
@@ -121,6 +138,17 @@ func HaveEvent(action, name string) gomegatypes.GomegaMatcher {
 		HaveField("Action", action),
 		HaveField("Object.Object", HaveKeyWithValue("metadata", HaveKeyWithValue("name", name))),
 	)
+}
+
+// CountEvents returns the number of events with the given action and object name.
+func CountEvents(events []ReceivedEvent, action, name string) int {
+	n := 0
+	for _, e := range events {
+		if e.Action == action && e.Object.GetName() == name {
+			n++
+		}
+	}
+	return n
 }
 
 // fakeWatches makes every watch call return a new FakeWatcher. It returns the

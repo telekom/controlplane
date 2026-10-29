@@ -274,6 +274,99 @@ var _ = Describe("NoCacheInformer", func() {
 				Expect(eventHandler.Events()).NotTo(ContainElement(HaveEvent("delete", "kept")))
 			})
 
+			deletes := func(name string) func() int {
+				return func() int { return CountEvents(eventHandler.Events(), "delete", name) }
+			}
+
+			It("should emit DELETED again on relist after a watched delete failed", func() {
+				current, _ := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				inf := start(informer.DefaultNoCacheInformerOptions())
+				Eventually(inf.Ready, timeout, interval).Should(BeTrue())
+				Eventually(current.Load, timeout, interval).ShouldNot(BeNil())
+
+				names.Store(&[]string{})
+				eventHandler.FailOnce("delete")
+				current.Load().Delete(NewUnstructured("a"))
+				Eventually(deletes("a"), timeout, interval).Should(Equal(1))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
+			})
+
+			It("should emit DELETED again on the next relist after a relisted delete failed", func() {
+				current, watchCalls := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				start(informer.DefaultNoCacheInformerOptions())
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(1))
+
+				names.Store(&[]string{})
+				eventHandler.FailOnce("delete")
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(deletes("a"), timeout, interval).Should(Equal(1))
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(2))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
+			})
+
+			It("should resend an object on relist after its update failed", func() {
+				current, _ := fakeWatches(mockClient)
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return []string{"a"}, "", nil
+				})
+
+				inf := start(informer.DefaultNoCacheInformerOptions())
+				Eventually(inf.Ready, timeout, interval).Should(BeTrue())
+				Eventually(current.Load, timeout, interval).ShouldNot(BeNil())
+
+				eventHandler.FailOnce("update")
+				current.Load().Modify(NewUnstructured("a"))
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("update", "a")))
+				eventHandler.Reset()
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("create", "a")))
+			})
+
+			It("should keep tracking an object re-created while its delete was handled", func() {
+				current, _ := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				inf := start(informer.DefaultNoCacheInformerOptions())
+				Eventually(inf.Ready, timeout, interval).Should(BeTrue())
+				Eventually(current.Load, timeout, interval).ShouldNot(BeNil())
+
+				eventHandler.Block()
+				DeferCleanup(eventHandler.Unblock)
+				w := current.Load()
+				w.Delete(NewUnstructured("a"))
+				w.Add(NewUnstructured("a"))
+				w.Add(NewUnstructured("sentinel")) // returns once the re-create was queued
+				eventHandler.Unblock()
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("create", "sentinel")))
+				Eventually(func() int { return CountEvents(eventHandler.Events(), "create", "a") }, timeout, interval).Should(Equal(2))
+
+				// Deleted again while the watch does not deliver it.
+				names.Store(&[]string{"sentinel"})
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
+			})
+
 			It("should leave objects tracked during a list to the next relist", func() {
 				current, watchCalls := fakeWatches(mockClient)
 				var inf atomic.Pointer[informer.NoCacheInformer]
