@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,47 +30,81 @@ var _ = Describe("spec.approvalKey through the API server", func() {
 	}
 	requester := approvalv1.Requester{TeamName: "team", TeamEmail: "team@example.com", Reason: "test"}
 
-	newApproval := func(key string) *approvalv1.Approval {
-		return &approvalv1.Approval{
+	newObject := func(kind, key string) *unstructured.Unstructured {
+		var typed ctrlclient.Object = &approvalv1.Approval{
 			ObjectMeta: meta(),
 			Spec: approvalv1.ApprovalSpec{
-				Target: target, ApprovalKey: key, Action: "subscribe", Requester: requester,
+				Target: target, Action: "subscribe", Requester: requester,
 				Strategy: approvalv1.ApprovalStrategySimple, State: approvalv1.ApprovalStatePending,
 			},
 		}
+		if kind == "ApprovalRequest" {
+			typed = &approvalv1.ApprovalRequest{
+				ObjectMeta: meta(),
+				Spec: approvalv1.ApprovalRequestSpec{
+					Target: target, Action: "subscribe", Requester: requester,
+					Strategy: approvalv1.ApprovalStrategySimple, State: approvalv1.ApprovalStatePending,
+				},
+			}
+		}
+		raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(typed)
+		Expect(err).NotTo(HaveOccurred())
+		obj := &unstructured.Unstructured{Object: raw}
+		obj.SetGroupVersionKind(approvalv1.GroupVersion.WithKind(kind))
+		setKey(obj, key)
+		return obj
 	}
 
-	It("rejects changing the key with the CRD rule", func() {
-		approval := newApproval(approvalv1.ApprovalKeyProvider)
-		Expect(k8sClient.Create(ctx, approval)).To(Succeed())
-		DeferCleanup(func() { _ = k8sClient.Delete(ctx, approval) })
+	DescribeTable("keeps the key immutable after creation",
+		func(kind, oldKey, newKey string, changeReason, accepted bool) {
+			obj := newObject(kind, oldKey)
+			Expect(k8sClient.Create(ctx, obj)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, obj) })
 
-		approval.Spec.ApprovalKey = approvalv1.ApprovalKeyConsumer
-		err := k8sClient.Update(ctx, approval)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("spec.approvalKey is immutable after creation"))
-	})
+			setKey(obj, newKey)
+			if changeReason {
+				Expect(unstructured.SetNestedField(obj.Object, "changed", "spec", "requester", "reason")).To(Succeed())
+			}
+			err := k8sClient.Update(ctx, obj)
+			if accepted {
+				Expect(err).NotTo(HaveOccurred())
+				return
+			}
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("spec.approvalKey is immutable after creation"))
+		},
+		func(kind, oldKey, newKey string, changeReason, accepted bool) string {
+			verb := "rejects"
+			if accepted {
+				verb = "accepts"
+			}
+			if changeReason {
+				return fmt.Sprintf("%s %s keeping %q while changing another field", kind, verb, oldKey)
+			}
+			return fmt.Sprintf("%s %s %q -> %q", kind, verb, oldKey, newKey)
+		},
+		Entry(nil, "Approval", absent, approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "Approval", "", approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "Approval", approvalv1.ApprovalKeyProvider, absent, false, false),
+		Entry(nil, "Approval", approvalv1.ApprovalKeyProvider, "", false, false),
+		Entry(nil, "Approval", approvalv1.ApprovalKeyConsumer, approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "Approval", absent, "", false, true),
+		Entry(nil, "Approval", "", absent, false, true),
+		Entry(nil, "Approval", approvalv1.ApprovalKeyProvider, approvalv1.ApprovalKeyProvider, true, true),
+		Entry(nil, "ApprovalRequest", absent, approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "ApprovalRequest", "", approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "ApprovalRequest", approvalv1.ApprovalKeyProvider, absent, false, false),
+		Entry(nil, "ApprovalRequest", approvalv1.ApprovalKeyProvider, "", false, false),
+		Entry(nil, "ApprovalRequest", approvalv1.ApprovalKeyConsumer, approvalv1.ApprovalKeyProvider, false, false),
+		Entry(nil, "ApprovalRequest", absent, "", false, true),
+		Entry(nil, "ApprovalRequest", "", absent, false, true),
+		Entry(nil, "ApprovalRequest", approvalv1.ApprovalKeyProvider, approvalv1.ApprovalKeyProvider, true, true),
+	)
 
 	DescribeTable("accepts only an empty, provider or consumer key",
 		func(kind, key string, accepted bool) {
-			var typed ctrlclient.Object = newApproval(key)
-			if kind == "ApprovalRequest" {
-				typed = &approvalv1.ApprovalRequest{
-					ObjectMeta: meta(),
-					Spec: approvalv1.ApprovalRequestSpec{
-						Target: target, ApprovalKey: key, Action: "subscribe", Requester: requester,
-						Strategy: approvalv1.ApprovalStrategySimple, State: approvalv1.ApprovalStatePending,
-					},
-				}
-			}
-			raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(typed)
-			Expect(err).NotTo(HaveOccurred())
-			obj := &unstructured.Unstructured{Object: raw}
-			obj.SetGroupVersionKind(approvalv1.GroupVersion.WithKind(kind))
-			// Sent explicitly, as omitempty drops an empty key from typed objects.
-			Expect(unstructured.SetNestedField(obj.Object, key, "spec", "approvalKey")).To(Succeed())
-
-			err = k8sClient.Create(ctx, obj)
+			obj := newObject(kind, key)
+			err := k8sClient.Create(ctx, obj)
 			if accepted {
 				Expect(err).NotTo(HaveOccurred())
 				DeferCleanup(func() { _ = k8sClient.Delete(ctx, obj) })
@@ -87,3 +123,15 @@ var _ = Describe("spec.approvalKey through the API server", func() {
 		Entry("ApprovalRequest with another key", "ApprovalRequest", "foo", false),
 	)
 })
+
+// absent leaves spec.approvalKey out of the request; "" sends it explicitly.
+const absent = "<absent>"
+
+// setKey sends key explicitly, as omitempty drops an empty key from typed objects.
+func setKey(obj *unstructured.Unstructured, key string) {
+	if key == absent {
+		unstructured.RemoveNestedField(obj.Object, "spec", "approvalKey")
+		return
+	}
+	Expect(unstructured.SetNestedField(obj.Object, key, "spec", "approvalKey")).To(Succeed())
+}

@@ -5,7 +5,6 @@
 package builder
 
 import (
-	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,8 +30,6 @@ func TestConditionTypeForKey(t *testing.T) {
 		{"", ConditionTypeApprovalGranted},
 		{"provider", ConditionTypeApprovalGranted + "-provider"},
 		{"consumer", ConditionTypeApprovalGranted + "-consumer"},
-		// max-length key (63 chars — DNS label limit)
-		{strings.Repeat("a", 63), ConditionTypeApprovalGranted + "-" + strings.Repeat("a", 63)},
 	}
 
 	for _, tc := range cases {

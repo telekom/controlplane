@@ -821,16 +821,16 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("unscoped request still creates a legacy-named Approval", func() {
+		It("unscoped request still creates an unscoped-named Approval", func() {
 			By("Creating a source resource")
-			src := test.NewObject("scoped-legacy-compat-src", testNamespace)
+			src := test.NewObject("unscoped-compat-src", testNamespace)
 			src.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			})
 			Expect(k8sClient.Create(ctx, src)).To(Succeed())
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
-			ar := approvalv1.NewApprovalRequest(src, "scoped-legacy-compat")
+			ar := approvalv1.NewApprovalRequest(src, "unscoped-compat")
 			ar.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			})
@@ -852,18 +852,18 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
 
-			legacyName := "testresource--scoped-legacy-compat-src"
+			unscopedName := "testresource--unscoped-compat-src"
 
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKey{
 					Name: ar.GetName(), Namespace: ar.GetNamespace(),
 				}, ar)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(ar.Status.Approval.Name).To(Equal(legacyName))
+				g.Expect(ar.Status.Approval.Name).To(Equal(unscopedName))
 
 				a := &approvalv1.Approval{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
-					Name: legacyName, Namespace: ar.GetNamespace(),
+					Name: unscopedName, Namespace: ar.GetNamespace(),
 				}, a)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(a.Spec.ApprovalKey).To(BeEmpty())
@@ -1663,10 +1663,10 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		})
 	})
 
-	Context("legacy naming", func() {
-		It("produces the legacy Approval name and preserves the full target reference for auto-approved requests", func() {
+	Context("unscoped naming", func() {
+		It("produces the unscoped Approval name and preserves the full target reference for auto-approved requests", func() {
 			By("Creating a unique source resource for this characterization test")
-			src := test.NewObject("legacy-naming-src", testNamespace)
+			src := test.NewObject("unscoped-naming-src", testNamespace)
 			src.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			})
@@ -1696,27 +1696,27 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 			Expect(k8sClient.Create(ctx, ar)).To(Succeed())
 
-			legacyApprovalName := "testresource--legacy-naming-src"
+			unscopedApprovalName := "testresource--unscoped-naming-src"
 
 			Eventually(func(g Gomega) {
-				By("Verifying the AR status references the legacy-named Approval")
+				By("Verifying the AR status references the unscoped-named Approval")
 				err := k8sClient.Get(ctx, client.ObjectKey{
 					Name: ar.GetName(), Namespace: ar.GetNamespace(),
 				}, ar)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(ar.Status.Approval.Name).To(Equal(legacyApprovalName))
+				g.Expect(ar.Status.Approval.Name).To(Equal(unscopedApprovalName))
 
-				By("Verifying the Approval exists with the legacy name")
+				By("Verifying the Approval exists with the unscoped name")
 				a := &approvalv1.Approval{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
-					Name: legacyApprovalName, Namespace: ar.GetNamespace(),
+					Name: unscopedApprovalName, Namespace: ar.GetNamespace(),
 				}, a)
 				g.Expect(err).NotTo(HaveOccurred())
 
 				By("Verifying the full target reference on the Approval")
 				g.Expect(a.Spec.Target.Kind).To(Equal("TestResource"))
 				g.Expect(a.Spec.Target.APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
-				g.Expect(a.Spec.Target.Name).To(Equal("legacy-naming-src"))
+				g.Expect(a.Spec.Target.Name).To(Equal("unscoped-naming-src"))
 				g.Expect(a.Spec.Target.Namespace).To(Equal(testNamespace))
 				g.Expect(a.Spec.Target.UID).To(Equal(src.UID))
 
@@ -1724,7 +1724,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].Kind).To(Equal("TestResource"))
-				g.Expect(a.ObjectMeta.OwnerReferences[0].Name).To(Equal("legacy-naming-src"))
+				g.Expect(a.ObjectMeta.OwnerReferences[0].Name).To(Equal("unscoped-naming-src"))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].UID).To(Equal(src.UID))
 
 				By("Verifying auto-approved decision was carried to the Approval")
@@ -1742,16 +1742,16 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("produces legacy notification names for unscoped requests", func() {
+		It("produces unscoped notification names", func() {
 			By("Creating a source resource")
-			src := test.NewObject("legacy-notif-src", testNamespace)
+			src := test.NewObject("unscoped-notif-src", testNamespace)
 			src.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			})
 			Expect(k8sClient.Create(ctx, src)).To(Succeed())
 			DeferCleanup(func() { _ = k8sClient.Delete(ctx, src) })
 
-			ar := approvalv1.NewApprovalRequest(src, "legacy-notif")
+			ar := approvalv1.NewApprovalRequest(src, "unscoped-notif")
 			ar.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 			})

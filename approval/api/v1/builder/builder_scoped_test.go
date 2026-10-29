@@ -756,14 +756,14 @@ var _ = Describe("Scoped identity hardening", func() {
 	})
 
 	// -------------------------------------------------------------------
-	// Unscoped (legacy) builder: target mismatch is NOT checked
+	// Unscoped builder: target mismatch is NOT checked
 	// -------------------------------------------------------------------
-	It("unscoped builder does not check target identity (legacy behavior)", func() {
-		ownerName := uniqueOwnerName("legacy")
+	It("unscoped builder does not check target identity", func() {
+		ownerName := uniqueOwnerName("unscoped")
 		owner := createOwner(ownerName)
 
-		props := map[string]any{"path": "/legacy"}
-		requester := &approvalv1.Requester{TeamName: "TeamLegacy", TeamEmail: "legacy@telekom.de", Reason: "legacy"}
+		props := map[string]any{"path": "/unscoped"}
+		requester := &approvalv1.Requester{TeamName: "TeamUnscoped", TeamEmail: "unscoped@telekom.de", Reason: "unscoped"}
 		Expect(requester.SetProperties(props)).To(Succeed())
 
 		// Build unscoped (no approvalKey).
@@ -1174,13 +1174,13 @@ var _ = Describe("Scoped identity hardening", func() {
 	})
 
 	// -------------------------------------------------------------------
-	// Unscoped builder: foreign owner is NOT checked (legacy behavior)
+	// Unscoped builder: foreign owner is NOT checked
 	// -------------------------------------------------------------------
 	It("unscoped builder ignores foreign owner on Approval", func() {
-		ownerName := uniqueOwnerName("legacyowner")
+		ownerName := uniqueOwnerName("unscopedowner")
 		owner := createOwner(ownerName)
 
-		props := map[string]any{"path": "/legacyowner"}
+		props := map[string]any{"path": "/unscopedowner"}
 		requester := &approvalv1.Requester{TeamName: "TeamLO", TeamEmail: "lo@telekom.de", Reason: "lo"}
 		Expect(requester.SetProperties(props)).To(Succeed())
 
@@ -1191,7 +1191,7 @@ var _ = Describe("Scoped identity hardening", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(res).To(Equal(ApprovalResultPending))
 
-		By("Creating a legacy Approval (no approvalKey check at all)")
+		By("Creating an unscoped Approval (no approvalKey check at all)")
 		approvalName := b1.GetApproval().Name
 		arName := b1.GetApprovalRequest().Name
 		waitForCacheAR(arName)
@@ -1227,7 +1227,7 @@ var _ = Describe("Scoped identity hardening", func() {
 		Expect(k8sClient.Status().Update(ctx, appr)).To(Succeed())
 		waitForCacheApproval(approvalName)
 
-		By("Rebuilding unscoped — should succeed (no owner check in legacy mode)")
+		By("Rebuilding unscoped — should succeed (no owner check in unscoped mode)")
 		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
 		b2 := NewApprovalBuilder(jc2, owner)
 		b2.WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategySimple)

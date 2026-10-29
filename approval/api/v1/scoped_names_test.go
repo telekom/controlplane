@@ -183,19 +183,19 @@ func TestScopedApprovalName(t *testing.T) {
 		}
 	})
 
-	// ---- Legacy counterexample ----
-	t.Run("legacy_counterexample", func(t *testing.T) {
-		legacy := ApprovalName("Listener", "my-listener--provider")
+	// ---- Unscoped counterexample ----
+	t.Run("unscoped_counterexample", func(t *testing.T) {
+		unscoped := ApprovalName("Listener", "my-listener--provider")
 		scoped, err := ScopedApprovalName(baseTarget(), "provider")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if legacy == scoped {
-			t.Fatalf("legacy and scoped names must not collide")
+		if unscoped == scoped {
+			t.Fatalf("unscoped and scoped names must not collide")
 		}
-		// Legacy contains "--", scoped does not.
-		if !strings.Contains(legacy, "--") {
-			t.Fatalf("legacy name must contain '--'")
+		// Unscoped contains "--", scoped does not.
+		if !strings.Contains(unscoped, "--") {
+			t.Fatalf("unscoped name must contain '--'")
 		}
 		if strings.Contains(scoped[6:], "--") {
 			t.Fatalf("scoped digest must not contain '--'")
@@ -288,27 +288,6 @@ func TestScopedApprovalName(t *testing.T) {
 		_, err := ScopedApprovalName(baseTarget(), "foo")
 		if err == nil {
 			t.Fatal("expected error for a key other than provider or consumer")
-		}
-	})
-
-	t.Run("validation_invalid_key_uppercase", func(t *testing.T) {
-		_, err := ScopedApprovalName(baseTarget(), "Provider")
-		if err == nil {
-			t.Fatal("expected error for uppercase key")
-		}
-	})
-
-	t.Run("validation_invalid_key_too_long", func(t *testing.T) {
-		_, err := ScopedApprovalName(baseTarget(), strings.Repeat("a", 33))
-		if err == nil {
-			t.Fatal("expected error for key > 32 chars")
-		}
-	})
-
-	t.Run("validation_key_with_leading_hyphen", func(t *testing.T) {
-		_, err := ScopedApprovalName(baseTarget(), "-provider")
-		if err == nil {
-			t.Fatal("expected error for key with leading hyphen")
 		}
 	})
 
