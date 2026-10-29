@@ -518,6 +518,37 @@ var _ = Describe("Scoped approval builder", func() {
 		testutil.ExpectConditionToBeTrue(NewGomegaWithT(GinkgoT()), cond, "Granted")
 	})
 
+	It("returns Denied on the keyed condition when the bound scoped Approval is semigranted", func() {
+		ownerName := uniqueOwnerName("semigranted")
+		owner := createOwner(ownerName)
+
+		props := map[string]any{"path": "/semigranted"}
+		requester := &approvalv1.Requester{TeamName: "TeamSemi", TeamEmail: "semi@telekom.de", Reason: "semi"}
+		Expect(requester.SetProperties(props)).To(Succeed())
+
+		jc := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b := NewApprovalBuilder(jc, owner)
+		b.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategyFourEyes)
+		_, err := b.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		ref := &ctypes.ObjectRef{Name: b.GetApprovalRequest().Name, Namespace: testNamespace, UID: b.GetApprovalRequest().UID}
+		approvalName := b.GetApproval().Name
+		_ = createScopedApproval(approvalName, "provider", b.GetApprovalRequest().Spec.Target, approvalv1.ApprovalStateSemigranted, ref)
+		waitForCacheApproval(approvalName)
+
+		jc2 := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+		b2 := NewApprovalBuilder(jc2, owner)
+		b2.WithApprovalKey("provider").WithHashValue(requester.Properties).WithRequester(requester).WithStrategy(approvalv1.ApprovalStrategyFourEyes)
+		res, err := b2.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res).To(Equal(ApprovalResultDenied))
+
+		cond := meta.FindStatusCondition(b2.GetOwner().GetConditions(), ConditionTypeForKey("provider"))
+		testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Semigranted")
+		Expect(cond.Message).To(Equal("Approval is waiting for a second approval; access stays revoked until it is granted"))
+	})
+
 	// -------------------------------------------------------------------
 	// Scoped Denied (Rejected Approval) still works.
 	// -------------------------------------------------------------------

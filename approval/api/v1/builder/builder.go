@@ -376,7 +376,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		// Its access stays revoked, also if an earlier revocation failed.
 		if b.Approval.Spec.State == v1.ApprovalStateSemigranted {
 			log.V(1).Info("Approval is semigranted and must not be provisioned until it is granted")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval is waiting for a second approval; access stays revoked until it is granted"))
+			b.Owner.SetCondition(newKeyedApprovalGrantedCondition(b.approvalKey, b.Approval.Spec.State, "Approval is waiting for a second approval; access stays revoked until it is granted"))
 			return ApprovalResultDenied, nil
 		}
 		if isDeniedAndExpired {
