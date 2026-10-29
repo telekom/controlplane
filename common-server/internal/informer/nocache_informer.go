@@ -424,6 +424,10 @@ func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) 
 			ticker.Reset(newJitteredPeriod)
 			i.log.Info("Resyncing informer", "nextPeriod", newJitteredPeriod.String())
 
+			// A full list repairs deletes the event handler failed to apply.
+			// The watcher is stopped first so it cannot advance the resource version.
+			i.stopWatcher()
+			i.setResourceVersion("0")
 			i.retry(triggerResync, i.Reload)
 		case <-ctx.Done():
 			return
