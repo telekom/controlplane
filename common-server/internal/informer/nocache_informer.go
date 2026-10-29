@@ -161,7 +161,9 @@ func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource,
 type event struct {
 	typ string
 	obj *unstructured.Unstructured
-	seq uint64 // trackSeq when a DELETED event was queued
+	// seq bounds untrackKey for a DELETED event: the trackSeq when a watch
+	// event was queued, or when the relist that emitted it began.
+	seq uint64
 }
 
 func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
@@ -425,9 +427,12 @@ func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) 
 			i.log.Info("Resyncing informer", "nextPeriod", newJitteredPeriod.String())
 
 			// A full list repairs deletes the event handler failed to apply.
-			// The watcher is stopped first so it cannot advance the resource version.
-			i.stopWatcher()
+			// The watcher is stopped and the resource version reset under one
+			// lock, so no watcher started in between can advance it.
+			i.mutex.Lock()
+			i.stopWatcherLocked()
 			i.setResourceVersion("0")
+			i.mutex.Unlock()
 			i.retry(triggerResync, i.Reload)
 		case <-ctx.Done():
 			return

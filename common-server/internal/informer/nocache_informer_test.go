@@ -367,6 +367,93 @@ var _ = Describe("NoCacheInformer", func() {
 				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
 			})
 
+			// handled adds name with the current watch and waits until it was
+			// handled. With one worker, all events queued before were handled too.
+			handled := func(current *atomic.Pointer[watch.FakeWatcher], name string) {
+				current.Load().Add(NewUnstructured(name))
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("create", name)))
+			}
+
+			oneWorker := func() informer.NoCacheInformerOptions {
+				options := informer.DefaultNoCacheInformerOptions()
+				options.WorkerCount = 1
+				return options
+			}
+
+			It("should not emit DELETED again on relist after a watched delete was handled", func() {
+				current, watchCalls := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				start(oneWorker())
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(1))
+
+				names.Store(&[]string{})
+				current.Load().Delete(NewUnstructured("a"))
+				Eventually(deletes("a"), timeout, interval).Should(Equal(1))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(2))
+				handled(current, "after-relist")
+				Expect(deletes("a")()).To(Equal(1))
+			})
+
+			It("should not emit DELETED again on the next relist after a relisted delete was handled", func() {
+				current, watchCalls := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				start(oneWorker())
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(1))
+
+				names.Store(&[]string{})
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(2))
+				handled(current, "after-relist")
+				Expect(deletes("a")()).To(Equal(1))
+
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(3))
+				handled(current, "after-second-relist")
+				Expect(deletes("a")()).To(Equal(1))
+			})
+
+			It("should keep tracking an object re-created while its relisted delete was queued", func() {
+				current, watchCalls := fakeWatches(mockClient)
+				var names atomic.Pointer[[]string]
+				names.Store(&[]string{"a"})
+				pagedLists(mockClient, func(string) ([]string, string, error) {
+					return *names.Load(), "", nil
+				})
+
+				start(oneWorker())
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(1))
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("create", "a")))
+
+				names.Store(&[]string{})
+				eventHandler.Block()
+				DeferCleanup(eventHandler.Unblock)
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				// The relist queued DELETED for "a" before it started the watch.
+				Eventually(watchCalls.Load, timeout, interval).Should(BeEquivalentTo(2))
+				w := current.Load()
+				w.Add(NewUnstructured("a"))
+				w.Add(NewUnstructured("sentinel")) // returns once the re-create was tracked
+				eventHandler.Unblock()
+				Eventually(eventHandler.Events, timeout, interval).Should(ContainElement(HaveEvent("create", "sentinel")))
+				Expect(deletes("a")()).To(Equal(1))
+
+				// Deleted again while the watch does not deliver it.
+				current.Load().Error(&metav1.Status{Code: 410, Reason: metav1.StatusReasonExpired})
+				Eventually(deletes("a"), timeout, interval).Should(Equal(2))
+			})
+
 			It("should list everything on resync", func() {
 				fakeWatches(mockClient)
 				listCalls := pagedLists(mockClient, func(string) ([]string, string, error) {
