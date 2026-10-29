@@ -328,7 +328,8 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 		// Listener's capture via the same persisted drain as an Approval denial.
 		// The shared builder contract (RequestDenied = children untouched) is
 		// unchanged for other domains. setAggregateConditions already set
-		// Ready=False/AccessDenied naming the gate(s). The early check (step 0.5)
+		// Ready=False/AccessDenied naming the gate(s), or ApprovalPending when only
+		// a semigranted re-grant waits for its second approval. The early check (step 0.5)
 		// acts on a rejected request only while capture is applied, and on a
 		// revoked Approval only while it finds capture to drain; once the drain
 		// has cleared it, an intent change (new request name) reaches ensureApprovals.

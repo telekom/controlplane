@@ -2472,33 +2472,41 @@ var _ = Describe("ListenerHandler", func() {
 			})
 
 			// A re-grant of a revoked FourEyes Approval passes through Semigranted
-			// while its bound request stays Granted.
-			It("waits for the second approval while the bound Approval is Semigranted", func() {
+			// while its bound request stays Granted. The builder denies it, so
+			// capture is stopped until the second approval.
+			It("stops capture and waits for the second approval while the bound Approval is Semigranted", func() {
 				listener := newListener()
 				setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
 				mockGate("provider", approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSemigranted, &providerStrategy)
 				mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+				mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
 				Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
 
 				expectBlocked(listener, "Waiting for a second approval (provider gate)")
 			})
 
-			// The first approval of a revoked Approval re-grants it for the request
-			// it is bound to; a newer request still waits for its own decision.
+			// The first approval of a revoked Approval re-grants it only for the
+			// request it is bound to; for a newer request it stays a denial.
 			for name, rebind := range map[string]func(*ctypes.ObjectRef){
 				"an older request":           func(ref *ctypes.ObjectRef) { ref.Name = "older-request" },
 				"a request of the same name": func(ref *ctypes.ObjectRef) { ref.UID = "recreated-request-uid" },
 			} {
-				It("waits for a decision when the Semigranted Approval is bound to "+name, func() {
+				It("denies access when the Semigranted Approval is bound to "+name, func() {
 					listener := newListener()
 					setup(makeProviderApp(), apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes})
 					mockGate("provider", approvalv1.ApprovalStatePending, approvalv1.ApprovalStateSemigranted, &providerStrategy, rebind)
 					mockGate("consumer", "", approvalv1.ApprovalStateGranted, &consumerStrategy)
+					mockOwnedLists(nil, nil) // drainCapture inventory: nothing to drain
 
 					Expect(h.CreateOrUpdate(ctx, listener)).To(Succeed())
 
-					expectBlocked(listener, "Waiting for approval decision (provider gate)")
+					readyCond := meta.FindStatusCondition(listener.Status.Conditions, condition.ConditionTypeReady)
+					Expect(readyCond).ToNot(BeNil())
+					Expect(readyCond.Reason).To(Equal(condition.ReasonAccessDenied))
+					Expect(readyCond.Message).To(Equal("Approval has been denied (provider gate)"))
+					Expect(listener.Status.RouteListener).To(BeNil())
+					Expect(listener.Status.EventSubscriptions).To(BeEmpty())
 				})
 			}
 

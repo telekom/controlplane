@@ -67,7 +67,9 @@ type gateResult struct {
 	// grantedRequest is the ApprovalRequest of a pending gate when it is already
 	// granted (always the case for Auto) while its Approval is not issued yet.
 	grantedRequest *approvalapi.ApprovalRequest
-	// awaitingSecond marks a pending FourEyes gate that has its first approval.
+	// awaitingSecond marks a FourEyes gate that has its first approval. It is
+	// pending for a semigranted request and denied for a semigranted re-grant,
+	// whose access stays revoked until the second approval.
 	awaitingSecond bool
 }
 
@@ -222,7 +224,7 @@ func (h *ListenerHandler) buildScopedGate(
 	case buildResult == builder.ApprovalResultGranted:
 		result.outcome = outcomeGranted
 	case (buildResult == builder.ApprovalResultPending || buildResult == builder.ApprovalResultNone) &&
-		awaitsSecondApproval(ar, ab.GetApproval()):
+		ar.Spec.State == approvalapi.ApprovalStateSemigranted:
 		result.outcome = outcomePending
 		result.awaitingSecond = true
 	case buildResult == builder.ApprovalResultPending:
@@ -232,6 +234,7 @@ func (h *ListenerHandler) buildScopedGate(
 		}
 	case buildResult == builder.ApprovalResultDenied:
 		result.outcome = outcomeDenied
+		result.awaitingSecond = isSemigrantedRegrant(ar, ab.GetApproval())
 	case buildResult == builder.ApprovalResultRequestDenied:
 		result.outcome = outcomeRequestDenied
 	default:
@@ -242,14 +245,10 @@ func (h *ListenerHandler) buildScopedGate(
 	return result
 }
 
-// awaitsSecondApproval reports whether a FourEyes gate has one of its two
-// approvals: its ApprovalRequest is Semigranted, or the Approval bound to it is
-// (a re-grant of a revoked Approval passes through Semigranted while its request
-// stays Granted).
-func awaitsSecondApproval(ar *approvalapi.ApprovalRequest, approval *approvalapi.Approval) bool {
-	if ar.Spec.State == approvalapi.ApprovalStateSemigranted {
-		return true
-	}
+// isSemigrantedRegrant reports whether approval is a Semigranted Approval bound
+// to ar: a re-grant of a revoked FourEyes Approval passes through Semigranted
+// while its request stays Granted.
+func isSemigrantedRegrant(ar *approvalapi.ApprovalRequest, approval *approvalapi.Approval) bool {
 	bound := approval.Spec.ApprovedRequest
 	return approval.Spec.State == approvalapi.ApprovalStateSemigranted &&
 		bound != nil && bound.Equals(ar) && bound.UID == ar.UID
@@ -314,8 +313,14 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 		}
 
 	case outcomeDenied:
+		denied := func(g *gateResult) bool { return g != nil && g.outcome == outcomeDenied && !g.awaitingSecond }
+		if !denied(result.provider) && !denied(result.consumer) {
+			// Only semigranted re-grants deny: capture is stopped all the same.
+			setWaitConditions(ctx, listener, waitMessage(result))
+			return
+		}
 		gate := "provider"
-		if result.consumer != nil && result.consumer.outcome == outcomeDenied {
+		if denied(result.consumer) {
 			gate = "consumer"
 		}
 		logger.Info("Approval denied", "gate", gate)
@@ -333,33 +338,44 @@ func (h *ListenerHandler) setAggregateConditions(ctx context.Context, listener *
 			fmt.Sprintf("ApprovalRequest has been denied (%s gate)", gate)))
 
 	case outcomePending:
-		// Only a gate whose ApprovalRequest still waits for a decider blocks; a
-		// granted request is turned into its Approval by the approval controller.
-		first := gateNames(result, func(g *gateResult) bool {
-			return g.outcome == outcomePending && g.grantedRequest == nil && !g.awaitingSecond
-		})
-		second := gateNames(result, func(g *gateResult) bool { return g.outcome == outcomePending && g.awaitingSecond })
-		if first == "" && second == "" {
+		message := waitMessage(result)
+		if message == "" {
 			h.awaitIssuedApprovals(ctx, listener, result)
 			return
 		}
-		var waits []string
-		if first != "" {
-			waits = append(waits, fmt.Sprintf("Waiting for approval decision (%s gate)", first))
-		}
-		if second != "" {
-			waits = append(waits, fmt.Sprintf("Waiting for a second approval (%s gate)", second))
-		}
-		message := strings.Join(waits, "; ")
-		logger.Info("Approval pending", "message", message)
-		listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, message))
-		listener.SetCondition(condition.NewBlockedCondition(message))
+		setWaitConditions(ctx, listener, message)
 
 	case outcomeError, outcomeUnknown:
 		logger.Info("Approval evaluation error or unknown", "outcome", result.outcome.String())
 		// Conditions are not set for errors — the caller returns the error
 		// and the controller framework handles requeue.
 	}
+}
+
+// waitMessage names the gates that wait for a decision, or "" when none does.
+// Only a gate whose ApprovalRequest still waits for a decider waits for its
+// first approval; a granted request is turned into its Approval by the approval
+// controller.
+func waitMessage(result *dualApprovalResult) string {
+	first := gateNames(result, func(g *gateResult) bool {
+		return g.outcome == outcomePending && g.grantedRequest == nil && !g.awaitingSecond
+	})
+	second := gateNames(result, func(g *gateResult) bool { return g.awaitingSecond })
+	var waits []string
+	if first != "" {
+		waits = append(waits, fmt.Sprintf("Waiting for approval decision (%s gate)", first))
+	}
+	if second != "" {
+		waits = append(waits, fmt.Sprintf("Waiting for a second approval (%s gate)", second))
+	}
+	return strings.Join(waits, "; ")
+}
+
+// setWaitConditions blocks listener on the wait for a decision named by message.
+func setWaitConditions(ctx context.Context, listener *spectrev1.Listener, message string) {
+	log.FromContext(ctx).Info("Approval pending", "message", message)
+	listener.SetCondition(condition.NewNotReadyCondition(condition.ReasonApprovalPending, message))
+	listener.SetCondition(condition.NewBlockedCondition(message))
 }
 
 // awaitIssuedApprovals sets the conditions of a Listener whose pending gates all
