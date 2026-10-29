@@ -51,7 +51,7 @@ func cleanupScopedRequests(
 			continue
 		}
 
-		// Determine partition from spec.approvalKey (not the label).
+		// Determine partition from spec.approvalKey.
 		arKey := ar.Spec.ApprovalKey
 
 		// Only operate within our partition.

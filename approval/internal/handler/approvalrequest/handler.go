@@ -251,7 +251,6 @@ func (h *ApprovalRequestHandler) handleGranted(ctx context.Context, approvalReq 
 			source.Spec.Decider.TeamName,
 			source.Spec.Action,
 			string(source.Spec.Strategy))
-		approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
 
 		return nil
 	}
@@ -327,7 +326,6 @@ func (h *ApprovalRequestHandler) resolveScopedGrantSource(ctx context.Context, a
 		approvalObj.Spec.ApprovedRequest.Name == source.Name &&
 		approvalObj.Spec.ApprovedRequest.Namespace == source.Namespace &&
 		approvalObj.Spec.ApprovedRequest.UID == source.UID {
-		approvalv1.SetApprovalKeyLabel(approvalObj, source.Spec.ApprovalKey)
 		logger.Info("Approval has already been processed for this request")
 		return nil, true, nil
 	}

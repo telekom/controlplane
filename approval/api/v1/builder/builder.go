@@ -308,7 +308,6 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.Decider.TeamName,
 			approvalReq.Spec.Action,
 			string(approvalReq.Spec.Strategy))
-		v1.SetApprovalKeyLabel(approvalReq, approvalReq.Spec.ApprovalKey)
 
 		return nil
 	}

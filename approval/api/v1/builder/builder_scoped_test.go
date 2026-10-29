@@ -312,9 +312,9 @@ var _ = Describe("Scoped approval builder", func() {
 	})
 
 	// -------------------------------------------------------------------
-	// Scoped AR has spec.approvalKey and the mirror label set correctly.
+	// Scoped AR has spec.approvalKey set correctly.
 	// -------------------------------------------------------------------
-	It("sets spec.approvalKey and mirror label on the persisted ApprovalRequest", func() {
+	It("sets spec.approvalKey on the persisted ApprovalRequest", func() {
 		ownerName := uniqueOwnerName("labels")
 		owner := createOwner(ownerName)
 
@@ -331,7 +331,6 @@ var _ = Describe("Scoped approval builder", func() {
 		ar := &approvalv1.ApprovalRequest{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Name: b.GetApprovalRequest().Name, Namespace: testNamespace}, ar)).To(Succeed())
 		Expect(ar.Spec.ApprovalKey).To(Equal("consumer"))
-		Expect(ar.Labels[approvalv1.ApprovalKeyLabelKey]).To(Equal("consumer"))
 	})
 
 	// -------------------------------------------------------------------

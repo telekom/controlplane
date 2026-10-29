@@ -560,7 +560,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	Context("scoped approval handling", func() {
-		It("creates a scoped Approval with ag-v1- prefix and correct key/label", func() {
+		It("creates a scoped Approval with ag-v1- prefix and correct key", func() {
 			By("Creating a source resource for the scoped test")
 			src := test.NewObject("scoped-basic-src", testNamespace)
 			src.SetLabels(map[string]string{
@@ -615,7 +615,6 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 				g.Expect(a.Spec.ApprovalKey).To(Equal("gate-a"))
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
-				g.Expect(a.Labels[approvalv1.ApprovalKeyLabelKey]).To(Equal("gate-a"))
 				g.Expect(a.Spec.ApprovedRequest).NotTo(BeNil())
 				g.Expect(a.Spec.ApprovedRequest.Name).To(Equal(ar.GetName()))
 				// The keyed builder requires exactly this controller owner on a persisted grant.
