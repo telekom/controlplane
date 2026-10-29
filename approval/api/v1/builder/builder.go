@@ -146,9 +146,9 @@ func (b *approvalBuilder) WithLabels(labels map[string]string) ApprovalBuilder {
 
 // Build will trigger the approval process and return the result
 // Prioritization of results:
-// 1. If the Approval is rejected or suspended --> Denied (must delete all child resources)
+// 1. If the Approval is rejected, suspended or semigranted --> Denied (must delete all child resources)
 // 2. If the ApprovalRequest is rejected --> RequestDenied (child resources must remain untouched)
-// 3. If the ApprovalRequest is pending --> Pending (must not provision child resources)
+// 3. If the ApprovalRequest is pending or semigranted --> Pending (must not provision child resources)
 // 4. If the Approval is granted --> Granted (can provision child resources)
 func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult, err error) {
 	if b.ran.Load() {
@@ -205,10 +205,15 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 			approvalReq.Spec.Strategy = currentStrategy
 		} else if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
-			if len(approvalReq.Spec.Decisions) == 0 {
+			// Record when it turned Auto, even after earlier decisions (e.g. a
+			// decider comment). Reconciles don't add it again because the state
+			// is no longer Pending after the first write; the latest-Granted
+			// check is only a guard against a duplicate grant.
+			if n := len(approvalReq.Spec.Decisions); n == 0 || approvalReq.Spec.Decisions[n-1].ResultingState != v1.ApprovalStateGranted {
 				approvalReq.AppendDecision(v1.Decision{
-					Name:           "System",
+					Name:           v1.SystemDecisionName,
 					Comment:        v1.AutoApprovedComment,
+					Timestamp:      &metav1.Time{Time: time.Now()},
 					ResultingState: v1.ApprovalStateGranted,
 				})
 			}
@@ -258,11 +263,18 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		log.V(2).Info("Approval exists")
 		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
 		// transition from Suspended to Expired -> treat as denied
-		isDeniedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateSuspended
+		isDeniedAndExpired := b.Approval.IsExpiredAfterSuspension()
 
 		if isDenied {
 			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
 			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
+			return ApprovalResultDenied, nil
+		}
+		// A FourEyes Approval is semigranted only on its way back from Rejected.
+		// Its access stays revoked, also if an earlier revocation failed.
+		if b.Approval.Spec.State == v1.ApprovalStateSemigranted {
+			log.V(1).Info("Approval is semigranted and must not be provisioned until it is granted")
+			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval is waiting for a second approval; access stays revoked until it is granted"))
 			return ApprovalResultDenied, nil
 		}
 		if isDeniedAndExpired {
@@ -294,7 +306,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	}
 
 	// transition from Granted to Expired -> treat as Granted
-	isGrantedAndExpired := b.Approval.Spec.State == v1.ApprovalStateExpired && b.Approval.Status.LastState == v1.ApprovalStateGranted
+	isGrantedAndExpired := b.Approval.IsExpiredAfterGrant()
 
 	// Priority 4: Approval is granted
 	if b.Approval.Spec.State == v1.ApprovalStateGranted {

@@ -229,7 +229,7 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 		// rather than blocking the finalizer — the Keycloak client will be
 		// orphaned but the CR can be cleaned up.
 		var be ctrlerrors.BlockedError
-		if errors.As(err, &be) {
+		if errors.As(err, &be) && be.IsBlocked() {
 			logger.Info("Realm not ready, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
 			return nil
 		}

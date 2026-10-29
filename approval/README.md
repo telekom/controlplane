@@ -68,7 +68,9 @@ The Approval Workflow describes the process of creating, updating and managing A
 
 1. **Request Creation**: A user (requester) creates any `Subscription` resource, such as `ApiSubscriptions`. 
 The operator of the corresponding domain has to create an `ApprovalRequest` and updates it on any changes.
-The `Subscription` needs to be blocked until the `Approval` is granted.
+The `Subscription` is blocked while a decider must act on the `ApprovalRequest`.
+Once the `ApprovalRequest` is granted (always the case for `Auto`), the `Subscription` is processing until the approval controller issues the `Approval`.
+If no `Approval` is issued within 5 minutes of the grant, the `Subscription` is blocked with a message that points at the approval controller.
 
 2. **ApprovalRequest**: 
 The `ApprovalRequest` is created and contains information about the request, including the requester, the requested API, and the approval strategy.
@@ -146,7 +148,7 @@ The `Approval` resource can be in one of the following states:
 - **Rejected**: The request has been rejected. This state indicates that a decider has denied access.
 - **Suspended**: The request has been suspended. This state indicates that the request is temporarily on hold and cannot be processed until further notice.
 - **SemiGranted**: The request has been approved by one decider in the `FourEyes` strategy, but requires a second approval from another decider to be fully granted.
-- **Expired**: The request has expired past its validity period.
+- **Expired**: The request has expired past its validity period. An `Approval` that was granted before it expired still grants access; one that was suspended before it expired denies access. The state before the expiry is read from `status.lastState` until the approval controller has reconciled the expiry, then from the recorded decisions. The expiration handler records that state as a decision when it sets `Expired`.
 
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 

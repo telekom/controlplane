@@ -228,6 +228,115 @@ var _ = Describe("Approval Webhook", func() {
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		grantedThenExpired := []approvalv1.Decision{
+			{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+			{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+			{Name: approvalv1.SystemDecisionName, ResultingState: approvalv1.ApprovalStateExpired},
+		}
+
+		It("should let one person renew an expired approval (Expired->Granted)", func() {
+			decisions := append(append([]approvalv1.Decision{}, grantedThenExpired...),
+				approvalv1.Decision{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateGranted})
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject renewing an expired approval without the person's email", func() {
+			decisions := append(append([]approvalv1.Decision{}, grantedThenExpired...),
+				approvalv1.Decision{Name: "Alice", ResultingState: approvalv1.ApprovalStateGranted})
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should let one person resume a suspended approval (Suspended->Granted)", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateSuspended},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject resuming a suspended approval without the person's email", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateSuspended},
+				{Name: "Bob", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should reject a one-step grant whose last decision does not grant", func() {
+			decisions := append(append([]approvalv1.Decision{}, grantedThenExpired...),
+				approvalv1.Decision{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateRejected})
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateExpired, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("granting decision"))
+		})
+
+		It("should reject completing a re-approval after rejection by the person who semigranted it", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateRejected},
+				{Name: "Carol", Email: "carol@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Carol", Email: "CAROL@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("two distinct deciders"))
+		})
+
+		It("should accept completing a re-approval after rejection by a second person", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", ResultingState: approvalv1.ApprovalStateRejected},
+				{Name: "Carol", Email: "carol@telekom.de", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not count a System decision as the first decider on Semigranted->Granted", func() {
+			decisions := []approvalv1.Decision{
+				{Name: approvalv1.SystemDecisionName, ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj, newObj := makeApproval(approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStateGranted, decisions)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should keep Simple Expired->Granted free of email checks", func() {
+			decisions := append(append([]approvalv1.Decision{}, grantedThenExpired...),
+				approvalv1.Decision{Name: "Alice", ResultingState: approvalv1.ApprovalStateGranted})
+			oldObj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{Strategy: approvalv1.ApprovalStrategySimple, State: approvalv1.ApprovalStateExpired}}
+			newObj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{Strategy: approvalv1.ApprovalStrategySimple, State: approvalv1.ApprovalStateGranted, Decisions: decisions}}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should keep Auto Expired->Granted free of decision checks", func() {
+			oldObj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{Strategy: approvalv1.ApprovalStrategyAuto, State: approvalv1.ApprovalStateExpired}}
+			newObj := &approvalv1.Approval{Spec: approvalv1.ApprovalSpec{Strategy: approvalv1.ApprovalStrategyAuto, State: approvalv1.ApprovalStateGranted}}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Context("stateChanged uses oldObj.Spec.State not Status.LastState", func() {
@@ -459,7 +568,7 @@ var _ = Describe("Approval Webhook", func() {
 		})
 	})
 
-	Context("broadened distinct-decider check for Approval (Bug 3 fix)", func() {
+	Context("FourEyes distinct deciders only on Semigranted completion", func() {
 		var validator ApprovalCustomValidator
 		BeforeEach(func() {
 			validator = ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}

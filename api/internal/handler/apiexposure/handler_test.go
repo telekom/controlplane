@@ -18,6 +18,7 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -28,6 +29,7 @@ import (
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -952,6 +954,45 @@ var _ = Describe("ApiExposure Handler", func() {
 				Expect(notReady.Reason).To(Equal(tt.expectedReason))
 			})
 		}
+
+		It("does not block on a retryable error", func() {
+			team := &organizationapi.Team{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      group + "--" + teamName,
+					Namespace: environment,
+					Labels:    map[string]string{config.EnvironmentLabelKey: environment},
+				},
+				Spec: organizationapi.TeamSpec{Group: group, Name: teamName, Email: "team@example.com", Category: organizationapi.TeamCategoryCustomer},
+			}
+			sch := runtime.NewScheme()
+			Expect(apiapi.AddToScheme(sch)).To(Succeed())
+			Expect(organizationapi.AddToScheme(sch)).To(Succeed())
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(sch).
+				WithObjects(team).
+				WithInterceptorFuncs(interceptor.Funcs{
+					List: func(ctx context.Context, c client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
+						if _, ok := list.(*apiapi.ApiCategoryList); ok {
+							return ctrlerrors.RetryableErrorf("transient list failure")
+						}
+						return c.List(ctx, list, opts...)
+					},
+				}).
+				Build()
+			ctx := cclient.WithClient(context.Background(), cclient.NewJanitorClient(cclient.NewScopedClient(fakeClient, environment)))
+			apiExp := &apiapi.ApiExposure{}
+			apiExp.SetCondition(condition.NewBlockedCondition("previously blocked"))
+
+			Expect(validateApiCategoryPolicy(ctx, baseAPI, baseApp, apiExp)).To(BeFalse())
+
+			notReady := meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeReady)
+			Expect(notReady).NotTo(BeNil())
+			Expect(notReady.Reason).To(Equal(util.ApiCategoryPolicyResolutionFailedReason))
+			processing := meta.FindStatusCondition(apiExp.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processing).NotTo(BeNil())
+			Expect(processing.Status).To(Equal(metav1.ConditionTrue))
+			Expect(processing.Reason).To(Equal(condition.ReasonProcessing), "retryable error must replace an existing Blocked condition")
+		})
 	})
 })
 

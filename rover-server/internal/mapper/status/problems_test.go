@@ -185,6 +185,48 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 		})
 	})
 
+	Context("when a sub-resource handler returned a blocked error next to a ready sub-resource", func() {
+		It("reports only the blocked sub-resource, as blocked, with its message", func() {
+			ctx := context.Background()
+
+			newSub := func(name string, conditions ...metav1.Condition) *apiv1.ApiSubscription {
+				return &apiv1.ApiSubscription{
+					TypeMeta:   metav1.TypeMeta{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "ApiSubscription"},
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "poc--eni--hyperion"},
+					Status:     apiv1.ApiSubscriptionStatus{Conditions: conditions},
+				}
+			}
+			blockedSub := newSub(
+				"blocked-sub",
+				condition.NewBlockedCondition("consumer cannot be resolved"),
+				condition.NewNotReadyCondition(condition.ReasonBlocked, "consumer cannot be resolved"),
+			)
+			readySub := newSub(
+				"ready-sub",
+				condition.NewDoneProcessingCondition("done"),
+				condition.NewReadyCondition(condition.ReasonProvisioned, "ready"),
+			)
+
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{blockedSub, readySub},
+				}, nil,
+			).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusBlocked))
+			Expect(result.Problems).To(HaveLen(1))
+			Expect(result.Problems[0].Cause).To(Equal(condition.ReasonBlocked))
+			Expect(result.Problems[0].Message).To(Equal("consumer cannot be resolved"))
+			Expect(result.Problems[0].Resource.Kind).To(Equal("ApiSubscription"))
+			Expect(result.Problems[0].Resource.Name).To(Equal("blocked-sub"))
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+
 	Context("when there are no problems in sub-resource", func() {
 		It("returns no problems and zero-value worst overall status", func() {
 			ctx := context.Background()

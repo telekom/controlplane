@@ -5,6 +5,8 @@
 package builder
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -355,6 +357,58 @@ var _ = Describe("Approval Builder", Ordered, func() {
 		})
 	})
 
+	Context("Pending request turning Auto", func() {
+		It("records a timestamped System grant once, after earlier decisions", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+			trustedRequester := &approvalv1.Requester{
+				TeamName:  "TrustedTeam",
+				TeamEmail: "trusted.team@telekom.de",
+				Reason:    "I need access to this API!!",
+			}
+			Expect(trustedRequester.SetProperties(properties)).To(Succeed())
+			build := func(trusted ...string) *approvalv1.ApprovalRequest {
+				builder := NewApprovalBuilder(jclient, owner)
+				builder.WithHashValue(trustedRequester.Properties)
+				builder.WithRequester(trustedRequester)
+				builder.WithStrategy(approvalv1.ApprovalStrategySimple)
+				builder.WithTrustedRequesters(trusted)
+				_, err := builder.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				ar := &approvalv1.ApprovalRequest{}
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(builder.GetApprovalRequest()), ar)).To(Succeed())
+				return ar
+			}
+
+			By("creating a pending request with a decider comment")
+			ar := build()
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStatePending))
+			ar.Spec.Decisions = []approvalv1.Decision{{
+				Name: "Decider", Comment: "Looking into it", ResultingState: approvalv1.ApprovalStatePending,
+				Timestamp: &metav1.Time{Time: time.Now().Add(-time.Hour)},
+			}}
+			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
+
+			By("trusting the requester")
+			ar = build("TrustedTeam")
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(ar.Spec.Decisions).To(HaveLen(2))
+			granted := ar.Spec.Decisions[1]
+			Expect(granted.Name).To(Equal(approvalv1.SystemDecisionName))
+			Expect(granted.Comment).To(Equal(approvalv1.AutoApprovedComment))
+			Expect(granted.ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(granted.Timestamp).NotTo(BeNil())
+			Expect(grantedAt(ar)).To(Equal(granted.Timestamp.Time))
+
+			By("reconciling again without adding another grant")
+			Expect(build("TrustedTeam").Spec.Decisions).To(Equal(ar.Spec.Decisions))
+		})
+	})
+
 	Context("Approval exists", func() {
 
 		AfterEach(func() {
@@ -519,6 +573,93 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).To(Equal(ApprovalResultDenied))
 		})
+
+		DescribeTable("should derive the state before the expiry of an Expired Approval",
+			func(lastState approvalv1.ApprovalState, decided []approvalv1.ApprovalState, expected ApprovalResult, expectedCondition metav1.ConditionStatus) {
+				jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+				approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: "apisub--5c65994fcc", Namespace: testNamespace})
+				approval.Spec.State = approvalv1.ApprovalStateExpired
+				for _, state := range decided {
+					approval.Spec.Decisions = append(approval.Spec.Decisions, approvalv1.Decision{Name: "System", ResultingState: state})
+				}
+				Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+				approval.Status.LastState = lastState
+				Expect(k8sClient.Status().Update(ctx, approval)).To(Succeed())
+
+				Expect(requester.SetProperties(properties)).To(Succeed())
+				owner := test.NewObject("apisub", testNamespace)
+				owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+				owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
+
+				builder := NewApprovalBuilder(jclient, owner)
+				builder.WithHashValue(requester.Properties)
+				builder.WithRequester(requester)
+				builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+
+				res, err := builder.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(res).To(Equal(expected))
+				if expectedCondition != "" {
+					cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
+					Expect(cond).NotTo(BeNil())
+					Expect(cond.Status).To(Equal(expectedCondition))
+				}
+			},
+			Entry("granted, expiry reconciled", approvalv1.ApprovalStateExpired,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateExpired},
+				ApprovalResultGranted, metav1.ConditionTrue),
+			Entry("suspended and resumed, expiry reconciled", approvalv1.ApprovalStateExpired,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateExpired},
+				ApprovalResultGranted, metav1.ConditionTrue),
+			Entry("suspended, expiry reconciled", approvalv1.ApprovalStateExpired,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateExpired},
+				ApprovalResultDenied, metav1.ConditionFalse),
+			Entry("granted without decisions, expiry not reconciled", approvalv1.ApprovalStateGranted,
+				nil, ApprovalResultGranted, metav1.ConditionTrue),
+			Entry("suspended without decisions, expiry not reconciled", approvalv1.ApprovalStateSuspended,
+				nil, ApprovalResultDenied, metav1.ConditionFalse),
+			Entry("decisions contradicting the unreconciled LastState deny access", approvalv1.ApprovalStateGranted,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateSuspended, approvalv1.ApprovalStateExpired},
+				ApprovalResultDenied, metav1.ConditionFalse),
+			// The expiration handler records the state before the expiry; only a
+			// hand-made object lacks it.
+			Entry("hand-made object without a recorded state before the expiry", approvalv1.ApprovalStateExpired,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateExpired},
+				ApprovalResultNone, metav1.ConditionStatus("")),
+			Entry("rejected, which the state machine never expires", approvalv1.ApprovalStateExpired,
+				[]approvalv1.ApprovalState{approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateExpired},
+				ApprovalResultNone, metav1.ConditionStatus("")),
+		)
+
+		// A FourEyes Approval is semigranted only on its way back from Rejected,
+		// so its access must stay revoked until the second decider grants it.
+		DescribeTable("should deny a Semigranted Approval",
+			func(approvedRequest string) {
+				jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+				approval = CreateApproval(approvalName, &ctypes.ObjectRef{Name: approvedRequest, Namespace: testNamespace})
+				ProgressApproval(approval, approvalv1.ApprovalStateSemigranted)
+
+				Expect(requester.SetProperties(properties)).To(Succeed())
+				owner := test.NewObject("apisub", testNamespace)
+				owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+				owner.SetLabels(map[string]string{config.EnvironmentLabelKey: testEnvironment})
+
+				builder := NewApprovalBuilder(jclient, owner)
+				builder.WithHashValue(requester.Properties)
+				builder.WithRequester(requester)
+				builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+
+				res, err := builder.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(builder.GetApprovalRequest().Name).To(Equal("apisub--5c65994fcc"))
+				Expect(res).To(Equal(ApprovalResultDenied))
+				cond := meta.FindStatusCondition(owner.GetConditions(), ConditionTypeApprovalGranted)
+				testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), cond, "Semigranted")
+				Expect(cond.Message).To(Equal("Approval is waiting for a second approval; access stays revoked until it is granted"))
+			},
+			Entry("bound to the current request", "apisub--5c65994fcc"),
+			Entry("bound to another request", "apisub--5c65994fee"),
+		)
 
 		It("should ignore approvals for a different state", func() {
 			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
