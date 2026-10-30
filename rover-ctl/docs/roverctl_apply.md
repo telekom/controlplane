@@ -6,7 +6,7 @@ Apply a resource configuration
 
 Apply a resource configuration from file or directory to the server
 
-By default, a directory passed with -f/--file is processed recursively: the .yaml, .yml and .json files (case-insensitive) in it and all its subdirectories are used. Use --recursive=false to only include such files directly inside the directory. Symlinked subdirectories are not followed.
+By default, a directory passed with -f/--file is processed recursively up to two levels of subdirectories. Only .yaml, .yml and .json files (case-insensitive) are used. Set --max-depth to change the maximum depth: the input directory has depth 0, its subdirectories depth 1, and so on. Files deeper than the limit are ignored. --max-depth=0 includes only files directly inside the input directory; negative values are rejected. Use --recursive=false to process only the input directory regardless of the depth limit. Symlinked subdirectories are not followed.
 
 ```
 roverctl apply [flags]
@@ -18,8 +18,11 @@ roverctl apply [flags]
   # Apply resources from a single file
   roverctl apply -f rover.yaml
 
-  # Apply all .yaml, .yml and .json files in a directory and its subdirectories
+  # Apply all .yaml, .yml and .json files in a directory and up to two levels of subdirectories
   roverctl apply -f ./resources
+
+  # Include up to five levels of subdirectories
+  roverctl apply -f ./resources --max-depth 5
 
   # Apply all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
   roverctl apply -f ./resources --recursive=false
@@ -28,10 +31,11 @@ roverctl apply [flags]
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered
-  -f, --file string   Path to the file or directory containing resource definitions
-  -h, --help          help for apply
-  -R, --recursive     Process the directory used in -f, --file recursively; use --recursive=false to disable (default true)
+      --fail-fast       Stop processing on the first error encountered
+  -f, --file string     Path to the file or directory containing resource definitions
+  -h, --help            help for apply
+      --max-depth int   Maximum subdirectory depth; the directory used in -f, --file has depth 0 (must be non-negative) (default 2)
+  -R, --recursive       Process the directory used in -f, --file recursively; use --recursive=false to disable (default true)
 ```
 
 ### Options inherited from parent commands

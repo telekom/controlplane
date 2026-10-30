@@ -36,8 +36,11 @@ func NewCommand() *cobra.Command {
 	cmd.Cmd.Example = `  # Delete resources defined in a single file
   roverctl delete -f rover.yaml
 
-  # Delete resources from all .yaml, .yml and .json files in a directory and its subdirectories
+  # Delete resources from all .yaml, .yml and .json files in a directory and up to two levels of subdirectories
   roverctl delete -f ./resources
+
+  # Include up to five levels of subdirectories
+  roverctl delete -f ./resources --max-depth 5
 
   # Delete resources from all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
   roverctl delete -f ./resources --recursive=false`

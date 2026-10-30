@@ -339,9 +339,63 @@ var _ = Describe("Parser", func() {
 		It("should parse an explicit file unchanged", func() {
 			write("sub/a.yaml", rover("a"))
 
-			p := parser.NewObjectParser(parser.WithRecursive(true))
+			p := parser.NewObjectParser(parser.WithRecursive(true), parser.WithMaxDepth(0))
 			Expect(p.Parse(filepath.Join(root, "sub", "a.yaml"))).To(Succeed())
 			Expect(names(p)).To(Equal([]string{"a"}))
+		})
+
+		Context("with a max depth", func() {
+			BeforeEach(func() {
+				write("root.yaml", rover("d0"))
+				write("a/one.yaml", rover("d1"))
+				write("a/b/two.yaml", rover("d2"))
+				write("a/b/c/three.yaml", rover("d3"))
+			})
+
+			DescribeTable("should only parse files up to the max depth",
+				func(maxDepth int, expected []string) {
+					p := parser.NewObjectParser(parser.WithRecursive(true), parser.WithMaxDepth(maxDepth))
+					Expect(p.Parse(root)).To(Succeed())
+					Expect(names(p)).To(Equal(expected))
+				},
+				Entry("0 parses only the root", 0, []string{"d0"}),
+				Entry("1", 1, []string{"d1", "d0"}),
+				Entry("2", 2, []string{"d2", "d1", "d0"}),
+				Entry("3", 3, []string{"d3", "d2", "d1", "d0"}),
+				Entry("larger than the tree", 10, []string{"d3", "d2", "d1", "d0"}),
+			)
+
+			It("should not limit depth without WithMaxDepth", func() {
+				p := parser.NewObjectParser(parser.WithRecursive(true))
+				Expect(p.Parse(root)).To(Succeed())
+				Expect(names(p)).To(Equal([]string{"d3", "d2", "d1", "d0"}))
+			})
+
+			It("should ignore the max depth when recursion is disabled", func() {
+				p := parser.NewObjectParser(parser.WithMaxDepth(5))
+				Expect(p.Parse(root)).To(Succeed())
+				Expect(names(p)).To(Equal([]string{"d0"}))
+			})
+
+			It("should reject a negative max depth before parsing", func() {
+				p := parser.NewObjectParser(parser.WithRecursive(true), parser.WithMaxDepth(-1))
+				Expect(p.Parse(root)).To(MatchError(ContainSubstring("max depth must be 0 or greater, got -1")))
+				Expect(p.Objects()).To(BeEmpty())
+			})
+		})
+
+		It("should fail when supported files exist only beyond the max depth", func() {
+			write("a/b/c/deep.yaml", rover("deep"))
+			err := parser.NewObjectParser(parser.WithRecursive(true), parser.WithMaxDepth(2)).Parse(root)
+			Expect(err).To(MatchError(ContainSubstring("no valid YAML or JSON files found in directory " + root)))
+		})
+
+		It("should not parse malformed files beyond the max depth", func() {
+			write("root.yaml", rover("root"))
+			write("a/b/c/broken.json", "{invalid")
+			p := parser.NewObjectParser(parser.WithRecursive(true), parser.WithMaxDepth(2))
+			Expect(p.Parse(root)).To(Succeed())
+			Expect(names(p)).To(Equal([]string{"root"}))
 		})
 	})
 

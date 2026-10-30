@@ -36,8 +36,11 @@ func NewCommand() *cobra.Command {
 	cmd.Cmd.Example = `  # Apply resources from a single file
   roverctl apply -f rover.yaml
 
-  # Apply all .yaml, .yml and .json files in a directory and its subdirectories
+  # Apply all .yaml, .yml and .json files in a directory and up to two levels of subdirectories
   roverctl apply -f ./resources
+
+  # Include up to five levels of subdirectories
+  roverctl apply -f ./resources --max-depth 5
 
   # Apply all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
   roverctl apply -f ./resources --recursive=false`

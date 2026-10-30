@@ -129,6 +129,7 @@ spec:
 			Expect(shallowFlag).NotTo(BeNil())
 
 			Expect(cmd.Flags().Lookup("recursive")).To(BeNil())
+			Expect(cmd.Flags().Lookup("max-depth")).To(BeNil())
 		})
 	})
 

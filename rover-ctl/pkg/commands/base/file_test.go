@@ -71,6 +71,7 @@ spec:
 	Describe("AddRecursiveFlag", func() {
 		It("should not register the recursive flag by default", func() {
 			Expect(fileCmd.Cmd.Flags().Lookup("recursive")).To(BeNil())
+			Expect(fileCmd.Cmd.Flags().Lookup("max-depth")).To(BeNil())
 		})
 
 		It("should register -R/--recursive defaulting to true", func() {
@@ -80,6 +81,14 @@ spec:
 			Expect(flag.Shorthand).To(Equal("R"))
 			Expect(flag.DefValue).To(Equal("true"))
 			Expect(fileCmd.Recursive).To(BeTrue())
+		})
+
+		It("should register --max-depth defaulting to 2", func() {
+			fileCmd.AddRecursiveFlag()
+			flag := fileCmd.Cmd.Flags().Lookup("max-depth")
+			Expect(flag).NotTo(BeNil())
+			Expect(flag.DefValue).To(Equal("2"))
+			Expect(fileCmd.MaxDepth).To(Equal(2))
 		})
 	})
 
@@ -159,6 +168,20 @@ spec:
 				fileCmd.Recursive = true
 				Expect(fileCmd.ParseFiles()).To(Succeed())
 				Expect(fileCmd.Parser.Objects()).To(HaveLen(2))
+			})
+
+			It("should only parse nested files within MaxDepth", func() {
+				fileCmd.Recursive = true
+				fileCmd.MaxDepth = 1
+				Expect(fileCmd.ParseFiles()).To(Succeed())
+				Expect(fileCmd.Parser.Objects()).To(HaveLen(1))
+			})
+
+			It("should reject a negative MaxDepth before initializing the parser", func() {
+				fileCmd.Recursive = true
+				fileCmd.MaxDepth = -1
+				Expect(fileCmd.ParseFiles()).To(MatchError("invalid --max-depth -1: must be 0 or greater"))
+				Expect(fileCmd.Parser).To(BeNil())
 			})
 		})
 

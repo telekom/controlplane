@@ -6,7 +6,7 @@ Delete a resource
 
 Delete a resource defined in a file or directory from the server
 
-By default, a directory passed with -f/--file is processed recursively: the .yaml, .yml and .json files (case-insensitive) in it and all its subdirectories are used. Use --recursive=false to only include such files directly inside the directory. Symlinked subdirectories are not followed.
+By default, a directory passed with -f/--file is processed recursively up to two levels of subdirectories. Only .yaml, .yml and .json files (case-insensitive) are used. Set --max-depth to change the maximum depth: the input directory has depth 0, its subdirectories depth 1, and so on. Files deeper than the limit are ignored. --max-depth=0 includes only files directly inside the input directory; negative values are rejected. Use --recursive=false to process only the input directory regardless of the depth limit. Symlinked subdirectories are not followed.
 
 ```
 roverctl delete [flags]
@@ -18,8 +18,11 @@ roverctl delete [flags]
   # Delete resources defined in a single file
   roverctl delete -f rover.yaml
 
-  # Delete resources from all .yaml, .yml and .json files in a directory and its subdirectories
+  # Delete resources from all .yaml, .yml and .json files in a directory and up to two levels of subdirectories
   roverctl delete -f ./resources
+
+  # Include up to five levels of subdirectories
+  roverctl delete -f ./resources --max-depth 5
 
   # Delete resources from all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
   roverctl delete -f ./resources --recursive=false
@@ -28,10 +31,11 @@ roverctl delete [flags]
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered
-  -f, --file string   Path to the file or directory containing resource definitions
-  -h, --help          help for delete
-  -R, --recursive     Process the directory used in -f, --file recursively; use --recursive=false to disable (default true)
+      --fail-fast       Stop processing on the first error encountered
+  -f, --file string     Path to the file or directory containing resource definitions
+  -h, --help            help for delete
+      --max-depth int   Maximum subdirectory depth; the directory used in -f, --file has depth 0 (must be non-negative) (default 2)
+  -R, --recursive       Process the directory used in -f, --file recursively; use --recursive=false to disable (default true)
 ```
 
 ### Options inherited from parent commands

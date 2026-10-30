@@ -237,6 +237,50 @@ spec:
 				Expect(cmd.Execute()).To(MatchError(ContainSubstring("broken.json")))
 				mockHandler.AssertNotCalled(GinkgoT(), "Apply", mock.Anything, mock.Anything)
 			})
+
+			It("should register --max-depth defaulting to 2", func() {
+				flag := cmd.Flags().Lookup("max-depth")
+				Expect(flag).NotTo(BeNil())
+				Expect(flag.DefValue).To(Equal("2"))
+			})
+
+			It("should not discover nested files with --max-depth=0", func() {
+				cmd.SetArgs([]string{"-f", rootDir, "--max-depth=0"})
+				Expect(cmd.Execute()).To(MatchError(ContainSubstring("no valid YAML or JSON files found")))
+				mockHandler.AssertNotCalled(GinkgoT(), "Apply", mock.Anything, mock.Anything)
+			})
+
+			It("should reject a negative --max-depth before applying anything", func() {
+				cmd.SetArgs([]string{"-f", rootDir, "--max-depth=-1"})
+				Expect(cmd.Execute()).To(MatchError(ContainSubstring("invalid --max-depth -1: must be 0 or greater")))
+				mockHandler.AssertNotCalled(GinkgoT(), "Apply", mock.Anything, mock.Anything)
+			})
+
+			Context("when the resource is three levels deep", func() {
+				BeforeEach(func() {
+					deepDir := filepath.Join(rootDir, "nested", "b", "c")
+					Expect(os.MkdirAll(deepDir, 0o755)).To(Succeed())
+					Expect(os.Rename(filepath.Join(rootDir, "nested", "test.yaml"), filepath.Join(deepDir, "test.yaml"))).To(Succeed())
+				})
+
+				It("should ignore it with the default max depth", func() {
+					cmd.SetArgs([]string{"-f", rootDir})
+					Expect(cmd.Execute()).To(MatchError(ContainSubstring("no valid YAML or JSON files found")))
+					mockHandler.AssertNotCalled(GinkgoT(), "Apply", mock.Anything, mock.Anything)
+				})
+
+				It("should apply it with --max-depth=3", func() {
+					mockHandler.EXPECT().Priority().Return(100).Maybe()
+					mockHandler.EXPECT().Apply(mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("*types.UnstructuredObject")).Return(nil)
+					status := &common.ObjectStatusResponse{
+						OverallStatus:   types.OverallStatusComplete,
+						ProcessingState: types.ProcessingStateDone,
+					}
+					mockHandler.EXPECT().WaitForReady(mock.AnythingOfType("*context.valueCtx"), "test-rover").Return(status, nil)
+					cmd.SetArgs([]string{"-f", rootDir, "--max-depth=3"})
+					Expect(cmd.Execute()).To(Succeed())
+				})
+			})
 		})
 
 		Context("when the resource file doesn't exist", func() {

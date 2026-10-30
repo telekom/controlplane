@@ -30,10 +30,12 @@ const (
 )
 
 type ObjectParser struct {
-	validator *validator.Validate
-	objects   []types.Object
-	index     int
-	recursive bool
+	validator  *validator.Validate
+	objects    []types.Object
+	index      int
+	recursive  bool
+	limitDepth bool
+	maxDepth   int
 
 	hooks map[HookStage]HookFunc
 }
@@ -43,9 +45,11 @@ type HookFunc func(obj types.Object) error
 type Option func(*Options)
 
 type Options struct {
-	Validate  bool
-	Recursive bool
-	Hooks     map[HookStage]HookFunc
+	Validate   bool
+	Recursive  bool
+	LimitDepth bool
+	MaxDepth   int
+	Hooks      map[HookStage]HookFunc
 }
 
 func EnableValidation() Option {
@@ -59,6 +63,15 @@ func EnableValidation() Option {
 func WithRecursive(recursive bool) Option {
 	return func(opts *Options) {
 		opts.Recursive = recursive
+	}
+}
+
+// WithMaxDepth limits directory discovery relative to the input directory at
+// depth 0. Without this option, recursive discovery is unlimited.
+func WithMaxDepth(maxDepth int) Option {
+	return func(opts *Options) {
+		opts.LimitDepth = true
+		opts.MaxDepth = maxDepth
 	}
 }
 
@@ -78,10 +91,12 @@ func NewObjectParser(opts ...Option) *ObjectParser {
 	}
 
 	op := &ObjectParser{
-		objects:   make([]types.Object, 0),
-		index:     0,
-		hooks:     options.Hooks,
-		recursive: options.Recursive,
+		objects:    make([]types.Object, 0),
+		index:      0,
+		hooks:      options.Hooks,
+		recursive:  options.Recursive,
+		limitDepth: options.LimitDepth,
+		maxDepth:   options.MaxDepth,
 	}
 	if options.Validate {
 		op.validator = validator.New()
@@ -93,6 +108,10 @@ func NewObjectParser(opts ...Option) *ObjectParser {
 func (p *ObjectParser) Parse(path string) error {
 	if path == "" {
 		return errors.New("path cannot be empty")
+	}
+
+	if p.limitDepth && p.maxDepth < 0 {
+		return errors.Errorf("max depth must be 0 or greater, got %d", p.maxDepth)
 	}
 
 	info, err := os.Stat(path)
@@ -108,7 +127,7 @@ func (p *ObjectParser) Parse(path string) error {
 }
 
 func (p *ObjectParser) parseDirectory(dirPath string) error {
-	filesProcessed, err := p.walkDirectory(dirPath)
+	filesProcessed, err := p.walkDirectory(dirPath, 0)
 	if err != nil {
 		return err
 	}
@@ -121,9 +140,9 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 }
 
 // walkDirectory parses supported files in dirPath in lexicographic order and,
-// if recursive parsing is enabled, descends depth-first into subdirectories.
+// if recursive parsing is enabled, descends depth-first within the depth limit.
 // It returns the number of supported files processed.
-func (p *ObjectParser) walkDirectory(dirPath string) (int, error) {
+func (p *ObjectParser) walkDirectory(dirPath string, depth int) (int, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to read directory "+dirPath)
@@ -134,10 +153,10 @@ func (p *ObjectParser) walkDirectory(dirPath string) (int, error) {
 		entryPath := filepath.Join(dirPath, entry.Name())
 
 		if entry.IsDir() {
-			if !p.recursive {
+			if !p.recursive || (p.limitDepth && depth >= p.maxDepth) {
 				continue
 			}
-			count, err := p.walkDirectory(entryPath)
+			count, err := p.walkDirectory(entryPath, depth+1)
 			if err != nil {
 				return filesProcessed, err
 			}

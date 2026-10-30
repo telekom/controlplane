@@ -18,6 +18,7 @@ type FileCommand struct {
 	*BaseCommand
 	FilePath  string
 	Recursive bool
+	MaxDepth  int
 	Parser    *parser.ObjectParser
 }
 
@@ -27,6 +28,7 @@ func NewFileCommand(use, short, long string) *FileCommand {
 
 	cmd := &FileCommand{
 		BaseCommand: baseCmd,
+		MaxDepth:    2,
 	}
 
 	baseCmd.Cmd.Flags().StringVarP(&cmd.FilePath, "file", "f", "", "Path to the file or directory containing resource definitions")
@@ -35,21 +37,25 @@ func NewFileCommand(use, short, long string) *FileCommand {
 }
 
 // RecursiveHelp describes directory discovery for commands that support -R/--recursive.
-const RecursiveHelp = "By default, a directory passed with -f/--file is processed recursively: " +
-	"the .yaml, .yml and .json files (case-insensitive) in it and all its subdirectories are used. " +
-	"Use --recursive=false to only include such files directly inside the directory. " +
+const RecursiveHelp = "By default, a directory passed with -f/--file is processed recursively up to two levels of subdirectories. " +
+	"Only .yaml, .yml and .json files (case-insensitive) are used. " +
+	"Set --max-depth to change the maximum depth: the input directory has depth 0, its subdirectories depth 1, and so on. " +
+	"Files deeper than the limit are ignored. --max-depth=0 includes only files directly inside the input directory; negative values are rejected. " +
+	"Use --recursive=false to process only the input directory regardless of the depth limit. " +
 	"Symlinked subdirectories are not followed."
 
-// AddRecursiveFlag registers the -R/--recursive flag for commands that support
-// recursive directory discovery. Recursion is enabled by default.
+// AddRecursiveFlag registers directory traversal flags with recursion enabled
+// by default up to two levels below the input directory.
 func (c *FileCommand) AddRecursiveFlag() {
 	c.Cmd.Flags().BoolVarP(&c.Recursive, "recursive", "R", true,
 		"Process the directory used in -f, --file recursively; use --recursive=false to disable")
+	c.Cmd.Flags().IntVar(&c.MaxDepth, "max-depth", 2,
+		"Maximum subdirectory depth; the directory used in -f, --file has depth 0 (must be non-negative)")
 }
 
 // InitParser initializes the parser for processing files
 func (c *FileCommand) InitParser() error {
-	opts := append(slices.Clone(parser.Opts), parser.WithRecursive(c.Recursive))
+	opts := append(slices.Clone(parser.Opts), parser.WithRecursive(c.Recursive), parser.WithMaxDepth(c.MaxDepth))
 	c.Parser = parser.NewObjectParser(opts...)
 
 	c.Logger().V(1).Info("Initialized parser")
@@ -59,6 +65,10 @@ func (c *FileCommand) InitParser() error {
 
 // ParseFiles parses files using the configured parser
 func (c *FileCommand) ParseFiles() error {
+	if c.MaxDepth < 0 {
+		return errors.Errorf("invalid --max-depth %d: must be 0 or greater", c.MaxDepth)
+	}
+
 	if c.Parser == nil {
 		c.Logger().V(1).Info("Parser not initialized, initializing now")
 		if err := c.InitParser(); err != nil {
@@ -67,7 +77,7 @@ func (c *FileCommand) ParseFiles() error {
 	}
 
 	path := resolveFilePath(c.FilePath)
-	c.Logger().V(1).Info("Parsing files", "path", path, "recursive", c.Recursive)
+	c.Logger().V(1).Info("Parsing files", "path", path, "recursive", c.Recursive, "maxDepth", c.MaxDepth)
 
 	if err := c.Parser.Parse(path); err != nil {
 		return errors.Wrap(err, "failed to parse files")
