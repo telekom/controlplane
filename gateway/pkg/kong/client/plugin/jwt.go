@@ -82,3 +82,13 @@ func JwtPluginFromRoute(route *gatewayv1.Route) *JwtPlugin {
 		route:  route,
 	}
 }
+
+// GetRouteId implements client.RouteIdBinder.
+func (p *JwtPlugin) GetRouteId() string {
+	return routeIdOf(p.route)
+}
+
+// GetNamePrefix implements client.RealmPlugin.
+func (p *JwtPlugin) GetNamePrefix() string {
+	return namePrefixOf(p.route)
+}

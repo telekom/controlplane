@@ -135,6 +135,7 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	if err != nil {
 		return err
 	}
+	route.SetNamePrefix(gateway.Spec.NamePrefix)
 
 	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
@@ -160,6 +161,8 @@ func (h *RouteHandler) newFeatureBuilder(ctx context.Context, route *gatewayv1.R
 	if !ready {
 		return nil, nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
+	// The Kong names of the Route use the prefix of its Gateway.
+	route.SetNamePrefix(gateway.Spec.NamePrefix)
 
 	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {

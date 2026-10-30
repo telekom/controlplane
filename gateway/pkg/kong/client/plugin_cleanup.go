@@ -41,12 +41,18 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	}
 
 	scope := cleanupScope{env: contextutil.EnvFromContextOrDie(ctx), kind: parentRoute}
+	parentRef := ""
 	if route != nil {
 		scope.name = route.GetName()
+		parentRef = scope.name
+		if routeID := boundRouteID(route); routeID != "" {
+			parentRef = routeID
+		}
 	} else {
 		scope.kind, scope.name = parentConsumer, consumer.GetConsumerName()
+		parentRef = scope.name
 	}
-	parentID, err := resolveParentID(ctx, c.client, scope.kind, scope.name)
+	parentID, err := resolveParentID(ctx, c.client, scope.kind, parentRef)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cleanup scope: %w", err)
 	}

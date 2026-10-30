@@ -1,0 +1,28 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Mounted into the operator and passed as --legacy-naming-config=/etc/gateway/legacy-naming.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-legacy-naming
+data:
+  legacy-naming.yaml: |
+    # Java operator naming, used only to find legacy Kong entities.
+    defaultRealm: default        # Java realm whose names carry no realm prefix
+    separator: "."               # javaName = <javaRealm><separator><baseName>
+    realmSuffixes: ["", "-ai"]   # Java realms tried for a Route with namePrefix P: P + suffix
+    names:                       # first matching rule wins; no match → baseName = metadata.name
+      - selector: { cp.ei.telekom.de/domain: event }
+        match: '^publish$'
+        replace: 'horizon-events'
+      - selector: { cp.ei.telekom.de/domain: event }
+        match: '^callback--(.+)$'
+        replace: 'horizon-callback-$1'
+      - selector: { cp.ei.telekom.de/domain: event }
+        match: '^voyager--(.+)$'
+        replace: 'horizon-voyager-$1'
+      - selector: { cp.ei.telekom.de/domain: event }
+        match: '^sse--(.+)$'
+        replace: 'horizon-sse--$1'

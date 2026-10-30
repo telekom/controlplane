@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 57124242-5051-41cc-917f-9acae01f5057
+  name: bond.horizon-voyager-alpha
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---bond]
+route:
+  id: 7f26144b-9828-4fcd-99a5-4a7bb1fee08f
+  name: bond.horizon-voyager-alpha
+  hosts: [gateway.example.test]
+  paths: [/horizon/voyager/v1]
+  service: { id: 57124242-5051-41cc-917f-9acae01f5057 }
+  tags: [ei__telekom__de--realm---bond]
+plugins:
+  - id: 119a72d1-74c9-4f6a-8c01-1cdd9474031b
+    name: acl
+    route: { id: 7f26144b-9828-4fcd-99a5-4a7bb1fee08f }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-voyager-alpha, acl]
+    config:
+      allow: [group-example]
+  - id: 451abd81-f1d6-4ed6-97f5-e837d70820fe
+    name: jwt-keycloak
+    route: { id: 7f26144b-9828-4fcd-99a5-4a7bb1fee08f }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-voyager-alpha, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/bond"]
+  - id: 10a3d6b2-aa05-411a-b271-5945795e8229
+    name: request-transformer
+    route: { id: 7f26144b-9828-4fcd-99a5-4a7bb1fee08f }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-voyager-alpha, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]

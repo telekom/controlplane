@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 830e07bc-1e39-4f10-92bd-4acefaecbd38
+  name: bond.horizon-sse--de-example-orders-v1
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---bond]
+route:
+  id: 5790f82e-c1d3-4cff-aa3a-f4d46b0a18e8
+  name: bond.horizon-sse--de-example-orders-v1
+  hosts: [gateway.example.test]
+  paths: [/horizon/sse/v1/de-example-orders-v1]
+  service: { id: 830e07bc-1e39-4f10-92bd-4acefaecbd38 }
+  tags: [ei__telekom__de--realm---bond]
+plugins:
+  - id: 6bf46c69-7d2c-4f82-aeea-cbe226e87555
+    name: acl
+    route: { id: 5790f82e-c1d3-4cff-aa3a-f4d46b0a18e8 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-sse--de-example-orders-v1, acl]
+    config:
+      allow: [group-example]
+  - id: 13deef86-ab10-41d0-b646-e1f40a097c97
+    name: jwt-keycloak
+    route: { id: 5790f82e-c1d3-4cff-aa3a-f4d46b0a18e8 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-sse--de-example-orders-v1, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/bond"]
+  - id: ca02135e-92b1-43f2-8ede-0d7ac3baea9e
+    name: request-transformer
+    route: { id: 5790f82e-c1d3-4cff-aa3a-f4d46b0a18e8 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-sse--de-example-orders-v1, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]

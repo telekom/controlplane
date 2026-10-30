@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 6513270e-269e-4d37-b2a7-4de452e6b438
+  name: eni-example-v2
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---default]
+route:
+  id: d23f0824-128b-4f33-8c5c-7fd0a6a3a450
+  name: eni-example-v2
+  hosts: [gateway.example.test]
+  paths: [/eni/example/v2]
+  service: { id: 6513270e-269e-4d37-b2a7-4de452e6b438 }
+  tags: [ei__telekom__de--realm---default]
+plugins:
+  - id: 9531985d-5d9d-49f8-9818-e811892f902b
+    name: acl
+    route: { id: d23f0824-128b-4f33-8c5c-7fd0a6a3a450 }
+    tags: [ei__telekom__de--realm---default, eni-example-v2, acl]
+    config:
+      allow: [group-example]
+  - id: 36f675cc-81e7-4ef5-a8e2-5d940ed90475
+    name: jwt-keycloak
+    route: { id: d23f0824-128b-4f33-8c5c-7fd0a6a3a450 }
+    tags: [ei__telekom__de--realm---default, eni-example-v2, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/default"]
+  - id: 6b0d549b-6f03-475a-9600-a35a099950d8
+    name: request-transformer
+    route: { id: d23f0824-128b-4f33-8c5c-7fd0a6a3a450 }
+    tags: [ei__telekom__de--realm---default, eni-example-v2, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]
