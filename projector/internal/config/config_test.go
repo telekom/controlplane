@@ -61,6 +61,9 @@ var _ = Describe("Load", func() {
 		Expect(cfg.HealthProbeBindAddress).To(Equal(":8081"))
 		Expect(cfg.LeaderElection).To(BeFalse())
 		Expect(cfg.LeaderElectionID).To(Equal("projector.cp.ei.telekom.de"))
+
+		// Environment Filer
+		Expect(cfg.EnvironmentFiler).To(Equal(""))
 	})
 
 	It("reads values from environment variables", func() {
@@ -103,6 +106,9 @@ var _ = Describe("Load", func() {
 		GinkgoT().Setenv("LEADER_ELECTION", "true")
 		GinkgoT().Setenv("LEADER_ELECTION_ID", "custom-id")
 
+		// Environment Filer
+		GinkgoT().Setenv("ENVIRONMENT_FILER", "test-env")
+
 		cfg, err := Load()
 		Expect(err).NotTo(HaveOccurred())
 
@@ -144,6 +150,7 @@ var _ = Describe("Load", func() {
 		Expect(cfg.HealthProbeBindAddress).To(Equal(":9091"))
 		Expect(cfg.LeaderElection).To(BeTrue())
 		Expect(cfg.LeaderElectionID).To(Equal("custom-id"))
+		Expect(cfg.EnvironmentFiler).To(Equal("test-env"))
 	})
 
 	It("falls back to default when env var is set to empty string", func() {
