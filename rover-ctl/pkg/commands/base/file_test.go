@@ -68,6 +68,21 @@ spec:
 		})
 	})
 
+	Describe("AddRecursiveFlag", func() {
+		It("should not register the recursive flag by default", func() {
+			Expect(fileCmd.Cmd.Flags().Lookup("recursive")).To(BeNil())
+		})
+
+		It("should register -R/--recursive defaulting to true", func() {
+			fileCmd.AddRecursiveFlag()
+			flag := fileCmd.Cmd.Flags().Lookup("recursive")
+			Expect(flag).NotTo(BeNil())
+			Expect(flag.Shorthand).To(Equal("R"))
+			Expect(flag.DefValue).To(Equal("true"))
+			Expect(fileCmd.Recursive).To(BeTrue())
+		})
+	})
+
 	Describe("InitParser", func() {
 		It("should initialize the parser", func() {
 			// Initialize the parser
@@ -122,6 +137,28 @@ spec:
 				Expect(fileCmd.Parser.Objects()).To(HaveLen(1))
 				Expect(fileCmd.Parser.Objects()[0].GetKind()).To(Equal("Rover"))
 				Expect(fileCmd.Parser.Objects()[0].GetName()).To(Equal("test-rover"))
+			})
+		})
+
+		Context("when recursive parsing is requested", func() {
+			BeforeEach(func() {
+				nested := filepath.Join(tempDir, "nested", "deeper")
+				Expect(os.MkdirAll(nested, 0o755)).To(Succeed())
+				content, err := os.ReadFile(yamlFile)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(os.WriteFile(filepath.Join(nested, "nested.yaml"), content, 0o644)).To(Succeed())
+				fileCmd.FilePath = tempDir
+			})
+
+			It("should parse only top-level files by default", func() {
+				Expect(fileCmd.ParseFiles()).To(Succeed())
+				Expect(fileCmd.Parser.Objects()).To(HaveLen(1))
+			})
+
+			It("should parse nested files when Recursive is set", func() {
+				fileCmd.Recursive = true
+				Expect(fileCmd.ParseFiles()).To(Succeed())
+				Expect(fileCmd.Parser.Objects()).To(HaveLen(2))
 			})
 		})
 

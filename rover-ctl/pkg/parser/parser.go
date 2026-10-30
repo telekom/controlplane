@@ -33,6 +33,7 @@ type ObjectParser struct {
 	validator *validator.Validate
 	objects   []types.Object
 	index     int
+	recursive bool
 
 	hooks map[HookStage]HookFunc
 }
@@ -42,13 +43,22 @@ type HookFunc func(obj types.Object) error
 type Option func(*Options)
 
 type Options struct {
-	Validate bool
-	Hooks    map[HookStage]HookFunc
+	Validate  bool
+	Recursive bool
+	Hooks     map[HookStage]HookFunc
 }
 
 func EnableValidation() Option {
 	return func(opts *Options) {
 		opts.Validate = true
+	}
+}
+
+// WithRecursive enables recursive discovery of supported files in nested
+// directories when a directory is parsed. Symlinked directories are not followed.
+func WithRecursive(recursive bool) Option {
+	return func(opts *Options) {
+		opts.Recursive = recursive
 	}
 }
 
@@ -68,9 +78,10 @@ func NewObjectParser(opts ...Option) *ObjectParser {
 	}
 
 	op := &ObjectParser{
-		objects: make([]types.Object, 0),
-		index:   0,
-		hooks:   options.Hooks,
+		objects:   make([]types.Object, 0),
+		index:     0,
+		hooks:     options.Hooks,
+		recursive: options.Recursive,
 	}
 	if options.Validate {
 		op.validator = validator.New()
@@ -97,28 +108,9 @@ func (p *ObjectParser) Parse(path string) error {
 }
 
 func (p *ObjectParser) parseDirectory(dirPath string) error {
-	entries, err := os.ReadDir(dirPath)
+	filesProcessed, err := p.walkDirectory(dirPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read directory "+dirPath)
-	}
-
-	filesProcessed := 0
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		fileName := entry.Name()
-		ext := strings.ToLower(filepath.Ext(fileName))
-
-		if ext == ".yaml" || ext == ".yml" || ext == ".json" {
-			filePath := filepath.Join(dirPath, fileName)
-			err := p.parseFile(filePath)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse file "+filePath)
-			}
-			filesProcessed++
-		}
+		return err
 	}
 
 	if filesProcessed == 0 {
@@ -126,6 +118,53 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 	}
 
 	return nil
+}
+
+// walkDirectory parses supported files in dirPath in lexicographic order and,
+// if recursive parsing is enabled, descends depth-first into subdirectories.
+// It returns the number of supported files processed.
+func (p *ObjectParser) walkDirectory(dirPath string) (int, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to read directory "+dirPath)
+	}
+
+	filesProcessed := 0
+	for _, entry := range entries {
+		entryPath := filepath.Join(dirPath, entry.Name())
+
+		if entry.IsDir() {
+			if !p.recursive {
+				continue
+			}
+			count, err := p.walkDirectory(entryPath)
+			if err != nil {
+				return filesProcessed, err
+			}
+			filesProcessed += count
+			continue
+		}
+
+		if !isSupportedFile(entry.Name()) {
+			continue
+		}
+
+		if err := p.parseFile(entryPath); err != nil {
+			return filesProcessed, errors.Wrap(err, "failed to parse file "+entryPath)
+		}
+		filesProcessed++
+	}
+
+	return filesProcessed, nil
+}
+
+func isSupportedFile(fileName string) bool {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".yaml", ".yml", ".json":
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *ObjectParser) parseFile(filePath string) error {

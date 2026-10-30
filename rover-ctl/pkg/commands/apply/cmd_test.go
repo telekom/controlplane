@@ -117,6 +117,11 @@ spec:
 			// Verify file flag exists
 			flag := cmd.Flags().Lookup("file")
 			Expect(flag).NotTo(BeNil())
+
+			recursiveFlag := cmd.Flags().Lookup("recursive")
+			Expect(recursiveFlag).NotTo(BeNil())
+			Expect(recursiveFlag.Shorthand).To(Equal("R"))
+			Expect(recursiveFlag.DefValue).To(Equal("true"))
 			// Note: We can't check flag.Required directly, but we know it's marked as required in the code
 		})
 	})
@@ -183,6 +188,54 @@ spec:
 
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
+			})
+		})
+
+		Context("when a directory contains nested resources", func() {
+			var rootDir string
+
+			BeforeEach(func() {
+				rootDir = filepath.Join(tempDir, "tree")
+				nestedDir := filepath.Join(rootDir, "nested")
+				Expect(os.MkdirAll(nestedDir, 0o755)).To(Succeed())
+				Expect(os.Rename(yamlFile, filepath.Join(nestedDir, "test.yaml"))).To(Succeed())
+			})
+
+			It("should not discover nested files with --recursive=false", func() {
+				cmd.SetArgs([]string{"--file", rootDir, "--recursive=false"})
+				Expect(cmd.Execute()).To(MatchError(ContainSubstring("no valid YAML or JSON files found")))
+			})
+
+			DescribeTable("should process nested files recursively by default and with the recursive flag",
+				func(flag string) {
+					mockHandler.EXPECT().Priority().Return(100).Maybe()
+					mockHandler.EXPECT().Apply(mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("*types.UnstructuredObject")).Return(nil)
+					status := &common.ObjectStatusResponse{
+						OverallStatus:   types.OverallStatusComplete,
+						ProcessingState: types.ProcessingStateDone,
+					}
+					mockHandler.EXPECT().WaitForReady(mock.AnythingOfType("*context.valueCtx"), "test-rover").Return(status, nil)
+
+					args := []string{"-f", rootDir}
+					if flag != "" {
+						args = append(args, flag)
+					}
+					cmd.SetArgs(args)
+					Expect(cmd.Execute()).To(Succeed())
+				},
+				Entry("no flag (default)", ""),
+				Entry("long flag", "--recursive"),
+				Entry("long flag with explicit true", "--recursive=true"),
+				Entry("shorthand flag", "-R"),
+				Entry("shorthand flag with explicit true", "-R=true"),
+			)
+
+			It("should not apply anything when a nested file fails to parse", func() {
+				Expect(os.WriteFile(filepath.Join(rootDir, "nested", "broken.json"), []byte("{invalid"), 0o644)).To(Succeed())
+
+				cmd.SetArgs([]string{"-f", rootDir, "-R"})
+				Expect(cmd.Execute()).To(MatchError(ContainSubstring("broken.json")))
+				mockHandler.AssertNotCalled(GinkgoT(), "Apply", mock.Anything, mock.Anything)
 			})
 		})
 

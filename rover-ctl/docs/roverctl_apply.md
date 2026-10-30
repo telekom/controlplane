@@ -6,8 +6,23 @@ Apply a resource configuration
 
 Apply a resource configuration from file or directory to the server
 
+By default, a directory passed with -f/--file is processed recursively: the .yaml, .yml and .json files (case-insensitive) in it and all its subdirectories are used. Use --recursive=false to only include such files directly inside the directory. Symlinked subdirectories are not followed.
+
 ```
 roverctl apply [flags]
+```
+
+### Examples
+
+```
+  # Apply resources from a single file
+  roverctl apply -f rover.yaml
+
+  # Apply all .yaml, .yml and .json files in a directory and its subdirectories
+  roverctl apply -f ./resources
+
+  # Apply all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
+  roverctl apply -f ./resources --recursive=false
 ```
 
 ### Options
@@ -16,6 +31,7 @@ roverctl apply [flags]
       --fail-fast     Stop processing on the first error encountered
   -f, --file string   Path to the file or directory containing resource definitions
   -h, --help          help for apply
+  -R, --recursive     Process the directory used in -f, --file recursively; use --recursive=false to disable (default true)
 ```
 
 ### Options inherited from parent commands

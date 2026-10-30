@@ -6,6 +6,7 @@ package base
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
@@ -15,8 +16,9 @@ import (
 // FileCommand extends the base Command for file operations
 type FileCommand struct {
 	*BaseCommand
-	FilePath string
-	Parser   *parser.ObjectParser
+	FilePath  string
+	Recursive bool
+	Parser    *parser.ObjectParser
 }
 
 // NewFileCommand creates a new file command with file-related flags
@@ -32,9 +34,23 @@ func NewFileCommand(use, short, long string) *FileCommand {
 	return cmd
 }
 
+// RecursiveHelp describes directory discovery for commands that support -R/--recursive.
+const RecursiveHelp = "By default, a directory passed with -f/--file is processed recursively: " +
+	"the .yaml, .yml and .json files (case-insensitive) in it and all its subdirectories are used. " +
+	"Use --recursive=false to only include such files directly inside the directory. " +
+	"Symlinked subdirectories are not followed."
+
+// AddRecursiveFlag registers the -R/--recursive flag for commands that support
+// recursive directory discovery. Recursion is enabled by default.
+func (c *FileCommand) AddRecursiveFlag() {
+	c.Cmd.Flags().BoolVarP(&c.Recursive, "recursive", "R", true,
+		"Process the directory used in -f, --file recursively; use --recursive=false to disable")
+}
+
 // InitParser initializes the parser for processing files
 func (c *FileCommand) InitParser() error {
-	c.Parser = parser.NewObjectParser(parser.Opts...)
+	opts := append(slices.Clone(parser.Opts), parser.WithRecursive(c.Recursive))
+	c.Parser = parser.NewObjectParser(opts...)
 
 	c.Logger().V(1).Info("Initialized parser")
 
@@ -51,7 +67,7 @@ func (c *FileCommand) ParseFiles() error {
 	}
 
 	path := resolveFilePath(c.FilePath)
-	c.Logger().V(1).Info("Parsing files", "path", path)
+	c.Logger().V(1).Info("Parsing files", "path", path, "recursive", c.Recursive)
 
 	if err := c.Parser.Parse(path); err != nil {
 		return errors.Wrap(err, "failed to parse files")

@@ -127,6 +127,8 @@ spec:
 
 			shallowFlag := cmd.Flags().Lookup("shallow")
 			Expect(shallowFlag).NotTo(BeNil())
+
+			Expect(cmd.Flags().Lookup("recursive")).To(BeNil())
 		})
 	})
 

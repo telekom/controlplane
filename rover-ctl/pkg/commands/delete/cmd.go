@@ -27,9 +27,20 @@ func NewCommand() *cobra.Command {
 		FileCommand: base.NewFileCommand(
 			"delete",
 			"Delete a resource",
-			"Delete a resource defined in a file or directory from the server",
+			"Delete a resource defined in a file or directory from the server\n\n"+
+				base.RecursiveHelp,
 		),
 	}
+
+	cmd.AddRecursiveFlag()
+	cmd.Cmd.Example = `  # Delete resources defined in a single file
+  roverctl delete -f rover.yaml
+
+  # Delete resources from all .yaml, .yml and .json files in a directory and its subdirectories
+  roverctl delete -f ./resources
+
+  # Delete resources from all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
+  roverctl delete -f ./resources --recursive=false`
 
 	cmd.Cmd.MarkFlagRequired("file")
 
