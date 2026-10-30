@@ -13,6 +13,8 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 )
 
+const defaultMaxDepth = 2
+
 // FileCommand extends the base Command for file operations
 type FileCommand struct {
 	*BaseCommand
@@ -28,7 +30,7 @@ func NewFileCommand(use, short, long string) *FileCommand {
 
 	cmd := &FileCommand{
 		BaseCommand: baseCmd,
-		MaxDepth:    2,
+		MaxDepth:    defaultMaxDepth,
 	}
 
 	baseCmd.Cmd.Flags().StringVarP(&cmd.FilePath, "file", "f", "", "Path to the file or directory containing resource definitions")
@@ -49,7 +51,7 @@ const RecursiveHelp = "By default, a directory passed with -f/--file is processe
 func (c *FileCommand) AddRecursiveFlag() {
 	c.Cmd.Flags().BoolVarP(&c.Recursive, "recursive", "R", true,
 		"Process the directory used in -f, --file recursively; use --recursive=false to disable")
-	c.Cmd.Flags().IntVar(&c.MaxDepth, "max-depth", 2,
+	c.Cmd.Flags().IntVar(&c.MaxDepth, "max-depth", defaultMaxDepth,
 		"Maximum subdirectory depth; the directory used in -f, --file has depth 0 (must be non-negative)")
 }
 
