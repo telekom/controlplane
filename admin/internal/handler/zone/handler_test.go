@@ -29,6 +29,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = DescribeTable("gatewayNamePrefix",
+	func(current, realmName, expected string) {
+		Expect(gatewayNamePrefix(current, realmName)).To(Equal(expected))
+	},
+	Entry("set from the realm", "", "bond", "bond"),
+	Entry("realm replaces an existing prefix", "old", "bond", "bond"),
+	Entry("empty realm keeps the existing prefix", "bond", "", "bond"),
+	Entry("empty realm without existing prefix stays unset", "", "", ""),
+)
+
 var _ = Describe("Zone Handler", func() {
 	var zone *adminv1.Zone
 	var zoneIdx int
@@ -90,7 +100,9 @@ var _ = Describe("Zone Handler", func() {
 		Expect(clients.Items[0].Name).To(Equal(naming.ForGatewayAdminClient(naming.ForIdentityProvider(zone, "primary"))))
 		Expect(clients.Items[0].Spec.ClientId).To(Equal("rover"))
 		Expect(clients.Items[0].Spec.ClientSecret).NotTo(BeEmpty())
+		Expect(zone.Status.RealmName).NotTo(BeEmpty())
 		for i := range gateways.Items {
+			Expect(gateways.Items[i].Spec.NamePrefix).To(Equal(zone.Status.RealmName))
 			Expect(gateways.Items[i].Spec.Admin.ClientId).To(Equal("rover"))
 			Expect(gateways.Items[i].Spec.Admin.ClientSecret).To(Equal(clients.Items[0].Spec.ClientSecret))
 		}

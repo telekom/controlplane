@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 3f98e277-4cbd-47ad-9c90-a9587403e430
+  name: bond.horizon-callback-alpha
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---bond]
+route:
+  id: c7a2ea20-b2f1-4c94-ae05-319acb5c7427
+  name: bond.horizon-callback-alpha
+  hosts: [gateway.example.test]
+  paths: [/horizon/callback/v1]
+  service: { id: 3f98e277-4cbd-47ad-9c90-a9587403e430 }
+  tags: [ei__telekom__de--realm---bond]
+plugins:
+  - id: 4cdd2055-930d-4eaf-94f4-733f3e7d1bfb
+    name: acl
+    route: { id: c7a2ea20-b2f1-4c94-ae05-319acb5c7427 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-callback-alpha, acl]
+    config:
+      allow: [group-example]
+  - id: 57ee05cd-e009-42c7-bebf-f20686734721
+    name: jwt-keycloak
+    route: { id: c7a2ea20-b2f1-4c94-ae05-319acb5c7427 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-callback-alpha, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/bond"]
+  - id: 9be4bcfc-49b6-4a08-b2e6-cc3ababced20
+    name: request-transformer
+    route: { id: c7a2ea20-b2f1-4c94-ae05-319acb5c7427 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-callback-alpha, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]

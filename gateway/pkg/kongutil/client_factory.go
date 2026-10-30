@@ -23,6 +23,7 @@ import (
 	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
 )
 
 type GatewayAdminConfig interface {
@@ -71,7 +72,22 @@ var (
 	clientCache      = make(map[string]client.KongClient)
 	urlToKey         = make(map[string]string) // AdminUrl -> current cache key for stale eviction
 	clientCacheMutex sync.Mutex
+
+	migrator legacy.Migrator = legacy.None()
 )
+
+// SetMigrator sets the legacy Migrator injected into every Kong client created afterwards
+// and drops the cached clients. It is called once at startup.
+func SetMigrator(m legacy.Migrator) {
+	clientCacheMutex.Lock()
+	defer clientCacheMutex.Unlock()
+	if m == nil {
+		m = legacy.None()
+	}
+	migrator = m
+	clientCache = make(map[string]client.KongClient)
+	urlToKey = make(map[string]string)
+}
 
 // cacheKey produces a SHA-256 hex digest of all connection parameters.
 // When any parameter (including the secret) changes, the key changes,
@@ -97,7 +113,7 @@ var GetClientFor = func(gwCfg GatewayAdminConfig) (client.KongClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := client.NewKongClient(apiClient)
+	c := client.NewKongClient(apiClient, client.WithMigrator(migrator))
 
 	// Evict stale entry for the same URL (previous credentials).
 	adminUrl := gwCfg.AdminUrl()

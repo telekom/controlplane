@@ -79,3 +79,13 @@ func AclPluginFromRoute(route *gatewayv1.Route) *AclPlugin {
 		route: route,
 	}
 }
+
+// GetRouteId implements client.RouteIdBinder.
+func (p *AclPlugin) GetRouteId() string {
+	return routeIdOf(p.route)
+}
+
+// GetNamePrefix implements client.RealmPlugin.
+func (p *AclPlugin) GetNamePrefix() string {
+	return namePrefixOf(p.route)
+}

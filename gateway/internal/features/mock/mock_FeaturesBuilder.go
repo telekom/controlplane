@@ -506,6 +506,53 @@ func (_c *MockFeaturesBuilder_GetRoute_Call) RunAndReturn(run func() (*v1.Route,
 	return _c
 }
 
+// GetUpstream provides a mock function with no fields
+func (_m *MockFeaturesBuilder) GetUpstream() client.Upstream {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUpstream")
+	}
+
+	var r0 client.Upstream
+	if rf, ok := ret.Get(0).(func() client.Upstream); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(client.Upstream)
+		}
+	}
+
+	return r0
+}
+
+// MockFeaturesBuilder_GetUpstream_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUpstream'
+type MockFeaturesBuilder_GetUpstream_Call struct {
+	*mock.Call
+}
+
+// GetUpstream is a helper method to define mock.On call
+func (_e *MockFeaturesBuilder_Expecter) GetUpstream() *MockFeaturesBuilder_GetUpstream_Call {
+	return &MockFeaturesBuilder_GetUpstream_Call{Call: _e.mock.On("GetUpstream")}
+}
+
+func (_c *MockFeaturesBuilder_GetUpstream_Call) Run(run func()) *MockFeaturesBuilder_GetUpstream_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_GetUpstream_Call) Return(_a0 client.Upstream) *MockFeaturesBuilder_GetUpstream_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockFeaturesBuilder_GetUpstream_Call) RunAndReturn(run func() client.Upstream) *MockFeaturesBuilder_GetUpstream_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IpRestrictionPlugin provides a mock function with no fields
 func (_m *MockFeaturesBuilder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
 	ret := _m.Called()

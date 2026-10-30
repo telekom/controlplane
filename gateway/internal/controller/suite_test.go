@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -167,7 +169,8 @@ var _ = AfterSuite(func() {
 // setupKongMockExpectations configures the MockKongClient to accept all calls
 // and allow reconciliation loops to proceed without error.
 func setupKongMockExpectations() {
-	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) { recordKongRoute(args.Get(1)) }).Return(nil).Maybe()
 	mockKongClient.On("CreateOrReplacePlugin", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("CleanupPlugins", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).Return(nil).Maybe()
@@ -213,4 +216,27 @@ func newGateway(name, namespace string) *gatewayv1.Gateway {
 			},
 		},
 	}
+}
+
+var (
+	kongRouteNamesMu sync.Mutex
+	kongRouteNames   = map[string][]string{}
+)
+
+// recordKongRoute records the Kong name each CreateOrReplaceRoute call used, per Route name.
+func recordKongRoute(obj any) {
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return
+	}
+	kongRouteNamesMu.Lock()
+	defer kongRouteNamesMu.Unlock()
+	kongRouteNames[route.Name] = append(kongRouteNames[route.Name], route.KongName())
+}
+
+// kongNamesOf returns the Kong names the reconciles of a Route used, in call order.
+func kongNamesOf(routeName string) []string {
+	kongRouteNamesMu.Lock()
+	defer kongRouteNamesMu.Unlock()
+	return slices.Clone(kongRouteNames[routeName])
 }

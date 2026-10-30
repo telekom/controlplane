@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -21,14 +20,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Legacy plugin discovery over the generated client", func() {
-	It("sends the legacy tags as one literal filter and adopts the plugin under its ID", func() {
-		tag := clientpkg.LegacyPluginTag
-		legacyFilter := tag + ",acl,c1"
+var _ = Describe("Legacy plugin slot adoption over the generated client", func() {
+	It("lists the plugins of the route and adopts the plugin in the slot under its ID", func() {
+		tag := "ei__telekom__de--realm---bond"
 
 		var (
 			mu         sync.Mutex
 			tagFilters []string
+			slotReads  int
 			putPath    string
 			putBody    map[string]any
 		)
@@ -37,20 +36,20 @@ var _ = Describe("Legacy plugin discovery over the generated client", func() {
 			defer mu.Unlock()
 			w.Header().Set("Content-Type", "application/json")
 			switch {
-			case r.Method == http.MethodGet && r.URL.Path == "/consumers/c1":
-				_, _ = io.WriteString(w, `{"id":"consumer-id","username":"c1"}`)
+			case r.Method == http.MethodGet && r.URL.Path == "/routes/route-id":
+				_, _ = io.WriteString(w, `{"id":"route-id","name":"bond.r1"}`)
 			case r.Method == http.MethodGet && r.URL.Path == "/plugins":
-				filter := r.URL.Query().Get("tags")
-				tagFilters = append(tagFilters, filter)
-				if filter == legacyFilter {
-					_, _ = io.WriteString(w, pageOf(nil, (&pluginRecord{
-						id: "legacy-id", name: "acl", consumer: "consumer-id", tags: []string{tag, "acl", "c1"},
+				tagFilters = append(tagFilters, r.URL.Query().Get("tags"))
+				_, _ = io.WriteString(w, emptyPage)
+			case r.Method == http.MethodGet && r.URL.Path == "/routes/route-id/plugins":
+				slotReads++
+				_, _ = io.WriteString(w, pageOf(nil,
+					(&pluginRecord{id: "other", name: "jwt", route: "route-id", tags: []string{tag}}).json(),
+					(&pluginRecord{
+						id: "legacy-id", name: "acl", route: "route-id", tags: []string{tag, "acl", "bond.r1"},
 						config: map[string]any{"allow": []any{"group-a"}},
 					}).json()))
-					return
-				}
-				_, _ = io.WriteString(w, emptyPage)
-			case r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/consumers/c1/plugins/"):
+			case r.Method == http.MethodPut && r.URL.Path == "/routes/route-id/plugins/legacy-id":
 				putPath = r.URL.Path
 				body, err := io.ReadAll(r.Body)
 				Expect(err).NotTo(HaveOccurred())
@@ -66,13 +65,19 @@ var _ = Describe("Legacy plugin discovery over the generated client", func() {
 		Expect(err).NotTo(HaveOccurred())
 		client := clientpkg.NewKongClient(api)
 		ctx := contextutil.WithEnv(context.Background(), "test")
-		plugin := &testPlugin{name: "acl", consumer: ptr("c1"), config: map[string]any{"allow": []any{"group-a"}}}
+		plugin := &boundTestPlugin{
+			testPlugin: testPlugin{name: "acl", route: ptr("r1"), config: map[string]any{"allow": []any{"group-a"}}},
+			routeId:    "route-id",
+			namePrefix: "bond",
+		}
 
 		_, err = client.CreateOrReplacePlugin(ctx, plugin)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(plugin.GetId()).To(Equal("legacy-id"))
-		Expect(tagFilters).To(Equal([]string{"env--test,plugin--acl,consumer--c1", legacyFilter}))
-		Expect(putPath).To(Equal("/consumers/c1/plugins/legacy-id"))
-		Expect(putBody["tags"]).To(ConsistOf(tag, "acl", "c1", "env--test", "plugin--acl", "consumer--c1"))
+		Expect(tagFilters).To(Equal([]string{"env--test,plugin--acl,route--r1,consumer--none"}))
+		Expect(slotReads).To(Equal(1))
+		Expect(putPath).To(Equal("/routes/route-id/plugins/legacy-id"))
+		Expect(putBody["route"]).To(Equal(map[string]any{"id": "route-id"}))
+		Expect(putBody["tags"]).To(ConsistOf(tag, "acl", "bond.r1", "env--test", "plugin--acl", "route--r1", "consumer--none", "realm--bond"))
 	})
 })

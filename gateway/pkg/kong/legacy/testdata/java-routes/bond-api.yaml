@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 8d116ece-1738-47d9-bd9c-172411e20b8f
+  name: bond.eni-example-v1
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---bond]
+route:
+  id: 90c192cf-d3ac-44af-8f21-ddb66cad4a26
+  name: bond.eni-example-v1
+  hosts: [gateway.example.test]
+  paths: [/eni/example/v1]
+  service: { id: 8d116ece-1738-47d9-bd9c-172411e20b8f }
+  tags: [ei__telekom__de--realm---bond]
+plugins:
+  - id: a170b338-3926-4059-b28c-105d1fb17c23
+    name: acl
+    route: { id: 90c192cf-d3ac-44af-8f21-ddb66cad4a26 }
+    tags: [ei__telekom__de--realm---bond, bond.eni-example-v1, acl]
+    config:
+      allow: [group-example]
+  - id: 0fd630f1-f29d-4da9-953f-48f1a09f76b5
+    name: jwt-keycloak
+    route: { id: 90c192cf-d3ac-44af-8f21-ddb66cad4a26 }
+    tags: [ei__telekom__de--realm---bond, bond.eni-example-v1, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/bond"]
+  - id: 0cb1e29c-658c-4a14-95e6-0af593bd04cf
+    name: request-transformer
+    route: { id: 90c192cf-d3ac-44af-8f21-ddb66cad4a26 }
+    tags: [ei__telekom__de--realm---bond, bond.eni-example-v1, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]

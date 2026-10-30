@@ -82,6 +82,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 				IssuerUrl:    issuerURL,
 				Url:          config.Admin.Url,
 			},
+			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, hc.Zone.Status.RealmName),
 		}
 
 		if hc.Zone.Spec.Redis != nil {
@@ -105,6 +106,15 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		return nil, ctrlerrors.RetryableErrorf("failed to create or update Gateway %s in zone %s: %s", gateway.Name, hc.Zone.Name, err)
 	}
 	return gateway, nil
+}
+
+// gatewayNamePrefix returns the Kong name prefix of a Gateway: the zone's realm name, or the
+// current prefix if the realm name is empty, because a set prefix cannot be removed.
+func gatewayNamePrefix(current, realmName string) string {
+	if realmName == "" {
+		return current
+	}
+	return realmName
 }
 
 // createGatewayConsumer creates the default gateway consumer for the zone.

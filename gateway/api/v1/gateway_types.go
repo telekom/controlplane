@@ -25,11 +25,20 @@ type AdminConfig struct {
 }
 
 // GatewaySpec defines the desired state of Gateway
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.namePrefix) || oldSelf.namePrefix == '' || (has(self.namePrefix) && self.namePrefix != '')",message="namePrefix cannot be removed once set"
 type GatewaySpec struct {
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
 
 	Features []FeatureType `json:"features,omitempty"`
+
+	// NamePrefix is prepended to the Kong entity names (route, service, upstream) of every Route on
+	// this Gateway as "<namePrefix>--<metadata.name>". It separates realms on a shared Kong.
+	// If empty, the Kong entities are named after metadata.name. Once set, it cannot be removed.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
+	// +kubebuilder:validation:MaxLength=63
+	NamePrefix string `json:"namePrefix,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway

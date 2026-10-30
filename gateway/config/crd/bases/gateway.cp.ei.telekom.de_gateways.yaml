@@ -62,6 +62,14 @@ spec:
                 items:
                   type: string
                 type: array
+              namePrefix:
+                description: |-
+                  NamePrefix is prepended to the Kong entity names (route, service, upstream) of every Route on
+                  this Gateway as "<namePrefix>--<metadata.name>". It separates realms on a shared Kong.
+                  If empty, the Kong entities are named after metadata.name. Once set, it cannot be removed.
+                maxLength: 63
+                pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
+                type: string
               redis:
                 properties:
                   enableTLS:
@@ -81,6 +89,10 @@ spec:
             required:
             - admin
             type: object
+            x-kubernetes-validations:
+            - message: namePrefix cannot be removed once set
+              rule: '!has(oldSelf.namePrefix) || oldSelf.namePrefix == '''' || (has(self.namePrefix)
+                && self.namePrefix != '''')'
           status:
             description: GatewayStatus defines the observed state of Gateway
             properties:

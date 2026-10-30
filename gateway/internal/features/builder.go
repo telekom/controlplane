@@ -16,6 +16,13 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
+// Status properties of a Route that record its Kong name, its effective name prefix and the legacy name it was adopted under.
+const (
+	routeNameProperty  = "routeName"
+	legacyNameProperty = "legacyName"
+	namePrefixProperty = "namePrefix"
+)
+
 var (
 	ErrNoRoute    = errors.New("no route found in builder context")
 	ErrNoConsumer = errors.New("no consumer found in builder context")
@@ -46,6 +53,7 @@ type FeaturesBuilder interface {
 	AddAllowedConsumers(...*gatewayv1.ConsumeRoute)
 
 	SetUpstream(client.Upstream)
+	GetUpstream() client.Upstream
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
 	AclPlugin() *plugin.AclPlugin
 	JwtPlugin() *plugin.JwtPlugin
@@ -213,7 +221,7 @@ func (b *Builder) RateLimitPluginConsumeRoute(consumeRoute *gatewayv1.ConsumeRou
 			panic("plugin is not a RateLimitPlugin")
 		}
 	} else {
-		rateLimitPlugin = plugin.RateLimitPluginFromConsumeRoute(consumeRoute)
+		rateLimitPlugin = plugin.RateLimitPluginFromConsumeRoute(consumeRoute, b.Route)
 		b.Plugins["rate-limiting-consumer--"+consumerName] = rateLimitPlugin
 	}
 
@@ -267,16 +275,36 @@ func (b *Builder) SetUpstream(upstream client.Upstream) {
 	b.Upstream = upstream
 }
 
-func (b *Builder) Build(ctx context.Context) error {
+func (b *Builder) GetUpstream() client.Upstream {
+	return b.Upstream
+}
+
+func (b *Builder) Build(ctx context.Context) (err error) {
 	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Route.Name)
 	if b.Route == nil {
 		return ErrNoRoute
 	}
 
+	// The Kong client discovers the entities by the IDs recorded before the properties are rebuilt.
+	b.Route.CaptureStoredIds()
+	legacyName := b.Route.GetProperty(legacyNameProperty)
+
+	// Only properties written during this build remain, so plugins that are not used anymore
+	// disappear. Until then, features and plugins still read the previous values.
+	b.Route.StartPropertyRebuild()
+	defer func() { b.Route.FinishPropertyRebuild(err == nil) }()
+	b.Route.SetProperty(routeNameProperty, b.Route.KongName())
+	if prefix := b.Route.GetNamePrefix(); prefix != "" {
+		b.Route.SetProperty(namePrefixProperty, prefix)
+	}
+	if legacyName != "" {
+		b.Route.SetProperty(legacyNameProperty, legacyName)
+	}
+
 	for _, f := range sortFeatures(toSlice(b.Features)) {
 		if f.IsUsed(ctx, b) {
 			log.V(1).Info("Applying feature", "name", f.Name())
-			err := f.Apply(ctx, b)
+			err = f.Apply(ctx, b)
 			if err != nil {
 				return err
 			}
@@ -289,9 +317,6 @@ func (b *Builder) Build(ctx context.Context) error {
 		return errors.New("upstream is not set")
 	}
 
-	// In case a plugin was used before but is not used anymore, we need to remove it
-	b.Route.Status.Properties = map[string]string{}
-
 	// Ensure that the Routing and JumperConfig are set last
 	// ! We must ensure that the default (empty) value is null. Otherwise, Jumper will not work properly.
 	if b.routingConfigs != nil {
@@ -300,7 +325,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(b.jumperConfig))
 	}
 
-	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream)
+	err = b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or replace route")
 	}

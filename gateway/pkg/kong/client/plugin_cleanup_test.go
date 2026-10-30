@@ -66,6 +66,19 @@ var _ = Describe("CleanupPlugins", func() {
 	}
 
 	Describe("route scope", func() {
+		It("resolves the scope by the stored route ID", func() {
+			route.SetNamePrefix("bond")
+			route.SetRouteId(routeID)
+			api.EXPECT().GetRouteWithResponse(mock.Anything, routeID).Return(
+				&kong.GetRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, JSON200: &kong.Route{Id: ptr(routeID)}}, nil,
+			).Once()
+			expectList(api, routeScopeTags, nil, pageOf(nil, routeWide("stale", "acl").json()))
+			expectDelete(api, "stale", http.StatusNoContent, &deleted)
+
+			Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
+			Expect(deleted).To(Equal([]string{"stale"}))
+		})
+
 		It("deletes obsolete route plugins in sorted order and keeps desired ones", func() {
 			expectRouteID(api)
 			expectList(api, routeScopeTags, nil, pageOf(nil,
