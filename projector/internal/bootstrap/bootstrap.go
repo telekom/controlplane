@@ -19,10 +19,13 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -59,6 +62,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/group"
 	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
@@ -186,6 +190,13 @@ func Run() error {
 	}
 
 	// --- Controller Manager ---
+	cacheOpts := cache.Options{}
+	if cfg.EnvironmentFiler != "" {
+		cfg.LeaderElectionID += "-" + cfg.EnvironmentFiler
+		cacheOpts.DefaultLabelSelector = labels.SelectorFromSet(labels.Set{
+			shared.EnvironmentLabelKey: cfg.EnvironmentFiler,
+		})
+	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
@@ -194,6 +205,7 @@ func Run() error {
 		HealthProbeBindAddress: cfg.HealthProbeBindAddress,
 		LeaderElection:         cfg.LeaderElection,
 		LeaderElectionID:       cfg.LeaderElectionID,
+		Cache:                  cacheOpts,
 	})
 	if err != nil {
 		return fmt.Errorf("creating manager: %w", err)
@@ -228,6 +240,10 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("parsing database url: %w", err)
 	}
 
+	if cfg.EnvironmentFiler != "" {
+		poolConfig.ConnConfig.RuntimeParams["search_path"] = pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()
+	}
+
 	poolConfig.MaxConns = int32(cfg.MaxOpenConns)
 	poolConfig.MinConns = int32(cfg.MaxIdleConns)
 	poolConfig.MaxConnLifetime = cfg.ConnMaxLifetime
@@ -235,6 +251,13 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
+	}
+
+	if cfg.EnvironmentFiler != "" {
+		if _, err := pool.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()); err != nil {
+			pool.Close()
+			return nil, fmt.Errorf("creating PostgreSQL schema %q: %w", cfg.EnvironmentFiler, err)
+		}
 	}
 
 	db := stdlib.OpenDBFromPool(pool)

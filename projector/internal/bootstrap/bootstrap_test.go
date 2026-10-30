@@ -5,13 +5,22 @@
 package bootstrap
 
 import (
+	"context"
+	"fmt"
+	"os"
 	"testing"
+	"time"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	"github.com/jackc/pgx/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
+	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/filetype"
@@ -35,6 +44,76 @@ func moduleNames(mods []module.Module) []string {
 	}
 	return names
 }
+
+var _ = Describe("openDatabase", func() {
+	var (
+		ctx context.Context
+		cfg *config.Config
+	)
+
+	BeforeEach(func() {
+		url := os.Getenv("CP_TEST_POSTGRES_URL")
+		if url == "" {
+			Skip("set CP_TEST_POSTGRES_URL to run PostgreSQL integration tests")
+		}
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+		DeferCleanup(cancel)
+		cfg = &config.Config{
+			DatabaseURL:      url,
+			EnvironmentFiler: fmt.Sprintf("projector-test-%d", time.Now().UnixNano()),
+			MaxOpenConns:     2,
+			MaxIdleConns:     1,
+			ConnMaxLifetime:  time.Minute,
+		}
+	})
+
+	It("creates the environment schema before migration and reuses it on restart", func() {
+		for i := range 2 {
+			db, err := openDatabase(ctx, cfg)
+			Expect(err).NotTo(HaveOccurred())
+			DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
+			if i == 0 {
+				DeferCleanup(func() {
+					_, err := db.ExecContext(ctx, "DROP SCHEMA "+pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()+" CASCADE")
+					Expect(err).NotTo(HaveOccurred())
+				})
+			}
+
+			var schemaName string
+			Expect(db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schemaName)).To(Succeed())
+			Expect(schemaName).To(Equal(cfg.EnvironmentFiler))
+			Expect(migrate.NewSchema(entsql.OpenDB(dialect.Postgres, db)).Create(ctx,
+				migrate.WithGlobalUniqueID(true),
+				migrate.WithDropIndex(true),
+				migrate.WithDropColumn(true),
+			)).To(Succeed())
+			var count int
+			Expect(db.QueryRowContext(ctx,
+				"SELECT count(*) FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'zones'",
+				cfg.EnvironmentFiler).Scan(&count)).To(Succeed())
+			Expect(count).To(Equal(1))
+		}
+	})
+
+	It("uses public with the default search_path when the environment filter is unset", func() {
+		cfg.EnvironmentFiler = ""
+		db, err := openDatabase(ctx, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
+
+		var schemaName string
+		Expect(db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schemaName)).To(Succeed())
+		Expect(schemaName).To(Equal("public"))
+	})
+
+	It("returns schema creation failures instead of continuing to migration", func() {
+		cfg.EnvironmentFiler = "pg_projector_test"
+		db, err := openDatabase(ctx, cfg)
+		Expect(db).To(BeNil())
+		Expect(err).To(MatchError(ContainSubstring(`creating PostgreSQL schema "pg_projector_test"`)))
+	})
+})
 
 var _ = Describe("registerSchemesAndModules", func() {
 	var (

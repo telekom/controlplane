@@ -19,6 +19,7 @@ type Config struct {
 	// --- Database ---
 
 	// DatabaseURL is the PostgreSQL connection string.
+	// If EnvironmentFiler is set, it will be used as the SQL schema search path as "?search_path=<env>"
 	// Env: DATABASE_URL
 	DatabaseURL string `mapstructure:"database_url" validate:"required"`
 
@@ -136,6 +137,18 @@ type Config struct {
 	// Env: LEADER_ELECTION_ID
 	LeaderElectionID string `mapstructure:"leader_election_id" validate:"required"`
 
+	// -- Environment Filer --
+	// EnvironmentFiler is the value of CRDs environment label (cp.ei.telekom.de/environment) that filters CRs by environment.
+	// If set,
+	//   - only CRs with this environment label value will be projected in SQL
+	//   - different environment label values will be ignored by the configured projector instance
+	//   - as the intend is to have multiple projectors running, each watching a specific environment,
+	//     the environment will be used as a suffix for the leader election ID as well as SQL schema.
+	// If Empty,
+	//   - all CRs will be projected regardless of their environment label. This can also be used for clusters which only have one environment.
+	// Env: ENVIRONMENT_FILER
+	EnvironmentFiler string `mapstructure:"environment_filer" validate:"omitempty,lowercase"`
+
 	// v is the viper instance used for dynamic lookups (e.g. per-module
 	// concurrency overrides). Not exported; not part of the serialised config.
 	v *viper.Viper
@@ -217,4 +230,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("health_probe_bind_address", ":8081")
 	v.SetDefault("leader_election", false)
 	v.SetDefault("leader_election_id", "projector.cp.ei.telekom.de")
+
+	// Environment
+	v.SetDefault("environment_filer", "")
 }
