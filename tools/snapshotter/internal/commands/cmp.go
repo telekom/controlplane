@@ -13,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
+	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
@@ -32,7 +33,14 @@ var (
 
 			rootCtx := signals.SetupSignalHandler()
 
-			snapshotStore := NewStore(cfg.StorePath, noStore)
+			storePath, err := resolveStorePath(cfg, "", noStore)
+			if err != nil {
+				return err
+			}
+			if !noStore {
+				zap.L().Info("using snapshot store", zap.String("path", storePath))
+			}
+			snapshotStore := NewStore(storePath, noStore)
 			if cleanStore {
 				if err := snapshotStore.Clean(); err != nil {
 					return fmt.Errorf("failed to clean snapshot store: %w", err)
