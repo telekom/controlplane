@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 18f135d2-5f55-4203-b018-50c5a38fd547
+  name: bond.horizon-events
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---bond]
+route:
+  id: 907a70c3-1012-4037-b64c-e4228c38fb29
+  name: bond.horizon-events
+  hosts: [gateway.example.test]
+  paths: [/horizon/events/v1]
+  service: { id: 18f135d2-5f55-4203-b018-50c5a38fd547 }
+  tags: [ei__telekom__de--realm---bond]
+plugins:
+  - id: 7f150524-34b9-45df-9e77-69b10f4205b4
+    name: acl
+    route: { id: 907a70c3-1012-4037-b64c-e4228c38fb29 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-events, acl]
+    config:
+      allow: [group-example]
+  - id: c6f87718-6d76-407e-881e-d162ae2eb154
+    name: jwt-keycloak
+    route: { id: 907a70c3-1012-4037-b64c-e4228c38fb29 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-events, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/bond"]
+  - id: ec66a787-95e7-41d1-b731-af10506bf2ef
+    name: request-transformer
+    route: { id: 907a70c3-1012-4037-b64c-e4228c38fb29 }
+    tags: [ei__telekom__de--realm---bond, bond.horizon-events, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]

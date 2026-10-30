@@ -34,11 +34,15 @@ func (c *kongClient) CreateOrReplacePlugin(ctx context.Context, plugin CustomPlu
 		return nil, fmt.Errorf("failed to normalize desired plugin config: %w", err)
 	}
 
+	tags := pluginTags(ctx, plugin)
+	if prefix := pluginNamePrefix(plugin); prefix != "" {
+		tags = append(tags, BuildTag("realm", prefix))
+	}
 	desired := kong.UpsertPluginJSONRequestBody{
 		Enabled:   &pluginEnabled,
 		Name:      &pluginName,
 		Protocols: convertStringSet[kong.CreatePluginForConsumerRequestProtocols](&[]string{"http"}),
-		Tags:      normalizeSet(ptrOf(pluginTags(ctx, plugin))),
+		Tags:      normalizeSet(&tags),
 	}
 	if config != nil {
 		desired.Config = &config
@@ -50,7 +54,11 @@ func (c *kongClient) CreateOrReplacePlugin(ctx context.Context, plugin CustomPlu
 		desired.Consumer = plugin.GetConsumer()
 	}
 	if plugin.GetRoute() != nil {
-		desired.Route = &map[string]any{"name": plugin.GetRoute()}
+		if routeID := boundRouteID(plugin); routeID != "" {
+			desired.Route = &map[string]any{"id": routeID}
+		} else {
+			desired.Route = &map[string]any{"name": plugin.GetRoute()}
+		}
 	}
 
 	kongPlugin, _, err := reconcile(ctx, &pluginEntity{client: c.client, plugin: plugin}, desired)
@@ -124,6 +132,31 @@ func loadGlobalPlugin(ctx context.Context, api KongAdminApi, plugin CustomPlugin
 		log.V(1).Info("found plugin", "id", *current.Id)
 	}
 	return current, nil
+}
+
+// boundRouteID returns the Kong route ID a plugin is bound to, or "" if it is bound by name.
+func boundRouteID(binder any) string {
+	if b, ok := binder.(RouteIdBinder); ok {
+		return b.GetRouteId()
+	}
+	return ""
+}
+
+// routeRef returns the Kong route ID of a route-bound plugin, or its route name.
+func routeRef(plugin CustomPlugin) string {
+	if routeID := boundRouteID(plugin); routeID != "" {
+		return routeID
+	}
+	return *plugin.GetRoute()
+}
+
+// pluginNamePrefix returns the name prefix of a route-bound plugin, or "".
+func pluginNamePrefix(plugin CustomPlugin) string {
+	realm, ok := plugin.(RealmPlugin)
+	if !ok || plugin.GetRoute() == nil {
+		return ""
+	}
+	return realm.GetNamePrefix()
 }
 
 // pluginTags builds the ownership tags of a plugin. Lookups tag a plugin
@@ -228,8 +261,8 @@ func (e *pluginEntity) bound() bool {
 }
 
 // Get resolves the parents of a bound plugin and then looks the plugin up by
-// its stored ID, its ownership tags and LegacyPluginTag. A global
-// plugin is looked up by its stored ID and its ownership tags.
+// its stored ID, its ownership tags and, for a route-bound plugin, its slot on
+// the route. A global plugin is looked up by its stored ID and its ownership tags.
 func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 	e.current = nil
 	e.consumerID = nil
@@ -257,7 +290,7 @@ func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 		identity.consumerID = consumerID
 	}
 	if e.plugin.GetRoute() != nil {
-		routeID, err := resolveParentID(ctx, e.client, parentRoute, *e.plugin.GetRoute())
+		routeID, err := resolveParentID(ctx, e.client, parentRoute, routeRef(e.plugin))
 		if err != nil {
 			return nil, false, err
 		}
@@ -265,7 +298,7 @@ func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 		identity.routeID = routeID
 	}
 
-	current, err := discoverBoundPlugin(ctx, e.client, e.plugin, identity)
+	current, err := discoverBoundPlugin(ctx, e.client, e.plugin.GetId(), identity)
 	if err != nil {
 		return nil, false, err
 	}
@@ -370,9 +403,9 @@ func (e *pluginEntity) Write(ctx context.Context, desired *kong.UpsertPluginJSON
 			status, body = response.StatusCode(), response.Body
 		}
 	case e.plugin.GetRoute() != nil:
-		log.V(1).Info("upserting plugin for route", "route", *e.plugin.GetRoute(), "id", pluginId)
+		log.V(1).Info("upserting plugin for route", "route", routeRef(e.plugin), "id", pluginId)
 		var response *kong.UpsertPluginForRouteResponse
-		if response, err = e.client.UpsertPluginForRouteWithResponse(ctx, *e.plugin.GetRoute(), pluginId, *desired); err == nil {
+		if response, err = e.client.UpsertPluginForRouteWithResponse(ctx, routeRef(e.plugin), pluginId, *desired); err == nil {
 			status, body = response.StatusCode(), response.Body
 		}
 	default:

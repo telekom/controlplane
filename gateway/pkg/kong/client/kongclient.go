@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
+	"github.com/telekom/controlplane/gateway/pkg/kong/naming"
 )
 
 type KongClient interface {
@@ -44,6 +46,7 @@ type KongAdminApi interface {
 
 	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
 	GetUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetUpstreamResponse, error)
+	ListUpstreamWithResponse(ctx context.Context, params *kong.ListUpstreamParams, reqEditors ...kong.RequestEditorFn) (*kong.ListUpstreamResponse, error)
 	ListTargetsForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, params *kong.ListTargetsForUpstreamParams, reqEditors ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error)
 	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
 	DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error)
@@ -51,9 +54,13 @@ type KongAdminApi interface {
 
 	UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error)
 	GetServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetServiceResponse, error)
+	ListServiceWithResponse(ctx context.Context, params *kong.ListServiceParams, reqEditors ...kong.RequestEditorFn) (*kong.ListServiceResponse, error)
+	ListRoutesForServiceWithResponse(ctx context.Context, serviceIdOrName string, params *kong.ListRoutesForServiceParams, reqEditors ...kong.RequestEditorFn) (*kong.ListRoutesForServiceResponse, error)
 
 	UpsertRouteWithResponse(ctx context.Context, routeIdOrName string, body kong.UpsertRouteJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertRouteResponse, error)
 	GetRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.GetRouteResponse, error)
+	ListRouteWithResponse(ctx context.Context, params *kong.ListRouteParams, reqEditors ...kong.RequestEditorFn) (*kong.ListRouteResponse, error)
+	ListPluginsForRouteWithResponse(ctx context.Context, routeIdOrName string, params *kong.ListPluginsForRouteParams, reqEditors ...kong.RequestEditorFn) (*kong.ListPluginsForRouteResponse, error)
 	DeleteRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteRouteResponse, error)
 	DeleteServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteServiceResponse, error)
 
@@ -69,10 +76,25 @@ var _ KongClient = &kongClient{}
 
 type kongClient struct {
 	client KongAdminApi
+	names  naming.NameScheme
 }
 
-var NewKongClient = func(client KongAdminApi) KongClient {
-	return &kongClient{client: client}
+// Option configures a KongClient.
+type Option func(*kongClient)
+
+// WithMigrator sets the Migrator that yields the legacy names of realm routes.
+func WithMigrator(migrator legacy.Migrator) Option {
+	return func(c *kongClient) {
+		c.names = naming.NewNameScheme(migrator)
+	}
+}
+
+var NewKongClient = func(client KongAdminApi, opts ...Option) KongClient {
+	c := &kongClient{client: client, names: naming.NewNameScheme(nil)}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func BuildTag(key, value string) string {

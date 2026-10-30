@@ -5,6 +5,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -57,19 +58,37 @@ func readOne[T any](name string, r readResult[T]) (*T, bool, error) {
 	if r.status == http.StatusNotFound {
 		return nil, false, nil
 	}
-	if r.value == nil {
-		return nil, false, fmt.Errorf("%s response body is missing", name)
+	value, err := valueOrBody(name, r)
+	if err != nil {
+		return nil, false, err
 	}
-	return r.value, true, nil
+	return value, true, nil
 }
 
 // writeOne interprets a write response.
 func writeOne[T any](name string, r readResult[T], okCodes ...int) (*T, error) {
 	if err := CheckStatusCode(statusCode(r.status), okCodes...); err != nil {
+		if r.status == http.StatusConflict {
+			return nil, fmt.Errorf("failed to write %s: its name or another unique field is already used by another kong entity: %s: %w", name, summarizeBody(r.body), err)
+		}
 		return nil, fmt.Errorf("failed to write %s (%d): %s: %w", name, r.status, summarizeBody(r.body), err)
 	}
-	if r.value == nil {
+	return valueOrBody(name, r)
+}
+
+// valueOrBody returns the typed value of an accepted response. The generated client only
+// decodes the documented success code, typically 200, so for another accepted code such as
+// 201 the body is decoded here.
+func valueOrBody[T any](name string, r readResult[T]) (*T, error) {
+	if r.value != nil {
+		return r.value, nil
+	}
+	if len(bytes.TrimSpace(r.body)) == 0 || bytes.Equal(bytes.TrimSpace(r.body), []byte("null")) {
 		return nil, fmt.Errorf("%s response body is missing", name)
 	}
-	return r.value, nil
+	value := new(T)
+	if err := json.Unmarshal(r.body, value); err != nil {
+		return nil, fmt.Errorf("decoding %s response: %w", name, err)
+	}
+	return value, nil
 }

@@ -135,3 +135,13 @@ func RequestTransformerPluginFromRoute(route *gatewayv1.Route) *RequestTransform
 		route:  route,
 	}
 }
+
+// GetRouteId implements client.RouteIdBinder.
+func (p *RequestTransformerPlugin) GetRouteId() string {
+	return routeIdOf(p.route)
+}
+
+// GetNamePrefix implements client.RealmPlugin.
+func (p *RequestTransformerPlugin) GetNamePrefix() string {
+	return namePrefixOf(p.route)
+}

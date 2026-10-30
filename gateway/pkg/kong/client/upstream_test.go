@@ -326,6 +326,34 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target list response data is missing")))
 	})
 
+	DescribeTable("decodes a target write answered without a typed body",
+		func(status int) {
+			expectMatchingUpstream(matchingUpstream())
+			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
+			api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
+				&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: status}, Body: []byte(`{"id":"created-target","target":"localhost:8080"}`)}, nil,
+			)
+			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
+			Expect(route.GetTargetsId()).To(Equal("created-target"))
+		},
+		Entry("201 Created", http.StatusCreated),
+		Entry("200 OK", http.StatusOK),
+	)
+
+	DescribeTable("rejects a target write without a usable body",
+		func(body, message string) {
+			expectMatchingUpstream(matchingUpstream())
+			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
+			api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
+				&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, Body: []byte(body)}, nil,
+			)
+			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring(message)))
+		},
+		Entry("empty", "", "target response body is missing"),
+		Entry("null", "null", "target response body is missing"),
+		Entry("malformed", "[", "decoding target response"),
+	)
+
 	It("rejects a successful target write without an ID", func() {
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)

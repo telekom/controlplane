@@ -89,10 +89,13 @@ var _ = Describe("RouteHandler", func() {
 		}
 	}
 
+	gatewayPrefix := ""
+
 	setupReadyGatewayGet := func() {
 		mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
 			Run(func(_ context.Context, _ pkgtypes.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
 				gw := obj.(*gatewayv1.Gateway)
+				gw.Spec.NamePrefix = gatewayPrefix
 				gw.Name = "test-gateway"
 				gw.Namespace = "test-ns"
 				gw.Spec.Admin = gatewayv1.AdminConfig{
@@ -122,6 +125,48 @@ var _ = Describe("RouteHandler", func() {
 				gw.Namespace = "test-ns"
 			}).Return(nil)
 	}
+
+	Describe("name prefix from the Gateway", func() {
+		BeforeEach(func() {
+			DeferCleanup(func() { gatewayPrefix = "" })
+		})
+
+		DescribeTable("sets the prefix before the Kong client is called",
+			func(prefix, kongName string) {
+				gatewayPrefix = prefix
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+
+				_, err := routehandler.NewFeatureBuilder(ctx, route)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(route.GetNamePrefix()).To(Equal(prefix))
+				Expect(route.KongName()).To(Equal(kongName))
+			},
+			Entry("Gateway with prefix", "bond", "bond--test-route"),
+			Entry("Gateway without prefix", "", "test-route"),
+		)
+
+		DescribeTable("sets the prefix before a delete",
+			func(prefix, kongName string) {
+				gatewayPrefix = prefix
+				setupReadyGatewayGet()
+				originalGetClientFor := kongutil.GetClientFor
+				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
+				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
+					return mockKC, nil
+				}
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).
+					Run(func(_ context.Context, r kongclient.CustomRoute) {
+						Expect(r.(kongclient.RealmRoute).GetKongName()).To(Equal(kongName))
+					}).Return(nil)
+
+				Expect(handler.Delete(ctx, route)).To(Succeed())
+			},
+			Entry("Gateway with prefix", "bond", "bond--test-route"),
+			Entry("Gateway without prefix", "", "test-route"),
+		)
+	})
 
 	Describe("CreateOrUpdate()", func() {
 		Context("happy path", func() {

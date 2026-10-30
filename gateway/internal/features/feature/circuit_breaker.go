@@ -43,7 +43,9 @@ func (c CircuitBreakerFeature) Priority() int {
 	return c.priority
 }
 
-// IsUsed as per ARD0014, CB is an opt-in feature, but the cleanup mechanism is special, since CB is not a plugin - see comments inside the function
+// IsUsed as per ARD0014, CB is an opt-in feature, but the cleanup mechanism is special, since CB is not a plugin.
+// A disabled or removed CB is used for the cleanup if its upstream may exist: an ID is stored, or the route has a
+// name prefix, whose upstream is found by discovery even if the status lost its IDs.
 func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route, ok := builder.GetRoute()
 	if !ok {
@@ -55,17 +57,10 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 		return false
 	}
 
-	if route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled {
-		return true
-	} else if route.GetUpstreamId() != "" {
-		// this means that CB was previously configured, but now is disabled
-		// we return true here, because the Apply function will do the cleanup
-		// this is NOT a typical usecase, but since CB is special (not a plugin) we handle it this way
-
+	if !isDeleteScenario(route) {
 		return true
 	}
-
-	return false
+	return route.GetUpstreamId() != "" || route.GetTargetsId() != "" || route.GetNamePrefix() != ""
 }
 
 func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) error {
@@ -78,48 +73,31 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 	}
 
 	if isDeleteScenario(route) {
-		return handleDeletion(ctx, builder, route)
-	} else {
-		return handleApply(ctx, builder, route)
+		handleDeletion(builder)
+		return nil
 	}
-}
-
-func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
-	// default configuration if CB is disabled
-	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
-
-	err := builder.GetKongClient().DeleteUpstream(ctx, route)
-	if err != nil {
-		return err
-	}
-
-	// remove the reference to the upstream from the route
-	route.SetUpstreamId("")
-	route.SetTargetsId("")
-
+	handleApply(ctx, builder, route)
 	return nil
 }
 
-func isDeleteScenario(route *gatewayv1.Route) bool {
-	// completely removed or turned to false
-	if (route.Spec.Traffic.CircuitBreaker != nil && !route.Spec.Traffic.CircuitBreaker.Enabled) && route.GetUpstreamId() != "" {
-		return true
-	} else {
-		return false
+// handleDeletion makes the Kong client delete the upstream after the service no longer points to it.
+func handleDeletion(builder features.FeaturesBuilder) {
+	current := builder.GetUpstream()
+	if current == nil {
+		current = client.NewUpstreamOrDie(plugin.LocalhostProxyUrl)
 	}
+	builder.SetUpstream(&client.UpstreamRemoval{Upstream: current})
 }
 
-func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
-	routeName := route.GetName()
-	kongClient := builder.GetKongClient()
+// isDeleteScenario reports whether the CB is disabled or removed.
+func isDeleteScenario(route *gatewayv1.Route) bool {
+	cb := route.Spec.Traffic.CircuitBreaker
+	return cb == nil || !cb.Enabled
+}
 
-	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
-	builder.SetUpstream(&client.CustomUpstream{
-		Scheme: "http",
-		Host:   routeName,
-		Port:   8080,
-		Path:   "/proxy",
-	})
+// handleApply makes the Kong client write the upstream and target the service points to.
+func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) {
+	routeName := route.KongName()
 
 	upstreamAlgorithm := kong.RoundRobin
 	passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp
@@ -152,28 +130,38 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 				},
 			},
 		},
-		Tags: &[]string{
+		Tags: realmTags(route,
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("upstream", upstreamName),
 			client.BuildTag("route", route.GetName()),
-		},
+		),
 	}
 
 	targetsName := routeName
 	targetsTarget := DefaultTargetsTarget
 	targetsWeight := 100
 	targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
-		Tags: &[]string{
+		Tags: realmTags(route,
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("targets", targetsName),
 			client.BuildTag("route", route.GetName()),
-		},
+		),
 		Target: &targetsTarget,
 		Weight: &targetsWeight,
 	}
 
-	if err := kongClient.CreateOrReplaceUpstream(ctx, route, &upstreamBody, &targetsBody); err != nil {
-		return fmt.Errorf("failed to create or replace upstream: %w", err)
+	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as the Kong route)
+	builder.SetUpstream(&client.CircuitBreakerUpstream{
+		CustomUpstream: client.CustomUpstream{Scheme: "http", Host: routeName, Port: 8080, Path: "/proxy"},
+		Upstream:       &upstreamBody,
+		Target:         &targetsBody,
+	})
+}
+
+// realmTags appends realm--<namePrefix> to the tags if the route has a name prefix.
+func realmTags(route *gatewayv1.Route, tags ...string) *[]string {
+	if prefix := route.GetNamePrefix(); prefix != "" {
+		tags = append(tags, client.BuildTag("realm", prefix))
 	}
-	return nil
+	return &tags
 }

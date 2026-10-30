@@ -42,3 +42,13 @@ func RequestTerminationPluginFromRoute(route *gatewayv1.Route) *RequestTerminati
 		route: route,
 	}
 }
+
+// GetRouteId implements client.RouteIdBinder.
+func (p *RequestTerminationPlugin) GetRouteId() string {
+	return routeIdOf(p.route)
+}
+
+// GetNamePrefix implements client.RealmPlugin.
+func (p *RequestTerminationPlugin) GetNamePrefix() string {
+	return namePrefixOf(p.route)
+}

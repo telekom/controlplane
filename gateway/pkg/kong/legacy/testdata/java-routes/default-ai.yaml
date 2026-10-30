@@ -1,0 +1,40 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Synthetic Kong export of a route written by the Java operator.
+service:
+  id: 8e81973e-0bec-47b0-b898-d190f9ebdacc
+  name: default-ai.ai-gateway--example-mcp-v1
+  protocol: http
+  host: localhost
+  port: 8080
+  path: /proxy
+  tags: [ei__telekom__de--realm---default-ai]
+route:
+  id: 6b4cb242-4a23-4596-a217-beaddbc496cb
+  name: default-ai.ai-gateway--example-mcp-v1
+  hosts: [gateway.example.test]
+  paths: [/ai-gateway/example-mcp/v1]
+  service: { id: 8e81973e-0bec-47b0-b898-d190f9ebdacc }
+  tags: [ei__telekom__de--realm---default-ai]
+plugins:
+  - id: 92276658-1e27-41c0-8a6a-63ec24ede6a4
+    name: acl
+    route: { id: 6b4cb242-4a23-4596-a217-beaddbc496cb }
+    tags: [ei__telekom__de--realm---default-ai, default-ai.ai-gateway--example-mcp-v1, acl]
+    config:
+      allow: [group-example]
+  - id: ae97ba94-d0ed-482f-8f6d-05584ef8aa38
+    name: jwt-keycloak
+    route: { id: 6b4cb242-4a23-4596-a217-beaddbc496cb }
+    tags: [ei__telekom__de--realm---default-ai, default-ai.ai-gateway--example-mcp-v1, jwt-keycloak]
+    config:
+      allowed_iss: ["https://idp.example.test/auth/realms/default-ai"]
+  - id: 923a7369-94e3-4f91-9a61-dbe22e44158b
+    name: request-transformer
+    route: { id: 6b4cb242-4a23-4596-a217-beaddbc496cb }
+    tags: [ei__telekom__de--realm---default-ai, default-ai.ai-gateway--example-mcp-v1, request-transformer]
+    config:
+      append:
+        headers: ["x-example:1"]
