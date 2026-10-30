@@ -127,10 +127,14 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 }
 
 // isClientNeeded reports whether the derived Application requires an Identity
-// client (and Gateway consumer). Non-file subscriptions and event exposures
-// (which need client access to the publish-route) require one; file-type (SFTP)
-// exposures and subscriptions never do, as they are realized in the file domain.
+// client (and Gateway consumer). Non-file subscriptions, event exposures
+// (which need client access to the publish-route) and listeners (which need a
+// token for their SSE stream) require one; file-type (SFTP) exposures and
+// subscriptions never do, as they are realized in the file domain.
 func isClientNeeded(owner *roverv1.Rover) bool {
+	if len(owner.Spec.Listeners) > 0 {
+		return true
+	}
 	hasAnyEventExposures := slices.ContainsFunc(owner.Spec.Exposures, func(ex roverv1.Exposure) bool {
 		return ex.Type() == roverv1.TypeEvent
 	})

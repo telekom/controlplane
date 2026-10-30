@@ -11,6 +11,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -25,7 +26,7 @@ var approvallog = logf.Log.WithName("approval-resource")
 func SetupApprovalWebhookWithManager(mgr ctrl.Manager, operatorServiceAccount string) error {
 	return ctrl.NewWebhookManagedBy(mgr, &approvalv1.Approval{}).
 		WithDefaulter(&ApprovalCustomDefaulter{}).
-		WithValidator(&ApprovalCustomValidator{OperatorServiceAccount: operatorServiceAccount}).
+		WithValidator(&ApprovalCustomValidator{OperatorServiceAccount: operatorServiceAccount, Reader: mgr.GetAPIReader()}).
 		Complete()
 }
 
@@ -67,6 +68,9 @@ type ApprovalCustomValidator struct {
 	// (e.g. "system:serviceaccount:system:controller-manager"). Only this identity
 	// is permitted to transition an Approval to the Expired state.
 	OperatorServiceAccount string
+	// Reader is an uncached API reader for the ApprovalRequest a scoped Approval
+	// is rebound to.
+	Reader client.Reader
 }
 
 var _ admission.Validator[*approvalv1.Approval] = &ApprovalCustomValidator{}
@@ -87,14 +91,26 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
+	// The approved request may only be replaced, never removed: a later grant of
+	// an unbound Approval would count as a rebind.
+	if oldObj.Spec.ApprovedRequest != nil && newObj.Spec.ApprovedRequest == nil {
+		return warnings, apierrors.NewBadRequest("the approved ApprovalRequest must not be removed")
+	}
+
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
-	if stateChanged {
+	// A scoped Approval rebound to another ApprovalRequest, which happens when a
+	// grant of a newer request lifts a revocation, is validated against that
+	// request instead, whether or not its state changes.
+	switch {
+	case isScopedRebind(oldObj, newObj):
+		err = a.validateRebind(ctx, newObj)
+	case stateChanged:
 		err = a.validateStateTransition(ctx, oldObj, newObj)
-		if err != nil {
-			return warnings, err
-		}
+	}
+	if err != nil {
+		return warnings, err
 	}
 
 	// Enforce at least one decision for any non-Auto state change
@@ -106,8 +122,10 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	}
 
 	// FourEyes: completing a half-approved Approval (Semigranted -> Granted) needs
-	// a second, different person. The one-step grants the FSM allows (Expired ->
-	// Granted renewal, Suspended -> Granted resume) need one person's granting decision.
+	// a second, different person. Any other grant needs one person's granting
+	// decision: the one-step renewal (Expired -> Granted) and resume (Suspended ->
+	// Granted) the FSM allows, and a rebind, which validateRebind checked against
+	// the request it is rebound to instead of the FSM.
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes &&
 		stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
 		if oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
@@ -145,6 +163,52 @@ func (a *ApprovalCustomValidator) validateStateTransition(ctx context.Context, o
 	// Transition to Expired is reserved for the operator — no manual expiry.
 	if newObj.Spec.State == approvalv1.ApprovalStateExpired {
 		return a.validateOperatorOnly(ctx, newObj)
+	}
+	return nil
+}
+
+// isScopedRebind reports whether an update binds a scoped Approval to another
+// ApprovalRequest than before.
+func isScopedRebind(oldObj, newObj *approvalv1.Approval) bool {
+	oldRef, newRef := oldObj.Spec.ApprovedRequest, newObj.Spec.ApprovedRequest
+	return newObj.Spec.ApprovalKey != "" && newRef != nil &&
+		(oldRef == nil || *oldRef != *newRef)
+}
+
+// validateRebind allows a scoped Approval to be granted for the ApprovalRequest
+// it is rebound to only when that live request is Granted with the same
+// strategy for the same target and gate, and, under FourEyes, by two distinct
+// deciders. Whether the request may lift a revocation is decided by the
+// ApprovalRequest handler.
+func (a *ApprovalCustomValidator) validateRebind(ctx context.Context, newObj *approvalv1.Approval) error {
+	ref := newObj.Spec.ApprovedRequest
+	if newObj.Spec.State != approvalv1.ApprovalStateGranted {
+		return apierrors.NewBadRequest("an Approval rebound to another ApprovalRequest must be Granted")
+	}
+	if ref.Namespace != newObj.Namespace {
+		return apierrors.NewBadRequest("the approved ApprovalRequest must be in the namespace of the Approval")
+	}
+	if a.Reader == nil {
+		return apierrors.NewInternalError(fmt.Errorf("no reader for the approved ApprovalRequest"))
+	}
+	ar := &approvalv1.ApprovalRequest{}
+	if err := a.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, ar); err != nil {
+		if apierrors.IsNotFound(err) {
+			return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s not found", ref.Name))
+		}
+		return apierrors.NewInternalError(fmt.Errorf("reading approved ApprovalRequest %s: %w", ref.Name, err))
+	}
+	switch {
+	case ar.UID != ref.UID:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has UID %s, not %s", ref.Name, ar.UID, ref.UID))
+	case ar.DeletionTimestamp != nil || ar.Spec.State != approvalv1.ApprovalStateGranted:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s is not granted", ref.Name))
+	case !approvalv1.ScopedIdentityMatch(ar.Spec.Target, newObj.Spec.Target, ar.Spec.ApprovalKey, newObj.Spec.ApprovalKey):
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has another scope", ref.Name))
+	case ar.Spec.Strategy != newObj.Spec.Strategy:
+		return apierrors.NewBadRequest(fmt.Sprintf("approved ApprovalRequest %s has strategy %s, not %s", ref.Name, ar.Spec.Strategy, newObj.Spec.Strategy))
+	case ar.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes:
+		return validateDistinctDeciders(ar.Spec.Decisions)
 	}
 	return nil
 }

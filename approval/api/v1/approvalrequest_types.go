@@ -12,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:validation:XValidation:rule="(has(self.approvalKey) ? self.approvalKey : '') == (has(oldSelf.approvalKey) ? oldSelf.approvalKey : '')",message="spec.approvalKey is immutable after creation"
+
 // ApprovalRequestSpec defines the desired state of ApprovalRequest
 type ApprovalRequestSpec struct {
 	// Action defines the action that is requested to be performed on the target object
@@ -43,6 +45,14 @@ type ApprovalRequestSpec struct {
 	// +kubebuilder:validation:Enum=Pending;Granted;Semigranted;Rejected
 	// +kubebuilder:default=Pending
 	State ApprovalState `json:"state"`
+
+	// ApprovalKey identifies an independent decision for the same target.
+	// Empty: one Approval per target, as used by API, Event and File subscriptions.
+	// Spectre sets provider or consumer to keep the two gates of a Listener apart.
+	// It cannot be added, removed or changed after creation.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self in ['', 'provider', 'consumer']",message="spec.approvalKey must be empty, provider or consumer"
+	ApprovalKey string `json:"approvalKey,omitempty"`
 }
 
 // ApprovalRequestStatus defines the observed state of ApprovalRequest

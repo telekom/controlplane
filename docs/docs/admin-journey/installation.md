@@ -409,6 +409,8 @@ The available access rights are:
 
 The File Manager provides a storage API for files — primarily OpenAPI specifications. Like the Secret Manager, it is deployed by the default overlay with **empty configuration** and needs a storage backend.
 
+If you turn the File Manager off (`FEATURE_FILE_MANAGER_ENABLED=false`), the Rover Server stores only the metadata of an `ApiSpecification`, and reading it returns no specification content. Applying an `ApiChangelog` or `ApiRoadmap` is rejected, because their content is stored only in the File Manager.
+
 #### Backend options
 
 | Backend | Best for | Description |

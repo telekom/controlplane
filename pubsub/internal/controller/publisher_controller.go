@@ -37,6 +37,7 @@ type PublisherReconciler struct {
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=publishers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=publishers/finalizers,verbs=update
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=eventstores,verbs=get;list;watch
+// +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=subscribers,verbs=get;list;watch
 
 func (r *PublisherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &pubsubv1.Publisher{})
@@ -53,11 +54,26 @@ func (r *PublisherReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapEventStoreToPublisher),
 			builder.WithPredicates(cc.Count("publisher", cc.RoleWatches)),
 		).
+		Watches(&pubsubv1.Subscriber{},
+			handler.EnqueueRequestsFromMapFunc(r.MapSubscriberToPublisher),
+			builder.WithPredicates(cc.Count("publisher", cc.RoleWatches)),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *PublisherReconciler) MapSubscriberToPublisher(_ context.Context, obj client.Object) []reconcile.Request {
+	subscriber, ok := obj.(*pubsubv1.Subscriber)
+	if !ok {
+		return nil
+	}
+
+	return []reconcile.Request{
+		{NamespacedName: subscriber.Spec.Publisher.K8s()},
+	}
 }
 
 func (r *PublisherReconciler) MapEventStoreToPublisher(ctx context.Context, obj client.Object) []reconcile.Request {

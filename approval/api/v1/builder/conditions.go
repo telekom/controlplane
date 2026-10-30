@@ -34,6 +34,27 @@ const (
 	ReasonApprovalRequestDenied = "ApprovalRequestDenied"
 )
 
+// ReasonApprovalRevoked is the Ready reason the approval controller sets on a
+// granted scoped ApprovalRequest whose Approval it does not issue, because the
+// Approval stays revoked or was deleted after it was issued.
+const ReasonApprovalRevoked = "Revoked"
+
+// ConditionTypeForKey returns the condition type for the given approval key.
+// An empty key returns the canonical unscoped type; the provider and consumer
+// keys return ApprovalGrantedProvider and ApprovalGrantedConsumer, so that two
+// gates on the same owner use distinct condition types.
+func ConditionTypeForKey(key string) string {
+	switch key {
+	case approvalv1.ApprovalKeyProvider:
+		return ConditionTypeApprovalGranted + "Provider"
+	case approvalv1.ApprovalKeyConsumer:
+		return ConditionTypeApprovalGranted + "Consumer"
+	default:
+		// Unscoped. The scoped builder rejects any other key before it sets a condition.
+		return ConditionTypeApprovalGranted
+	}
+}
+
 // approvalIssueTimeout bounds how long a granted ApprovalRequest may wait for
 // the approval controller to issue its Approval before SetPendingConditions
 // blocks the owner.
@@ -54,8 +75,12 @@ const maxRequestErrorLength = 256
 const messageApprovalNotIssuedYet = "Approval granted, waiting for the Approval to be issued"
 
 func newApprovalGrantedCondition(state approvalv1.ApprovalState, msg string) metav1.Condition {
+	return newKeyedApprovalGrantedCondition("", state, msg)
+}
+
+func newKeyedApprovalGrantedCondition(key string, state approvalv1.ApprovalState, msg string) metav1.Condition {
 	cond := metav1.Condition{
-		Type:               ConditionTypeApprovalGranted,
+		Type:               ConditionTypeForKey(key),
 		Status:             metav1.ConditionFalse,
 		Reason:             string(state),
 		Message:            msg,

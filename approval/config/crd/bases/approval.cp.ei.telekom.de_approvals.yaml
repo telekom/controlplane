@@ -59,6 +59,16 @@ spec:
                 description: Action defines the action that is requested to be performed
                   on the target object
                 type: string
+              approvalKey:
+                description: |-
+                  ApprovalKey identifies an independent decision for the same target.
+                  Empty: one Approval per target, as used by API, Event and File subscriptions.
+                  Spectre sets provider or consumer to keep the two gates of a Listener apart.
+                  It cannot be added, removed or changed after creation.
+                type: string
+                x-kubernetes-validations:
+                - message: spec.approvalKey must be empty, provider or consumer
+                  rule: self in ['', 'provider', 'consumer']
               approvedRequest:
                 description: ApprovedRequest contains the reference to the request
                   that was approved with this approval
@@ -280,6 +290,10 @@ spec:
             - strategy
             - target
             type: object
+            x-kubernetes-validations:
+            - message: spec.approvalKey is immutable after creation
+              rule: '(has(self.approvalKey) ? self.approvalKey : '''') == (has(oldSelf.approvalKey)
+                ? oldSelf.approvalKey : '''')'
           status:
             description: ApprovalStatus defines the observed state of Approval
             properties:

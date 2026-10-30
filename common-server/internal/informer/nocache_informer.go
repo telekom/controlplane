@@ -7,6 +7,7 @@ package informer
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"runtime"
 	"strconv"
 	"strings"
@@ -17,43 +18,87 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 )
 
-// [experimental] NoCacheInformer implements the Informer pattern without keeping a local cache.
+// [experimental] NoCacheInformer implements the Informer pattern without caching objects.
 // It flushes events directly to the event handler, which is useful for resources
-// that are too large to store efficiently in memory.
+// that are too large to store efficiently in memory. It only keeps the
+// namespace/name of every known object (O(N) memory) to emit DELETED on relist.
+// Objects the event handler writes itself are known once reported with Track.
 type NoCacheInformer struct {
-	ctx              context.Context
-	gvr              schema.GroupVersionResource
-	name             string
-	k8sClient        dynamic.Interface
-	eventHandler     EventHandler
-	log              logr.Logger
-	bufferSize       int64        // Maximum number of items to retrieve per list call
-	queue            chan event   // Channel for event processing
-	initDone         *atomic.Bool // Tracks if initial list is complete
-	currentlyLoading *atomic.Bool // Prevents concurrent reloads
-	resourceVersion  string       // Current resource version for watch operations
-	workerCount      int          // Number of worker goroutines for event processing
+	ctx             context.Context
+	gvr             schema.GroupVersionResource
+	name            string
+	k8sClient       dynamic.Interface
+	eventHandler    EventHandler
+	log             logr.Logger
+	bufferSize      int64         // Maximum number of items to retrieve per list call
+	queues          []chan event  // One event channel per worker; events of one object always use the same channel
+	initDone        *atomic.Bool  // Tracks if initial list is complete
+	resourceVersion string        // Current resource version for watch operations; guarded by stateMutex
+	retryBackoff    wait.Backoff  // Delay between failed watcher (re)starts
+	enqueueTimeout  time.Duration // How long a watch event may wait for room in its queue
 
 	watcher       watch.Interface    // The Kubernetes watch client
 	watcherCancel context.CancelFunc // Function to cancel the watcher context
+	watcherDone   chan struct{}      // Closed when the watch loop of watcher has returned
 	cancel        context.CancelFunc // Function to cancel the informer context
 
 	resyncPeriod time.Duration // How often to perform a full resync
 
-	mutex sync.Mutex // Protects access to shared fields
+	mutex sync.Mutex // Protects access to shared fields and serializes watcher (re)starts
+
+	// knownKeys maps the keys of all objects passed to the event handler or
+	// reported with Track and whose deletion was not yet handled to the
+	// trackSeq of their last tracking, so a relist can emit DELETED for
+	// objects that are gone.
+	// A relist only considers keys tracked before it began.
+	knownKeys map[types.NamespacedName]uint64
+	// trackSeq counts the trackKey calls.
+	trackSeq uint64
+	// nextDropRelist is the earliest time of the next relist after a dropped event.
+	nextDropRelist time.Time
+	// dropRelistPending is set while a relist after a dropped event is scheduled.
+	dropRelistPending atomic.Bool
+	stateMutex        sync.Mutex // Protects knownKeys, trackSeq, resourceVersion and nextDropRelist
+}
+
+// Triggers of a watcher (re)start, used in logs.
+const (
+	triggerStart        = "start"
+	triggerWatchClosed  = "watch-closed"
+	triggerGone         = "gone"
+	triggerResync       = "resync"
+	triggerEventDropped = "event-dropped"
+)
+
+const defaultEnqueueTimeout = 5 * time.Second
+
+// defaultRetryBackoff controls how often a failed watcher (re)start is retried.
+// Retries are unbounded: the delay grows from Duration by Factor until Cap and
+// then stays at about Cap plus jitter until the attempt succeeds or the
+// informer is stopped. Steps only bounds the growth phase.
+var defaultRetryBackoff = wait.Backoff{
+	Duration: 1 * time.Second,
+	Factor:   2,
+	Jitter:   0.2,
+	Steps:    10,
+	Cap:      30 * time.Second,
 }
 
 // NoCacheInformerOptions provides configurable options for the NoCacheInformer
 type NoCacheInformerOptions struct {
-	BufferSize           int64
+	BufferSize int64
+	// QueueSize is the total event queue capacity, split evenly across workers,
+	// at least 1 per worker.
 	QueueSize            int
 	WorkerCount          int
 	ResyncPeriod         time.Duration
@@ -65,7 +110,7 @@ func DefaultNoCacheInformerOptions() NoCacheInformerOptions {
 	return NoCacheInformerOptions{
 		BufferSize:   1000,
 		QueueSize:    200,
-		WorkerCount:  runtime.NumCPU(),
+		WorkerCount:  runtime.GOMAXPROCS(0), // honors the container CPU limit
 		ResyncPeriod: 1 * time.Hour,
 	}
 }
@@ -87,28 +132,38 @@ func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource,
 		Register(prometheus.DefaultRegisterer)
 	}
 
+	workerCount := max(options.WorkerCount, 1)
+	queues := make([]chan event, workerCount)
+	for w := range queues {
+		queues[w] = make(chan event, max(options.QueueSize/workerCount, 1))
+	}
+
 	log.Info("Creating new instance")
 	return &NoCacheInformer{
-		ctx:              ctxWithCancel,
-		cancel:           cancel,
-		gvr:              gvr,
-		k8sClient:        k8sClient,
-		eventHandler:     eventHandler,
-		log:              log,
-		name:             name,
-		bufferSize:       options.BufferSize,
-		queue:            make(chan event, options.QueueSize),
-		initDone:         &atomic.Bool{},
-		currentlyLoading: &atomic.Bool{},
-		workerCount:      options.WorkerCount,
-		resyncPeriod:     options.ResyncPeriod,
-		resourceVersion:  "0",
+		ctx:             ctxWithCancel,
+		cancel:          cancel,
+		gvr:             gvr,
+		k8sClient:       k8sClient,
+		eventHandler:    eventHandler,
+		log:             log,
+		name:            name,
+		bufferSize:      options.BufferSize,
+		queues:          queues,
+		initDone:        &atomic.Bool{},
+		resyncPeriod:    options.ResyncPeriod,
+		resourceVersion: "0",
+		retryBackoff:    defaultRetryBackoff,
+		enqueueTimeout:  defaultEnqueueTimeout,
+		knownKeys:       make(map[types.NamespacedName]uint64),
 	}
 }
 
 type event struct {
 	typ string
 	obj *unstructured.Unstructured
+	// seq bounds untrackKey for a DELETED event: the trackSeq when a watch
+	// event was queued, or when the relist that emitted it began.
+	seq uint64
 }
 
 func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
@@ -129,6 +184,10 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 				i.log.Info("Unknown event type", "type", e.typ)
 			}
 
+			if err == nil && e.typ == "DELETED" {
+				// Forgotten only once handled, so a relist retries a failed delete.
+				i.untrackKey(objectKey(e.obj), e.seq)
+			}
 			if err != nil {
 				i.log.Error(err, "Failed to handle event", "type", e.typ, "name", e.obj.GetName())
 				counter.WithLabelValues(i.name, e.typ, "1").Inc()
@@ -147,8 +206,27 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 	}
 }
 
-func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
-	var continueToken string
+// queueFor returns the worker queue of the object with key, so that events of
+// one object are handled in order.
+func (i *NoCacheInformer) queueFor(key types.NamespacedName) chan event {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(key.String()))
+	return i.queues[int(h.Sum32())%len(i.queues)]
+}
+
+// send enqueues e and blocks until there is room in its queue or ctx is done.
+func (i *NoCacheInformer) send(ctx context.Context, e event) error {
+	select {
+	case i.queueFor(objectKey(e.obj)) <- e:
+		queueSize.WithLabelValues(i.name).Inc()
+		return nil
+	case <-ctx.Done():
+		return errors.Wrap(ctx.Err(), "failed to enqueue event")
+	}
+}
+
+func (i *NoCacheInformer) list(ctx context.Context) error {
+	var continueToken, resourceVersion string
 
 	timeout := i.resyncPeriod * 9 / 10
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -156,6 +234,10 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 
 	i.log.Info("Listing resources", "timeout", timeout.String())
 	start := time.Now()
+	listed := make(map[types.NamespacedName]struct{})
+	// Objects tracked from now on may have been created after the list
+	// snapshot, so their absence from the list does not mean they are gone.
+	listStart := i.currentTrackSeq()
 
 	for {
 		if ctx.Err() != nil {
@@ -179,11 +261,12 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 
 			// Process this batch
 			for _, item := range list.Items[j:end] {
-				inChan <- event{
-					typ: "ADDED",
-					obj: &item,
+				key := objectKey(&item)
+				listed[key] = struct{}{}
+				if err := i.send(ctx, event{typ: "ADDED", obj: &item}); err != nil {
+					return err
 				}
-				queueSize.WithLabelValues(i.name).Inc()
+				i.trackKey(key)
 			}
 
 			// Give the system a small breather between batches
@@ -192,12 +275,25 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 			}
 		}
 
-		i.setResourceVersion(list.GetResourceVersion())
+		resourceVersion = list.GetResourceVersion()
 		continueToken = list.GetContinue()
 		if continueToken == "" {
 			break
 		}
 	}
+
+	for _, key := range i.unlistedKeys(listed, listStart) {
+		obj := &unstructured.Unstructured{}
+		obj.SetNamespace(key.Namespace)
+		obj.SetName(key.Name)
+		if err := i.send(ctx, event{typ: "DELETED", obj: obj, seq: listStart}); err != nil {
+			return err
+		}
+	}
+
+	// Only a complete list yields a resource version to watch from, so a
+	// failed list is retried as a full list.
+	i.setResourceVersion(resourceVersion)
 	i.initDone.Store(true)
 	listOperationDuration.WithLabelValues(i.name).Set(time.Since(start).Seconds())
 
@@ -210,13 +306,13 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 		case e, ok := <-watcher.ResultChan():
 			watchLoopIterations.WithLabelValues(i.name).Inc()
 			if !ok {
+				if ctx.Err() != nil {
+					// Closed by stopWatcher or Stop; nothing to reload.
+					return
+				}
 				i.log.Info("Watcher channel closed, restarting watcher")
 				// Schedule reload in a separate goroutine to avoid blocking the watch loop
-				go func() {
-					if err := i.Reload(); err != nil {
-						i.log.Error(err, "Failed to reload after watcher channel closed")
-					}
-				}()
+				go i.retry(triggerWatchClosed, i.Reload)
 				return
 			}
 			start := time.Now()
@@ -232,19 +328,19 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				}
 				counter.WithLabelValues(i.name, "ERROR", strconv.Itoa(int(status.Code))).Inc()
 				if status.Code == int32(410) { // gone
-					i.log.Info("Resource version expired, restarting watcher", "resourceVersion", i.resourceVersion)
+					i.log.Info("Resource version expired, restarting watcher", "resourceVersion", i.getResourceVersion())
 					// Reset resource version to force a full relist
 					i.setResourceVersion("0")
 					// Schedule reload in a separate goroutine to avoid blocking the watch loop
-					go func() {
-						if err := i.Reload(); err != nil {
-							i.log.Error(err, "Failed to reload after resource version expired")
-						}
-					}()
+					go i.retry(triggerGone, i.Reload)
 					return
 				}
 
-				i.log.Error(errors.New(status.Message), "Received error event", "kind", status.Kind, "name", status.Details.Name)
+				name := ""
+				if status.Details != nil {
+					name = status.Details.Name
+				}
+				i.log.Error(errors.New(status.Message), "Received error event", "reason", status.Reason, "code", status.Code, "name", name)
 				continue
 			case watch.Bookmark:
 				obj, ok := e.Object.(metav1.Object)
@@ -268,20 +364,43 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				i.log.Info("Failed to cast object", "type", fmt.Sprintf("%T", e.Object))
 				continue
 			}
-			i.setResourceVersion(obj.GetResourceVersion())
-
 			SanitizeObject(obj)
 
-			timeout := time.After(5 * time.Second)
 			select {
-			case i.queue <- event{
+			case i.queueFor(objectKey(obj)) <- event{
 				typ: string(e.Type),
 				obj: obj,
+				seq: i.currentTrackSeq(),
 			}:
 				queueSize.WithLabelValues(i.name).Inc()
-			case <-timeout:
-				i.log.Error(nil, "Failed to enqueue event: queue full or blocked",
-					"type", e.Type, "name", obj.GetName())
+				if e.Type != watch.Deleted {
+					i.trackKey(objectKey(obj))
+				}
+				// Advance only for queued events, so a restarted watch resends the others.
+				i.setResourceVersion(obj.GetResourceVersion())
+			case <-time.After(i.enqueueTimeout):
+				// A full relist repairs the state the dropped event would have changed.
+				i.setResourceVersion("0")
+				watcher.Stop()
+				if !i.dropRelistPending.CompareAndSwap(false, true) {
+					i.log.Error(nil, "Failed to enqueue event: queue full or blocked, relist already pending",
+						"type", e.Type, "name", obj.GetName())
+					return
+				}
+				delay := i.dropRelistDelay()
+				i.log.Error(nil, "Failed to enqueue event: queue full or blocked, relisting",
+					"type", e.Type, "name", obj.GetName(), "delay", delay.String())
+				go func() {
+					select {
+					case <-time.After(delay):
+						i.dropRelistPending.Store(false)
+						i.retry(triggerEventDropped, i.Reload)
+					case <-i.ctx.Done():
+					}
+				}()
+				return
+			case <-ctx.Done():
+				return
 			}
 
 			// Record event processing latency
@@ -307,10 +426,14 @@ func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) 
 			ticker.Reset(newJitteredPeriod)
 			i.log.Info("Resyncing informer", "nextPeriod", newJitteredPeriod.String())
 
-			err := i.Reload()
-			if err != nil {
-				i.log.Error(err, "Failed to resync")
-			}
+			// A full list repairs deletes the event handler failed to apply.
+			// The watcher is stopped and the resource version reset under one
+			// lock, so no watcher started in between can advance it.
+			i.mutex.Lock()
+			i.stopWatcherLocked()
+			i.setResourceVersion("0")
+			i.mutex.Unlock()
+			i.retry(triggerResync, i.Reload)
 		case <-ctx.Done():
 			return
 		}
@@ -326,28 +449,42 @@ func (i *NoCacheInformer) Start() error {
 	}
 
 	// Start worker goroutines for event processing
-	for range i.workerCount {
+	for _, queue := range i.queues {
 		activeWorkers.WithLabelValues(i.name).Inc()
 		go func() {
-			i.handlerLoop(i.ctx, i.queue)
+			i.handlerLoop(i.ctx, queue)
 			activeWorkers.WithLabelValues(i.name).Dec()
 		}()
 	}
 
-	go func() {
-		err := i.startWatcher()
-		if err != nil {
-			i.log.Error(err, "Failed to start watcher")
-		}
-	}()
+	go i.retry(triggerStart, i.startWatcher)
 
 	return nil
+}
+
+// retry runs fn with capped, jittered exponential backoff until it succeeds
+// or the informer is stopped. trigger names the cause in logs.
+func (i *NoCacheInformer) retry(trigger string, fn func() error) {
+	err := i.retryBackoff.DelayFunc().Until(i.ctx, true, true, func(context.Context) (bool, error) {
+		if err := fn(); err != nil {
+			i.log.Error(err, "Failed to (re)start watcher, retrying", "trigger", trigger)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		i.log.V(1).Info("Stopped retrying watcher", "trigger", trigger, "reason", err.Error())
+	}
 }
 
 func (i *NoCacheInformer) stopWatcher() {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
+	i.stopWatcherLocked()
+}
 
+// stopWatcherLocked requires i.mutex.
+func (i *NoCacheInformer) stopWatcherLocked() {
 	if i.watcherCancel != nil {
 		i.watcherCancel()
 		i.watcherCancel = nil
@@ -356,45 +493,50 @@ func (i *NoCacheInformer) stopWatcher() {
 		i.watcher.Stop()
 		i.watcher = nil
 	}
+	if i.watcherDone != nil {
+		// The old watch loop must not enqueue events once a new list has started.
+		<-i.watcherDone
+		i.watcherDone = nil
+	}
 }
 
-func (i *NoCacheInformer) startWatcher() (err error) {
+// startWatcher replaces any running watcher. i.mutex serializes concurrent
+// (re)starts, so none of them is skipped.
+func (i *NoCacheInformer) startWatcher() error {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	if i.currentlyLoading.Swap(true) {
-		// Another load is already in progress
-		return nil
-	}
-	defer i.currentlyLoading.Store(false)
+	i.stopWatcherLocked()
 
 	// Perform an initial list if we don't have a valid resource version
 	// (i.e. at startup or after a forced reload)
-	if len(i.resourceVersion) < 2 {
-		err := i.list(i.ctx, i.queue)
+	if len(i.getResourceVersion()) < 2 {
+		err := i.list(i.ctx)
 		if err != nil {
 			return errors.Wrap(err, "failed to start watcher")
 		}
 	}
 
 	watchCtx, cancel := context.WithCancel(i.ctx)
-	i.watcherCancel = cancel
-
-	// TODO: this should be wrapped in a backoff loop to handle transient errors
-	// see wait.Backoff
-
-	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(watchCtx, metav1.ListOptions{
+	watcher, err := i.k8sClient.Resource(i.gvr).Watch(watchCtx, metav1.ListOptions{
 		Watch:               true,
-		ResourceVersion:     i.resourceVersion,
+		ResourceVersion:     i.getResourceVersion(),
 		AllowWatchBookmarks: true,
 	})
-
 	if err != nil {
-		i.setResourceVersion("0")
+		cancel()
+		if apierrors.IsResourceExpired(err) || apierrors.IsGone(err) {
+			i.setResourceVersion("0")
+		}
 		return errors.Wrap(err, "failed to start watcher")
 	}
 
-	go i.watchLoop(watchCtx, i.watcher)
+	done := make(chan struct{})
+	i.watcher, i.watcherCancel, i.watcherDone = watcher, cancel, done
+	go func() {
+		defer close(done)
+		i.watchLoop(watchCtx, watcher)
+	}()
 
 	return nil
 }
@@ -404,14 +546,9 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
-	if i.currentlyLoading.Load() {
-		i.log.Info("Reload already in progress, skipping")
-		return nil
-	}
 	i.log.Info("Reloading informer")
 
 	reloads.WithLabelValues(i.name).Inc()
-	i.stopWatcher()
 
 	err := i.startWatcher()
 	if err != nil {
@@ -422,13 +559,87 @@ func (i *NoCacheInformer) Reload() error {
 }
 
 func (i *NoCacheInformer) Stop() {
-	i.stopWatcher()
+	// Cancel first so a running list or retry returns and releases i.mutex.
 	i.cancel()
+	i.stopWatcher()
+}
+
+// dropRelistDelay returns how long to wait before the relist after a dropped
+// event, so that sustained overload relists at most once per retryBackoff.Cap.
+// No watch runs until that relist, so updates of all objects are delayed by up
+// to retryBackoff.Cap.
+func (i *NoCacheInformer) dropRelistDelay() time.Duration {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	now := time.Now()
+	next := i.nextDropRelist
+	if next.Before(now) {
+		next = now
+	}
+	i.nextDropRelist = next.Add(i.retryBackoff.Cap)
+	return next.Sub(now)
+}
+
+func (i *NoCacheInformer) getResourceVersion() string {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	return i.resourceVersion
 }
 
 func (i *NoCacheInformer) setResourceVersion(rv string) {
 	if rv == "" {
 		return
 	}
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
 	i.resourceVersion = rv
+}
+
+func objectKey(obj *unstructured.Unstructured) types.NamespacedName {
+	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+}
+
+// Track records obj as known, so a relist emits DELETED for it once it is
+// gone. The event handler must call it for objects it writes itself, as the
+// watch may miss their deletion.
+func (i *NoCacheInformer) Track(obj *unstructured.Unstructured) {
+	i.trackKey(objectKey(obj))
+}
+
+// trackKey records an object passed to the event handler or reported with Track.
+func (i *NoCacheInformer) trackKey(key types.NamespacedName) {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	i.trackSeq++
+	i.knownKeys[key] = i.trackSeq
+}
+
+// untrackKey forgets key unless it was tracked after seq, as an object
+// reported with Track meanwhile may still exist.
+func (i *NoCacheInformer) untrackKey(key types.NamespacedName, seq uint64) {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	if tracked, ok := i.knownKeys[key]; ok && tracked <= seq {
+		delete(i.knownKeys, key)
+	}
+}
+
+func (i *NoCacheInformer) currentTrackSeq() uint64 {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	return i.trackSeq
+}
+
+// unlistedKeys returns all keys last tracked at or before seq that are
+// missing from listed.
+func (i *NoCacheInformer) unlistedKeys(listed map[types.NamespacedName]struct{}, seq uint64) []types.NamespacedName {
+	i.stateMutex.Lock()
+	defer i.stateMutex.Unlock()
+	var gone []types.NamespacedName
+	for key, tracked := range i.knownKeys {
+		if _, ok := listed[key]; !ok && tracked <= seq {
+			gone = append(gone, key)
+		}
+	}
+	return gone
 }

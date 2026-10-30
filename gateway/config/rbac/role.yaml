@@ -28,6 +28,7 @@ rules:
   - consumeroutes
   - consumers
   - gateways
+  - routelisteners
   - routes
   verbs:
   - create
@@ -43,6 +44,7 @@ rules:
   - consumeroutes/finalizers
   - consumers/finalizers
   - gateways/finalizers
+  - routelisteners/finalizers
   - routes/finalizers
   verbs:
   - update
@@ -52,6 +54,7 @@ rules:
   - consumeroutes/status
   - consumers/status
   - gateways/status
+  - routelisteners/status
   - routes/status
   verbs:
   - get

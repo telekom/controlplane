@@ -71,23 +71,16 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	var fileUUID string
-	apiSpecExisting, err := a.Store.Get(ctx, ns, id.Name)
-	if err != nil {
-		if !problems.IsNotFound(err) {
-			return err
+	if cconfig.FeatureFileManager.IsEnabled() {
+		apiSpecExisting, getErr := a.Store.Get(ctx, ns, id.Name)
+		if getErr != nil && !problems.IsNotFound(getErr) {
+			return getErr
 		}
-	} else {
-		fileUUID = apiSpecExisting.Spec.Specification
-	}
-
-	if fileUUID != "" {
-		err = file.GetFileManager().DeleteFile(ctx, fileUUID)
-		if err != nil {
-			if errors.Is(err, file.ErrNotFound) {
-				return problems.NotFound(resourceId)
+		if getErr == nil && apiSpecExisting.Spec.Specification != "" {
+			err = file.GetFileManager().DeleteFile(ctx, apiSpecExisting.Spec.Specification)
+			if err != nil && !errors.Is(err, file.ErrNotFound) {
+				return err
 			}
-			return err
 		}
 	}
 
@@ -349,7 +342,10 @@ func (a *ApiSpecificationController) lintSpec(ctx context.Context, apiSpec *rove
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, fileUUID string) (*filesapi.FileUploadResponse, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
-		return nil, nil
+		// Without the file manager the specification is not stored, so no hash is recorded either.
+		// A recorded hash would make the unchanged-content check in Update skip the upload
+		// once the file manager is enabled.
+		return &filesapi.FileUploadResponse{}, nil
 	}
 
 	if len(specMarshaled) == 0 || specMarshaled == nil {
@@ -390,6 +386,10 @@ func computeHash(data []byte) string {
 
 func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	if fileId == "" {
 		return nil, nil
 	}
 

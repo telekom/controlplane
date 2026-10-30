@@ -404,7 +404,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		if err != nil {
 			return errors.Wrapf(mapErrorToProblem(err), "failed to create object %v/%v", in.GetNamespace(), in.GetName())
 		}
-		return s.OnCreate(ctx, obj)
+		return s.storeWritten(ctx, obj)
 	}
 
 	// Object exists, update it
@@ -414,7 +414,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		FieldValidation: "Strict",
 	})
 	if err == nil {
-		return s.OnUpdate(ctx, obj)
+		return s.storeWritten(ctx, obj)
 	}
 	// if not retrying on conflict or error is not conflict, return error
 	if !s.retryOnConflict || !apierrors.IsConflict(err) {
@@ -439,7 +439,27 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		return errors.Wrap(mapErrorToProblem(err), "failed to update object")
 	}
 
-	return s.OnUpdate(ctx, obj)
+	return s.storeWritten(ctx, obj)
+}
+
+// keyTracker is implemented by informers that must be told about objects the
+// store writes itself, see informer.NoCacheInformer.Track.
+type keyTracker interface {
+	Track(obj *unstructured.Unstructured)
+}
+
+var _ keyTracker = &informer.NoCacheInformer{}
+
+// storeWritten stores obj as returned by the API server and reports it to the
+// informer, so a relist removes it if the watch misses its deletion.
+func (s *InmemoryObjectStore[T]) storeWritten(ctx context.Context, obj *unstructured.Unstructured) error {
+	if err := s.OnUpdate(ctx, obj); err != nil {
+		return err
+	}
+	if t, ok := s.informer.(keyTracker); ok {
+		t.Track(obj)
+	}
+	return nil
 }
 
 func (s *InmemoryObjectStore[T]) Patch(ctx context.Context, namespace, name string, ops ...store.Patch) (obj T, err error) {
