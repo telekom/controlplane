@@ -695,6 +695,34 @@ var _ = Describe("Approval Webhook", func() {
 			Expect(validate()).To(Succeed())
 		})
 
+		It("allows an Approval without a request reference to be granted for a new request", func() {
+			oldObj.Spec.ApprovedRequest = nil
+			Expect(validate()).To(Succeed())
+		})
+
+		It("allows a Granted Approval to be rebound to a new request", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateGranted
+			Expect(validate()).To(Succeed())
+		})
+
+		It("rejects a rebind of a Granted Approval the referenced request does not back", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateGranted
+			request.Spec.State = approvalv1.ApprovalStateSemigranted
+			Expect(validate()).To(MatchError(ContainSubstring("not granted")))
+		})
+
+		It("rejects another request reference without a state change", func() {
+			newObj.Spec.State = oldObj.Spec.State
+			newObj.Spec.Decisions = oldObj.Spec.Decisions
+			Expect(validate()).To(MatchError(ContainSubstring("must be Granted")))
+		})
+
+		It("rejects removing the request reference", func() {
+			newObj = oldObj.DeepCopy()
+			newObj.Spec.ApprovedRequest = nil
+			Expect(validate()).To(MatchError(ContainSubstring("must not be removed")))
+		})
+
 		DescribeTable("rejects a rebind the referenced request does not back",
 			func(forge func(), message string) {
 				forge()

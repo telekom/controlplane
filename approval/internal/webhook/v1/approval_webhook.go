@@ -91,21 +91,26 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
+	// The approved request may only be replaced, never removed: a later grant of
+	// an unbound Approval would count as a rebind.
+	if oldObj.Spec.ApprovedRequest != nil && newObj.Spec.ApprovedRequest == nil {
+		return warnings, apierrors.NewBadRequest("the approved ApprovalRequest must not be removed")
+	}
+
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
 	// A scoped Approval rebound to another ApprovalRequest, which happens when a
 	// grant of a newer request lifts a revocation, is validated against that
-	// request instead.
-	if stateChanged {
-		if isScopedRebind(oldObj, newObj) {
-			err = a.validateRebind(ctx, newObj)
-		} else {
-			err = a.validateStateTransition(ctx, oldObj, newObj)
-		}
-		if err != nil {
-			return warnings, err
-		}
+	// request instead, whether or not its state changes.
+	switch {
+	case isScopedRebind(oldObj, newObj):
+		err = a.validateRebind(ctx, newObj)
+	case stateChanged:
+		err = a.validateStateTransition(ctx, oldObj, newObj)
+	}
+	if err != nil {
+		return warnings, err
 	}
 
 	// Enforce at least one decision for any non-Auto state change

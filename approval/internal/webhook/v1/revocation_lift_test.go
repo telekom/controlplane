@@ -139,6 +139,106 @@ var _ = Describe("Lifting a scoped revocation through the API server", func() {
 		Expect(current(approval).Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
 	})
 
+	// boundApproval grants the gate's Approval for a newer FourEyes request.
+	boundApproval := func() (*approvalv1.Approval, *approvalv1.ApprovalRequest) {
+		approval := revokedApproval(approvalv1.ApprovalStrategyFourEyes, decision("alice", approvalv1.ApprovalStateRejected, &revokedAt))
+		ar := grantedRequest(approvalv1.ApprovalStrategyFourEyes,
+			decision("bob", approvalv1.ApprovalStateSemigranted, &after),
+			decision("carol", approvalv1.ApprovalStateGranted, &after))
+		Expect(handle(ar)).To(Succeed())
+		approval = current(approval)
+		Expect(approval.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+		return approval, ar
+	}
+
+	Context("a revoked Approval whose request reference is edited", func() {
+		// revokedAgain rejects the Approval after it was granted for ar.
+		revokedAgain := func() (*approvalv1.Approval, *approvalv1.ApprovalRequest) {
+			approval, ar := boundApproval()
+			approval.Spec.State = approvalv1.ApprovalStateRejected
+			approval.Spec.Decisions = append(approval.Spec.Decisions,
+				decision("alice", approvalv1.ApprovalStateRejected, ptr.To(metav1.NewTime(now))))
+			Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+			return approval, ar
+		}
+
+		It("stays revoked when the reference is cleared", func() {
+			approval, ar := revokedAgain()
+
+			approval.Spec.ApprovedRequest = nil
+			Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("must not be removed")))
+
+			Expect(handle(ar)).To(Succeed())
+			Expect(current(approval).Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+		})
+
+		It("stays revoked when the reference is cleared and set again with a grant", func() {
+			approval, ar := revokedAgain()
+			ref := approval.Spec.ApprovedRequest
+
+			approval.Spec.ApprovedRequest = nil
+			Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("must not be removed")))
+
+			approval = current(approval)
+			approval.Spec.ApprovedRequest = ref
+			approval.Spec.State = approvalv1.ApprovalStateGranted
+			// Drop the oldest decision so the defaulter does not trim the list.
+			approval.Spec.Decisions = append(approval.Spec.Decisions[1:],
+				decision("mallory", approvalv1.ApprovalStateGranted, ptr.To(metav1.NewTime(now))))
+			Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("Invalid state transition")))
+
+			live := current(approval)
+			Expect(live.Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+			Expect(live.Spec.ApprovedRequest.UID).To(Equal(ar.UID))
+		})
+
+		It("rejects another reference without a grant", func() {
+			approval, _ := revokedAgain()
+			newer := grantedRequest(approvalv1.ApprovalStrategyFourEyes,
+				decision("bob", approvalv1.ApprovalStateSemigranted, ptr.To(metav1.NewTime(now))),
+				decision("carol", approvalv1.ApprovalStateGranted, ptr.To(metav1.NewTime(now))))
+
+			approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(newer)
+			Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("must be Granted")))
+		})
+	})
+
+	Context("a Granted Approval rebound without a state change", func() {
+		It("is rejected for a request that is not granted", func() {
+			approval, _ := boundApproval()
+			newer := &approvalv1.ApprovalRequest{
+				ObjectMeta: metav1.ObjectMeta{Name: "request-" + rand.String(6), Namespace: "default", Labels: labels},
+				Spec: approvalv1.ApprovalRequestSpec{
+					Target:      target,
+					ApprovalKey: key,
+					Action:      "listen-provider",
+					Strategy:    approvalv1.ApprovalStrategyFourEyes,
+					State:       approvalv1.ApprovalStateSemigranted,
+					Requester:   approvalv1.Requester{TeamName: "observer", TeamEmail: "observer@example.com", Reason: "listen"},
+					Decisions:   []approvalv1.Decision{decision("bob", approvalv1.ApprovalStateSemigranted, &after)},
+				},
+			}
+			Expect(k8sClient.Create(ctx, newer)).To(Succeed())
+
+			approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(newer)
+			Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("not granted")))
+		})
+
+		It("is allowed for a newer request granted by two people", func() {
+			approval, _ := boundApproval()
+			newer := grantedRequest(approvalv1.ApprovalStrategyFourEyes,
+				decision("dave", approvalv1.ApprovalStateSemigranted, &after),
+				decision("erin", approvalv1.ApprovalStateGranted, &after))
+
+			approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(newer)
+			Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+
+			live := current(approval)
+			Expect(live.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(live.Spec.ApprovedRequest.UID).To(Equal(newer.UID))
+		})
+	})
+
 	Context("an Approval half re-granted after its revocation", func() {
 		halfRegranted := func() *approvalv1.Approval {
 			return revokedApproval(approvalv1.ApprovalStrategyFourEyes,
