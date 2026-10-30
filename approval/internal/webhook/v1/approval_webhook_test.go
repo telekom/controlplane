@@ -6,11 +6,15 @@ package v1
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -618,4 +622,145 @@ var _ = Describe("Approval Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
+	// A newly granted ApprovalRequest rebinds the Approval of its target: the
+	// step is validated against that request, not the FSM.
+	Context("rebinding an Approval to a new ApprovalRequest", func() {
+		target := ctypes.TypedObjectRef{
+			TypeMeta:  metav1.TypeMeta{APIVersion: "testgroup.cp.ei.telekom.de/v1", Kind: "TestResource"},
+			ObjectRef: ctypes.ObjectRef{Name: "subscription", Namespace: "default", UID: "target-uid"},
+		}
+		fourEyesGrant := []approvalv1.Decision{
+			{Name: "Bob", Email: "bob@example.com", ResultingState: approvalv1.ApprovalStateSemigranted},
+			{Name: "Carol", Email: "carol@example.com", ResultingState: approvalv1.ApprovalStateGranted},
+		}
+
+		var (
+			request        *approvalv1.ApprovalRequest
+			oldObj, newObj *approvalv1.Approval
+			reader         bool
+		)
+		BeforeEach(func() {
+			reader = true
+			request = &approvalv1.ApprovalRequest{
+				ObjectMeta: metav1.ObjectMeta{Name: "new-request", Namespace: "default", UID: "new-uid"},
+				Spec: approvalv1.ApprovalRequestSpec{
+					Target:    target,
+					Strategy:  approvalv1.ApprovalStrategyFourEyes,
+					State:     approvalv1.ApprovalStateGranted,
+					Decisions: slices.Clone(fourEyesGrant),
+				},
+			}
+			oldObj = &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{Name: "approval", Namespace: "default"},
+				Spec: approvalv1.ApprovalSpec{
+					Target:          target,
+					Strategy:        approvalv1.ApprovalStrategyFourEyes,
+					State:           approvalv1.ApprovalStateRejected,
+					ApprovedRequest: &ctypes.ObjectRef{Name: "old-request", Namespace: "default", UID: "old-uid"},
+					Decisions: []approvalv1.Decision{
+						{Name: "Alice", Email: "alice@example.com", ResultingState: approvalv1.ApprovalStateRejected},
+					},
+				},
+			}
+			newObj = oldObj.DeepCopy()
+			newObj.Spec.State = approvalv1.ApprovalStateGranted
+			newObj.Spec.ApprovedRequest = &ctypes.ObjectRef{Name: "new-request", Namespace: "default", UID: "new-uid"}
+			newObj.Spec.Decisions = slices.Clone(fourEyesGrant)
+		})
+		validate := func() error {
+			validator := ApprovalCustomValidator{OperatorServiceAccount: "system:serviceaccount:system:controller-manager"}
+			if reader {
+				validator.Reader = fake.NewClientBuilder().WithScheme(newWebhookTestScheme()).WithObjects(request).Build()
+			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			return err
+		}
+
+		It("allows a Rejected FourEyes Approval to be granted for a new request granted by two people", func() {
+			Expect(validate()).To(Succeed())
+		})
+
+		It("allows a Semigranted FourEyes Approval to be granted for a new Simple request", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateSemigranted
+			request.Spec.Strategy = approvalv1.ApprovalStrategySimple
+			request.Spec.Decisions = fourEyesGrant[1:]
+			newObj.Spec.Strategy = approvalv1.ApprovalStrategySimple
+			newObj.Spec.Decisions = fourEyesGrant[1:]
+			Expect(validate()).To(Succeed())
+		})
+
+		It("allows a Semigranted FourEyes Approval to be granted for a new Auto request", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateSemigranted
+			request.Spec.Strategy = approvalv1.ApprovalStrategyAuto
+			request.Spec.Decisions = nil
+			newObj.Spec.Strategy = approvalv1.ApprovalStrategyAuto
+			newObj.Spec.Decisions = nil
+			Expect(validate()).To(Succeed())
+		})
+
+		It("allows an Approval without a request reference to be granted for a new request", func() {
+			oldObj.Spec.ApprovedRequest = nil
+			Expect(validate()).To(Succeed())
+		})
+
+		It("allows a Granted Approval to be rebound to a new request", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateGranted
+			Expect(validate()).To(Succeed())
+		})
+
+		It("rejects a rebind of a Granted Approval the referenced request does not back", func() {
+			oldObj.Spec.State = approvalv1.ApprovalStateGranted
+			request.Spec.State = approvalv1.ApprovalStateSemigranted
+			Expect(validate()).To(MatchError(ContainSubstring("not granted")))
+		})
+
+		It("rejects another request reference without a state change", func() {
+			newObj.Spec.State = oldObj.Spec.State
+			newObj.Spec.Decisions = oldObj.Spec.Decisions
+			Expect(validate()).To(MatchError(ContainSubstring("must be Granted")))
+		})
+
+		It("rejects removing the request reference", func() {
+			newObj = oldObj.DeepCopy()
+			newObj.Spec.ApprovedRequest = nil
+			Expect(validate()).To(MatchError(ContainSubstring("must not be removed")))
+		})
+
+		DescribeTable("rejects a rebind the referenced request does not back",
+			func(forge func(), message string) {
+				forge()
+				Expect(validate()).To(MatchError(ContainSubstring(message)))
+			},
+			Entry("request not granted", func() { request.Spec.State = approvalv1.ApprovalStateSemigranted }, "not granted"),
+			Entry("request terminating", func() {
+				request.Finalizers = []string{"test/finalizer"}
+				request.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+			}, "not granted"),
+			Entry("request missing", func() { newObj.Spec.ApprovedRequest.Name = "missing-request" }, "not found"),
+			Entry("request recreated", func() { newObj.Spec.ApprovedRequest.UID = "other-uid" }, "UID"),
+			Entry("request in another namespace", func() { newObj.Spec.ApprovedRequest.Namespace = "other" }, "namespace"),
+			Entry("request for another target", func() { request.Spec.Target.UID = "other-target" }, "another target"),
+			Entry("request of another strategy", func() { request.Spec.Strategy = approvalv1.ApprovalStrategySimple }, "strategy"),
+			Entry("FourEyes request granted by one person", func() {
+				request.Spec.Decisions[1].Email = "bob@example.com"
+			}, "two distinct deciders"),
+			Entry("rebind to a state other than Granted", func() {
+				newObj.Spec.State = approvalv1.ApprovalStateSemigranted
+				newObj.Spec.Decisions = fourEyesGrant[:1]
+			}, "must be Granted"),
+			Entry("no reader", func() { reader = false }, "no reader"),
+		)
+
+		It("keeps the FSM for an Approval granted again for the same request", func() {
+			newObj.Spec.ApprovedRequest = oldObj.Spec.ApprovedRequest.DeepCopy()
+			Expect(validate()).To(MatchError(ContainSubstring("Invalid state transition")))
+		})
+	})
 })
+
+func newWebhookTestScheme() *runtime.Scheme {
+	s := runtime.NewScheme()
+	Expect(approvalv1.AddToScheme(s)).To(Succeed())
+	return s
+}
