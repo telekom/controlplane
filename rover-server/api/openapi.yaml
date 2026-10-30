@@ -165,11 +165,12 @@ paths:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Sort'
         - name: names
-          description: Filter by application names
+          description: Look up at most 100 application names within the caller's team. Named lookups ignore limit and cursor and return no pagination links. Duplicate names are returned once; missing names are skipped.
           in: query
           required: false
           schema:
             type: array
+            maxItems: 100
             items:
               type: string
         - $ref: '#/components/parameters/ShallowInfo'
@@ -3109,6 +3110,8 @@ components:
         - team
         - applications
       properties:
+        _links:
+          $ref: '#/components/schemas/Links'
         environment:
           type: string
         hub:

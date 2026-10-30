@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -256,6 +257,7 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 	items := make([]any, 0)
 	h.Setup(ctx)
 	nextCursor := ""
+	visited := map[string]bool{}
 	for {
 		h.logger.V(1).Info("Listing resources", "resource", h.Resource, "cursor", nextCursor)
 		resp, err := h.ListWithCursor(ctx, nextCursor)
@@ -267,6 +269,14 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 			h.logger.V(1).Info("No more items to list", "resource", h.Resource)
 			break
 		}
+		next, err := listPageURL(h.GetRequestUrl("", "", ""), resp.Links.Next)
+		if err != nil {
+			return nil, err
+		}
+		if visited[next] {
+			return nil, errors.New("server repeated a list page")
+		}
+		visited[next] = true
 		nextCursor = resp.Links.Next
 	}
 
@@ -275,14 +285,12 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 
 func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListResponse, error) {
 	h.Setup(ctx)
-	url := h.GetRequestUrl("", "", "")
-
-	// Add cursor parameter if provided
-	if cursor != "" {
-		url += "?cursor=" + cursor
+	reqURL, err := listPageURL(h.GetRequestUrl("", "", ""), cursor)
+	if err != nil {
+		return nil, err
 	}
 
-	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, reqURL)
 	if err != nil {
 		return nil, err
 	}
@@ -382,10 +390,121 @@ func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error)
 		reqUrl += "?" + params.Encode()
 	}
 
-	return h.execInfoRequest(ctx, reqUrl)
+	if len(names) > 0 {
+		return h.execInfoRequest(ctx, reqUrl)
+	}
+	return h.execPagedInfoRequest(ctx, reqUrl)
+}
+
+// execPagedInfoRequest combines application pages, retaining first-page metadata.
+func (h *BaseHandler) execPagedInfoRequest(ctx context.Context, firstURL string) (any, error) {
+	var result map[string]any
+	applications := make([]any, 0)
+	visited := map[string]bool{}
+	for next := firstURL; next != ""; {
+		if visited[next] {
+			return nil, errors.New("server repeated an application-info page")
+		}
+		visited[next] = true
+		page, err := h.fetchInfo(ctx, next)
+		if err != nil {
+			return nil, err
+		}
+		if page == nil {
+			return nil, errors.New("server returned an invalid application-info page")
+		}
+		if result == nil {
+			result = page
+		}
+		raw, exists := page["applications"]
+		if !exists {
+			return nil, errors.New("server omitted application-info items")
+		}
+		if raw != nil {
+			items, ok := raw.([]any)
+			if !ok {
+				return nil, errors.New("server returned invalid application-info items")
+			}
+			applications = append(applications, items...)
+		}
+		next = ""
+		if rawLinks, exists := page["_links"]; exists {
+			links, ok := rawLinks.(map[string]any)
+			if !ok {
+				return nil, errors.New("server returned invalid pagination links")
+			}
+			if rawNext, exists := links["next"]; exists {
+				next, ok = rawNext.(string)
+				if !ok {
+					return nil, errors.New("server returned an invalid pagination continuation")
+				}
+			}
+		}
+		if next != "" {
+			next, err = nextPageURL(firstURL, next)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	result["applications"] = applications
+	delete(result, "_links")
+	return result, nil
+}
+
+// listPageURL returns the list request URL for a raw cursor or a pagination link.
+func listPageURL(reqURL, cursor string) (string, error) {
+	if cursor == "" {
+		return reqURL, nil
+	}
+	if parsed, err := url.Parse(cursor); err == nil && parsed.IsAbs() {
+		return nextPageURL(reqURL, cursor)
+	}
+	return reqURL + "?" + url.Values{"cursor": {cursor}}.Encode(), nil
+}
+
+// nextPageURL rebuilds a continuation request from the original request URL.
+// Only the cursor and limit pagination parameters are taken from the link; its
+// scheme, host, path and other query parameters are ignored.
+func nextPageURL(first, next string) (string, error) {
+	base, err := url.Parse(first)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing request URL")
+	}
+	invalid := errors.New("server returned an invalid pagination link")
+	link, err := url.Parse(next)
+	if err != nil {
+		return "", invalid
+	}
+	linkQuery, err := url.ParseQuery(link.RawQuery)
+	if err != nil {
+		return "", invalid
+	}
+	cursor := linkQuery["cursor"]
+	if len(cursor) != 1 || cursor[0] == "" {
+		return "", invalid
+	}
+	query := base.Query()
+	query.Set("cursor", cursor[0])
+	if limit, ok := linkQuery["limit"]; ok {
+		if n, err := strconv.Atoi(limit[0]); len(limit) != 1 || err != nil || n <= 0 {
+			return "", invalid
+		}
+		query.Set("limit", limit[0])
+	}
+	base.RawQuery = query.Encode()
+	return base.String(), nil
 }
 
 func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
+	info, err := h.fetchInfo(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (h *BaseHandler) fetchInfo(ctx context.Context, url string) (map[string]any, error) {
 	h.logger.V(1).Info("Executing info request", "url", url)
 
 	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)

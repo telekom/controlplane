@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
@@ -94,10 +95,17 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 	return out.MapResponse(ctx, rover, r.stores)
 }
 
+// defaultRoverPageSize matches the default of the shared OpenAPI Limit parameter.
+const defaultRoverPageSize = 20
+
 // GetAll implements server.RoverController.
 func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversParams) (*api.RoverListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	listOpts.Limit = defaultRoverPageSize
+	if params.Limit != 0 {
+		listOpts.Limit = int(params.Limit)
+	}
 	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := r.SecretStore.List(ctx, listOpts)
@@ -219,28 +227,43 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 		return res, problems.BadRequest("Only team clients are allowed to get all applications")
 	}
 
-	listOpts := store.NewListOpts()
-	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
-	objList, err := r.Store.List(ctx, listOpts)
-	if err != nil {
-		return res, err
+	if len(params.Names) > 100 {
+		return res, problems.BadRequest("At most 100 application names may be requested")
 	}
-
-	// Build a set of requested names for efficient lookup
-	nameFilter := make(map[string]struct{}, len(params.Names))
-	for _, n := range params.Names {
-		nameFilter[n] = struct{}{}
-	}
-
-	list := make([]api.ApplicationInfo, 0, len(objList.Items))
-	for _, rover := range objList.Items {
-		// If names filter is provided, skip rovers not in the list
-		if len(nameFilter) > 0 {
-			if _, ok := nameFilter[rover.Name]; !ok {
+	var rovers []*roverv1.Rover
+	var links api.Links
+	if len(params.Names) > 0 {
+		names := slices.Clone(params.Names)
+		slices.Sort(names)
+		namespace := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team
+		for _, name := range slices.Compact(names) {
+			rover, err := r.Store.Get(ctx, namespace, name)
+			if problems.IsNotFound(err) {
 				continue
 			}
+			if err != nil {
+				return res, fmt.Errorf("getting requested rover: %w", err)
+			}
+			rovers = append(rovers, rover)
 		}
-		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", rover.Name)
+	} else {
+		listOpts := store.NewListOpts()
+		listOpts.Cursor = params.Cursor
+		listOpts.Limit = defaultRoverPageSize
+		if params.Limit != 0 {
+			listOpts.Limit = int(params.Limit)
+		}
+		store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
+		page, err := r.Store.List(ctx, listOpts)
+		if err != nil {
+			return res, err
+		}
+		rovers = page.Items
+		links = api.Links{Self: page.Links.Self, Next: page.Links.Next}
+	}
+
+	list := make([]api.ApplicationInfo, 0, len(rovers))
+	for _, rover := range rovers {
 		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 		if err != nil {
 			return res, problems.InternalServerError("Failed to map resource", err.Error())
@@ -250,10 +273,11 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 
 	// TODO: Improvement item to validate organization and team with the organization api (double check)
 	return api.RoverInfoResponse{
-		Applications: list,
-		Environment:  bCtx.Environment,
-		Hub:          bCtx.Group,
-		Team:         bCtx.Team,
+		Applications:    list,
+		UnderscoreLinks: links,
+		Environment:     bCtx.Environment,
+		Hub:             bCtx.Group,
+		Team:            bCtx.Team,
 	}, nil
 
 }
