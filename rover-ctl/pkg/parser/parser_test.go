@@ -325,6 +325,22 @@ var _ = Describe("Parser", func() {
 			Expect(seen).To(Equal([]string{"a"}))
 		})
 
+		DescribeTable("should follow discovered symlinked manifest files",
+			func(recursive bool) {
+				target := filepath.Join(GinkgoT().TempDir(), "outside.yaml")
+				Expect(os.WriteFile(target, []byte(rover("outside")), 0o644)).To(Succeed())
+				link := filepath.Join(root, "link.yaml")
+				Expect(os.Symlink(target, link)).To(Succeed())
+
+				p := parser.NewObjectParser(parser.WithRecursive(recursive))
+				Expect(p.Parse(root)).To(Succeed())
+				Expect(names(p)).To(Equal([]string{"outside"}))
+				Expect(p.Objects()[0].GetProperty("filename")).To(Equal(link))
+			},
+			Entry("with recursion enabled", true),
+			Entry("with recursion disabled", false),
+		)
+
 		It("should not follow symlinked directories", func() {
 			outside := GinkgoT().TempDir()
 			Expect(os.WriteFile(filepath.Join(outside, "out.yaml"), []byte(rover("outside")), 0o644)).To(Succeed())
