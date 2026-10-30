@@ -147,6 +147,12 @@ The `database` component uses hardcoded credentials and is intended for developm
 
 ### ControlPlane API configuration
 
+When the Projector's `ENVIRONMENT_FILER` is set, it watches only CRs whose
+`cp.ei.telekom.de/environment` label matches, creates the same-named PostgreSQL
+schema if missing, and migrates its tables there. Restarts reuse that schema.
+The Projector's database role needs permission to create the schema and migrate its tables. 
+
+
 The ControlPlane API reads its configuration from a ConfigMap named `controlplane-api-config`. When the custom overlay consumes the remote bundle, patch that generated ConfigMap:
 
 ```yaml
