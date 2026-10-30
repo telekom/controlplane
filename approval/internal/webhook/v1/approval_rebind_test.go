@@ -178,6 +178,56 @@ var _ = Describe("Granting a new ApprovalRequest for a target that has an Approv
 		Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("Invalid state transition")))
 	})
 
+	// revokedApproval grants the target's Approval for a FourEyes request and
+	// then rejects it.
+	revokedApproval := func() (*approvalv1.Approval, *approvalv1.ApprovalRequest) {
+		ar := grantedRequest(approvalv1.ApprovalStrategyFourEyes, fourEyesGrant()...)
+		Expect(handle(ar)).To(Succeed())
+		approval := current(&approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{
+			Name: approvalv1.ApprovalName(target.Kind, target.Name), Namespace: "default",
+		}})
+		approval.Spec.State = approvalv1.ApprovalStateRejected
+		approval.Spec.Decisions = append(approval.Spec.Decisions, decision("alice", approvalv1.ApprovalStateRejected))
+		Expect(k8sClient.Update(ctx, approval)).To(Succeed())
+		return approval, ar
+	}
+
+	It("keeps a revoked Approval revoked when its request reference is cleared", func() {
+		approval, ar := revokedApproval()
+
+		approval.Spec.ApprovedRequest = nil
+		Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("must not be removed")))
+
+		Expect(handle(ar)).To(Succeed())
+		Expect(current(approval).Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+	})
+
+	It("keeps a revoked Approval revoked when its request reference is cleared and set again", func() {
+		approval, ar := revokedApproval()
+		ref := approval.Spec.ApprovedRequest
+
+		approval.Spec.ApprovedRequest = nil
+		Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("must not be removed")))
+
+		approval = current(approval)
+		approval.Spec.ApprovedRequest = ref
+		approval.Spec.State = approvalv1.ApprovalStateGranted
+		approval.Spec.Decisions = append(approval.Spec.Decisions, decision("mallory", approvalv1.ApprovalStateGranted))
+		Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("Invalid state transition")))
+
+		Expect(current(approval).Spec.State).To(Equal(approvalv1.ApprovalStateRejected))
+		Expect(current(approval).Spec.ApprovedRequest.UID).To(Equal(ar.UID))
+	})
+
+	It("rejects a rebind of a Granted Approval to a request that is not granted", func() {
+		approval := existingApproval(approvalv1.ApprovalStrategyFourEyes)
+		ar := newRequest(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, fourEyesGrant()[:1]...)
+		Expect(k8sClient.Create(ctx, ar)).To(Succeed())
+
+		approval.Spec.ApprovedRequest = ctypes.ObjectRefFromObject(ar)
+		Expect(k8sClient.Update(ctx, approval)).To(MatchError(ContainSubstring("not granted")))
+	})
+
 	DescribeTable("rejects a rebind the referenced request does not back",
 		func(before func(*approvalv1.ApprovalRequest), after func(*approvalv1.ApprovalRequest, *ctypes.ObjectRef), message string) {
 			approval := existingApproval(approvalv1.ApprovalStrategyFourEyes, decision("alice", approvalv1.ApprovalStateRejected))

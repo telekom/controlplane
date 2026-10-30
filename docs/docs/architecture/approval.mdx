@@ -46,7 +46,7 @@ FourEyes validation is unaffected by this, because it only inspects the **two mo
 
 ## Granting a new request
 
-A subscription has one Approval, so a newly granted ApprovalRequest for it (for example after a scope change) replaces the Approval's spec with the request's strategy, decisions and `approvedRequest`, whatever state the Approval was in. The admission webhook validates such a rebind against the referenced ApprovalRequest instead of the state machine: the request must exist in the same namespace with the referenced UID, not be terminating, be Granted for the same target with the same strategy and, under FourEyes, be granted by two different people.
+A subscription has one Approval, so a newly granted ApprovalRequest for it (for example after a scope change) replaces the Approval's spec with the request's strategy, decisions and `approvedRequest`, whatever state the Approval was in. The admission webhook validates such a rebind against the referenced ApprovalRequest instead of the state machine: the request must exist in the same namespace with the referenced UID, not be terminating, be Granted for the same target with the same strategy and, under FourEyes, be granted by two different people. This applies to every change of `approvedRequest`, with or without a state change, and `approvedRequest` cannot be removed.
 
 ## Trusted Teams
 
