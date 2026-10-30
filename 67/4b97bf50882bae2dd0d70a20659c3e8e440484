@@ -1,0 +1,49 @@
+rover-ctl/pkg/parser/parser_test.go
+  s_fbb21caeedfcef::t_48f3d9d22e4c65 255
+  s_fbb21caeedfcef::t_1c2426e0feea8b 252-254
+  s_fbb21caeedfcef::t_3b2b3852829db2 256-258
+rover-ctl/pkg/commands/apply/cmd.go
+  s_fbb21caeedfcef::t_6dcf5fdbc73cf5 39
+  s_fbb21caeedfcef::t_e441da81ca2a76 36-38
+  s_fbb21caeedfcef::t_a97f43efa6e9eb 40-42
+rover-ctl/docs/roverctl_delete.md
+  s_fbb21caeedfcef::t_6dcf5fdbc73cf5 21
+  s_fbb21caeedfcef::t_9acfb3ec87193e 18-20
+  s_fbb21caeedfcef::t_7620caa90fca9d 22-24
+rover-ctl/docs/roverctl_apply.md
+  s_fbb21caeedfcef::t_6dcf5fdbc73cf5 21
+  s_fbb21caeedfcef::t_6bc8a32825b4bb 18-20
+  s_fbb21caeedfcef::t_e9fc08c85e3fc5 22-24
+rover-ctl/pkg/commands/delete/cmd.go
+  s_fbb21caeedfcef::t_6dcf5fdbc73cf5 39
+  s_fbb21caeedfcef::t_75b6c4f15c2155 36-38
+  s_fbb21caeedfcef::t_5c83760fe2196a 40-42
+rover-ctl/pkg/commands/apply/cmd_test.go
+  s_fbb21caeedfcef::t_82e3a13525154f 120-124,194-241
+rover-ctl/pkg/commands/base/file.go
+  s_fbb21caeedfcef::t_4ac947189aef6a 9,19-21,37-49,52-53,70
+rover-ctl/pkg/commands/base/file_test.go
+  s_fbb21caeedfcef::t_dc0bd96f21af43 71-85,143-164
+rover-ctl/pkg/commands/delete/cmd_test.go
+  s_fbb21caeedfcef::t_ec366a452b7faf 119-123,158-206
+rover-ctl/pkg/commands/get-info/cmd_test.go
+  s_fbb21caeedfcef::t_3e6f93e0cbae97 130-131
+rover-ctl/pkg/parser/parser.go
+  s_fbb21caeedfcef::t_a17a871159a3a0 36,46-48,57-64,81-84,111-126,129,134-135,137-144,148-150,152-153,155,158-159,161-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "674b97bf50882bae2dd0d70a20659c3e8e440484",
+  "prompts": {},
+  "sessions": {
+    "s_fbb21caeedfcef": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e73a688b5ffeZIEsL33nPZxK11",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
