@@ -1,0 +1,32 @@
+docs/docs/architecture/admin.mdx
+  s_5d2034fbf81423::t_25b1d953243ecf 50-51
+admin/internal/handler/zone/gateway.go
+  s_5d2034fbf81423::t_f856a8998282d5 85,111-117
+  s_e09ac076ea69d6::t_4e0ca9006f89b8 118-119
+admin/internal/handler/zone/handler_test.go
+  s_5d2034fbf81423::t_f856a8998282d5 32-41,103,105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b284135d2eeca39ba828ed4500b287b9dedf96f0",
+  "prompts": {},
+  "sessions": {
+    "s_5d2034fbf81423": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e77a3c195ffecILUcyP5a41GD6",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e09ac076ea69d6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e77ea825fffeiNy6HqV10hYWys",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
