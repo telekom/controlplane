@@ -1,0 +1,77 @@
+tools/snapshotter/pkg/source/kong_list_test.go
+  s_44b1818a90daea::t_d139940a11bc8e 1-270
+tools/snapshotter/internal/commands/apply.go
+  s_44b1818a90daea::t_0c77418932c68b 1-182
+tools/snapshotter/internal/commands/apply_test.go
+  s_44b1818a90daea::t_0c77418932c68b 1-146
+tools/snapshotter/README.md
+  s_44b1818a90daea::t_f803066427c8cd 97,222-232,248,251-253,258-284,336-337,358-376
+tools/snapshotter/internal/commands/cmp.go
+  s_44b1818a90daea::t_10fed575ac9fa9 16,36-43
+tools/snapshotter/internal/commands/commands_suite_test.go
+  s_44b1818a90daea::t_a4d2aa5dd33fb2 1-17
+tools/snapshotter/internal/commands/common.go
+  s_44b1818a90daea::t_93cd4a8dbc80ec 8-10,19-32
+tools/snapshotter/internal/commands/common_test.go
+  s_44b1818a90daea::t_0fedae57cb9b1f 1-60
+tools/snapshotter/internal/commands/serve.go
+  s_44b1818a90daea::t_8bd2d2167937ad 31-38
+tools/snapshotter/internal/commands/snap.go
+  s_44b1818a90daea::t_93c2dcbf1762af 22-24,41-56,82-83,103,123-144
+tools/snapshotter/pkg/api/snaps.go
+  s_44b1818a90daea::t_45d3392ac5ba1d 20,22-24,42
+tools/snapshotter/pkg/config/config.go
+  s_44b1818a90daea::t_e00ba605173bb2 51
+tools/snapshotter/pkg/orchestrator/orchestrator.go
+  s_44b1818a90daea::t_16ebdd844b5b72 31-32,68,102-104,127-132,134-136,147-156
+tools/snapshotter/pkg/orchestrator/orchestrator_suite_test.go
+  s_44b1818a90daea::t_564ba01640c768 1-17
+tools/snapshotter/pkg/orchestrator/orchestrator_test.go
+  s_44b1818a90daea::t_4986d08a81541f 1-136
+tools/snapshotter/pkg/rollback/compare.go
+  s_44b1818a90daea::t_624d41f479c03e 1-68
+tools/snapshotter/pkg/rollback/kong.go
+  s_44b1818a90daea::t_7037cd53355d3a 1-272
+tools/snapshotter/pkg/rollback/plan.go
+  s_44b1818a90daea::t_ea8b573b97157e 1-175
+tools/snapshotter/pkg/rollback/plan_test.go
+  s_44b1818a90daea::t_f063b57d3df19c 1-103
+tools/snapshotter/pkg/rollback/rollback.go
+  s_44b1818a90daea::t_59ee716a7b5727 1-176
+tools/snapshotter/pkg/rollback/rollback_suite_test.go
+  s_44b1818a90daea::t_49e20bf6a81b5c 1-45
+tools/snapshotter/pkg/rollback/rollback_test.go
+  s_44b1818a90daea::t_a25cfbd0adec21 1-289
+tools/snapshotter/pkg/rollback/rollbacktest/fakekong.go
+  s_44b1818a90daea::t_2d3c20ac2193db 1-201
+tools/snapshotter/pkg/snapshot/shapshot.go
+  s_44b1818a90daea::t_ca9278d896bfba 9,54-77
+tools/snapshotter/pkg/source/kong.go
+  s_44b1818a90daea::t_ce7eecd78cb145 10,152-154,156-158,160-161,165-174,176,188-202,204,206-235,237,241,243-244,246-255,257,260-261,263,267,269-270,272-278,280
+tools/snapshotter/pkg/store/file.go
+  s_44b1818a90daea::t_622498eb18b2f8 147-151,157,183,192,195-200
+tools/snapshotter/pkg/store/file_test.go
+  s_44b1818a90daea::t_bc442c215c2646 1-49
+tools/snapshotter/pkg/store/store.go
+  s_44b1818a90daea::t_475769dd3ccbeb 19-29
+tools/snapshotter/pkg/store/store_suite_test.go
+  s_44b1818a90daea::t_cb4d94ee33de12 1-17
+tools/snapshotter/pkg/store/umask_test.go
+  s_44b1818a90daea::t_2579774d49bd4e 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8c2e76786bf995dd290164a59703ac88de8a3795",
+  "prompts": {},
+  "sessions": {
+    "s_44b1818a90daea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e73e65833ffeXezE6orQQQwYez",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
