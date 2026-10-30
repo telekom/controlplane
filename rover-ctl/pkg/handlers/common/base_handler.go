@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strings"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -257,6 +257,7 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 	items := make([]any, 0)
 	h.Setup(ctx)
 	nextCursor := ""
+	visited := map[string]bool{}
 	for {
 		h.logger.V(1).Info("Listing resources", "resource", h.Resource, "cursor", nextCursor)
 		resp, err := h.ListWithCursor(ctx, nextCursor)
@@ -268,6 +269,14 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 			h.logger.V(1).Info("No more items to list", "resource", h.Resource)
 			break
 		}
+		next, err := listPageURL(h.GetRequestUrl("", "", ""), resp.Links.Next)
+		if err != nil {
+			return nil, err
+		}
+		if visited[next] {
+			return nil, errors.New("server repeated a list page")
+		}
+		visited[next] = true
 		nextCursor = resp.Links.Next
 	}
 
@@ -276,18 +285,9 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 
 func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListResponse, error) {
 	h.Setup(ctx)
-	reqURL := h.GetRequestUrl("", "", "")
-
-	if cursor != "" {
-		parsed, err := url.Parse(cursor)
-		if err == nil && parsed.IsAbs() {
-			reqURL, err = trustedPageURL(reqURL, cursor)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			reqURL += "?" + url.Values{"cursor": {cursor}}.Encode()
-		}
+	reqURL, err := listPageURL(h.GetRequestUrl("", "", ""), cursor)
+	if err != nil {
+		return nil, err
 	}
 
 	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, reqURL)
@@ -441,7 +441,7 @@ func (h *BaseHandler) execPagedInfoRequest(ctx context.Context, firstURL string)
 			}
 		}
 		if next != "" {
-			next, err = trustedPageURL(firstURL, next)
+			next, err = nextPageURL(firstURL, next)
 			if err != nil {
 				return nil, err
 			}
@@ -452,17 +452,48 @@ func (h *BaseHandler) execPagedInfoRequest(ctx context.Context, firstURL string)
 	return result, nil
 }
 
-// trustedPageURL confines continuation requests to the original endpoint.
-func trustedPageURL(first, next string) (string, error) {
+// listPageURL returns the list request URL for a raw cursor or a pagination link.
+func listPageURL(reqURL, cursor string) (string, error) {
+	if cursor == "" {
+		return reqURL, nil
+	}
+	if parsed, err := url.Parse(cursor); err == nil && parsed.IsAbs() {
+		return nextPageURL(reqURL, cursor)
+	}
+	return reqURL + "?" + url.Values{"cursor": {cursor}}.Encode(), nil
+}
+
+// nextPageURL rebuilds a continuation request from the original request URL.
+// Only the cursor and limit pagination parameters are taken from the link; its
+// scheme, host, path and other query parameters are ignored.
+func nextPageURL(first, next string) (string, error) {
 	base, err := url.Parse(first)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing request URL")
 	}
-	u, err := url.Parse(next)
-	if err != nil || !u.IsAbs() || u.Scheme != base.Scheme || !strings.EqualFold(u.Host, base.Host) || u.Path != base.Path || u.User != nil || u.Fragment != "" {
-		return "", errors.New("server returned an untrusted pagination link")
+	invalid := errors.New("server returned an invalid pagination link")
+	link, err := url.Parse(next)
+	if err != nil {
+		return "", invalid
 	}
-	return u.String(), nil
+	linkQuery, err := url.ParseQuery(link.RawQuery)
+	if err != nil {
+		return "", invalid
+	}
+	cursor := linkQuery["cursor"]
+	if len(cursor) != 1 || cursor[0] == "" {
+		return "", invalid
+	}
+	query := base.Query()
+	query.Set("cursor", cursor[0])
+	if limit, ok := linkQuery["limit"]; ok {
+		if n, err := strconv.Atoi(limit[0]); len(limit) != 1 || err != nil || n <= 0 {
+			return "", invalid
+		}
+		query.Set("limit", limit[0])
+	}
+	base.RawQuery = query.Encode()
+	return base.String(), nil
 }
 
 func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
