@@ -8,7 +8,7 @@ go 1.26.10
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
-	k8s.io/apimachinery v0.37.1
+	k8s.io/apimachinery v0.37.2
 	sigs.k8s.io/controller-runtime v0.25.2
 )
 
