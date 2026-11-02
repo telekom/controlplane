@@ -26,6 +26,7 @@ var _ = Describe("Config Env Tests", func() {
 		origMaxBackoff              time.Duration
 		origMaxConcurrentReconciles int
 		origFinalizerName           string
+		origBasePathLabelKey        string
 
 		oldEnv map[string]string
 	)
@@ -41,6 +42,7 @@ var _ = Describe("Config Env Tests", func() {
 		origMaxBackoff = MaxBackoff
 		origMaxConcurrentReconciles = MaxConcurrentReconciles
 		origFinalizerName = FinalizerName
+		origBasePathLabelKey = BasePathLabelKey
 
 		// Reset viper for each test
 		viper.Reset()
@@ -59,6 +61,7 @@ var _ = Describe("Config Env Tests", func() {
 		MaxBackoff = origMaxBackoff
 		MaxConcurrentReconciles = origMaxConcurrentReconciles
 		FinalizerName = origFinalizerName
+		BasePathLabelKey = origBasePathLabelKey
 		viper.Reset()
 	})
 
@@ -144,6 +147,7 @@ var _ = Describe("Config Env Tests", func() {
 
 			// Verify derived values
 			Expect(FinalizerName).To(Equal("test.prefix.from.env/finalizer"))
+			Expect(BasePathLabelKey).To(Equal("test.prefix.from.env/basepath"))
 			cleanUpEnv(envVars)
 		})
 
