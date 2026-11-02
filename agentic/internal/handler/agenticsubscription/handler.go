@@ -41,8 +41,23 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// 1. Validate server (McpServer or AgentCard) exists and is active
-	serverInfo, caseConflict, findErr := util.ServerMustExist(ctx, obj.Spec.BasePath)
+	// Resolve the active exposure first so server lookup uses its explicit variant.
+	exposures, err := util.FindAgenticExposures(ctx, obj.Spec.BasePath)
+	if err != nil {
+		return err
+	}
+	exposureFound, exposure, err := util.FindActiveAgenticExposure(exposures)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
+	}
+
+	var variant *agenticv1.AgenticVariant
+	if exposureFound {
+		variant = &exposure.Spec.Variant
+	}
+
+	// 1. Validate the matching server (McpServer or AgentCard) exists and is active.
+	serverInfo, caseConflict, findErr := util.ServerMustExist(ctx, obj.Spec.BasePath, variant)
 	if findErr != nil {
 		return findErr
 	}
@@ -65,15 +80,6 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return nil
 	}
 
-	// 2. Find active AgenticExposure
-	exposures, err := util.FindAgenticExposures(ctx, obj.Spec.BasePath)
-	if err != nil {
-		return err
-	}
-	exposureFound, exposure, err := util.FindActiveAgenticExposure(exposures)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find active AgenticExposure for basePath %q", obj.Spec.BasePath)
-	}
 	// Validate scopes using the selected exposure's endpoint exception before readiness checks.
 	if scopeErr := validateSubscriptionScopes(serverInfo, exposure, obj); scopeErr != nil {
 		return scopeErr

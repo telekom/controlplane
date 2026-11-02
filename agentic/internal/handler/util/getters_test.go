@@ -612,16 +612,15 @@ var _ = Describe("FindActiveServer", func() {
 		server := makeReadyMcpServer("/mcp/weather/v1")
 		mockListMcpServers([]agenticv1.McpServer{server})
 
-		found, info, err := util.FindActiveServer(ctx, "/mcp/weather/v1")
+		variant := agenticv1.AgenticVariantMCP
+		found, info, err := util.FindActiveServer(ctx, "/mcp/weather/v1", &variant)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(info).ToNot(BeNil())
 		Expect(info.BasePath).To(Equal("/mcp/weather/v1"))
 	})
 
-	It("should fall back to AgentCard when no McpServer found", func() {
-		mockListMcpServers([]agenticv1.McpServer{})
-
+	It("should find an AgentCard for the AGENT variant", func() {
 		card := agenticv1.AgentCard{
 			ObjectMeta: metav1.ObjectMeta{Name: "ac1", Namespace: "default"},
 			Spec:       agenticv1.AgentCardSpec{BasePath: "/agent/assistant/v1", Oauth2Scopes: []string{"read"}},
@@ -630,7 +629,8 @@ var _ = Describe("FindActiveServer", func() {
 		setReadyCondition(&card)
 		mockListAgentCards([]agenticv1.AgentCard{card})
 
-		found, info, err := util.FindActiveServer(ctx, "/agent/assistant/v1")
+		variant := agenticv1.AgenticVariantAgent
+		found, info, err := util.FindActiveServer(ctx, "/agent/assistant/v1", &variant)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(info.BasePath).To(Equal("/agent/assistant/v1"))
@@ -641,7 +641,7 @@ var _ = Describe("FindActiveServer", func() {
 		mockListMcpServers([]agenticv1.McpServer{})
 		mockListAgentCards([]agenticv1.AgentCard{})
 
-		found, info, err := util.FindActiveServer(ctx, "/nonexistent/v1")
+		found, info, err := util.FindActiveServer(ctx, "/nonexistent/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeFalse())
 		Expect(info).To(BeNil())
@@ -651,11 +651,31 @@ var _ = Describe("FindActiveServer", func() {
 		server := makeReadyMcpServer("/shared/path/v1")
 		mockListMcpServers([]agenticv1.McpServer{server})
 
-		found, info, err := util.FindActiveServer(ctx, "/shared/path/v1")
+		found, info, err := util.FindActiveServer(ctx, "/shared/path/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(found).To(BeTrue())
 		Expect(info.BasePath).To(Equal("/shared/path/v1"))
 		// AgentCard List should not even be called since McpServer was found
+	})
+
+	It("should not fall back from MCP to an AgentCard", func() {
+		mockListMcpServers([]agenticv1.McpServer{})
+		variant := agenticv1.AgenticVariantMCP
+
+		found, info, err := util.FindActiveServer(ctx, "/shared/path/v1", &variant)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeFalse())
+		Expect(info).To(BeNil())
+	})
+
+	It("should not fall back from AGENT to an McpServer", func() {
+		mockListAgentCards([]agenticv1.AgentCard{})
+		variant := agenticv1.AgenticVariantAgent
+
+		found, info, err := util.FindActiveServer(ctx, "/shared/path/v1", &variant)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeFalse())
+		Expect(info).To(BeNil())
 	})
 })
 
@@ -695,7 +715,7 @@ var _ = Describe("ServerMustExist", func() {
 		server := makeReadyMcpServer("/mcp/weather/v1")
 		mockListMcpServers([]agenticv1.McpServer{server})
 
-		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(caseConflict).To(BeFalse())
 		Expect(info).ToNot(BeNil())
@@ -716,7 +736,7 @@ var _ = Describe("ServerMustExist", func() {
 		// ServerMustExist case-conflict check
 		mockListMcpServers([]agenticv1.McpServer{conflicting})
 
-		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(info).To(BeNil())
 		Expect(caseConflict).To(BeTrue())
@@ -737,7 +757,7 @@ var _ = Describe("ServerMustExist", func() {
 		mockListMcpServers([]agenticv1.McpServer{})
 		mockListAgentCards([]agenticv1.AgentCard{conflicting})
 
-		info, caseConflict, err := util.ServerMustExist(ctx, "/agent/assistant/v1")
+		info, caseConflict, err := util.ServerMustExist(ctx, "/agent/assistant/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(info).To(BeNil())
 		Expect(caseConflict).To(BeTrue())
@@ -751,7 +771,7 @@ var _ = Describe("ServerMustExist", func() {
 		mockListMcpServers([]agenticv1.McpServer{})
 		mockListAgentCards([]agenticv1.AgentCard{})
 
-		info, caseConflict, err := util.ServerMustExist(ctx, "/nonexistent/v1")
+		info, caseConflict, err := util.ServerMustExist(ctx, "/nonexistent/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(info).To(BeNil())
 		Expect(caseConflict).To(BeFalse())
@@ -771,7 +791,7 @@ var _ = Describe("ServerMustExist", func() {
 		mockListMcpServers([]agenticv1.McpServer{inactive})
 		mockListAgentCards([]agenticv1.AgentCard{})
 
-		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1")
+		info, caseConflict, err := util.ServerMustExist(ctx, "/mcp/weather/v1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(info).To(BeNil())
 		Expect(caseConflict).To(BeFalse())

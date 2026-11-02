@@ -36,7 +36,7 @@ type AgenticExposureSpec struct {
 	// Provider identifies the providing application.
 	Provider ctypes.ObjectRef `json:"provider"`
 
-	// Variant defines the exposure variant (MCP or TELECONTEXTMCP).
+	// Variant defines whether the exposure serves an MCP server, a Telecontext MCP server, or an A2A agent.
 	// +kubebuilder:default=MCP
 	Variant AgenticVariant `json:"variant"`
 

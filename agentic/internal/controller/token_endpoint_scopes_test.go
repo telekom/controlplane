@@ -291,7 +291,7 @@ var _ = Describe("External token endpoint scope exception", func() {
 		declared := []string{"write", "read"}
 		f.server(kind, declared)
 		lookupCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, f.namespace)))
-		server, conflict, err := util.ServerMustExist(lookupCtx, f.basePath)
+		server, conflict, err := util.ServerMustExist(lookupCtx, f.basePath, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(conflict).To(BeFalse())
 		Expect(server).To(Equal(&util.ServerInfo{BasePath: f.basePath, Oauth2Scopes: declared}))

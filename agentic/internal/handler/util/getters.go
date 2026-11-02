@@ -273,38 +273,43 @@ func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1
 	return true, activeCard, nil
 }
 
-// FindActiveServer looks up the active server (McpServer or AgentCard) for a basePath.
-// It tries McpServer first; if not found, tries AgentCard.
+// FindActiveServer looks up the active server for a basePath.
+// When variant is set, it only checks the matching resource type. A nil variant
+// is used only when no active exposure exists to identify the expected type.
 // Returns (found, serverInfo, error). The serverInfo is nil when found is false.
 //
 // Note: case-conflict detection is handled at the CR handler level (McpServer/AgentCard handlers),
 // not here. For exposure/subscription case-conflict checks, use ServerMustExist.
-func FindActiveServer(ctx context.Context, basePath string) (bool, *ServerInfo, error) {
-	// Try McpServer first
-	mcpFound, mcpServer, err := FindActiveMcpServer(ctx, basePath)
-	if err != nil {
-		return false, nil, err
-	}
-	if mcpFound {
-		return true, &ServerInfo{
-			BasePath:     mcpServer.Spec.BasePath,
-			Oauth2Scopes: mcpServer.Spec.Oauth2Scopes,
-		}, nil
-	}
-
-	// Try AgentCard
-	agentFound, agentCard, err := FindActiveAgentCard(ctx, basePath)
-	if err != nil {
-		return false, nil, err
-	}
-	if agentFound {
-		return true, &ServerInfo{
-			BasePath:     agentCard.Spec.BasePath,
-			Oauth2Scopes: agentCard.Spec.Oauth2Scopes,
-		}, nil
+func FindActiveServer(ctx context.Context, basePath string, variant *agenticv1.AgenticVariant) (bool, *ServerInfo, error) {
+	if variant == nil || *variant == agenticv1.AgenticVariantMCP || *variant == agenticv1.AgenticVariantTelecontextMCP {
+		found, server, err := FindActiveMcpServer(ctx, basePath)
+		if err != nil {
+			return false, nil, err
+		}
+		if found {
+			return true, &ServerInfo{
+				BasePath:     server.Spec.BasePath,
+				Oauth2Scopes: server.Spec.Oauth2Scopes,
+			}, nil
+		}
+		if variant != nil {
+			return false, nil, nil
+		}
 	}
 
-	return false, nil, nil
+	if variant != nil && *variant != agenticv1.AgenticVariantAgent {
+		return false, nil, errors.Errorf("unsupported agentic variant %q", *variant)
+	}
+
+	found, card, err := FindActiveAgentCard(ctx, basePath)
+	if err != nil || !found {
+		return false, nil, err
+	}
+
+	return true, &ServerInfo{
+		BasePath:     card.Spec.BasePath,
+		Oauth2Scopes: card.Spec.Oauth2Scopes,
+	}, nil
 }
 
 // ServerMustExist checks that an active server (McpServer or AgentCard) exists for the given basePath.
@@ -313,8 +318,8 @@ func FindActiveServer(ctx context.Context, basePath string) (bool, *ServerInfo, 
 // Returns (serverInfo, caseConflict, error):
 //   - serverInfo is non-nil when an exact-match active server was found
 //   - caseConflict is true when no exact match but a case-different server exists
-func ServerMustExist(ctx context.Context, basePath string) (*ServerInfo, bool, error) {
-	found, serverInfo, err := FindActiveServer(ctx, basePath)
+func ServerMustExist(ctx context.Context, basePath string, variant *agenticv1.AgenticVariant) (*ServerInfo, bool, error) {
+	found, serverInfo, err := FindActiveServer(ctx, basePath, variant)
 	if err != nil {
 		return nil, false, err
 	}
@@ -326,29 +331,31 @@ func ServerMustExist(ctx context.Context, basePath string) (*ServerInfo, bool, e
 	c := cclient.ClientFromContextOrDie(ctx)
 	normalizedLabel := labelutil.NormalizeLabelValue(basePath)
 
-	// Check McpServers
-	mcpList := &agenticv1.McpServerList{}
-	if err := c.List(ctx, mcpList, client.MatchingLabels{
-		agenticv1.AgenticBasePathLabelKey: normalizedLabel,
-	}); err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
-	}
-	for i := range mcpList.Items {
-		if mcpList.Items[i].Status.Active && strings.EqualFold(mcpList.Items[i].Spec.BasePath, basePath) {
-			return nil, true, nil
+	if variant == nil || *variant == agenticv1.AgenticVariantMCP || *variant == agenticv1.AgenticVariantTelecontextMCP {
+		mcpList := &agenticv1.McpServerList{}
+		if err := c.List(ctx, mcpList, client.MatchingLabels{
+			agenticv1.AgenticBasePathLabelKey: normalizedLabel,
+		}); err != nil {
+			return nil, false, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
+		}
+		for i := range mcpList.Items {
+			if mcpList.Items[i].Status.Active && strings.EqualFold(mcpList.Items[i].Spec.BasePath, basePath) {
+				return nil, true, nil
+			}
 		}
 	}
 
-	// Check AgentCards
-	agentList := &agenticv1.AgentCardList{}
-	if err := c.List(ctx, agentList, client.MatchingLabels{
-		agenticv1.AgentBasePathLabelKey: normalizedLabel,
-	}); err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
-	}
-	for i := range agentList.Items {
-		if agentList.Items[i].Status.Active && strings.EqualFold(agentList.Items[i].Spec.BasePath, basePath) {
-			return nil, true, nil
+	if variant == nil || *variant == agenticv1.AgenticVariantAgent {
+		agentList := &agenticv1.AgentCardList{}
+		if err := c.List(ctx, agentList, client.MatchingLabels{
+			agenticv1.AgentBasePathLabelKey: normalizedLabel,
+		}); err != nil {
+			return nil, false, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
+		}
+		for i := range agentList.Items {
+			if agentList.Items[i].Status.Active && strings.EqualFold(agentList.Items[i].Spec.BasePath, basePath) {
+				return nil, true, nil
+			}
 		}
 	}
 

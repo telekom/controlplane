@@ -37,7 +37,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	logger := log.FromContext(ctx)
 
 	// 1. Validate server (McpServer or AgentCard) exists and is active
-	serverInfo, caseConflict, err := util.ServerMustExist(ctx, obj.Spec.BasePath)
+	serverInfo, caseConflict, err := util.ServerMustExist(ctx, obj.Spec.BasePath, &obj.Spec.Variant)
 	if err != nil {
 		return err
 	}

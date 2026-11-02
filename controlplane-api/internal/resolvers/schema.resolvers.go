@@ -43,6 +43,7 @@ func (r *agentCardResolver) ActiveExposure(ctx context.Context, obj *ent.AgentCa
 	sysCtx := viewer.SystemContext(ctx)
 	exp, err := obj.QueryExposures().
 		Where(agenticexposure.Active(true)).
+		Where(agenticexposure.VariantEQ(agenticexposure.VariantAgent)).
 		WithOwner(func(q *ent.ApplicationQuery) {
 			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {
@@ -856,6 +857,7 @@ func (r *mcpServerResolver) ActiveExposure(ctx context.Context, obj *ent.McpServ
 	sysCtx := viewer.SystemContext(ctx)
 	exp, err := obj.QueryExposures().
 		Where(agenticexposure.Active(true)).
+		Where(agenticexposure.VariantIn(agenticexposure.VariantMcp, agenticexposure.VariantTelecontextMcp)).
 		WithOwner(func(q *ent.ApplicationQuery) {
 			q.WithZone()
 			q.WithOwnerTeam(func(q *ent.TeamQuery) {

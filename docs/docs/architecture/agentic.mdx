@@ -104,6 +104,11 @@ The primary route's `TrustedIssuers` are composed as follows:
 
 An `McpExposure` can declare a `spec.variant` that changes how access is provisioned:
 
+The variant also determines which registered server backs the exposure: `MCP` and
+`TELECONTEXTMCP` resolve an `McpServer`, while `AGENT` resolves an `AgentCard`.
+The operator does not fall back to the other resource type when the matching
+server is missing.
+
 ### `MCP` (default)
 
 Standard exposure. The AI Gateway Route is created with normal access control. Consumers gain access by subscribing and having a `ConsumeRoute` provisioned.

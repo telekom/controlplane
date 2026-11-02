@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticsubscription"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
@@ -148,6 +149,18 @@ var _ = Describe("McpServer resolvers", func() {
 		Expect(info).To(BeNil())
 	})
 
+	It("should not resolve an AGENT exposure for an MCP server", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
+		_, err := client.AgenticExposure.UpdateOne(s.AgenticExposureAlpha).
+			SetVariant(agenticexposure.VariantAgent).
+			Save(testutil.AllowContext())
+		Expect(err).NotTo(HaveOccurred())
+
+		info, err := r.McpServer().ActiveExposure(ctx, s.McpServerAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info).To(BeNil())
+	})
+
 	It("should resolve the owner team", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
 		team, err := r.McpServer().Owner(ctx, s.McpServerAlpha)
@@ -197,6 +210,50 @@ var _ = Describe("McpServer resolvers", func() {
 		url, err := r.McpServer().SpecificationURL(ctx, s.McpServerAlpha)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(url).To(BeNil())
+	})
+})
+
+var _ = Describe("AgentCard resolvers", func() {
+	var (
+		client *ent.Client
+		r      *resolvers.Resolver
+		s      *testutil.SeedData
+	)
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should resolve the active AGENT exposure for an agent card", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Teams: []string{"team-alpha"}})
+		card, err := client.AgentCard.Create().
+			SetNamespace("default").
+			SetBasePath("/agent-alpha").
+			SetVersion("1.0.0").
+			SetName("agent-alpha").
+			SetOwner(s.TeamAlpha).
+			Save(testutil.AllowContext())
+		Expect(err).NotTo(HaveOccurred())
+		_, err = client.AgenticExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/agent-alpha").
+			SetVariant(agenticexposure.VariantAgent).
+			SetActive(true).
+			SetOwner(s.AppAlpha).
+			SetAgentCard(card).
+			Save(testutil.AllowContext())
+		Expect(err).NotTo(HaveOccurred())
+
+		info, err := r.AgentCard().ActiveExposure(ctx, card)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info).NotTo(BeNil())
+		Expect(info.Variant).To(Equal("AGENT"))
 	})
 })
 

@@ -78,6 +78,18 @@ func makeReadyMcpServer(basePath string) agenticv1.McpServer { //nolint:unparam 
 	return s
 }
 
+func makeReadyAgentCard(basePath string) agenticv1.AgentCard {
+	card := agenticv1.AgentCard{
+		ObjectMeta: metav1.ObjectMeta{Name: "agent-card-1", Namespace: "default"},
+		Spec:       agenticv1.AgentCardSpec{BasePath: basePath, Version: "1.0.0", Name: "Test Agent"},
+		Status:     agenticv1.AgentCardStatus{Active: true},
+	}
+	meta.SetStatusCondition(&card.Status.Conditions, metav1.Condition{
+		Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue, Reason: "Ready",
+	})
+	return card
+}
+
 func makeReadyZoneWithAiGateway() *adminv1.Zone {
 	z := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -268,10 +280,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 		It("should set Blocked when no active server found", func() {
 			mockListMcpServers([]agenticv1.McpServer{})
-			mockListAgentCards([]agenticv1.AgentCard{})
 			// ServerMustExist does additional case-conflict lookups when not found
 			mockListMcpServers([]agenticv1.McpServer{})
-			mockListAgentCards([]agenticv1.AgentCard{})
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -287,10 +297,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
 
 			mockListMcpServers([]agenticv1.McpServer{})
-			mockListAgentCards([]agenticv1.AgentCard{})
 			// ServerMustExist does additional case-conflict lookups when not found
 			mockListMcpServers([]agenticv1.McpServer{})
-			mockListAgentCards([]agenticv1.AgentCard{})
 
 			fakeClient.EXPECT().
 				Delete(ctx, mock.AnythingOfType("*v1.Route")).
@@ -1003,16 +1011,15 @@ var _ = Describe("AgenticExposureHandler", func() {
 		},
 			Entry("MCP", agenticv1.AgenticVariantMCP, []string{"variant--mcp"}),
 			Entry("Telecontext MCP", agenticv1.AgenticVariantTelecontextMCP, []string{"variant--telecontextmcp"}),
-			Entry("AGENT", agenticv1.AgenticVariantAgent, []string{"variant--agent"}),
 		)
 
 		It("should create Route for AGENT variant without triggering Telecontext logic", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantAgent
 
-			server := makeReadyMcpServer("/mcp/weather/v1")
+			card := makeReadyAgentCard("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
 
-			mockListMcpServers([]agenticv1.McpServer{server})
+			mockListAgentCards([]agenticv1.AgentCard{card})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
 			mockListAgenticSubscriptions([]agenticv1.AgenticSubscription{})
