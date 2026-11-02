@@ -657,7 +657,6 @@ var _ = Describe("FindActiveServer", func() {
 		Expect(info.BasePath).To(Equal("/shared/path/v1"))
 		// AgentCard List should not even be called since McpServer was found
 	})
-
 })
 
 // ---------- ServerMustExist ----------

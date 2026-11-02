@@ -65,7 +65,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/v1/users",
 					Requestor: apiv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 					Security: &apiv1.SubscriberSecurity{
 						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
@@ -122,7 +122,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
 					Requestor: apiv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					},
 				},
 			}
@@ -143,7 +143,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
 					Requestor: apiv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					},
 					Security: security,
 				},
@@ -244,7 +244,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
-					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor:   apiv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security:    nil,
 				},
 			}
@@ -259,7 +259,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
-					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor:   apiv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security:    &apiv1.SubscriberSecurity{},
 				},
 			}
@@ -275,7 +275,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
-					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor:   apiv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &apiv1.SubscriberSecurity{
 						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 							Client: &apiv1.OAuth2ClientCredentials{
@@ -304,7 +304,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
-					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor:   apiv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &apiv1.SubscriberSecurity{
 						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 							Basic: &apiv1.BasicAuthCredentials{
@@ -332,7 +332,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/test",
-					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor:   apiv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &apiv1.SubscriberSecurity{
 						M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 							Scopes: []string{"admin"},
@@ -361,7 +361,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/v1/users",
 					Requestor: apiv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 				},
 			}
@@ -385,7 +385,7 @@ var _ = Describe("ApiSubscription Translator", func() {
 				Spec: apiv1.ApiSubscriptionSpec{
 					ApiBasePath: "/api/v1/users",
 					Requestor: apiv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 				},
 			}

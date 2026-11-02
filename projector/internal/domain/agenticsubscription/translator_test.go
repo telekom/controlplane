@@ -65,7 +65,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/v1/tools",
 					Requestor: agenticv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 					Security: &agenticv1.SubscriberSecurity{
 						M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
@@ -127,7 +127,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/test",
 					Requestor: agenticv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					},
 				},
 			}
@@ -144,7 +144,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security:  nil,
 				},
 			}
@@ -158,7 +158,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security:  &agenticv1.SubscriberSecurity{},
 				},
 			}
@@ -172,7 +172,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &agenticv1.SubscriberSecurity{
 						M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 							Client: &agenticv1.OAuth2ClientCredentials{
@@ -200,7 +200,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &agenticv1.SubscriberSecurity{
 						M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 							Basic: &agenticv1.BasicAuthCredentials{
@@ -227,7 +227,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Security: &agenticv1.SubscriberSecurity{
 						M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 							Scopes: []string{"admin"},
@@ -251,7 +251,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Traffic: agenticv1.SubscriberTraffic{
 						Failover: &agenticv1.SubscriberFailover{Enabled: true},
 					},
@@ -269,7 +269,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Traffic: agenticv1.SubscriberTraffic{
 						Failover: &agenticv1.SubscriberFailover{Enabled: false},
 					},
@@ -287,7 +287,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub", Namespace: "prod--team--alpha"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath:  "/mcp/test",
-					Requestor: agenticv1.Requestor{Application: ctypes.ObjectRef{Name: "app"}},
+					Requestor: agenticv1.Requestor{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}}},
 					Traffic:   agenticv1.SubscriberTraffic{},
 				},
 			}
@@ -307,7 +307,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/v1/tools",
 					Requestor: agenticv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 				},
 			}
@@ -331,7 +331,7 @@ var _ = Describe("AgenticSubscription Translator", func() {
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/v1/tools",
 					Requestor: agenticv1.Requestor{
-						Application: ctypes.ObjectRef{Name: "consumer-app"},
+						Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer-app"}},
 					},
 				},
 			}

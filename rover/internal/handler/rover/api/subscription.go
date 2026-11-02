@@ -12,7 +12,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -28,9 +30,12 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 	name := MakeName(owner.Name, sub.BasePath, sub.Organization)
 
 	environment := contextutil.EnvFromContextOrDie(ctx)
-	zoneRef := types.ObjectRef{
-		Name:      owner.Spec.Zone,
-		Namespace: environment,
+	zoneRef := types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      owner.Spec.Zone,
+			Namespace: environment,
+		},
 	}
 
 	apiSubscription := &apiapi.ApiSubscription{
@@ -51,7 +56,10 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			Security:     mapSubscriberSecurityToApiSecurity(sub.Security),
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
-				Application: *owner.Status.Application,
+				Application: types.TypedObjectRef{
+					TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: applicationv1.GroupVersion.String()},
+					ObjectRef: *owner.Status.Application,
+				},
 			},
 		}
 

@@ -75,6 +75,34 @@ var _ = Describe("validateBasicWithScopesPolicy", func() {
 	})
 })
 
+var _ = Describe("validateFailover", func() {
+	It("rejects a legacy failover reference to the exposure zone", func() {
+		exposure := &apiapi.ApiExposure{
+			Spec: apiapi.ApiExposureSpec{
+				Zone: ctypes.TypedObjectRef{
+					TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+					ObjectRef: ctypes.ObjectRef{
+						Name:      "zone-a",
+						Namespace: "environment",
+					},
+				},
+				Traffic: apiapi.Traffic{
+					Failover: &apiapi.ProviderFailover{
+						Zones: []ctypes.TypedObjectRef{{
+							ObjectRef: ctypes.ObjectRef{
+								Name:      "zone-a",
+								Namespace: "environment",
+							},
+						}},
+					},
+				},
+			},
+		}
+
+		Expect(validateFailover(exposure)).To(BeFalse())
+	})
+})
+
 var _ = Describe("Exposure scope validation", func() {
 	endpoint := &apiapi.ExternalIdentityProvider{TokenEndpoint: "https://idp.example/token"}
 	emptyEndpoint := &apiapi.ExternalIdentityProvider{}

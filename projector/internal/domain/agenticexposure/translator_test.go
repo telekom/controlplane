@@ -50,21 +50,19 @@ var _ = Describe("AgenticExposure Translator", func() {
 						Strategy:     agenticv1.ApprovalStrategyAuto,
 						TrustedTeams: []string{"team-a"},
 					},
-					Provider: ctypes.ObjectRef{
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{
 						Name:      "my-app",
 						Namespace: "prod--platform--narvi",
-					},
+					}},
 					Variant: agenticv1.AgenticVariantMCP,
 					Traffic: agenticv1.Traffic{
 						Failover: &agenticv1.ProviderFailover{
-							Zones: []ctypes.ObjectRef{
+							Zones: []ctypes.TypedObjectRef{
 								{
-									Name:      "zoneA",
-									Namespace: "ns",
+									ObjectRef: ctypes.ObjectRef{Name: "zoneA", Namespace: "ns"},
 								},
 								{
-									Name:      "zoneB",
-									Namespace: "ns",
+									ObjectRef: ctypes.ObjectRef{Name: "zoneB", Namespace: "ns"},
 								},
 							},
 						},
@@ -233,7 +231,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/zones",
 					Visibility: agenticv1.VisibilityZone,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -253,7 +251,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/ent",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -273,7 +271,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/simple",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -296,7 +294,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 						Strategy:     agenticv1.ApprovalStrategyFourEyes,
 						TrustedTeams: []string{"team-x", "team-y"},
 					},
-					Provider: ctypes.ObjectRef{Name: "app"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:  agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -317,7 +315,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/multi",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Upstreams: []agenticv1.Upstream{
 						{Url: "https://primary.example.com", Weight: 80},
@@ -345,7 +343,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/unknown",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -368,7 +366,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 						Strategy:     agenticv1.ApprovalStrategyAuto,
 						TrustedTeams: nil,
 					},
-					Provider: ctypes.ObjectRef{Name: "app"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:  agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -388,7 +386,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/empty-ups",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Upstreams:  nil,
 				},
@@ -409,7 +407,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/inactive",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 				Status: agenticv1.AgenticExposureStatus{
@@ -432,7 +430,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/agent/v1/card",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantAgent,
 				},
 			}
@@ -452,7 +450,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/telecontext",
 					Visibility: agenticv1.VisibilityEnterprise,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantTelecontextMCP,
 				},
 			}
@@ -472,7 +470,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/ext-idp",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Security: &agenticv1.Security{
 						M2M: &agenticv1.Machine2MachineAuthentication{
@@ -525,7 +523,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/basic",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Security: &agenticv1.Security{
 						M2M: &agenticv1.Machine2MachineAuthentication{
@@ -560,7 +558,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/scopes",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Security: &agenticv1.Security{
 						M2M: &agenticv1.Machine2MachineAuthentication{
@@ -590,7 +588,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/no-security",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -610,7 +608,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/full-traffic",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Traffic: agenticv1.Traffic{
 						RateLimit: &agenticv1.RateLimit{
@@ -694,7 +692,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/provider-only",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Traffic: agenticv1.Traffic{
 						RateLimit: &agenticv1.RateLimit{
@@ -738,7 +736,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/subscriber-only",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 					Traffic: agenticv1.Traffic{
 						RateLimit: &agenticv1.RateLimit{
@@ -779,7 +777,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/no-traffic",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -800,7 +798,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 					BasePath:   "/mcp/v1/no-transformation",
 					Visibility: agenticv1.VisibilityWorld,
 					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-					Provider:   ctypes.ObjectRef{Name: "app"},
+					Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app"}},
 					Variant:    agenticv1.AgenticVariantMCP,
 				},
 			}
@@ -821,7 +819,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/v1/tools",
-					Provider: ctypes.ObjectRef{Name: "my-app"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "my-app"}},
 				},
 			}
 
@@ -844,7 +842,7 @@ var _ = Describe("AgenticExposure Translator", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/v1/tools",
-					Provider: ctypes.ObjectRef{Name: "my-app"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "my-app"}},
 				},
 			}
 

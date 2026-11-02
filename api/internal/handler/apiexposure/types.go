@@ -120,9 +120,9 @@ func (s *routingState) CrossZoneLmsIssuers(withoutZones ...types.TypedObjectRef)
 
 // AddCrossZoneLmsIssuer records the LMS issuer for a proxy route's zone,
 // lazily initializing the map on first use.
-func (s *routingState) AddCrossZoneLmsIssuer(zone types.TypedObjectRef, issuer string) {
+func (s *routingState) AddCrossZoneLmsIssuer(zone *types.TypedObjectRef, issuer string) {
 	if s.crossZoneLmsIssuers == nil {
 		s.crossZoneLmsIssuers = make(map[types.TypedObjectRef]string)
 	}
-	s.crossZoneLmsIssuers[zone] = issuer
+	s.crossZoneLmsIssuers[*zone] = issuer
 }

@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -39,9 +40,12 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 	}
 
 	environment := contextutil.EnvFromContextOrDie(ctx)
-	zoneRef := types.ObjectRef{
-		Name:      owner.Spec.Zone,
-		Namespace: environment,
+	zoneRef := types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      owner.Spec.Zone,
+			Namespace: environment,
+		},
 	}
 
 	// Resolve the owning team up front; it is added to the trusted teams below.

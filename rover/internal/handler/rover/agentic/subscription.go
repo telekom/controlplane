@@ -12,7 +12,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -36,9 +38,12 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 	}
 
 	environment := contextutil.EnvFromContextOrDie(ctx)
-	zoneRef := types.ObjectRef{
-		Name:      owner.Spec.Zone,
-		Namespace: environment,
+	zoneRef := types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      owner.Spec.Zone,
+			Namespace: environment,
+		},
 	}
 
 	mutator := func() error {
@@ -57,7 +62,10 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			BasePath: sub.BasePath,
 			Zone:     zoneRef,
 			Requestor: agenticv1.Requestor{
-				Application: *owner.Status.Application,
+				Application: types.TypedObjectRef{
+					TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: applicationv1.GroupVersion.String()},
+					ObjectRef: *owner.Status.Application,
+				},
 			},
 			Security: mapSubscriberSecurityToAgenticSecurity(sub.Security),
 			Traffic:  mapSubscriberTrafficToAgenticTraffic(sub.Traffic),

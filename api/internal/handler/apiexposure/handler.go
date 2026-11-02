@@ -148,7 +148,7 @@ func (h *ApiExposureHandler) determineRoutingState(ctx context.Context, apiExp *
 
 	// Derive cross-zone and local subscriber flags from the fetched list.
 	for _, sub := range subscribers {
-		if sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
+		if apiExp.Spec.Zone.ObjectRef.Equals(&sub.Spec.Zone) {
 			state.hasLocalSubs = true
 		} else {
 			state.hasCrossZoneSubs = true
@@ -225,10 +225,10 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 			return errors.Wrapf(presetErr, "failed to get default preset status for zone %s", subscriberZoneRef.Name)
 		}
 		if presetStatus.Links.LmsIssuer != "" {
-			state.AddCrossZoneLmsIssuer(subscriberZoneRef, presetStatus.Links.LmsIssuer)
+			state.AddCrossZoneLmsIssuer(&subscriberZoneRef, presetStatus.Links.LmsIssuer)
 		}
 
-		if subscriberZoneRef.Equals(&apiExp.Spec.Zone) {
+		if apiExp.Spec.Zone.ObjectRef.Equals(&subscriberZoneRef) {
 			logger.V(1).Info("Skipping proxy route creation for exposure zone itself", "zone", subscriberZoneRef.Name)
 			continue
 		}
@@ -344,7 +344,7 @@ func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiE
 	var zones []types.TypedObjectRef
 
 	for _, sub := range state.subscribers {
-		if sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
+		if apiExp.Spec.Zone.ObjectRef.Equals(&sub.Spec.Zone) {
 			continue
 		}
 
@@ -620,7 +620,7 @@ func validateFailover(apiExp *apiapi.ApiExposure) bool {
 	}
 
 	for _, failoverZone := range apiExp.Spec.Traffic.Failover.Zones {
-		if failoverZone.Equals(&apiExp.Spec.Zone) {
+		if apiExp.Spec.Zone.ObjectRef.Equals(&failoverZone) {
 			msg := fmt.Sprintf("cannot use the same zone %q as both primary and failover zone for apiExposure: %s", failoverZone.Name, apiExp.Name)
 			apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 			apiExp.SetCondition(condition.NewBlockedCondition(msg))

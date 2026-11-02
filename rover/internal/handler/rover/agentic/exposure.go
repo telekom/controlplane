@@ -13,7 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -38,9 +40,12 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 	}
 
 	environment := contextutil.EnvFromContextOrDie(ctx)
-	zoneRef := types.ObjectRef{
-		Name:      owner.Spec.Zone,
-		Namespace: environment,
+	zoneRef := types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      owner.Spec.Zone,
+			Namespace: environment,
+		},
 	}
 
 	mutator := func() error {
@@ -78,8 +83,11 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 				Strategy:     agenticv1.ApprovalStrategy(exp.Approval.Strategy),
 				TrustedTeams: trustedTeams,
 			},
-			Zone:           zoneRef,
-			Provider:       *owner.Status.Application,
+			Zone: zoneRef,
+			Provider: types.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: applicationv1.GroupVersion.String()},
+				ObjectRef: *owner.Status.Application,
+			},
 			Variant:        agenticv1.AgenticVariant(exp.Variant),
 			Security:       mapSecurityToAgenticSecurity(exp.Security),
 			Traffic:        mapTrafficToAgenticTraffic(environment, exp.Traffic),
@@ -228,11 +236,14 @@ func mapTrafficToAgenticTraffic(env string, roverTraffic *rover.Traffic) agentic
 	}
 
 	if roverTraffic.HasFailover() {
-		failoverZones := make([]types.ObjectRef, 0, len(roverTraffic.Failover.Zones))
+		failoverZones := make([]types.TypedObjectRef, 0, len(roverTraffic.Failover.Zones))
 		for _, zone := range roverTraffic.Failover.Zones {
-			failoverZones = append(failoverZones, types.ObjectRef{
-				Name:      zone,
-				Namespace: env,
+			failoverZones = append(failoverZones, types.TypedObjectRef{
+				TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+				ObjectRef: types.ObjectRef{
+					Name:      zone,
+					Namespace: env,
+				},
 			})
 		}
 		traffic.Failover = &agenticv1.ProviderFailover{

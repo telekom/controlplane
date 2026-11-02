@@ -21,7 +21,7 @@ func TestMapResponse(t *testing.T) {
 	in.Spec.ApiBasePath = "/eni/distr/v1"
 	in.Spec.Visibility = apiv1.VisibilityWorld
 	in.Spec.Approval = apiv1.Approval{Strategy: apiv1.ApprovalStrategySimple}
-	in.Spec.Zone = ctypes.ObjectRef{Name: "dataplane1"}
+	in.Spec.Zone = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "dataplane1"}}
 	in.Spec.Upstreams = []apiv1.Upstream{{Url: "https://httpbin.org/anything", Weight: 100}}
 	in.Spec.Approval.TrustedTeams = []string{"eni--hyperion"}
 	in.Spec.Transformation = &apiv1.Transformation{
@@ -29,7 +29,10 @@ func TestMapResponse(t *testing.T) {
 			Headers: apiv1.HeaderTransformation{Remove: []string{"x-internal"}},
 		},
 	}
-	in.Spec.Traffic.Failover = &apiv1.ProviderFailover{Zones: []ctypes.ObjectRef{{Name: "dataplane2"}, {Name: "dataplane3"}}}
+	in.Spec.Traffic.Failover = &apiv1.ProviderFailover{Zones: []ctypes.TypedObjectRef{
+		{ObjectRef: ctypes.ObjectRef{Name: "dataplane2"}},
+		{ObjectRef: ctypes.ObjectRef{Name: "dataplane3"}},
+	}}
 	in.Spec.Traffic.RateLimit = &apiv1.RateLimit{
 		Provider: &apiv1.RateLimitConfig{
 			Limits: apiv1.Limits{Second: 10, Minute: 100, Hour: 1000},

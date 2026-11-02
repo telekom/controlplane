@@ -207,7 +207,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoutes
 	// - Cross-zone: find matching proxy route in ApiExposure.Status.ProxyRoutes
 
-	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
+	sameZoneAsExposure := apiExposure.Spec.Zone.ObjectRef.Equals(&apiSub.Spec.Zone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
 
 	routeRef, err := resolveRouteRef(ctx, scopedClient, apiSub, apiExposure, sameZoneAsExposure, inProviderFailoverZone)
@@ -260,7 +260,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
 	}
 
-	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *routeRef, apiSubApplication.Status.ClientId, consumeRouteOptions...)
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, routeRef, apiSubApplication.Status.ClientId, consumeRouteOptions...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
@@ -311,7 +311,7 @@ func processSubscriberFailover(ctx context.Context, scopedClient cclient.Janitor
 	}
 
 	for _, subFailoverZone := range failoverZones {
-		failoverRouteRef, err := resolveFailoverRouteRef(ctx, scopedClient, apiSub, apiExposure, subFailoverZone)
+		failoverRouteRef, err := resolveFailoverRouteRef(ctx, scopedClient, apiSub, apiExposure, &subFailoverZone)
 		if err != nil {
 			return err
 		}
@@ -320,7 +320,7 @@ func processSubscriberFailover(ctx context.Context, scopedClient cclient.Janitor
 
 		// Create ConsumeRoute for the failover route
 		logger.V(1).Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone.Name)
-		failoverConsumeRoute, createErr := util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, failoverRouteRef, clientId, util.WithFailoverLabel())
+		failoverConsumeRoute, createErr := util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, &failoverRouteRef, clientId, util.WithFailoverLabel())
 		if createErr != nil {
 			return errors.Wrapf(createErr, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
 		}
@@ -331,10 +331,11 @@ func processSubscriberFailover(ctx context.Context, scopedClient cclient.Janitor
 }
 
 // resolveFailoverRouteRef determines the route reference for a subscriber failover zone.
-func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, subFailoverZone types.TypedObjectRef) (types.TypedObjectRef, error) {
+func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, subFailoverZone *types.TypedObjectRef) (types.TypedObjectRef, error) {
 	logger := log.FromContext(ctx)
+	const routeKind = "Route"
 
-	sameZoneAsExposure := subFailoverZone.Equals(&apiExposure.Spec.Zone)
+	sameZoneAsExposure := apiExposure.Spec.Zone.ObjectRef.Equals(subFailoverZone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
 
 	switch {
@@ -345,7 +346,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 		}
 		logger.V(1).Info("Referencing real route in failover zone (same as exposure)", "zone", subFailoverZone.Name)
 		return types.TypedObjectRef{
-			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			TypeMeta: metav1.TypeMeta{Kind: routeKind, APIVersion: gatewayapi.GroupVersion.String()},
 			ObjectRef: types.ObjectRef{
 				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
 				Namespace: exposureZone.Status.Namespace,
@@ -360,7 +361,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 		}
 		logger.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
 		return types.TypedObjectRef{
-			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			TypeMeta: metav1.TypeMeta{Kind: routeKind, APIVersion: gatewayapi.GroupVersion.String()},
 			ObjectRef: types.ObjectRef{
 				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
 				Namespace: providerFailoverZone.Status.Namespace,
@@ -374,7 +375,7 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 		}
 		logger.V(1).Info("Referencing proxy route created by ApiExposure for subscriber failover", "zone", subFailoverZone.Name)
 		return types.TypedObjectRef{
-			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			TypeMeta: metav1.TypeMeta{Kind: routeKind, APIVersion: gatewayapi.GroupVersion.String()},
 			ObjectRef: types.ObjectRef{
 				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
 				Namespace: subscriberFailoverZone.Status.Namespace,

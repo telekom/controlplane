@@ -98,7 +98,7 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId, appNam
 			Approval: apiapi.Approval{
 				Strategy: apiapi.ApprovalStrategyAuto,
 			},
-			Zone: typedZoneRef(zoneName, testEnvironment),
+			Zone: typedZoneRef(zoneName),
 		},
 	}
 }
@@ -322,7 +322,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Create and approve subscription in second zone
-			zoneRef := typedZoneRef(secondZoneName, testEnvironment)
+			zoneRef := typedZoneRef(secondZoneName)
 			proxyApiSubscription := createAndApproveSubscription(apiBasePath, secondZoneName, proxyAppName, &zoneRef)
 
 			By("Verifying the ProxyRoute is created with provider rate limits")

@@ -94,7 +94,7 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 					},
 				},
 			},
-			Zone: typedZoneRef(zoneName, testEnvironment),
+			Zone: typedZoneRef(zoneName),
 		},
 	}
 }
@@ -733,7 +733,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			By("Changing the zone of the ApiSubscription")
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-				apiSubscription.Spec.Zone = typedZoneRef(consumerZoneName, testEnvironment)
+				apiSubscription.Spec.Zone = typedZoneRef(consumerZoneName)
 				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
 			}, timeout, interval).Should(Succeed())
 

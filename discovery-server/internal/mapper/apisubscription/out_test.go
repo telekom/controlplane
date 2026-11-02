@@ -55,11 +55,11 @@ func TestMapResponse_ResolvedReferences(t *testing.T) {
 	sub.Name = "my-app--eni-distr-v1"
 	sub.Namespace = "poc--eni--hyperion"
 	sub.Spec.ApiBasePath = "/eni/distr/v1"
-	sub.Spec.Zone = ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}
-	sub.Spec.Requestor.Application = ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}
-	sub.Status.Approval = &ctypes.ObjectRef{Name: "appr", Namespace: "poc--eni--hyperion"}
+	sub.Spec.Zone = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}}
+	sub.Spec.Requestor.Application = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}}
+	sub.Status.Approval = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "appr", Namespace: "poc--eni--hyperion"}}
 	sub.Spec.Traffic.Failover = &apiv1.SubscriberFailover{Enabled: true}
-	sub.Status.FailoverRoutes = []ctypes.ObjectRef{{Name: "route-eni-distr-v1", Namespace: "dp2-ns"}}
+	sub.Status.FailoverRoutes = []ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: "route-eni-distr-v1", Namespace: "dp2-ns"}}}
 
 	zonePrimary := &adminv1.Zone{}
 	zonePrimary.Name = "dataplane1"
@@ -131,9 +131,9 @@ func TestMapResponse_MissingReferencesFallback(t *testing.T) {
 	sub.Name = "my-app--eni-distr-v1"
 	sub.Namespace = "poc--eni--hyperion"
 	sub.Spec.ApiBasePath = "/eni/distr/v1"
-	sub.Spec.Zone = ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}
-	sub.Spec.Requestor.Application = ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}
-	sub.Status.Approval = &ctypes.ObjectRef{Name: "appr", Namespace: "poc--eni--hyperion"}
+	sub.Spec.Zone = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}}
+	sub.Spec.Requestor.Application = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}}
+	sub.Status.Approval = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "appr", Namespace: "poc--eni--hyperion"}}
 
 	zoneStore := csmocks.NewMockObjectStore[*adminv1.Zone](t)
 	zoneStore.EXPECT().Get(mock.Anything, "poc", "dataplane1").Return((*adminv1.Zone)(nil), context.Canceled)
@@ -168,8 +168,8 @@ func TestMapResponse_NoApprovalReference(t *testing.T) {
 	sub.Name = "my-app--eni-distr-v1"
 	sub.Namespace = "poc--eni--hyperion"
 	sub.Spec.ApiBasePath = "/eni/distr/v1"
-	sub.Spec.Zone = ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}
-	sub.Spec.Requestor.Application = ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}
+	sub.Spec.Zone = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}}
+	sub.Spec.Requestor.Application = ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "my-app", Namespace: "poc--eni--hyperion"}}
 	// Intentionally keep sub.Status.Approval nil.
 
 	zone := &adminv1.Zone{}

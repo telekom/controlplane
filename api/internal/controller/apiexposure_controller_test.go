@@ -179,7 +179,7 @@ func NewApiExposure(apiBasePath, zoneName, appName string) *apiv1.ApiExposure {
 			},
 			Visibility: apiv1.VisibilityWorld,
 			Approval:   apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-			Zone:       typedZoneRef(zoneName, testEnvironment),
+			Zone:       typedZoneRef(zoneName),
 		},
 		Status: apiv1.ApiExposureStatus{},
 	}

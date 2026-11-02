@@ -53,14 +53,12 @@ var _ = Describe("ApiExposure Translator", func() {
 					},
 					Traffic: apiv1.Traffic{
 						Failover: &apiv1.ProviderFailover{
-							Zones: []ctypes.ObjectRef{
+							Zones: []ctypes.TypedObjectRef{
 								{
-									Name:      "zoneA",
-									Namespace: "ns",
+									ObjectRef: ctypes.ObjectRef{Name: "zoneA", Namespace: "ns"},
 								},
 								{
-									Name:      "zoneB",
-									Namespace: "ns",
+									ObjectRef: ctypes.ObjectRef{Name: "zoneB", Namespace: "ns"},
 								},
 							},
 						},

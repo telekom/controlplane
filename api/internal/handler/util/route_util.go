@@ -626,7 +626,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.NamedObject, a
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.NamedObject, routeRef types.TypedObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.NamedObject, routeRef *types.TypedObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateConsumeRouteOptions{}
