@@ -25,6 +25,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	clientHandler "github.com/telekom/controlplane/identity/internal/handler/client"
+	"github.com/telekom/controlplane/identity/internal/leader"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
 
@@ -55,10 +56,15 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return errors.New("keycloak service factory is required")
 	}
 	r.Recorder = mgr.GetEventRecorderFor("client-controller")
-	r.Controller = cc.NewController(clientHandler.NewHandlerClient(r.ClientFactory), r.Client, r.Recorder)
+	reconciler := clientHandler.NewHandlerClient(r.ClientFactory)
+	reconciler.PeerReader = r.Client
+	r.Controller = cc.NewController(reconciler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Client{}, builder.WithPredicates(cc.Count("client", cc.RoleFor))).
+		Watches(&identityv1.Client{},
+			handler.EnqueueRequestsFromMapFunc(r.mapClientObjToIdentityClient),
+			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		Watches(&identityv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToIdentityClient),
 			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
@@ -69,9 +75,7 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// mapRealmObjToIdentityClient maps identity realm object to reconcile requests.
-// Uses a field index on spec.realm for efficient lookup instead of listing
-// all Clients in the environment and filtering in-memory.
+// mapRealmObjToIdentityClient maps a Realm change to clients in all shared realms.
 func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
@@ -80,30 +84,59 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 		logger.V(0).Info("object is not a Realm")
 		return nil
 	}
-	if realm.Labels == nil {
+	realms, err := leader.RealmPeersForRealm(ctx, r.Client, realm)
+	if err != nil {
+		logger.Error(err, "failed to list shared Realm peers", "realm", client.ObjectKeyFromObject(realm))
 		return nil
 	}
-
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
-		},
+	requests := make([]reconcile.Request, 0)
+	seen := make(map[client.ObjectKey]struct{})
+	for i := range realms {
+		list := &identityv1.ClientList{}
+		ref := types.ObjectRefFromObject(&realms[i]).String()
+		if err := r.List(ctx, list, client.MatchingFields{IndexFieldSpecRealm: ref}); err != nil {
+			logger.Error(err, "failed to list Clients for Realm", "realm", ref)
+			continue
+		}
+		for j := range list.Items {
+			key := client.ObjectKeyFromObject(&list.Items[j])
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			requests = append(requests, reconcile.Request{NamespacedName: key})
+		}
 	}
+	return requests
+}
 
-	list := &identityv1.ClientList{}
-	if err := r.List(ctx, list, listOpts...); err != nil {
-		logger.Error(err, "failed to list Clients")
+func (r *ClientReconciler) mapClientObjToIdentityClient(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	identityClient, ok := obj.(*identityv1.Client)
+	if !ok || identityClient.Spec.Realm == nil {
+		logger.V(0).Info("object is not a Client with a Realm")
 		return nil
 	}
-
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for i := range list.Items {
-		item := &list.Items[i]
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
+	realm := &identityv1.Realm{}
+	if err := r.Get(ctx, identityClient.Spec.Realm.K8s(), realm); err != nil {
+		if client.IgnoreNotFound(err) != nil {
+			logger.Error(err, "failed to get Client Realm", "client", client.ObjectKeyFromObject(identityClient))
+		}
+		return nil
 	}
-
+	realms, err := leader.RealmPeersForRealm(ctx, r.Client, realm)
+	if err != nil {
+		logger.Error(err, "failed to list shared Realm peers", "realm", client.ObjectKeyFromObject(realm))
+		return nil
+	}
+	peers, err := leader.ClientsForRealmGroup(ctx, r.Client, realms, identityClient)
+	if err != nil {
+		logger.Error(err, "failed to list Client peers", "client", client.ObjectKeyFromObject(identityClient))
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(peers))
+	for i := range peers {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&peers[i])})
+	}
 	return requests
 }

@@ -22,9 +22,9 @@ import (
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
+	"github.com/telekom/controlplane/identity/internal/leader"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
 
@@ -55,10 +55,15 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return errors.New("keycloak service factory is required")
 	}
 	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
-	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(r.ClientFactory), r.Client, r.Recorder)
+	reconciler := realmHandler.NewHandlerRealm(r.ClientFactory)
+	reconciler.PeerReader = r.Client
+	r.Controller = cc.NewController(reconciler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Realm{}, builder.WithPredicates(cc.Count("realm", cc.RoleFor))).
+		Watches(&identityv1.Realm{},
+			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToRealm),
+			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
@@ -69,9 +74,7 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// mapIdpObjToRealm maps identity provider object to reconcile requests.
-// Uses a field index on spec.identityProvider for efficient lookup instead
-// of listing all Realms in the environment and filtering in-memory.
+// mapIdpObjToRealm maps all realms sharing the provider's Keycloak admin URL.
 func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
@@ -80,30 +83,48 @@ func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Objec
 		logger.V(0).Info("object is not an IdentityProvider")
 		return nil
 	}
-	if idp.Labels == nil {
+	realms, err := leader.RealmsForAdminURL(ctx, r.Client, idp)
+	if err != nil {
+		logger.Error(err, "failed to list shared Realms")
 		return nil
 	}
 
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecIdentityProvider: types.ObjectRefFromObject(idp).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: idp.Labels[cconfig.EnvironmentLabelKey],
-		},
+	requests := make([]reconcile.Request, 0, len(realms))
+	for i := range realms {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&realms[i])})
 	}
+	return uniqueRequests(requests)
+}
 
-	list := &identityv1.RealmList{}
-	if err := r.List(ctx, list, listOpts...); err != nil {
-		logger.Error(err, "failed to list Realms")
+func (r *RealmReconciler) mapRealmObjToRealm(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	realm, ok := obj.(*identityv1.Realm)
+	if !ok {
+		logger.V(0).Info("object is not a Realm")
 		return nil
 	}
 
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for i := range list.Items {
-		item := &list.Items[i]
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(item)})
+	peers, err := leader.RealmPeersForRealm(ctx, r.Client, realm)
+	if err != nil {
+		logger.Error(err, "failed to list Realm peers", "realm", client.ObjectKeyFromObject(realm))
+		return nil
 	}
+	requests := make([]reconcile.Request, 0, len(peers))
+	for i := range peers {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&peers[i])})
+	}
+	return uniqueRequests(requests)
+}
 
-	return requests
+func uniqueRequests(requests []reconcile.Request) []reconcile.Request {
+	unique := make([]reconcile.Request, 0, len(requests))
+	seen := make(map[client.ObjectKey]struct{}, len(requests))
+	for _, request := range requests {
+		if _, ok := seen[request.NamespacedName]; ok {
+			continue
+		}
+		seen[request.NamespacedName] = struct{}{}
+		unique = append(unique, request)
+	}
+	return unique
 }

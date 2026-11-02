@@ -41,12 +41,12 @@ func (e *notFoundError) Status() metav1.Status {
 	return metav1.Status{Reason: metav1.StatusReasonNotFound, Code: 404}
 }
 
-func newTestContext(mockClient *fake.MockJanitorClient) (context.Context, *record.FakeRecorder) {
+func newTestContext(mockClient *fake.MockJanitorClient) context.Context {
 	recorder := record.NewFakeRecorder(10)
 	ctx := context.Background()
 	ctx = client.WithClient(ctx, mockClient)
 	ctx = contextutil.WithRecorder(ctx, recorder)
-	return ctx, recorder
+	return ctx
 }
 
 func overrideSecretsGet(fn func(ctx context.Context, secretRef string) (string, error)) {
@@ -105,7 +105,7 @@ var _ = Describe("HandlerClient", func() {
 
 	BeforeEach(func() {
 		mockK8s = fake.NewMockJanitorClient(GinkgoT())
-		ctx, _ = newTestContext(mockK8s)
+		ctx = newTestContext(mockK8s)
 	})
 
 	Context("CreateOrUpdate", func() {

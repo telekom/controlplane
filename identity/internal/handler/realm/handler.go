@@ -7,16 +7,21 @@ package realm
 import (
 	"context"
 	"fmt"
+	"reflect"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/handler/identityprovider"
+	"github.com/telekom/controlplane/identity/internal/leader"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
@@ -25,6 +30,7 @@ var _ handler.Handler[*identityv1.Realm] = &HandlerRealm{}
 
 type HandlerRealm struct {
 	ServiceFactory keycloak.ServiceFactory
+	PeerReader     client.Reader
 }
 
 // NewHandlerRealm creates a HandlerRealm with the given ClientFactory.
@@ -60,6 +66,18 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	err = ValidateRealmManagementStatus(&realm.Status)
 	if err != nil {
 		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
+	}
+
+	realm.Status.Leader = types.ObjectRefFromObject(realm)
+	if h.PeerReader != nil {
+		elected, electErr := h.electLeader(ctx, realm, identityProvider)
+		if electErr != nil {
+			return electErr
+		}
+		realm.Status.Leader = types.ObjectRefFromObject(elected)
+		if realm.IsFollower() {
+			return h.follow(ctx, realm, elected)
+		}
 	}
 
 	// Create a copy of the realmStatus so that we NEVER modify the original status
@@ -127,6 +145,20 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	logger := log.FromContext(ctx)
 	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 
+	if h.PeerReader != nil {
+		peers, err := leader.RealmPeersForRealm(ctx, h.PeerReader, realm)
+		if err != nil {
+			return fmt.Errorf("failed to find shared realm peers before deletion: %w", err)
+		}
+		for i := range peers {
+			if client.ObjectKeyFromObject(&peers[i]) == client.ObjectKeyFromObject(realm) {
+				continue
+			}
+			logger.Info("Skipping Keycloak realm deletion because another Realm is active", "leader", client.ObjectKeyFromObject(&peers[i]))
+			return nil
+		}
+	}
+
 	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
@@ -149,6 +181,46 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 		return fmt.Errorf("failed to delete realm: %w", err)
 	}
 
+	return nil
+}
+
+// electLeader returns the Realm that manages the Keycloak realm shared by realm's group.
+func (h *HandlerRealm) electLeader(ctx context.Context, realm *identityv1.Realm, idp *identityv1.IdentityProvider) (*identityv1.Realm, error) {
+	peers, err := leader.RealmPeers(ctx, h.PeerReader, realm, idp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find shared realm peers: %w", err)
+	}
+	elected := leader.ElectRealm(peers)
+	if elected == nil {
+		return nil, ctrlerrors.BlockedErrorf("no live leader candidate found for Realm %s/%s", realm.Namespace, realm.Name)
+	}
+	return elected, nil
+}
+
+func (h *HandlerRealm) follow(ctx context.Context, realm, elected *identityv1.Realm) error {
+	if err := condition.EnsureReady(elected); err != nil {
+		message := fmt.Sprintf("waiting for Realm leader %s/%s to be ready", elected.Namespace, elected.Name)
+		realm.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, message))
+		return ctrlerrors.BlockedErrorf("%s", message)
+	}
+
+	if !reflect.DeepEqual(realm.Spec.Claims, elected.Spec.Claims) ||
+		!reflect.DeepEqual(realm.Spec.Attributes, elected.Spec.Attributes) ||
+		!reflect.DeepEqual(realm.Spec.SecretRotation, elected.Spec.SecretRotation) {
+		contextutil.RecorderFromContextOrDie(ctx).Eventf(
+			realm,
+			corev1.EventTypeWarning,
+			"SpecNotApplied",
+			"spec not applied, managed by leader %s/%s",
+			elected.Namespace,
+			elected.Name,
+		)
+	}
+
+	realm.Status.IssuerUrl = elected.Status.IssuerUrl
+	realm.Status.ManagedAttributes = nil
+	realm.SetCondition(condition.NewDoneProcessingCondition("Mirrored Realm from leader"))
+	realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
 	return nil
 }
 

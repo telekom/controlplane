@@ -24,6 +24,9 @@ type ClientSpec struct {
 
 // ClientStatus defines the observed state of Client
 type ClientStatus struct {
+	// Leader identifies the Client that manages this Keycloak client.
+	// +optional
+	Leader *types.ObjectRef `json:"leader,omitempty"`
 	// ClientUid is the unique identifier of the client in Keycloak. It is immutable and assigned by Keycloak upon client creation.
 	ClientUid string `json:"clientUid,omitempty"`
 
@@ -61,6 +64,7 @@ type ClientStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leader.name"
 
 // Client is the Schema for the clients API
 type Client struct {
@@ -78,6 +82,17 @@ var _ types.Object = &Client{}
 // DisableSecretRotationAnnotation annotation is set to "true".
 func (c *Client) SupportsSecretRotation() bool {
 	return c.Annotations[DisableSecretRotationAnnotation] != "true"
+}
+
+// IsFollower reports whether another Client manages this Keycloak client.
+func (c *Client) IsFollower() bool {
+	return c.Status.Leader != nil && !c.Status.Leader.Equals(c)
+}
+
+// EnvironmentClientId prefixes clientID with the environment name. Clients in the internal
+// realm use it because Environments on the same Keycloak share that realm.
+func EnvironmentClientId(environment, clientID string) string {
+	return environment + "--" + clientID
 }
 
 func (e *Client) GetConditions() []metav1.Condition {
