@@ -140,12 +140,15 @@ type RealmConnectionTLS struct {
 
 // RealmStatus defines the observed state of Realm
 type RealmStatus struct {
-	IssuerUrl     string `json:"issuerUrl"`
-	AdminClientId string `json:"adminClientId"`
-	AdminUserName string `json:"adminUserName"`
-	AdminPassword string `json:"adminPassword"`
-	AdminUrl      string `json:"adminUrl"`
-	AdminTokenUrl string `json:"adminTokenUrl"`
+	// Leader identifies the Realm that manages this Keycloak realm.
+	// +optional
+	Leader        *types.ObjectRef `json:"leader,omitempty"`
+	IssuerUrl     string           `json:"issuerUrl"`
+	AdminClientId string           `json:"adminClientId"`
+	AdminUserName string           `json:"adminUserName"`
+	AdminPassword string           `json:"adminPassword"`
+	AdminUrl      string           `json:"adminUrl"`
+	AdminTokenUrl string           `json:"adminTokenUrl"`
 
 	// ManagedAttributes is the sorted list of realm attribute keys that the
 	// controller has applied to Keycloak. Keys in this list that are no
@@ -167,6 +170,8 @@ type RealmStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leader.name"
+// +kubebuilder:printcolumn:name="Leader Namespace",type=string,JSONPath=".status.leader.namespace"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
@@ -191,6 +196,11 @@ func (e *Realm) SetCondition(condition metav1.Condition) bool {
 
 func (e *Realm) SupportsGracefulSecretRotation() bool {
 	return e.Spec.SecretRotation != nil
+}
+
+// IsFollower reports whether another Realm manages this Keycloak realm.
+func (e *Realm) IsFollower() bool {
+	return e.Status.Leader != nil && !e.Status.Leader.Equals(e)
 }
 
 // +kubebuilder:object:root=true

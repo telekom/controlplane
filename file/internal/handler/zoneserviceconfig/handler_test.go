@@ -255,17 +255,34 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 				Return(apierrors.NewNotFound(schema.GroupResource{}, "sftp-api-test-zsc")).
 				Once()
 			mockClient.EXPECT().Scheme().Return(testScheme).Maybe()
+			var (
+				createdClient   *identityv1.Client
+				createdConsumer *gatewayapi.Consumer
+				createdRoute    *gatewayapi.Route
+			)
 			// CreateOrUpdate for identity Client
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					Expect(mutate()).To(Succeed())
+					createdClient = obj.(*identityv1.Client).DeepCopy()
+				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 			// CreateOrUpdate for gateway Consumer
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Consumer"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					Expect(mutate()).To(Succeed())
+					createdConsumer = obj.(*gatewayapi.Consumer).DeepCopy()
+				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 			// CreateOrUpdate for gateway Route
 			mockClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					Expect(mutate()).To(Succeed())
+					createdRoute = obj.(*gatewayapi.Route).DeepCopy()
+				}).
 				Return(controllerutil.OperationResultCreated, nil).Once()
 			// First AllReady (after identity client + consumer + route) → false
 			mockClient.EXPECT().AllReady().Return(false).Once()
@@ -274,6 +291,13 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionFalse(obj.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+
+			By("prefixing the SFTP API client ID with the environment and using it at the gateway")
+			expectedClientID := testEnv + "--sftp-api-test-zsc"
+			Expect(createdClient.Name).To(Equal("sftp-api-test-zsc"))
+			Expect(createdClient.Spec.ClientId).To(Equal(expectedClientID))
+			Expect(createdConsumer.Spec.Name).To(Equal(expectedClientID))
+			Expect(createdRoute.Spec.Security.DefaultConsumers).To(ConsistOf(expectedClientID))
 		})
 
 		It("returns error when identity Client Get fails with unexpected error", func() {

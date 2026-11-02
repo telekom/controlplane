@@ -166,9 +166,19 @@ var _ = Describe("Zone rover admin client", func() {
 	h := &ZoneHandler{}
 	BeforeEach(func() { h.Client = k8sClient })
 
-	It("constructs a checksum-less environment secret reference", func() {
-		Expect(environmentSecretRef("env-1", roverSecretManagerPath("zone-a"))).
-			To(Equal("$<env-1:::zones/zone-a/admin/rover/clientSecret:>"))
+	It("constructs a checksum-less shared secret reference", func() {
+		Expect(environmentSecretRef(sharedSecretScope, roverSecretManagerPath("zone-a"))).
+			To(Equal("$<shared:::zones/zone-a/admin/rover/clientSecret:>"))
+	})
+
+	It("detects environment-scoped rover secret references with or without checksum", func() {
+		path := roverSecretManagerPath("zone-a")
+		Expect(isEnvironmentSecretRef("$<env-1:::zones/zone-a/admin/rover/clientSecret:>", "env-1", path)).To(BeTrue())
+		Expect(isEnvironmentSecretRef("$<env-1:::zones/zone-a/admin/rover/clientSecret:abc123>", "env-1", path)).To(BeTrue())
+		Expect(isEnvironmentSecretRef("$<shared:::zones/zone-a/admin/rover/clientSecret:>", "env-1", path)).To(BeFalse())
+		Expect(isEnvironmentSecretRef("$<env-10:::zones/zone-a/admin/rover/clientSecret:>", "env-1", path)).To(BeFalse())
+		Expect(isEnvironmentSecretRef("$<env-1:::zones/zone-b/admin/rover/clientSecret:>", "env-1", path)).To(BeFalse())
+		Expect(isEnvironmentSecretRef("inline-secret", "env-1", path)).To(BeFalse())
 	})
 
 	Context("with the secret-manager enabled", func() {
@@ -196,13 +206,14 @@ var _ = Describe("Zone rover admin client", func() {
 			Expect(clients.Items).To(HaveLen(1))
 		})
 
-		It("stores a new secret under the zone-scoped rover path of the environment", func() {
+		It("stores a new secret under the shared rover scope", func() {
 			zone := uniqueZone("rover-path")
 			provision(h, zone)
 
 			id, ok := secretsapi.FromRef(getRoverClient(zone).Spec.ClientSecret)
 			Expect(ok).To(BeTrue())
-			Expect(id).To(HavePrefix(testEnvironment + ":::zones/" + zone.Name + "/admin/rover/clientSecret:"))
+			Expect(id).To(Equal("shared:::zones/" + zone.Name + "/admin/rover/clientSecret:"))
+			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: sharedSecretScope}, &corev1.Namespace{})).To(Succeed())
 		})
 
 		It("keeps the credentials stable across repeated reconciliation and gateway add, reorder and removal", func() {

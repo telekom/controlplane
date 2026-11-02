@@ -263,7 +263,9 @@ func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, ob
 		return nil, "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, joinErr)
 	}
 
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	// The admin client lives in the internal realm, which Environments on the same Keycloak share.
+	clientID := identityv1.EnvironmentClientId(contextutil.EnvFromContextOrDie(ctx), clientCfg.ClientId)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientID)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to create admin identity Client")
 	}
@@ -300,7 +302,7 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 		return nil, errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
 	}
 
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientCfg.ClientId)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create mesh identity Client")
 	}
@@ -308,13 +310,13 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 	return identityClient, nil
 }
 
-// createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
-func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig) (*identityv1.Client, error) {
+// createIdentityClient creates or updates the identity Client with clientID for the given EventConfig and ClientConfig.
+func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig, clientID string) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(clientCfg.ClientId),
+			Name:      labelutil.NormalizeNameValue(clientID),
 			Namespace: obj.Namespace,
 		},
 	}
@@ -336,7 +338,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 		identityClient.Spec = identityv1.ClientSpec{
 			Realm:        &clientCfg.Realm,
-			ClientId:     clientCfg.ClientId,
+			ClientId:     clientID,
 			ClientSecret: clientCfg.ClientSecret,
 		}
 		return nil
@@ -344,7 +346,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 	_, err := c.CreateOrUpdate(ctx, identityClient, mutator)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientCfg.ClientId)
+		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientID)
 	}
 
 	return identityClient, nil
@@ -832,6 +834,16 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 	if err != nil {
 		return nil, err
 	}
+	targetAdminClient := &identityv1.Client{}
+	if targetCfg.Status.AdminClient == nil {
+		return nil, ctrlerrors.BlockedErrorf("target EventConfig %q has no admin Client status", targetCfg.Name)
+	}
+	if err := c.Get(ctx, targetCfg.Status.AdminClient.K8s(), targetAdminClient); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return nil, ctrlerrors.BlockedErrorf("target admin Client %q not found", targetCfg.Status.AdminClient.String())
+		}
+		return nil, errors.Wrap(err, "failed to get target admin Client")
+	}
 
 	eventStore := &pubsubv1.EventStore{
 		ObjectMeta: metav1.ObjectMeta{
@@ -849,7 +861,7 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 			OverwriteEnvironmentName: effectiveEnvironmentName(ctx, obj.Spec.OverwriteEnvironmentName),
 			Url:                      adminCfg.Url,
 			TokenUrl:                 tokenUrl,
-			ClientId:                 adminCfg.Client.ClientId,
+			ClientId:                 targetAdminClient.Spec.ClientId,
 			ClientSecret:             adminCfg.Client.ClientSecret,
 		}
 		return nil

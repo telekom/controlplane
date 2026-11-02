@@ -151,6 +151,11 @@ var _ = Describe("Horizon environment name resolution", func() {
 					}},
 				},
 			}
+			targetAdminClient := &identityv1.Client{
+				ObjectMeta: metav1.ObjectMeta{Name: "target-admin", Namespace: "default"},
+				Spec:       identityv1.ClientSpec{ClientId: "target-client"},
+			}
+			target.Status.AdminClient = eventv1.NewObservedObjectRef(targetAdminClient)
 			target.SetCondition(condition.NewReadyCondition("Ready", "ready"))
 			targetZone := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: "target-zone", Namespace: "default"}}
 			targetZone.SetCondition(condition.NewReadyCondition("Ready", "ready"))
@@ -171,6 +176,10 @@ var _ = Describe("Horizon environment name resolution", func() {
 			fakeClient.EXPECT().Get(ctx, types.NamespacedName{Name: "target-realm", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
 				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
 					*out.(*identityv1.Realm) = *realm
+				}).Return(nil)
+			fakeClient.EXPECT().Get(ctx, types.NamespacedName{Name: "target-admin", Namespace: "default"}, mock.AnythingOfType("*v1.Client")).
+				Run(func(_ context.Context, _ types.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*identityv1.Client) = *targetAdminClient
 				}).Return(nil)
 			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.EventStore"), mock.Anything).
 				Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {

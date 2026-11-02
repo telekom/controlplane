@@ -71,6 +71,18 @@ Legacy Realms without `status.connection` keep system-only behavior and Realm-sc
 
 See [standalone examples](../admin-journey/environments-and-zones.md#standalone-gateway-and-identityprovider) and [Outbound TLS Clients](./outbound-tls-clients.md) for the shared factory, leases, authentication lifetime, and recovery.
 
+## Shared Realms and Leader Election
+
+When multiple Environments use IdentityProviders that point to the same normalized Keycloak admin URL, Realms with the same Kubernetes name share one Keycloak realm. The live Realm resource with the oldest creation timestamp is elected leader; Realms created in the same second are ordered by namespace, then name. The leader manages Keycloak, while followers make no Keycloak writes and mirror the leader's issuer and readiness. Newly created Realms are younger than the existing members and become followers, so leadership moves to the next-oldest resource only when the leader is deleted. Keycloak objects are deleted only after their final live resource is removed.
+
+Because the order depends only on immutable object metadata, every reconciler elects the same leader once its cache contains all group members. Right after two members are created, a member may briefly not see the other yet and act as leader; the watches converge the group within the next reconciliations.
+
+Clients with the same `clientId` in the shared realm follow the same election. Followers mirror the leader's client UID and are ready only when their resolved client secret matches the leader's. Followers waiting for a leader that is not ready report `Ready=False`. Realm and Client status expose the elected leader. Follower Realm specs for claims, attributes, and secret rotation are not applied; a warning event identifies the leader. Claims in tokens therefore come from the leader, including after a hand-over.
+
+Election groups are based on normalized admin URLs. Keycloaks reachable through different admin URLs are not recognized as shared, even when those URLs address the same server. Existing installations that already have multiple resources managing the same Keycloak object require no migration, but their existing shared UID relationships are not changed.
+
+The File and Event domains prefix the client IDs of their clients in the internal realm with the Environment name (`<environment>--<clientId>`), independent of leadership, so clients of different Environments never share a Keycloak client by accident. Existing unprefixed clients are not renamed by the operators. The shared `rover` realm uses the same leader election. Its gateway admin client always has the client ID `rover` and is never prefixed, so all Zones on one Keycloak share that single client; see [rover client lifecycle](./admin.mdx#identity-realms-and-the-rover-client) for its shared credential and the Zone naming requirement.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.
