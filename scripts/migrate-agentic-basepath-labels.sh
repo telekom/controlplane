@@ -21,6 +21,7 @@ command -v jq >/dev/null || { echo "jq is required" >&2; exit 1; }
 
 shared_key="${prefix}/basepath"
 domain_key="${prefix}/domain"
+agentic_resources="$(kubectl api-resources --api-group=agentic.cp.ei.telekom.de -o name)"
 
 label_object() {
 	local resource="$1" namespace="$2" name="$3" key="$4" value="$5"
@@ -37,8 +38,16 @@ label_object() {
 }
 
 migrate_legacy_label() {
-	local resource="$1" legacy_key="$2"
+	local resource="$1" legacy_key="$2" optional="${3:-false}"
+	local resource_name="${resource%%.*}"
 	local items
+
+	if [[ "$optional" == true ]] &&
+		! grep -Fxq -- "$resource" <<< "$agentic_resources" &&
+		! grep -Fxq -- "$resource_name" <<< "$agentic_resources"; then
+		printf 'Skipping %s: resource type is not installed\n' "$resource" >&2
+		return
+	fi
 
 	items="$(kubectl get "$resource" --all-namespaces -o json |
 		jq -r --arg key "$legacy_key" '
@@ -58,10 +67,10 @@ migrate_legacy_label() {
 	done <<< "$items"
 }
 
-migrate_legacy_label "mcpservers.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath"
-migrate_legacy_label "agenticexposures.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath"
-migrate_legacy_label "agenticsubscriptions.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath"
-migrate_legacy_label "agentcards.agentic.cp.ei.telekom.de" "${prefix}/agentbasepath"
+migrate_legacy_label "mcpservers.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath" true
+migrate_legacy_label "agenticexposures.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath" true
+migrate_legacy_label "agenticsubscriptions.agentic.cp.ei.telekom.de" "${prefix}/mcpbasepath" true
+migrate_legacy_label "agentcards.agentic.cp.ei.telekom.de" "${prefix}/agentbasepath" true
 migrate_legacy_label "routes.gateway.cp.ei.telekom.de" "${prefix}/mcpbasepath"
 migrate_legacy_label "routes.gateway.cp.ei.telekom.de" "${prefix}/agentbasepath"
 
