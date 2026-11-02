@@ -71,6 +71,6 @@ type Approval struct {
 
 // Label keys used for agentic domain resources.
 var (
-	AgenticBasePathLabelKey = config.BuildLabelKey("mcpbasepath")
-	AgentBasePathLabelKey   = config.BuildLabelKey("agentbasepath")
+	AgenticBasePathLabelKey = config.BasePathLabelKey
+	AgentBasePathLabelKey   = config.BasePathLabelKey
 )

@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var BasePathLabelKey = config.BuildLabelKey("basepath")
+var BasePathLabelKey = config.BasePathLabelKey
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
