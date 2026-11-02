@@ -49,7 +49,7 @@ migrate_legacy_label() {
 		')"
 
 	while IFS=$'\t' read -r namespace name value; do
-		[[ -n "$namespace" && -n "$name" && -n "$value" ]] || continue
+		[[ -n "$namespace" && -n "$name" ]] || continue
 		if [[ "$resource" == "routes.gateway.cp.ei.telekom.de" ]]; then
 			label_object "$resource" "$namespace" "$name" "$shared_key" "$value" "$domain_key=agentic"
 		else
