@@ -12,11 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	"github.com/telekom/controlplane/identity/internal/leader"
 )
 
 var (
-	IndexFieldSpecIdentityProvider = "spec.identityProvider"
-	IndexFieldSpecRealm            = "spec.realm"
+	IndexFieldSpecIdentityProvider = leader.IndexFieldSpecIdentityProvider
+	IndexFieldSpecRealm            = leader.IndexFieldSpecRealm
 )
 
 func RegisterIndexesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -55,6 +56,12 @@ func RegisterIndexesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = mgr.GetFieldIndexer().IndexField(ctx, &identityv1.Client{}, IndexFieldSpecRealm, filterRealmOnClient)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for Client", "FieldIndex", IndexFieldSpecRealm)
+		os.Exit(1)
+	}
+
+	err = leader.RegisterAdminURLIndex(ctx, mgr.GetFieldIndexer())
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for IdentityProvider", "FieldIndex", leader.IndexFieldSpecAdminURL)
 		os.Exit(1)
 	}
 }

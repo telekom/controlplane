@@ -17,7 +17,17 @@ spec:
     singular: realm
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.leader.name
+      name: Leader
+      type: string
+    - jsonPath: .status.leader.namespace
+      name: Leader Namespace
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: Realm is the Schema for the realms API
@@ -300,6 +310,24 @@ spec:
                 type: object
               issuerUrl:
                 type: string
+              leader:
+                description: Leader identifies the Realm that manages this Keycloak
+                  realm.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               managedAttributes:
                 description: |-
                   ManagedAttributes is the sorted list of realm attribute keys that the

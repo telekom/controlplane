@@ -448,6 +448,39 @@ var _ = Describe("EventConfigHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to create mesh identity Client"))
 		})
 
+		It("prefixes only the admin identity Client ID with the environment", func() {
+			mockRouteRenderingReachable()
+			zone := makeReadyZone()
+			realm := makeReadyRealm()
+			mockGetZone(zone, 1)
+			mockGetRealm(realm, 2)
+			obj.Spec.Local.Admin.Client.ClientId = "eventstore-admin"
+			obj.Spec.Mesh.Client.ClientId = "eventstore-mesh"
+
+			var created []*identityv1.Client
+			captureClient := func(result controllerutil.OperationResult, err error) {
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
+					Run(func(_ context.Context, clientObj client.Object, mutate controllerutil.MutateFn) {
+						Expect(mutate()).To(Succeed())
+						created = append(created, clientObj.(*identityv1.Client).DeepCopy())
+					}).
+					Return(result, err).Once()
+			}
+			captureClient(controllerutil.OperationResultCreated, nil)
+			// The mesh client fails to end the reconcile after both clients were built.
+			captureClient(controllerutil.OperationResultNone, fmt.Errorf("stop after mesh client"))
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(MatchError(ContainSubstring("failed to create mesh identity Client")))
+			Expect(created).To(HaveLen(2))
+			Expect(created[0].Name).To(Equal("test-env--eventstore-admin"))
+			Expect(created[0].Spec.ClientId).To(Equal("test-env--eventstore-admin"))
+			Expect(created[1].Name).To(Equal("eventstore-mesh"))
+			Expect(created[1].Spec.ClientId).To(Equal("eventstore-mesh"))
+		})
+
 		It("should return error when EventStore creation fails", func() {
 			mockRouteRenderingReachable()
 			zone := makeReadyZone()
