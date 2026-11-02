@@ -139,6 +139,7 @@ func Run() error {
 		"maxConcurrentReconciles", cfg.MaxConcurrentReconciles,
 		"periodicResync", cfg.PeriodicResync,
 		"leaderElection", cfg.LeaderElection,
+		"environment", cfg.EnvironmentFilter,
 	)
 
 	// --- Database ---
@@ -191,10 +192,10 @@ func Run() error {
 
 	// --- Controller Manager ---
 	cacheOpts := cache.Options{}
-	if cfg.EnvironmentFiler != "" {
-		cfg.LeaderElectionID += "-" + cfg.EnvironmentFiler
+	if cfg.EnvironmentFilter != "" {
+		cfg.LeaderElectionID += "-" + cfg.EnvironmentFilter
 		cacheOpts.DefaultLabelSelector = labels.SelectorFromSet(labels.Set{
-			shared.EnvironmentLabelKey: cfg.EnvironmentFiler,
+			shared.EnvironmentLabelKey: cfg.EnvironmentFilter,
 		})
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -240,8 +241,8 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("parsing database url: %w", err)
 	}
 
-	if cfg.EnvironmentFiler != "" {
-		poolConfig.ConnConfig.RuntimeParams["search_path"] = pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()
+	if cfg.EnvironmentFilter != "" {
+		poolConfig.ConnConfig.RuntimeParams["search_path"] = pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()
 	}
 
 	poolConfig.MaxConns = int32(cfg.MaxOpenConns)
@@ -253,10 +254,10 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	if cfg.EnvironmentFiler != "" {
-		if _, err := pool.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()); err != nil {
+	if cfg.EnvironmentFilter != "" {
+		if _, err := pool.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()); err != nil {
 			pool.Close()
-			return nil, fmt.Errorf("creating PostgreSQL schema %q: %w", cfg.EnvironmentFiler, err)
+			return nil, fmt.Errorf("creating PostgreSQL schema %q: %w", cfg.EnvironmentFilter, err)
 		}
 	}
 

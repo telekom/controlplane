@@ -60,11 +60,11 @@ var _ = Describe("openDatabase", func() {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 		DeferCleanup(cancel)
 		cfg = &config.Config{
-			DatabaseURL:      url,
-			EnvironmentFiler: fmt.Sprintf("projector-test-%d", time.Now().UnixNano()),
-			MaxOpenConns:     2,
-			MaxIdleConns:     1,
-			ConnMaxLifetime:  time.Minute,
+			DatabaseURL:       url,
+			EnvironmentFilter: fmt.Sprintf("projector-test-%d", time.Now().UnixNano()),
+			MaxOpenConns:      2,
+			MaxIdleConns:      1,
+			ConnMaxLifetime:   time.Minute,
 		}
 	})
 
@@ -75,14 +75,14 @@ var _ = Describe("openDatabase", func() {
 			DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
 			if i == 0 {
 				DeferCleanup(func() {
-					_, err := db.ExecContext(ctx, "DROP SCHEMA "+pgx.Identifier{cfg.EnvironmentFiler}.Sanitize()+" CASCADE")
+					_, err := db.ExecContext(ctx, "DROP SCHEMA "+pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()+" CASCADE")
 					Expect(err).NotTo(HaveOccurred())
 				})
 			}
 
 			var schemaName string
 			Expect(db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schemaName)).To(Succeed())
-			Expect(schemaName).To(Equal(cfg.EnvironmentFiler))
+			Expect(schemaName).To(Equal(cfg.EnvironmentFilter))
 			Expect(migrate.NewSchema(entsql.OpenDB(dialect.Postgres, db)).Create(ctx,
 				migrate.WithGlobalUniqueID(true),
 				migrate.WithDropIndex(true),
@@ -91,13 +91,13 @@ var _ = Describe("openDatabase", func() {
 			var count int
 			Expect(db.QueryRowContext(ctx,
 				"SELECT count(*) FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'zones'",
-				cfg.EnvironmentFiler).Scan(&count)).To(Succeed())
+				cfg.EnvironmentFilter).Scan(&count)).To(Succeed())
 			Expect(count).To(Equal(1))
 		}
 	})
 
 	It("uses public with the default search_path when the environment filter is unset", func() {
-		cfg.EnvironmentFiler = ""
+		cfg.EnvironmentFilter = ""
 		db, err := openDatabase(ctx, cfg)
 		Expect(err).NotTo(HaveOccurred())
 		DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
@@ -108,7 +108,7 @@ var _ = Describe("openDatabase", func() {
 	})
 
 	It("returns schema creation failures instead of continuing to migration", func() {
-		cfg.EnvironmentFiler = "pg_projector_test"
+		cfg.EnvironmentFilter = "pg_projector_test"
 		db, err := openDatabase(ctx, cfg)
 		Expect(db).To(BeNil())
 		Expect(err).To(MatchError(ContainSubstring(`creating PostgreSQL schema "pg_projector_test"`)))
