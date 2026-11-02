@@ -24,6 +24,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func typedZoneRef(name, namespace string) types.TypedObjectRef {
+	return types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminapi.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+}
+
 var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, func() {
 	// Scenario 1:
 	// ApiSubscription is in the same zone as the ApiExposure failover zone
@@ -95,12 +105,12 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		apiExposure = NewApiExposure(apiBasePath, providerZoneName, appName)
 		apiExposure.Spec.Traffic = apiapi.Traffic{
 			Failover: &apiapi.ProviderFailover{
-				Zones: []types.ObjectRef{
-					{
+				Zones: []types.TypedObjectRef{{
+					ObjectRef: types.ObjectRef{
 						Name:      failoverZone.Name,
 						Namespace: failoverZone.Namespace,
 					},
-				},
+				}},
 			},
 		}
 		err = k8sClient.Create(ctx, apiExposure)
@@ -125,10 +135,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription in the failover zone")
 			sameZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			sameZoneSubscription.Name = "failover-same-zone-subscription"
-			sameZoneSubscription.Spec.Zone = types.ObjectRef{
-				Name:      failoverZoneName,
-				Namespace: testEnvironment,
-			}
+			sameZoneSubscription.Spec.Zone = typedZoneRef(failoverZoneName, testEnvironment)
 			err := k8sClient.Create(ctx, sameZoneSubscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -181,7 +188,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				consumeRoute := &gatewayapi.ConsumeRoute{}
 				err = k8sClient.Get(ctx, sameZoneSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(consumeRoute.Spec.Route).To(Equal(*sameZoneSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.Route).To(Equal(sameZoneSubscription.Status.Route.ObjectRef))
 				g.Expect(consumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -198,10 +205,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription in a different zone")
 			differentZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			differentZoneSubscription.Name = "failover-different-zone-subscription"
-			differentZoneSubscription.Spec.Zone = types.ObjectRef{
-				Name:      differentZoneName,
-				Namespace: testEnvironment,
-			}
+			differentZoneSubscription.Spec.Zone = typedZoneRef(differentZoneName, testEnvironment)
 			err := k8sClient.Create(ctx, differentZoneSubscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -259,7 +263,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				consumeRoute := &gatewayapi.ConsumeRoute{}
 				err = k8sClient.Get(ctx, differentZoneSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(consumeRoute.Spec.Route).To(Equal(*differentZoneSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.Route).To(Equal(differentZoneSubscription.Status.Route.ObjectRef))
 				g.Expect(consumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -299,10 +303,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription with multiple failover zones")
 			multiFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			multiFailoverSubscription.Name = "multi-failover-zone-subscription"
-			multiFailoverSubscription.Spec.Zone = types.ObjectRef{
-				Name:      "different-zone",
-				Namespace: testEnvironment,
-			}
+			multiFailoverSubscription.Spec.Zone = typedZoneRef("different-zone", testEnvironment)
 			// Configure failover enabled
 			multiFailoverSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.SubscriberFailover{
@@ -353,7 +354,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				consumeRoute := &gatewayapi.ConsumeRoute{}
 				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(consumeRoute.Spec.Route).To(Equal(*multiFailoverSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.Route).To(Equal(multiFailoverSubscription.Status.Route.ObjectRef))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -468,7 +469,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				err = k8sClient.Get(ctx, subscription.Status.ConsumeRoute.K8s(), proxyConsumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(proxyConsumeRoute.Spec.ConsumerName).To(Equal(sameZoneApplication.Status.ClientId))
-				g.Expect(proxyConsumeRoute.Spec.Route).To(Equal(*subscription.Status.Route)) // should be the proxy route
+				g.Expect(proxyConsumeRoute.Spec.Route).To(Equal(subscription.Status.Route.ObjectRef)) // should be the proxy route
 
 				// Check failover consume routes exist for each failover route
 				g.Expect(subscription.Status.FailoverConsumeRoutes).To(HaveLen(len(subscription.Status.FailoverRoutes)))
@@ -493,10 +494,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription in cross-zone")
 			denialSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			denialSubscription.Name = "approval-denial-subscription"
-			denialSubscription.Spec.Zone = types.ObjectRef{
-				Name:      denialZoneName,
-				Namespace: testEnvironment,
-			}
+			denialSubscription.Spec.Zone = typedZoneRef(denialZoneName, testEnvironment)
 			err := k8sClient.Create(ctx, denialSubscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -589,10 +587,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription with subscriber failover to provider failover zone")
 			subFailoverToProviderSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			subFailoverToProviderSubscription.Name = "sub-failover-to-provider-zone-subscription"
-			subFailoverToProviderSubscription.Spec.Zone = types.ObjectRef{
-				Name:      subFailoverToProviderZoneName,
-				Namespace: testEnvironment,
-			}
+			subFailoverToProviderSubscription.Spec.Zone = typedZoneRef(subFailoverToProviderZoneName, testEnvironment)
 			// Subscriber failover enabled
 			subFailoverToProviderSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.SubscriberFailover{
@@ -719,7 +714,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 						err = k8sClient.Get(ctx, routeRef.K8s(), route)
 						g.Expect(err).ToNot(HaveOccurred())
 						if route.Namespace == failoverZone.Status.Namespace {
-							g.Expect(failoverConsumeRoute.Spec.Route).To(Equal(routeRef))
+							g.Expect(failoverConsumeRoute.Spec.Route).To(Equal(routeRef.ObjectRef))
 							foundConsumeRoute = true
 							break
 						}
@@ -761,10 +756,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			sameZoneWithFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			sameZoneWithFailoverSubscription.Name = "same-zone-with-failover-subscription"
 			// CRITICAL: Subscription in same zone as exposure (provider-zone)
-			sameZoneWithFailoverSubscription.Spec.Zone = types.ObjectRef{
-				Name:      providerZoneName,
-				Namespace: testEnvironment,
-			}
+			sameZoneWithFailoverSubscription.Spec.Zone = typedZoneRef(providerZoneName, testEnvironment)
 			// But with failover enabled
 			sameZoneWithFailoverSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.SubscriberFailover{
@@ -922,10 +914,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription 1 (no failover)")
 			subscription1 = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			subscription1.Name = "multi-sub-no-failover"
-			subscription1.Spec.Zone = types.ObjectRef{
-				Name:      sharedZoneName,
-				Namespace: testEnvironment,
-			}
+			subscription1.Spec.Zone = typedZoneRef(sharedZoneName, testEnvironment)
 			// No failover configured
 			err := k8sClient.Create(ctx, subscription1)
 			Expect(err).ToNot(HaveOccurred())
@@ -933,10 +922,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription 2 (with failover)")
 			subscription2 = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			subscription2.Name = "multi-sub-with-failover"
-			subscription2.Spec.Zone = types.ObjectRef{
-				Name:      sharedZoneName, // Same zone as subscription1
-				Namespace: testEnvironment,
-			}
+			subscription2.Spec.Zone = typedZoneRef(sharedZoneName, testEnvironment)
 			subscription2.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.SubscriberFailover{
 					Enabled: true,
@@ -974,7 +960,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 				// Count proxy routes in shared zone
 				routesInSharedZone := 0
-				var sharedProxyRouteRef *types.ObjectRef
+				var sharedProxyRouteRef *types.TypedObjectRef
 				for _, proxyRouteRef := range apiExposure.Status.ProxyRoutes {
 					if proxyRouteRef.Namespace == sharedZone.Status.Namespace {
 						routesInSharedZone++
@@ -1119,28 +1105,19 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 		By("Creating multiple subscriptions all in exposure zone")
 		sameZoneSub1 = NewApiSubscription(apiBasePath, providerZoneName, appName)
 		sameZoneSub1.Name = "samezone-sub1"
-		sameZoneSub1.Spec.Zone = types.ObjectRef{
-			Name:      providerZoneName,
-			Namespace: testEnvironment,
-		}
+		sameZoneSub1.Spec.Zone = typedZoneRef(providerZoneName, testEnvironment)
 		err = k8sClient.Create(ctx, sameZoneSub1)
 		Expect(err).ToNot(HaveOccurred())
 
 		sameZoneSub2 = NewApiSubscription(apiBasePath, providerZoneName, appName)
 		sameZoneSub2.Name = "samezone-sub2"
-		sameZoneSub2.Spec.Zone = types.ObjectRef{
-			Name:      providerZoneName,
-			Namespace: testEnvironment,
-		}
+		sameZoneSub2.Spec.Zone = typedZoneRef(providerZoneName, testEnvironment)
 		err = k8sClient.Create(ctx, sameZoneSub2)
 		Expect(err).ToNot(HaveOccurred())
 
 		sameZoneSub3 = NewApiSubscription(apiBasePath, providerZoneName, appName)
 		sameZoneSub3.Name = "samezone-sub3"
-		sameZoneSub3.Spec.Zone = types.ObjectRef{
-			Name:      providerZoneName,
-			Namespace: testEnvironment,
-		}
+		sameZoneSub3.Spec.Zone = typedZoneRef(providerZoneName, testEnvironment)
 		err = k8sClient.Create(ctx, sameZoneSub3)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -1320,7 +1297,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		subscriberZone = CreateZone(subscriberZoneName)
 		subscription = NewApiSubscription(apiBasePath, subscriberZoneName, appName)
 		subscription.Name = "provfailover-sub"
-		subscription.Spec.Zone = types.ObjectRef{Name: subscriberZoneName, Namespace: testEnvironment}
+		subscription.Spec.Zone = typedZoneRef(subscriberZoneName, testEnvironment)
 		subscription.Spec.Traffic.Failover = &apiapi.SubscriberFailover{Enabled: true}
 		Expect(k8sClient.Create(ctx, subscription)).To(Succeed())
 
@@ -1335,12 +1312,7 @@ var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered
 		By("Creating the ApiExposure with provider failover")
 		apiExposure = NewApiExposure(apiBasePath, providerZoneName, appName)
 		apiExposure.Spec.Traffic.Failover = &apiapi.ProviderFailover{
-			Zones: []types.ObjectRef{
-				{
-					Name:      providerFailoverZoneName,
-					Namespace: testEnvironment,
-				},
-			},
+			Zones: []types.TypedObjectRef{typedZoneRef(providerFailoverZoneName, testEnvironment)},
 		}
 		err = k8sClient.Create(ctx, apiExposure)
 		Expect(err).ToNot(HaveOccurred())

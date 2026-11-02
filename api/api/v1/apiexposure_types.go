@@ -25,7 +25,7 @@ type ApiExposureSpec struct {
 	// +kubebuilder:validation:Enum=World;Zone;Enterprise
 	Visibility Visibility       `json:"visibility"`
 	Approval   Approval         `json:"approval"`
-	Zone       ctypes.ObjectRef `json:"zone"`
+	Zone       ctypes.TypedObjectRef `json:"zone"`
 
 	Traffic Traffic `json:"traffic"`
 
@@ -145,9 +145,9 @@ type ApiExposureStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
 	Active         bool               `json:"active"`
-	Route          *ctypes.ObjectRef  `json:"route,omitempty"`
-	FailoverRoutes []ctypes.ObjectRef `json:"failoverRoutes,omitempty"`
-	ProxyRoutes    []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
+	Route          *ctypes.TypedObjectRef  `json:"route,omitempty"`
+	FailoverRoutes []ctypes.TypedObjectRef `json:"failoverRoutes,omitempty"`
+	ProxyRoutes    []ctypes.TypedObjectRef `json:"proxyRoutes,omitempty"`
 }
 
 // +kubebuilder:object:root=true

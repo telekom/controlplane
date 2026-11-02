@@ -25,7 +25,7 @@ type AgenticSubscriptionSpec struct {
 	// See api domain's ApiSubscriptionSpec.Organization and RemoteApiSubscription handler for reference.
 
 	// Zone references the Zone CR where the subscriber resides.
-	Zone ctypes.ObjectRef `json:"zone"`
+	Zone ctypes.TypedObjectRef `json:"zone"`
 
 	// Security configures optional security settings for the ConsumeRoute.
 	// +optional
@@ -38,7 +38,7 @@ type AgenticSubscriptionSpec struct {
 
 // Requestor identifies the requesting application.
 type Requestor struct {
-	Application ctypes.ObjectRef `json:"application"`
+	Application ctypes.TypedObjectRef `json:"application"`
 }
 
 // AgenticSubscriptionStatus defines the observed state of AgenticSubscription.
@@ -57,15 +57,15 @@ type AgenticSubscriptionStatus struct {
 
 	// ConsumeRoute references the ConsumeRoute CR created for this subscription.
 	// +optional
-	ConsumeRoute *ctypes.ObjectRef `json:"consumeRoute,omitempty"`
+	ConsumeRoute *ctypes.TypedObjectRef `json:"consumeRoute,omitempty"`
 
 	// Approval references the Approval CR for this subscription.
 	// +optional
-	Approval *ctypes.ObjectRef `json:"approval,omitempty"`
+	Approval *ctypes.TypedObjectRef `json:"approval,omitempty"`
 
 	// ApprovalRequest references the ApprovalRequest CR for this subscription.
 	// +optional
-	ApprovalRequest *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
+	ApprovalRequest *ctypes.TypedObjectRef `json:"approvalRequest,omitempty"`
 
 	// GatewayUrl is the AI Gateway URL used for the subscription.
 	// +optional

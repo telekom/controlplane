@@ -128,7 +128,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
+	apiExp.Status.Route = types.TypedObjectRefFromObject(realRoute, cclient.ClientFromContextOrDie(ctx).Scheme())
 	logger.Info("✅ ApiExposure is processed")
 
 	return nil
@@ -233,8 +233,8 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 			continue
 		}
 		if apiExp.HasFailover() {
-			alreadySecondaryRoute := slices.ContainsFunc(apiExp.Spec.Traffic.Failover.Zones, func(failoverZone types.ObjectRef) bool {
-				return failoverZone.Equals(&subscriberZoneRef)
+			alreadySecondaryRoute := slices.ContainsFunc(apiExp.Spec.Traffic.Failover.Zones, func(failoverZone types.TypedObjectRef) bool {
+				return failoverZone.Name == subscriberZoneRef.Name && failoverZone.Namespace == subscriberZoneRef.Namespace
 			})
 			if alreadySecondaryRoute {
 				logger.V(1).Info("Skipping proxy route creation for zone that is already a provider failover zone (secondary)", "zone", subscriberZoneRef.Name)
@@ -273,7 +273,7 @@ func (h *ApiExposureHandler) manageProxyRoutes(ctx context.Context, apiExp *apia
 			return errors.Wrapf(err, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
 		}
 
-		apiExp.Status.ProxyRoutes = append(apiExp.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
+		apiExp.Status.ProxyRoutes = append(apiExp.Status.ProxyRoutes, *types.TypedObjectRefFromObject(proxyRoute, scopedClient.Scheme()))
 		logger.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
 	}
 
@@ -332,7 +332,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 		if err != nil {
 			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in zone: %s", apiExp.Name, failoverZone.Name)
 		}
-		apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverRoute))
+		apiExp.Status.FailoverRoutes = append(apiExp.Status.FailoverRoutes, *types.TypedObjectRefFromObject(failoverRoute, scopedClient.Scheme()))
 		logger.V(1).Info("Failover secondary route created/updated", "zone", failoverZone.Name, "route", failoverRoute.Name)
 	}
 	return nil
@@ -340,15 +340,17 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 
 // collectCrossZoneSubscriberZones returns the set of subscriber zones that need
 // a proxy route (i.e. not local to the exposure and not already covered by provider failover).
-func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiExposure, state *routingState) []types.ObjectRef {
-	var zones []types.ObjectRef
+func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiExposure, state *routingState) []types.TypedObjectRef {
+	var zones []types.TypedObjectRef
 
 	for _, sub := range state.subscribers {
 		if sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
 			continue
 		}
 
-		if !slices.ContainsFunc(zones, func(z types.ObjectRef) bool { return z.Equals(&sub.Spec.Zone) }) {
+		if !slices.ContainsFunc(zones, func(z types.TypedObjectRef) bool {
+			return z.Name == sub.Spec.Zone.Name && z.Namespace == sub.Spec.Zone.Namespace
+		}) {
 			zones = append(zones, sub.Spec.Zone)
 		}
 	}
@@ -359,8 +361,9 @@ func (h *ApiExposureHandler) collectCrossZoneSubscriberZones(apiExp *apiapi.ApiE
 // collectConsumerFailoverEnrichment populates consumer failover hosts, paths, and issuers
 // on state, and extends allRelevantZones with any additional failover-eligible zones that
 // need proxy routes.
-func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Context, apiExp *apiapi.ApiExposure, state *routingState, allRelevantZones []types.ObjectRef) ([]types.ObjectRef, error) {
+func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Context, apiExp *apiapi.ApiExposure, state *routingState, allRelevantZones []types.TypedObjectRef) ([]types.TypedObjectRef, error) {
 	logger := log.FromContext(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	availableFailoverZones, err := util.FindAllZonesWithFeatureEnabled(ctx, adminv1.GatewayTypeAPI, adminv1.FeatureConsumerFailover)
 	if err != nil {
@@ -388,13 +391,15 @@ func (h *ApiExposureHandler) collectConsumerFailoverEnrichment(ctx context.Conte
 		}
 		state.consumerFailoverIssuers = append(state.consumerFailoverIssuers, presetStatus.Links.Issuer)
 
-		if apiExp.Spec.Zone.Equals(zone) {
+		if apiExp.Spec.Zone.Name == zone.Name && apiExp.Spec.Zone.Namespace == zone.Namespace {
 			// return here to avoid adding the exposure zone itself to the list of allRelevantZones, which is only for proxy routes
 			continue
 		}
 
-		objRef := types.ObjectRefFromObject(zone)
-		if !slices.ContainsFunc(allRelevantZones, func(z types.ObjectRef) bool { return z.Equals(objRef) }) {
+		objRef := types.TypedObjectRefFromObject(zone, scopedClient.Scheme())
+		if !slices.ContainsFunc(allRelevantZones, func(z types.TypedObjectRef) bool {
+			return z.Name == objRef.Name && z.Namespace == objRef.Namespace
+		}) {
 			allRelevantZones = append(allRelevantZones, *objRef)
 		}
 	}

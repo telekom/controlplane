@@ -224,7 +224,7 @@ func (in *AgenticExposureStatus) DeepCopyInto(out *AgenticExposureStatus) {
 	}
 	if in.ProxyRoutes != nil {
 		in, out := &in.ProxyRoutes, &out.ProxyRoutes
-		*out = make([]types.ObjectRef, len(*in))
+		*out = make([]types.TypedObjectRef, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -628,7 +628,7 @@ func (in *ProviderFailover) DeepCopyInto(out *ProviderFailover) {
 	*out = *in
 	if in.Zones != nil {
 		in, out := &in.Zones, &out.Zones
-		*out = make([]types.ObjectRef, len(*in))
+		*out = make([]types.TypedObjectRef, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

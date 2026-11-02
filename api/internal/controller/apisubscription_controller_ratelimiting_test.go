@@ -98,10 +98,7 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId, appNam
 			Approval: apiapi.Approval{
 				Strategy: apiapi.ApprovalStrategyAuto,
 			},
-			Zone: types.ObjectRef{
-				Name:      zoneName,
-				Namespace: testEnvironment,
-			},
+			Zone: typedZoneRef(zoneName, testEnvironment),
 		},
 	}
 }
@@ -121,7 +118,7 @@ func NewApiExposureWithProviderOnlyRateLimit(apiBasePath, zoneName, appName stri
 }
 
 // createAndApproveSubscription creates an ApiSubscription and approves it
-func createAndApproveSubscription(apiBasePath, zoneName, appName string, zoneRef *types.ObjectRef) *apiapi.ApiSubscription {
+func createAndApproveSubscription(apiBasePath, zoneName, appName string, zoneRef *types.TypedObjectRef) *apiapi.ApiSubscription {
 	// Create subscription
 	subscription := NewApiSubscription(apiBasePath, zoneName, appName)
 
@@ -177,7 +174,7 @@ func verifyConsumeRouteRateLimits(subscription *apiapi.ApiSubscription, expected
 }
 
 // verifyRouteRateLimits verifies that a Route has the expected provider rate limits
-func verifyRouteRateLimits(route *types.ObjectRef, providerRateLimit *apiapi.RateLimitConfig, isProxyRoute bool) {
+func verifyRouteRateLimits(route *types.TypedObjectRef, providerRateLimit *apiapi.RateLimitConfig, isProxyRoute bool) {
 	Eventually(func(g Gomega) {
 		// Get the Route
 		routeObj := &gatewayapi.Route{}
@@ -325,11 +322,8 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Create and approve subscription in second zone
-			zoneRef := &types.ObjectRef{
-				Name:      secondZoneName,
-				Namespace: testEnvironment,
-			}
-			proxyApiSubscription := createAndApproveSubscription(apiBasePath, secondZoneName, proxyAppName, zoneRef)
+			zoneRef := typedZoneRef(secondZoneName, testEnvironment)
+			proxyApiSubscription := createAndApproveSubscription(apiBasePath, secondZoneName, proxyAppName, &zoneRef)
 
 			By("Verifying the ProxyRoute is created with provider rate limits")
 			Eventually(func(g Gomega) {

@@ -49,19 +49,19 @@ func GetZone(ctx context.Context, ref client.ObjectKey) (*adminv1.Zone, error) {
 }
 
 // GetApplication retrieves an Application object by ObjectRef and ensures it is ready.
-func GetApplication(ctx context.Context, ref ctypes.ObjectRef) (*applicationapi.Application, error) {
+func GetApplication(ctx context.Context, ref ctypes.NamedObject) (*applicationapi.Application, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	application := &applicationapi.Application{}
-	err := c.Get(ctx, ref.K8s(), application)
+	err := c.Get(ctx, client.ObjectKey{Namespace: ref.GetNamespace(), Name: ref.GetName()}, application)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, ctrlerrors.BlockedErrorf("application %q not found", ref.String())
+			return nil, ctrlerrors.BlockedErrorf("application %s/%s not found", ref.GetNamespace(), ref.GetName())
 		}
-		return nil, errors.Wrapf(err, "failed to get application %q", ref.String())
+		return nil, errors.Wrapf(err, "failed to get application %s/%s", ref.GetNamespace(), ref.GetName())
 	}
 	if err := condition.EnsureReady(application); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("application %q is not ready", ref.String())
+		return nil, ctrlerrors.BlockedErrorf("application %s/%s is not ready", ref.GetNamespace(), ref.GetName())
 	}
 
 	return application, nil
@@ -177,7 +177,7 @@ func AnyOtherAgenticExposureExists(ctx context.Context, basePath string, exclude
 // FindCrossZoneAgenticSubscriptionZones lists all AgenticSubscriptions for a given basePath
 // and returns unique zone ObjectRefs where approved cross-zone subscriptions exist,
 // plus a boolean indicating whether any approved same-zone subscriptions also exist.
-func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) (zones []ctypes.ObjectRef, hasLocalSubs bool, err error) {
+func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposureZoneName string) (zones []ctypes.TypedObjectRef, hasLocalSubs bool, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -220,8 +220,8 @@ func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposu
 
 	// Cache List order is unstable; this feeds status, so an unsorted result
 	// rewrites the status every reconcile and re-triggers the watch.
-	slices.SortFunc(zones, func(a, b ctypes.ObjectRef) int {
-		return strings.Compare(a.String(), b.String())
+	slices.SortFunc(zones, func(a, b ctypes.TypedObjectRef) int {
+		return strings.Compare(a.Namespace+"/"+a.Name, b.Namespace+"/"+b.Name)
 	})
 
 	return zones, hasLocalSubs, nil

@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -19,10 +20,13 @@ import (
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
-func CalculateRemoteOrgZone(remoteOrg *adminapi.RemoteOrganization) types.ObjectRef {
-	return types.ObjectRef{
-		Name:      fmt.Sprintf("%s-%s", remoteOrg.Spec.Id, remoteOrg.Spec.Zone.Name),
-		Namespace: remoteOrg.Spec.Zone.Namespace,
+func CalculateRemoteOrgZone(remoteOrg *adminapi.RemoteOrganization) types.TypedObjectRef {
+	return types.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminapi.GroupVersion.String()},
+		ObjectRef: types.ObjectRef{
+			Name:      fmt.Sprintf("%s-%s", remoteOrg.Spec.Id, remoteOrg.Spec.Zone.Name),
+			Namespace: remoteOrg.Spec.Zone.Namespace,
+		},
 	}
 }
 

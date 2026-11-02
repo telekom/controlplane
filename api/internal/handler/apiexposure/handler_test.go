@@ -228,7 +228,7 @@ func newApiExposure(zone ctypes.ObjectRef) *apiapi.ApiExposure {
 		},
 		Spec: apiapi.ApiExposureSpec{
 			ApiBasePath: basePath,
-			Zone:        zone,
+			Zone:        ctypes.TypedObjectRef{ObjectRef: zone},
 			Upstreams:   []apiapi.Upstream{{Url: "https://backend.internal:8080" + basePath, Weight: 100}},
 			Visibility:  apiapi.VisibilityWorld,
 			Approval:    apiapi.Approval{Strategy: apiapi.ApprovalStrategyAuto},
@@ -245,7 +245,7 @@ func makeSubscription(basePath string, zone ctypes.ObjectRef, failover bool) api
 		},
 		Spec: apiapi.ApiSubscriptionSpec{
 			ApiBasePath: basePath,
-			Zone:        zone,
+			Zone:        ctypes.TypedObjectRef{ObjectRef: zone},
 		},
 	}
 	if failover {
@@ -330,6 +330,13 @@ var _ = Describe("ApiExposureHandler", func() {
 		ctx = context.Background()
 		ctx = contextutil.WithEnv(ctx, testEnv)
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		scheme := runtime.NewScheme()
+		Expect(adminv1.AddToScheme(scheme)).To(Succeed())
+		Expect(apiapi.AddToScheme(scheme)).To(Succeed())
+		Expect(applicationapi.AddToScheme(scheme)).To(Succeed())
+		Expect(gatewayapi.AddToScheme(scheme)).To(Succeed())
+		Expect(organizationapi.AddToScheme(scheme)).To(Succeed())
+		fakeClient.EXPECT().Scheme().Return(scheme).Maybe()
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &ApiExposureHandler{}
 	})
@@ -621,7 +628,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				obj := newApiExposure(zoneARef)
 				obj.Spec.Traffic = apiapi.Traffic{
 					Failover: &apiapi.ProviderFailover{
-						Zones: []ctypes.ObjectRef{zoneFRef},
+						Zones: []ctypes.TypedObjectRef{{ObjectRef: zoneFRef}},
 					},
 				}
 
@@ -704,10 +711,10 @@ var _ = Describe("ApiExposureHandler", func() {
 			It("runs a basepath-only sweep after creating the new real route", func() {
 				obj := newApiExposure(zoneARef)
 				// Place the real route in zone-b's namespace to represent the pre-move state.
-				obj.Status.Route = &ctypes.ObjectRef{
+				obj.Status.Route = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{
 					Name:      util.MakeRouteName(basePath),
 					Namespace: "ns-b",
-				}
+				}}
 
 				// --- Preamble ---
 				mockListApis([]apiapi.Api{makeReadyApi()})

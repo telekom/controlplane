@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -175,8 +176,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err != nil {
 		return err
 	}
-	apiSub.Status.ApprovalRequest = types.ObjectRefFromObject(approvalBuilder.GetApprovalRequest())
-	apiSub.Status.Approval = types.ObjectRefFromObject(approvalBuilder.GetApproval())
+	apiSub.Status.ApprovalRequest = types.TypedObjectRefFromObject(approvalBuilder.GetApprovalRequest(), scopedClient.Scheme())
+	apiSub.Status.Approval = types.TypedObjectRefFromObject(approvalBuilder.GetApproval(), scopedClient.Scheme())
 
 	switch res {
 	case builder.ApprovalResultRequestDenied:
@@ -263,14 +264,14 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
-	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+	apiSub.Status.ConsumeRoute = types.TypedObjectRefFromObject(consumeRoute, scopedClient.Scheme())
 
 	// ----- Subscriber Failover -----
 	// In the exposure-driven pattern, ApiExposure creates proxy routes in all failover zones.
 	// ApiSubscription just references them and creates ConsumeRoutes.
 
-	apiSub.Status.FailoverRoutes = []types.ObjectRef{}
-	apiSub.Status.FailoverConsumeRoutes = []types.ObjectRef{}
+	apiSub.Status.FailoverRoutes = []types.TypedObjectRef{}
+	apiSub.Status.FailoverConsumeRoutes = []types.TypedObjectRef{}
 	if apiSub.HasFailover() {
 		if err := processSubscriberFailover(ctx, scopedClient, apiSub, apiExposure, apiSubApplication.Status.ClientId); err != nil {
 			return err
@@ -323,14 +324,14 @@ func processSubscriberFailover(ctx context.Context, scopedClient cclient.Janitor
 		if createErr != nil {
 			return errors.Wrapf(createErr, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
 		}
-		apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.ObjectRefFromObject(failoverConsumeRoute))
+		apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.TypedObjectRefFromObject(failoverConsumeRoute, scopedClient.Scheme()))
 	}
 
 	return nil
 }
 
 // resolveFailoverRouteRef determines the route reference for a subscriber failover zone.
-func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, subFailoverZone types.ObjectRef) (types.ObjectRef, error) {
+func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, subFailoverZone types.TypedObjectRef) (types.TypedObjectRef, error) {
 	logger := log.FromContext(ctx)
 
 	sameZoneAsExposure := subFailoverZone.Equals(&apiExposure.Spec.Zone)
@@ -340,35 +341,44 @@ func resolveFailoverRouteRef(ctx context.Context, scopedClient cclient.JanitorCl
 	case sameZoneAsExposure:
 		exposureZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
 		if err != nil {
-			return types.ObjectRef{}, errors.Wrapf(err, "failed to get exposure zone %s for failover", apiExposure.Spec.Zone.Name)
+			return types.TypedObjectRef{}, errors.Wrapf(err, "failed to get exposure zone %s for failover", apiExposure.Spec.Zone.Name)
 		}
 		logger.V(1).Info("Referencing real route in failover zone (same as exposure)", "zone", subFailoverZone.Name)
-		return types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
-			Namespace: exposureZone.Status.Namespace,
+		return types.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			ObjectRef: types.ObjectRef{
+				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
+				Namespace: exposureZone.Status.Namespace,
+			},
 		}, nil
 
 	case inProviderFailoverZone:
 		// subFailoverZone is the matching provider failover zone — resolve it directly
 		providerFailoverZone, err := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
 		if err != nil {
-			return types.ObjectRef{}, errors.Wrapf(err, "failed to get provider failover zone %s", subFailoverZone.Name)
+			return types.TypedObjectRef{}, errors.Wrapf(err, "failed to get provider failover zone %s", subFailoverZone.Name)
 		}
 		logger.V(1).Info("Referencing provider failover route", "zone", subFailoverZone.Name)
-		return types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
-			Namespace: providerFailoverZone.Status.Namespace,
+		return types.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			ObjectRef: types.ObjectRef{
+				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
+				Namespace: providerFailoverZone.Status.Namespace,
+			},
 		}, nil
 
 	default:
 		subscriberFailoverZone, err := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
 		if err != nil {
-			return types.ObjectRef{}, errors.Wrapf(err, "failed to get subscriber failover zone %s", subFailoverZone.Name)
+			return types.TypedObjectRef{}, errors.Wrapf(err, "failed to get subscriber failover zone %s", subFailoverZone.Name)
 		}
 		logger.V(1).Info("Referencing proxy route created by ApiExposure for subscriber failover", "zone", subFailoverZone.Name)
-		return types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
-			Namespace: subscriberFailoverZone.Status.Namespace,
+		return types.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{Kind: "Route", APIVersion: gatewayapi.GroupVersion.String()},
+			ObjectRef: types.ObjectRef{
+				Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath),
+				Namespace: subscriberFailoverZone.Status.Namespace,
+			},
 		}, nil
 	}
 }
@@ -414,7 +424,7 @@ func validateSubscriptionScopes(ctx context.Context, api *apiapi.Api, exposure *
 
 // resolveRouteRef determines which route the ApiSubscription should reference based on zone relationships.
 // Returns (nil, nil) if a blocking condition was set and processing should stop.
-func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, sameZoneAsExposure, inProviderFailoverZone bool) (*types.ObjectRef, error) {
+func resolveRouteRef(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription, apiExposure *apiapi.ApiExposure, sameZoneAsExposure, inProviderFailoverZone bool) (*types.TypedObjectRef, error) {
 	logger := log.FromContext(ctx)
 
 	switch {

@@ -32,12 +32,12 @@ type ProviderFailover struct {
 	// Zones defines the list of zones that are eligible for failover.
 	// If empty, the Provider failover feature is disabled.
 	// +kubebuilder:validation:Optional
-	Zones []ctypes.ObjectRef `json:"zones,omitempty"`
+	Zones []ctypes.TypedObjectRef `json:"zones,omitempty"`
 }
 
-func (f ProviderFailover) ContainsZone(zone ctypes.ObjectRef) bool {
-	return slices.ContainsFunc(f.Zones, func(z ctypes.ObjectRef) bool {
-		return z.Equals(&zone)
+func (f ProviderFailover) ContainsZone(zone ctypes.NamedObject) bool {
+	return slices.ContainsFunc(f.Zones, func(z ctypes.TypedObjectRef) bool {
+		return z.Name == zone.GetName() && z.Namespace == zone.GetNamespace()
 	})
 }
 

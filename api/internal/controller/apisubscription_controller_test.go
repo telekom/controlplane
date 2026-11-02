@@ -83,20 +83,23 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 				},
 			},
 			Requestor: apiapi.Requestor{
-				Application: types.ObjectRef{
-					Name:      appName,
-					Namespace: testNamespace,
+				Application: types.TypedObjectRef{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Application",
+						APIVersion: applicationapi.GroupVersion.String(),
+					},
+					ObjectRef: types.ObjectRef{
+						Name:      appName,
+						Namespace: testNamespace,
+					},
 				},
 			},
-			Zone: types.ObjectRef{
-				Name:      zoneName,
-				Namespace: testEnvironment,
-			},
+			Zone: typedZoneRef(zoneName, testEnvironment),
 		},
 	}
 }
 
-func ProgressApprovalRequest(ref *types.ObjectRef, state approvalapi.ApprovalState) *approvalapi.ApprovalRequest {
+func ProgressApprovalRequest(ref *types.TypedObjectRef, state approvalapi.ApprovalState) *approvalapi.ApprovalRequest {
 	approvalReq := &approvalapi.ApprovalRequest{}
 	Eventually(func(g Gomega) {
 		g.Expect(k8sClient.Get(ctx, ref.K8s(), approvalReq)).To(Succeed())
@@ -155,7 +158,7 @@ func CompleteSubscriptionChildren(sub *apiapi.ApiSubscription) {
 	Eventually(func(g Gomega) {
 		g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sub), sub)).To(Succeed())
 		g.Expect(sub.Status.ConsumeRoute).NotTo(BeNil())
-		refs := append([]types.ObjectRef{*sub.Status.ConsumeRoute}, sub.Status.FailoverConsumeRoutes...)
+		refs := append([]types.TypedObjectRef{*sub.Status.ConsumeRoute}, sub.Status.FailoverConsumeRoutes...)
 		for _, ref := range refs {
 			child := &gatewayapi.ConsumeRoute{}
 			g.Expect(k8sClient.Get(ctx, ref.K8s(), child)).To(Succeed())
@@ -587,7 +590,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.RefreshToken).To(Equal("refreshToken"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
-					g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
+					g.Expect(consumeRoute.Spec.Route).To(Equal(apiSubscription.Status.Route.ObjectRef))
 				}, timeout, interval).Should(Succeed())
 			})
 		})
@@ -730,10 +733,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			By("Changing the zone of the ApiSubscription")
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)).To(Succeed())
-				apiSubscription.Spec.Zone = types.ObjectRef{
-					Name:      consumerZoneName,
-					Namespace: testEnvironment,
-				}
+				apiSubscription.Spec.Zone = typedZoneRef(consumerZoneName, testEnvironment)
 				g.Expect(k8sClient.Update(ctx, apiSubscription)).To(Succeed())
 			}, timeout, interval).Should(Succeed())
 
@@ -940,7 +940,7 @@ var _ = Describe("ApiSubscription basePath validation", Ordered, func() {
 		var api *apiapi.Api
 		var apiExposure *apiapi.ApiExposure
 		var apiSubscription *apiapi.ApiSubscription
-		var consumeRouteRef *types.ObjectRef
+		var consumeRouteRef *types.TypedObjectRef
 
 		BeforeAll(func() {
 			api, apiExposure = createExposedApi(basePath, basePath)

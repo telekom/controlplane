@@ -79,8 +79,8 @@ var _ = Describe("Remote subscription validation", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 				Spec: apiapi.ApiSubscriptionSpec{
 					ApiBasePath: "/shared/v1", Organization: "remote",
-					Zone:      types.ObjectRef{Name: "downstream", Namespace: "default"},
-					Requestor: apiapi.Requestor{Application: types.ObjectRef{Name: name, Namespace: "default"}},
+					Zone:      types.TypedObjectRef{ObjectRef: types.ObjectRef{Name: "downstream", Namespace: "default"}},
+					Requestor: apiapi.Requestor{Application: types.TypedObjectRef{ObjectRef: types.ObjectRef{Name: name, Namespace: "default"}}},
 					Security: &apiapi.SubscriberSecurity{M2M: &apiapi.SubscriberMachine2MachineAuthentication{
 						Scopes: []string{"read"},
 					}},
@@ -108,9 +108,9 @@ var _ = Describe("Remote subscription validation", func() {
 			}
 			Expect(controllerutil.SetControllerReference(sub, consumeRoute, scheme)).To(Succeed())
 			Expect(apiClient.Create(ctx, consumeRoute)).To(Succeed())
-			sub.Status.Route = &routeRef
-			sub.Status.RemoteApiSubscription = types.ObjectRefFromObject(request)
-			sub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+			sub.Status.Route = &types.TypedObjectRef{ObjectRef: routeRef}
+			sub.Status.RemoteApiSubscription = types.TypedObjectRefFromObject(request, scheme)
+			sub.Status.ConsumeRoute = types.TypedObjectRefFromObject(consumeRoute, scheme)
 			sub.Status.ActiveScopes = []string{"read"}
 			sub.Status.GatewayUrl = "https://gateway.example.com/shared/v1"
 			sub.Status.IdpIssuer = "https://idp.example.com"

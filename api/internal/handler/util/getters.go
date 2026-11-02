@@ -66,53 +66,53 @@ func GetApplicationFromLabel(ctx context.Context, apiExposure *apiv1.ApiExposure
 	return GetApplication(ctx, ref)
 }
 
-func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.Application, error) {
+func GetApplication(ctx context.Context, ref types.NamedObject) (*applicationapi.Application, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	application := &applicationapi.Application{}
-	err := scopedClient.Get(ctx, ref.K8s(), application)
+	err := scopedClient.Get(ctx, client.ObjectKey{Namespace: ref.GetNamespace(), Name: ref.GetName()}, application)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to find application %q", ref.String()))
+			return nil, errors.Wrapf(err, "failed to find application %s/%s", ref.GetNamespace(), ref.GetName())
 		}
-		return nil, ctrlerrors.BlockedErrorf("application %q not found", ref.String())
+		return nil, ctrlerrors.BlockedErrorf("application %s/%s not found", ref.GetNamespace(), ref.GetName())
 	}
 	if err := condition.EnsureReady(application); err != nil {
-		return nil, ctrlerrors.BlockedErrorf("application %q is not ready", ref.String())
+		return nil, ctrlerrors.BlockedErrorf("application %s/%s is not ready", ref.GetNamespace(), ref.GetName())
 	}
 
 	return application, nil
 }
 
 // GetDefaultPresetForZone fetches the Zone for the given ref and returns its default gateway preset.
-func GetDefaultPresetForZone(ctx context.Context, zoneRef types.ObjectRef) (*adminapi.Preset, *adminapi.Zone, error) {
+func GetDefaultPresetForZone(ctx context.Context, zoneRef types.NamedObject) (*adminapi.Preset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	zone, err := GetZone(ctx, c, zoneRef.K8s())
+	zone, err := GetZone(ctx, c, client.ObjectKey{Namespace: zoneRef.GetNamespace(), Name: zoneRef.GetName()})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
+		return nil, nil, errors.Wrapf(err, "failed to get zone %s/%s", zoneRef.GetNamespace(), zoneRef.GetName())
 	}
 
 	preset, err := zone.Spec.GetDefaultPreset()
 	if err != nil {
-		return nil, zone, errors.Wrapf(err, "failed to get default preset for zone %s", zoneRef.String())
+		return nil, zone, errors.Wrapf(err, "failed to get default preset for zone %s/%s", zoneRef.GetNamespace(), zoneRef.GetName())
 	}
 
 	return preset, zone, nil
 }
 
 // GetPresetForZone fetches the Zone for the given ref and returns the gateway preset with the given name.
-func GetPresetForZone(ctx context.Context, zoneRef types.ObjectRef, presetName string) (*adminapi.Preset, *adminapi.Zone, error) {
+func GetPresetForZone(ctx context.Context, zoneRef types.NamedObject, presetName string) (*adminapi.Preset, *adminapi.Zone, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	zone, err := GetZone(ctx, c, zoneRef.K8s())
+	zone, err := GetZone(ctx, c, client.ObjectKey{Namespace: zoneRef.GetNamespace(), Name: zoneRef.GetName()})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
+		return nil, nil, errors.Wrapf(err, "failed to get zone %s/%s", zoneRef.GetNamespace(), zoneRef.GetName())
 	}
 
 	preset, err := zone.Spec.GetPreset(presetName)
 	if err != nil {
-		return nil, zone, errors.Wrapf(err, "failed to get preset %q for zone %s", presetName, zoneRef.String())
+		return nil, zone, errors.Wrapf(err, "failed to get preset %q for zone %s/%s", presetName, zoneRef.GetNamespace(), zoneRef.GetName())
 	}
 
 	return preset, zone, nil
@@ -238,19 +238,19 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 }
 
 // FindFailoverEligibleZones lists all zones and returns those that are eligible for failover for a given zone.
-func FindFailoverEligibleZones(ctx context.Context, myZone types.ObjectRef) ([]types.ObjectRef, error) {
+func FindFailoverEligibleZones(ctx context.Context, myZone types.NamedObject) ([]types.TypedObjectRef, error) {
 	allZones, err := FindAllZonesWithFeatureEnabled(ctx, adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find zones with consumer failover feature enabled")
 	}
 
-	var eligibleZones []types.ObjectRef
+	var eligibleZones []types.TypedObjectRef
 	for _, zone := range allZones {
 		// Skip same-zone as myZone (a zone cannot failover to itself)
-		if zone.Name == myZone.Name {
+		if zone.Name == myZone.GetName() {
 			continue
 		}
-		eligibleZones = append(eligibleZones, *types.ObjectRefFromObject(zone))
+		eligibleZones = append(eligibleZones, *types.TypedObjectRefFromObject(zone, cclient.ClientFromContextOrDie(ctx).Scheme()))
 	}
 
 	return eligibleZones, nil

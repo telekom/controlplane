@@ -84,7 +84,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          obj.Spec.Requester.Team.Name,
 			TeamEmail:     obj.Spec.Requester.Team.Email,
-			Zone:          CalculateRemoteOrgZone(remoteOrg),
+			Zone:          CalculateRemoteOrgZone(remoteOrg).ObjectRef,
 			Secret:        secret,
 			NeedsClient:   false,
 			NeedsConsumer: true,
@@ -97,7 +97,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	if err != nil {
 		return errors.Wrapf(err, "failed to create application %s", application.Name)
 	}
-	obj.Status.Application = types.ObjectRefFromObject(application)
+	obj.Status.Application = types.TypedObjectRefFromObject(application, c.Scheme())
 
 	_, err = c.Cleanup(ctx, &applicationv1.ApplicationList{}, client.OwnedBy(obj))
 	if err != nil {
@@ -128,7 +128,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 			Security:     obj.Spec.Security,
 			Organization: "",
 			Requestor: apiapi.Requestor{
-				Application: *types.ObjectRefFromObject(application),
+				Application: *types.TypedObjectRefFromObject(application, c.Scheme()),
 			},
 			Zone: CalculateRemoteOrgZone(remoteOrg),
 		}
@@ -140,7 +140,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 	if err != nil {
 		return errors.Wrapf(err, "failed to create api subscription %s", apiSubscription.Name)
 	}
-	obj.Status.ApiSubscription = types.ObjectRefFromObject(apiSubscription)
+	obj.Status.ApiSubscription = types.TypedObjectRefFromObject(apiSubscription, c.Scheme())
 
 	_, err = c.Cleanup(ctx, &apiapi.ApiSubscriptionList{}, client.OwnedBy(obj))
 	if err != nil {

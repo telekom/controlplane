@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -107,14 +108,19 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	if obj.Spec.Variant.IsTelecontextVariant() {
 		telecontextZone := telecontextApp.Spec.Zone
 		telecontextInExposureZone := telecontextZone.Name == obj.Spec.Zone.Name
-		telecontextZoneAlreadyInProxyZones := slices.ContainsFunc(proxyZones, func(z ctypes.ObjectRef) bool {
+		telecontextZoneAlreadyInProxyZones := slices.ContainsFunc(proxyZones, func(z ctypes.TypedObjectRef) bool {
 			return z.Name == telecontextZone.Name
 		})
 		if !telecontextInExposureZone && !telecontextZoneAlreadyInProxyZones {
-			proxyZones = append(proxyZones, telecontextZone)
+			proxyZones = append(proxyZones, ctypes.TypedObjectRef{
+				TypeMeta: metav1.TypeMeta{Kind: "Zone", APIVersion: adminv1.GroupVersion.String()},
+				ObjectRef: ctypes.ObjectRef{
+					Name: telecontextZone.Name, Namespace: telecontextZone.Namespace, UID: telecontextZone.UID,
+				},
+			})
 			// Keep the order stable, like FindCrossZoneAgenticSubscriptionZones, so the status does not change
-			slices.SortFunc(proxyZones, func(a, b ctypes.ObjectRef) int {
-				return strings.Compare(a.String(), b.String())
+			slices.SortFunc(proxyZones, func(a, b ctypes.TypedObjectRef) int {
+				return strings.Compare(a.Namespace+"/"+a.Name, b.Namespace+"/"+b.Name)
 			})
 		}
 	}
@@ -150,7 +156,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		if routeErr != nil {
 			return errors.Wrapf(routeErr, "failed to create MCP proxy Route for zone %q", proxyZoneRef.Name)
 		}
-		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *ctypes.ObjectRefFromObject(proxyRoute))
+		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *ctypes.TypedObjectRefFromObject(proxyRoute, cclient.ClientFromContextOrDie(ctx).Scheme()))
 		logger.V(1).Info("MCP proxy Route created/updated", "zone", proxyZoneRef.Name, "route", proxyRoute.Name)
 	}
 
@@ -165,7 +171,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}
-	obj.Status.Route = ctypes.ObjectRefFromObject(route)
+	obj.Status.Route = ctypes.TypedObjectRefFromObject(route, cclient.ClientFromContextOrDie(ctx).Scheme())
 	logger.V(1).Info("MCP Route created/updated", "route", route.Name)
 
 	// 8. Cleanup stale routes

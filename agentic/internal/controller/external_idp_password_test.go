@@ -35,7 +35,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			Upstreams:  []agenticv1.Upstream{{Url: "https://upstream.example.com/mcp", Weight: 100}},
 			Visibility: agenticv1.VisibilityEnterprise,
 			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
-			Zone:       *ctypes.ObjectRefFromObject(f.zone), Provider: *ctypes.ObjectRefFromObject(f.provider),
+			Zone:       *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()), Provider: *ctypes.TypedObjectRefFromObject(f.provider, k8sClient.Scheme()),
 			Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{ExternalIDP: idp}},
 		}}
 		Expect(k8sClient.Create(ctx, exp)).To(Succeed())
@@ -44,8 +44,8 @@ var _ = Describe("Consumer username/password with scopes", func() {
 
 	passwordSubscription := func(f *scopeFixture, scopes []string) *agenticv1.AgenticSubscription {
 		sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
-			BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
-			Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+			BasePath: f.basePath, Zone: *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()),
+			Requestor: agenticv1.Requestor{Application: *ctypes.TypedObjectRefFromObject(f.consumer, k8sClient.Scheme())},
 			Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 				Client: &agenticv1.OAuth2ClientCredentials{ClientId: "consumer-client", ClientSecret: "consumer-secret"},
 				Basic:  &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
@@ -153,8 +153,8 @@ var _ = Describe("Consumer username/password with scopes", func() {
 			f.server("McpServer", nil)
 			waitExposure(passwordExposure(f, exposureGrant))
 			sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
-				BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
-				Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+				BasePath: f.basePath, Zone: *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()),
+				Requestor: agenticv1.Requestor{Application: *ctypes.TypedObjectRefFromObject(f.consumer, k8sClient.Scheme())},
 				Security: &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{
 					Basic:     &agenticv1.BasicAuthCredentials{Username: "consumer-user", Password: "consumer-pass"},
 					Scopes:    consumerScopes,
@@ -183,7 +183,7 @@ var _ = Describe("Consumer username/password with scopes", func() {
 				Upstreams:  []agenticv1.Upstream{{Url: "https://upstream.example.com/mcp", Weight: 100}},
 				Visibility: agenticv1.VisibilityEnterprise,
 				Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
-				Zone:       *ctypes.ObjectRefFromObject(f.zone), Provider: *ctypes.ObjectRefFromObject(f.provider),
+				Zone:       *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()), Provider: *ctypes.TypedObjectRefFromObject(f.provider, k8sClient.Scheme()),
 				Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{ExternalIDP: idp}},
 			}}
 
@@ -200,8 +200,8 @@ var _ = Describe("Consumer username/password with scopes", func() {
 		f.server("McpServer", consumerScopes)
 		waitExposure(f.exposure("exposure", consumerScopes, false))
 		sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
-			BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
-			Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+			BasePath: f.basePath, Zone: *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()),
+			Requestor: agenticv1.Requestor{Application: *ctypes.TypedObjectRefFromObject(f.consumer, k8sClient.Scheme())},
 			Security:  &agenticv1.SubscriberSecurity{M2M: security},
 		}}
 		Expect(k8sClient.Create(ctx, sub)).To(Succeed())

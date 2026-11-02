@@ -92,6 +92,21 @@ spec:
               provider:
                 description: Provider identifies the providing application.
                 properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
                   name:
                     type: string
                   namespace:
@@ -246,9 +261,24 @@ spec:
                           If empty, the Provider failover feature is disabled.
                         items:
                           description: |-
-                            ObjectRef is a reference to a Kubernetes object
-                            It is similar to types.NamespacedName but has the required json tags for serialization
+                            TypedObjectRef is a reference to a Kubernetes object with type information
+                            It is similar to ObjectRef but includes the Kind and APIVersion
                           properties:
+                            apiVersion:
+                              description: |-
+                                APIVersion defines the versioned schema of this representation of an object.
+                                Servers should convert recognized schemas to the latest internal value, and
+                                may reject unrecognized values.
+                                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                              type: string
+                            kind:
+                              description: |-
+                                Kind is a string value representing the REST resource this object represents.
+                                Servers may infer this from the endpoint the client submits requests to.
+                                Cannot be updated.
+                                In CamelCase.
+                                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                              type: string
                             name:
                               type: string
                             namespace:
@@ -449,6 +479,21 @@ spec:
                 description: Zone references the Zone CR where this MCP server is
                   exposed.
                 properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
                   name:
                     type: string
                   namespace:
@@ -543,9 +588,24 @@ spec:
                   MCP delivery.
                 items:
                   description: |-
-                    ObjectRef is a reference to a Kubernetes object
-                    It is similar to types.NamespacedName but has the required json tags for serialization
+                    TypedObjectRef is a reference to a Kubernetes object with type information
+                    It is similar to ObjectRef but includes the Kind and APIVersion
                   properties:
+                    apiVersion:
+                      description: |-
+                        APIVersion defines the versioned schema of this representation of an object.
+                        Servers should convert recognized schemas to the latest internal value, and
+                        may reject unrecognized values.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                      type: string
+                    kind:
+                      description: |-
+                        Kind is a string value representing the REST resource this object represents.
+                        Servers may infer this from the endpoint the client submits requests to.
+                        Cannot be updated.
+                        In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                      type: string
                     name:
                       type: string
                     namespace:
@@ -565,6 +625,21 @@ spec:
                 description: Route references the primary gateway Route CR created
                   for this exposure.
                 properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
                   name:
                     type: string
                   namespace:

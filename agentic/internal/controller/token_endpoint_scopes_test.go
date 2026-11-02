@@ -130,7 +130,7 @@ func (f *scopeFixture) exposure(name string, scopes []string, endpoint bool) *ag
 		Upstreams:  []agenticv1.Upstream{{Url: "https://upstream.example.com/mcp", Weight: 100}},
 		Visibility: agenticv1.VisibilityEnterprise,
 		Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategySimple},
-		Zone:       *ctypes.ObjectRefFromObject(f.zone), Provider: *ctypes.ObjectRefFromObject(f.provider),
+		Zone:       *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()), Provider: *ctypes.TypedObjectRefFromObject(f.provider, k8sClient.Scheme()),
 		Security: &agenticv1.Security{M2M: &agenticv1.Machine2MachineAuthentication{Scopes: scopes}},
 	}}
 	if endpoint {
@@ -142,8 +142,8 @@ func (f *scopeFixture) exposure(name string, scopes []string, endpoint bool) *ag
 
 func (f *scopeFixture) subscription(scopes []string) *agenticv1.AgenticSubscription {
 	sub := &agenticv1.AgenticSubscription{ObjectMeta: f.metadata("subscription"), Spec: agenticv1.AgenticSubscriptionSpec{
-		BasePath: f.basePath, Zone: *ctypes.ObjectRefFromObject(f.zone),
-		Requestor: agenticv1.Requestor{Application: *ctypes.ObjectRefFromObject(f.consumer)},
+		BasePath: f.basePath, Zone: *ctypes.TypedObjectRefFromObject(f.zone, k8sClient.Scheme()),
+		Requestor: agenticv1.Requestor{Application: *ctypes.TypedObjectRefFromObject(f.consumer, k8sClient.Scheme())},
 		Security:  &agenticv1.SubscriberSecurity{M2M: &agenticv1.SubscriberMachine2MachineAuthentication{Scopes: scopes}},
 	}}
 	Expect(k8sClient.Create(ctx, sub)).To(Succeed())

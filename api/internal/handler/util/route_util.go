@@ -6,7 +6,6 @@ package util
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"slices"
 
@@ -36,7 +35,7 @@ var LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
 
 type CreateRouteOptions struct {
 	FailoverUpstreams   []apiapi.Upstream
-	FailoverZones       []types.ObjectRef
+	FailoverZones       []types.TypedObjectRef
 	FailoverSecurity    *apiapi.Security
 	ReturnReferenceOnly bool // If true, the route will not be created, but only the reference will be returned.
 
@@ -102,7 +101,7 @@ func WithFailoverUpstreams(failoverUpstreams ...apiapi.Upstream) CreateRouteOpti
 // WithFailoverZones sets the failover zones for the route.
 // A Proxy-Route created using CreateProxyRoute with this option will have failover targets set.
 // This will result in a Proxy-Route that will proxy requests to the failover zones (secondary routes).
-func WithFailoverZones(failoverZones []types.ObjectRef) CreateRouteOption {
+func WithFailoverZones(failoverZones []types.TypedObjectRef) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverZones = failoverZones
 	}
@@ -231,7 +230,7 @@ func MakeRouteName(apiBasePath string) string {
 	return labelutil.NormalizeNameValue(apiBasePath)
 }
 
-func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.ObjectRef, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef types.NamedObject, apiBasePath string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -243,17 +242,17 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 	// Downstream: get zone + default preset to derive hostnames/paths and gateway ref
 	downstreamPreset, downstreamZone, err := GetDefaultPresetForZone(ctx, downstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get downstream preset for zone %s", downstreamZoneRef.String())
+		return nil, errors.Wrapf(err, "failed to get downstream preset for zone %s/%s", downstreamZoneRef.GetNamespace(), downstreamZoneRef.GetName())
 	}
 	downstreamPresetStatus, err := downstreamZone.Status.GetPreset(downstreamPreset.Name)
 	if err != nil || downstreamPresetStatus.GatewayRef == nil {
-		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
+		return nil, errors.Errorf("zone %s/%s has no gateway reference in status", downstreamZoneRef.GetNamespace(), downstreamZoneRef.GetName())
 	}
 
 	// Upstream: get zone + default preset to derive the upstream URL
 	upstreamPreset, upstreamZone, err := GetDefaultPresetForZone(ctx, upstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get upstream preset for zone %s", upstreamZoneRef.Name)
+		return nil, errors.Wrapf(err, "failed to get upstream preset for zone %s", upstreamZoneRef.GetName())
 	}
 
 	// Creating the Route
@@ -530,7 +529,7 @@ func CleanupStaleRoutes(ctx context.Context, apiBasePath string) (int, error) {
 	return deleted, nil
 }
 
-func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
+func CreateRealRoute(ctx context.Context, downstreamZoneRef types.NamedObject, apiExposure *apiapi.ApiExposure, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateRouteOptions{}
@@ -541,11 +540,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	// Get zone + default preset to derive hostnames/paths and gateway ref
 	preset, zone, err := GetDefaultPresetForZone(ctx, downstreamZoneRef)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to get default preset for zone %s", downstreamZoneRef.String()))
+		return nil, errors.Wrapf(err, "unable to get default preset for zone %s/%s", downstreamZoneRef.GetNamespace(), downstreamZoneRef.GetName())
 	}
 	presetStatus, err := zone.Status.GetPreset(preset.Name)
 	if err != nil || presetStatus.GatewayRef == nil {
-		return nil, errors.Errorf("zone %s has no gateway reference in status", downstreamZoneRef.String())
+		return nil, errors.Errorf("zone %s/%s has no gateway reference in status", downstreamZoneRef.GetNamespace(), downstreamZoneRef.GetName())
 	}
 
 	route := &gatewayapi.Route{
@@ -627,7 +626,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.NamedObject, routeRef types.TypedObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	options := &CreateConsumeRouteOptions{}
@@ -635,7 +634,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 		opt(options)
 	}
 
-	name := labelutil.NormalizeNameValue(downstreamZoneRef.Name + "--" + apiSub.GetName())
+	name := labelutil.NormalizeNameValue(downstreamZoneRef.GetName() + "--" + apiSub.GetName())
 	routeConsumer := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -654,7 +653,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 		}
 
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
-			Route:        routeRef,
+			Route:        routeRef.ObjectRef,
 			ConsumerName: clientId,
 			Security:     mapConsumerSecurity(apiSub.Spec.Security),
 		}

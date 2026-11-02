@@ -63,11 +63,11 @@ type RemoteApiSubscriptionStatus struct {
 	ApprovalRequest *ApprovalInfo      `json:"approvalRequest,omitempty"`
 
 	// Route is only present if we are the source organization
-	Route *ctypes.ObjectRef `json:"route,omitempty"`
+	Route *ctypes.TypedObjectRef `json:"route,omitempty"`
 	// ApiSubscription is only present if we are the target organization
-	ApiSubscription *ctypes.ObjectRef `json:"apiSubscription,omitempty"`
+	ApiSubscription *ctypes.TypedObjectRef `json:"apiSubscription,omitempty"`
 	// Application is only present if we are the target organization
-	Application *ctypes.ObjectRef `json:"application,omitempty"`
+	Application *ctypes.TypedObjectRef `json:"application,omitempty"`
 }
 
 // +kubebuilder:object:root=true

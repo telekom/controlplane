@@ -179,10 +179,7 @@ func NewApiExposure(apiBasePath, zoneName, appName string) *apiv1.ApiExposure {
 			},
 			Visibility: apiv1.VisibilityWorld,
 			Approval:   apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-			Zone: types.ObjectRef{
-				Name:      zoneName,
-				Namespace: testEnvironment,
-			},
+			Zone:       typedZoneRef(zoneName, testEnvironment),
 		},
 		Status: apiv1.ApiExposureStatus{},
 	}
@@ -550,12 +547,12 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
 				Failover: &apiv1.ProviderFailover{
-					Zones: []types.ObjectRef{
-						{
+					Zones: []types.TypedObjectRef{{
+						ObjectRef: types.ObjectRef{
 							Name:      failoverZone.Name,
 							Namespace: failoverZone.Namespace,
 						},
-					},
+					}},
 				},
 			}
 
@@ -633,12 +630,12 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			apiExposure = NewApiExposure(apiBasePath, zoneName, secondAppName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
 				Failover: &apiv1.ProviderFailover{
-					Zones: []types.ObjectRef{
-						{
+					Zones: []types.TypedObjectRef{{
+						ObjectRef: types.ObjectRef{
 							Name:      failoverZone.Name,
 							Namespace: failoverZone.Namespace,
 						},
-					},
+					}},
 				},
 			}
 			apiExposure.Spec.Security = &apiv1.Security{

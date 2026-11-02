@@ -119,7 +119,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 		return errors.Wrapf(err, "failed to create route %s", route.Name)
 	}
 
-	obj.Status.Route = types.ObjectRefFromObject(route)
+	obj.Status.Route = types.TypedObjectRefFromObject(route, c.Scheme())
 
 	return nil
 }

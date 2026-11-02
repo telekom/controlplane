@@ -27,11 +27,11 @@ type NamedObject interface {
 	GetNamespace() string
 }
 
-func (o *ObjectRef) GetName() string {
+func (o ObjectRef) GetName() string {
 	return o.Name
 }
 
-func (o *ObjectRef) GetNamespace() string {
+func (o ObjectRef) GetNamespace() string {
 	return o.Namespace
 }
 

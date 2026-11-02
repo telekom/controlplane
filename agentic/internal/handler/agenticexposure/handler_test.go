@@ -12,6 +12,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,8 +49,8 @@ func newAgenticExposure(name, basePath string) *agenticv1.AgenticExposure {
 			},
 			Visibility: agenticv1.VisibilityEnterprise,
 			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-			Zone:       ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
-			Provider:   ctypes.ObjectRef{Name: "test-app", Namespace: "default"},
+			Zone:       ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"}},
+			Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "test-app", Namespace: "default"}},
 			Variant:    agenticv1.AgenticVariantMCP,
 		},
 	}
@@ -158,6 +159,12 @@ var _ = Describe("AgenticExposureHandler", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		scheme := runtime.NewScheme()
+		Expect(adminv1.AddToScheme(scheme)).To(Succeed())
+		Expect(agenticv1.AddToScheme(scheme)).To(Succeed())
+		Expect(applicationapi.AddToScheme(scheme)).To(Succeed())
+		Expect(gatewayv1.AddToScheme(scheme)).To(Succeed())
+		fakeClient.EXPECT().Scheme().Return(scheme).Maybe()
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &agenticexposure.AgenticExposureHandler{Config: &agenticconfig.AgenticConfig{}}
 		obj = newAgenticExposure("test-exposure", "/mcp/weather/v1")
@@ -284,7 +291,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should set Blocked and clean up Route when server disappears after Route was created", func() {
-			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			obj.Status.Route = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}}
 
 			mockListMcpServers([]agenticv1.McpServer{})
 			mockListAgentCards([]agenticv1.AgentCard{})
@@ -328,7 +335,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
-					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "prod--ai--other-team"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "other-app", Namespace: "prod--ai--other-team"}},
 				},
 				Status: agenticv1.AgenticExposureStatus{
 					Active: true,
@@ -367,7 +374,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
-					Provider: ctypes.ObjectRef{Namespace: "prod--ai--other-team"},
+					Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "prod--ai--other-team"}},
 				},
 				Status: agenticv1.AgenticExposureStatus{Active: true},
 			}
@@ -576,8 +583,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
-			previousRoute := &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
-			previousProxyRoutes := []ctypes.ObjectRef{{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}
+			previousRoute := &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}}
+			previousProxyRoutes := []ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}}
 			obj.Status.Route = previousRoute
 			obj.Status.ProxyRoutes = previousProxyRoutes
 
@@ -618,8 +625,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			obj.Spec.Variant = agenticv1.AgenticVariantTelecontextMCP
 			h.Config.TelecontextApplicationID = "mcp--telecontext--tcapp"
 			ctx = contextutil.WithEnv(ctx, "test-env")
-			previousRoute := &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
-			previousProxyRoutes := []ctypes.ObjectRef{{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}
+			previousRoute := &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}}
+			previousProxyRoutes := []ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "subscriber-zone-ns"}}}
 			obj.Status.Route = previousRoute
 			obj.Status.ProxyRoutes = previousProxyRoutes
 
@@ -773,7 +780,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/weather/v1",
-					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+					Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"}},
 				},
 			}
 			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
@@ -855,7 +862,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/weather/v1",
-					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+					Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"}},
 				},
 			}
 			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
@@ -938,7 +945,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "sub-1", Namespace: "default"},
 				Spec: agenticv1.AgenticSubscriptionSpec{
 					BasePath: "/mcp/weather/v1",
-					Zone:     ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"},
+					Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "subscriber-zone", Namespace: "default"}},
 				},
 			}
 			meta.SetStatusCondition(&approvedSub.Status.Conditions, metav1.Condition{
@@ -1042,7 +1049,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 	Describe("Delete", func() {
 		It("should skip Route deletion when another AgenticExposure exists", func() {
-			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			obj.Status.Route = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}}
 
 			// AnyOtherAgenticExposureExists calls FindAgenticExposures which lists
 			otherExposure := agenticv1.AgenticExposure{
@@ -1070,7 +1077,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 		})
 
 		It("should delete Route when no other AgenticExposure exists", func() {
-			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			obj.Status.Route = &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}}
 
 			// No other exposures
 			fakeClient.EXPECT().

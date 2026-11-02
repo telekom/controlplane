@@ -441,7 +441,7 @@ var _ = Describe("FindCrossZoneAgenticSubscriptionZones", func() {
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 			Spec: agenticv1.AgenticSubscriptionSpec{
 				BasePath: basePath,
-				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+				Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: "default"}},
 			},
 		}
 		setReady(&s.Status.Conditions)
@@ -458,7 +458,7 @@ var _ = Describe("FindCrossZoneAgenticSubscriptionZones", func() {
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
 			Spec: agenticv1.AgenticSubscriptionSpec{
 				BasePath: basePath,
-				Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+				Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: "default"}},
 			},
 		}
 	}
@@ -657,6 +657,7 @@ var _ = Describe("FindActiveServer", func() {
 		Expect(info.BasePath).To(Equal("/shared/path/v1"))
 		// AgentCard List should not even be called since McpServer was found
 	})
+
 })
 
 // ---------- ServerMustExist ----------

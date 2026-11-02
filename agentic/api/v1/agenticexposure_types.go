@@ -31,10 +31,10 @@ type AgenticExposureSpec struct {
 	Approval Approval `json:"approval"`
 
 	// Zone references the Zone CR where this MCP server is exposed.
-	Zone ctypes.ObjectRef `json:"zone"`
+	Zone ctypes.TypedObjectRef `json:"zone"`
 
 	// Provider identifies the providing application.
-	Provider ctypes.ObjectRef `json:"provider"`
+	Provider ctypes.TypedObjectRef `json:"provider"`
 
 	// Variant defines the exposure variant (MCP or TELECONTEXTMCP).
 	// +kubebuilder:default=MCP
@@ -67,11 +67,11 @@ type AgenticExposureStatus struct {
 
 	// Route references the primary gateway Route CR created for this exposure.
 	// +optional
-	Route *ctypes.ObjectRef `json:"route,omitempty"`
+	Route *ctypes.TypedObjectRef `json:"route,omitempty"`
 
 	// ProxyRoutes references proxy gateway Route CRs for cross-zone MCP delivery.
 	// +optional
-	ProxyRoutes []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
+	ProxyRoutes []ctypes.TypedObjectRef `json:"proxyRoutes,omitempty"`
 }
 
 // +kubebuilder:object:root=true

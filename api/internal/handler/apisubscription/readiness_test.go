@@ -71,7 +71,7 @@ var _ = Describe("Subscription route readiness", Ordered, func() {
 	DescribeTable("clears previous readiness when the required route reference is missing",
 		func(sameZone, failover bool, message string) {
 			sub := &apiapi.ApiSubscription{Spec: apiapi.ApiSubscriptionSpec{
-				Zone: types.ObjectRef{Name: "subscriber", Namespace: "default"},
+				Zone: types.TypedObjectRef{ObjectRef: types.ObjectRef{Name: "subscriber", Namespace: "default"}},
 			}}
 			sub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Previously ready"))
 			ref, err := resolveRouteRef(ctx, scopedClient, sub, &apiapi.ApiExposure{}, sameZone, failover)

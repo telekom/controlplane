@@ -254,7 +254,7 @@ func CleanupOldAgenticRoutes(ctx context.Context, basePath string) (int, error) 
 }
 
 // DeleteRouteIfExists deletes a Route by ObjectRef, ignoring NotFound errors.
-func DeleteRouteIfExists(ctx context.Context, ref *ctypes.ObjectRef) error {
+func DeleteRouteIfExists(ctx context.Context, ref *ctypes.TypedObjectRef) error {
 	c := cclient.ClientFromContextOrDie(ctx)
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{

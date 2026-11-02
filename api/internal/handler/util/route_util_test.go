@@ -69,7 +69,7 @@ var _ = Describe("Route Util", func() {
 
 		Describe("WithFailoverZones", func() {
 			It("should set failover zones on options", func() {
-				zones := []types.ObjectRef{{Name: "my-zone", Namespace: "my-ns"}}
+				zones := []types.TypedObjectRef{{ObjectRef: types.ObjectRef{Name: "my-zone", Namespace: "my-ns"}}}
 
 				opts := &CreateRouteOptions{}
 				WithFailoverZones(zones)(opts)
@@ -254,14 +254,14 @@ var _ = Describe("Route Util", func() {
 		Describe("HasFailover", func() {
 			It("should return true when failover zones are set", func() {
 				opts := CreateRouteOptions{
-					FailoverZones: []types.ObjectRef{{Name: "zone", Namespace: "ns"}},
+					FailoverZones: []types.TypedObjectRef{{ObjectRef: types.ObjectRef{Name: "zone", Namespace: "ns"}}},
 				}
 				Expect(opts.HasFailover()).To(BeTrue())
 			})
 
 			It("should return false when failover zones are empty", func() {
 				opts := CreateRouteOptions{
-					FailoverZones: []types.ObjectRef{},
+					FailoverZones: []types.TypedObjectRef{},
 				}
 				Expect(opts.HasFailover()).To(BeFalse())
 			})

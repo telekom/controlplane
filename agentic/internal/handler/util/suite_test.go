@@ -94,8 +94,8 @@ func makeActiveAgenticExposure(basePath, zoneName, uid string) agenticv1.Agentic
 		},
 		Spec: agenticv1.AgenticExposureSpec{
 			BasePath: basePath,
-			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Provider: ctypes.ObjectRef{Name: "app", Namespace: "default"},
+			Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: "default"}},
+			Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "app", Namespace: "default"}},
 		},
 		Status: agenticv1.AgenticExposureStatus{Active: true},
 	}

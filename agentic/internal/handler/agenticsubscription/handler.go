@@ -170,8 +170,8 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 	if err != nil {
 		return err
 	}
-	obj.Status.ApprovalRequest = types.ObjectRefFromObject(approvalBuilder.GetApprovalRequest())
-	obj.Status.Approval = types.ObjectRefFromObject(approvalBuilder.GetApproval())
+	obj.Status.ApprovalRequest = types.TypedObjectRefFromObject(approvalBuilder.GetApprovalRequest(), c.Scheme())
+	obj.Status.Approval = types.TypedObjectRefFromObject(approvalBuilder.GetApproval(), c.Scheme())
 
 	switch res {
 	case builder.ApprovalResultRequestDenied:
@@ -216,11 +216,11 @@ func (h *AgenticSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *ag
 		return errors.Wrapf(err, "failed to construct AI Gateway URL for zone %s", subscriberZone.Name)
 	}
 
-	consumeRoute, err := h.createConsumeRoute(ctx, obj, *routeRef, requestorApp)
+	consumeRoute, err := h.createConsumeRoute(ctx, obj, routeRef.ObjectRef, requestorApp)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ConsumeRoute")
 	}
-	obj.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+	obj.Status.ConsumeRoute = types.TypedObjectRefFromObject(consumeRoute, c.Scheme())
 	obj.Status.ActiveScopes = nil
 	if obj.HasM2M() {
 		obj.Status.ActiveScopes = slices.Clone(obj.Spec.Security.M2M.Scopes)
@@ -294,7 +294,7 @@ func resolveRouteRef(
 	obj *agenticv1.AgenticSubscription,
 	exposure *agenticv1.AgenticExposure,
 	subscriberZone *adminv1.Zone,
-) *types.ObjectRef {
+) *types.TypedObjectRef {
 	logger := log.FromContext(ctx)
 
 	if obj.Spec.Zone.Name == exposure.Spec.Zone.Name {

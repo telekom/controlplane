@@ -29,6 +29,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,6 +46,7 @@ func buildScheme() *runtime.Scheme {
 	_ = agenticv1.AddToScheme(s)
 	_ = applicationv1.AddToScheme(s)
 	_ = approvalv1.AddToScheme(s)
+	_ = gatewayv1.AddToScheme(s)
 	return s
 }
 
@@ -57,9 +59,9 @@ func newAgenticSubscription(name, basePath, zoneName string) *agenticv1.AgenticS
 		},
 		Spec: agenticv1.AgenticSubscriptionSpec{
 			BasePath: basePath,
-			Zone:     ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
+			Zone:     ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: "default"}},
 			Requestor: agenticv1.Requestor{
-				Application: ctypes.ObjectRef{Name: "requestor-app", Namespace: "default"},
+				Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "requestor-app", Namespace: "default"}},
 			},
 		},
 	}
@@ -101,13 +103,13 @@ func makeReadyAgenticExposure(basePath, zoneName string) agenticv1.AgenticExposu
 			BasePath:   basePath,
 			Visibility: agenticv1.VisibilityEnterprise,
 			Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
-			Zone:       ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
-			Provider:   ctypes.ObjectRef{Name: "provider-app", Namespace: "default"},
+			Zone:       ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: "default"}},
+			Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "provider-app", Namespace: "default"}},
 			Variant:    agenticv1.AgenticVariantMCP,
 		},
 		Status: agenticv1.AgenticExposureStatus{
 			Active: true,
-			Route:  &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"},
+			Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}},
 		},
 	}
 	meta.SetStatusCondition(&exp.Status.Conditions, metav1.Condition{

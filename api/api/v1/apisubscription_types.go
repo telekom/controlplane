@@ -16,7 +16,7 @@ type ApiSubscriptionSpec struct {
 	Security     *SubscriberSecurity `json:"security,omitempty"`
 	Organization string              `json:"organization,omitempty"`
 	Requestor    Requestor           `json:"requestor"`
-	Zone         ctypes.ObjectRef    `json:"zone"`
+	Zone         ctypes.TypedObjectRef `json:"zone"`
 
 	Traffic SubscriberTraffic `json:"traffic"`
 }
@@ -42,7 +42,7 @@ func (a *ApiSubscription) HasFailover() bool {
 }
 
 type Requestor struct {
-	Application ctypes.ObjectRef `json:"application"`
+	Application ctypes.TypedObjectRef `json:"application"`
 }
 
 // ApiSubscriptionStatus defines the observed state of ApiSubscription
@@ -59,15 +59,15 @@ type ApiSubscriptionStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Route        *ctypes.ObjectRef `json:"route,omitempty"`
-	ConsumeRoute *ctypes.ObjectRef `json:"consumeRoute,omitempty"`
+	Route        *ctypes.TypedObjectRef `json:"route,omitempty"`
+	ConsumeRoute *ctypes.TypedObjectRef `json:"consumeRoute,omitempty"`
 
-	FailoverConsumeRoutes []ctypes.ObjectRef `json:"failoverConsumeRoutes,omitempty"`
-	FailoverRoutes        []ctypes.ObjectRef `json:"failoverRoutes,omitempty"`
+	FailoverConsumeRoutes []ctypes.TypedObjectRef `json:"failoverConsumeRoutes,omitempty"`
+	FailoverRoutes        []ctypes.TypedObjectRef `json:"failoverRoutes,omitempty"`
 
-	Approval              *ctypes.ObjectRef `json:"approval,omitempty"`
-	ApprovalRequest       *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
-	RemoteApiSubscription *ctypes.ObjectRef `json:"remoteApiSubscription,omitempty"`
+	Approval              *ctypes.TypedObjectRef `json:"approval,omitempty"`
+	ApprovalRequest       *ctypes.TypedObjectRef `json:"approvalRequest,omitempty"`
+	RemoteApiSubscription *ctypes.TypedObjectRef `json:"remoteApiSubscription,omitempty"`
 
 	// TODO: evaluate if we really want this here, or if we just calculate it just in time when needed
 	// IdpIssuer is the issuer of the identity provider used for authentication

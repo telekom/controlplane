@@ -97,7 +97,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update remote api subscription")
 	}
-	owner.Status.RemoteApiSubscription = types.ObjectRefFromObject(req)
+	owner.Status.RemoteApiSubscription = types.TypedObjectRefFromObject(req, c.Scheme())
 
 	owner.SetCondition(condition.NewProcessingCondition("RemoteApiSubscriptionPending", "RemoteApiSubscription created or updated"))
 	owner.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "RemoteApiSubscription is provisoned but not ready yet"))
@@ -150,7 +150,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	// If the remote organization is in the same zone, we can use the real route
 	// which was already created
 
-	var routeRef *types.ObjectRef
+	var routeRef *types.TypedObjectRef
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
 		logger.Info("RemoteApiSubscription is in a different zone")
 
@@ -160,7 +160,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 			return errors.Wrapf(routeErr, "failed to create proxy route")
 		}
 
-		routeRef = types.ObjectRefFromObject(route)
+		routeRef = types.TypedObjectRefFromObject(route, c.Scheme())
 	} else {
 		logger.Info("RemoteApiSubscription is in the same zone")
 		// Set route as RealRoute
@@ -190,7 +190,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		routeConsumer.Labels = owner.Labels
 
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
-			Route:        *routeRef,
+			Route:        routeRef.ObjectRef,
 			ConsumerName: application.Status.ClientId,
 		}
 		return nil
@@ -201,7 +201,7 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		return errors.Wrapf(err, "failed to create consume route")
 	}
 
-	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
+	owner.Status.ConsumeRoute = types.TypedObjectRefFromObject(routeConsumer, c.Scheme())
 	owner.Status.ActiveScopes = nil
 	if req.HasM2M() {
 		owner.Status.ActiveScopes = slices.Clone(req.Spec.Security.M2M.Scopes)

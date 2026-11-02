@@ -98,16 +98,18 @@ type routingState struct {
 	// zones that have proxy routes. The real route must trust these because proxy gateways
 	// in other zones stamp an LMS token before forwarding traffic to the provider zone.
 	// This is a mesh concern, not a consumer failover concern.
-	crossZoneLmsIssuers map[types.ObjectRef]string
+	crossZoneLmsIssuers map[types.TypedObjectRef]string
 }
 
 // CrossZoneLmsIssuers returns the cross-zone LMS issuers, optionally excluding
 // the given zones (e.g. a failover zone whose issuer is already trusted through
 // another path).
-func (s *routingState) CrossZoneLmsIssuers(withoutZones ...types.ObjectRef) []string {
+func (s *routingState) CrossZoneLmsIssuers(withoutZones ...types.TypedObjectRef) []string {
 	res := make([]string, 0, len(s.crossZoneLmsIssuers))
 	for zone, issuer := range s.crossZoneLmsIssuers {
-		if slices.ContainsFunc(withoutZones, func(z types.ObjectRef) bool { return z.Equals(&zone) }) {
+		if slices.ContainsFunc(withoutZones, func(z types.TypedObjectRef) bool {
+			return z.Name == zone.Name && z.Namespace == zone.Namespace
+		}) {
 			continue
 		}
 		res = append(res, issuer)
@@ -118,9 +120,9 @@ func (s *routingState) CrossZoneLmsIssuers(withoutZones ...types.ObjectRef) []st
 
 // AddCrossZoneLmsIssuer records the LMS issuer for a proxy route's zone,
 // lazily initializing the map on first use.
-func (s *routingState) AddCrossZoneLmsIssuer(zone types.ObjectRef, issuer string) {
+func (s *routingState) AddCrossZoneLmsIssuer(zone types.TypedObjectRef, issuer string) {
 	if s.crossZoneLmsIssuers == nil {
-		s.crossZoneLmsIssuers = make(map[types.ObjectRef]string)
+		s.crossZoneLmsIssuers = make(map[types.TypedObjectRef]string)
 	}
 	s.crossZoneLmsIssuers[zone] = issuer
 }
