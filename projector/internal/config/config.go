@@ -19,9 +19,13 @@ type Config struct {
 	// --- Database ---
 
 	// DatabaseURL is the PostgreSQL connection string.
-	// If EnvironmentFilter is set, it will be used as the SQL schema search path as "?search_path=<env>"
 	// Env: DATABASE_URL
 	DatabaseURL string `mapstructure:"database_url" validate:"required"`
+
+	// CreateDatabase creates the database in DatabaseURL if missing, using the
+	// same credentials to connect to database.
+	// Env: DB_CREATE
+	CreateDatabase bool `mapstructure:"db_create"`
 
 	// MaxOpenConns is the maximum number of open connections to the database.
 	// Env: DB_MAX_OPEN_CONNS
@@ -143,7 +147,7 @@ type Config struct {
 	//   - only CRs with this environment label value will be projected in SQL
 	//   - different environment label values will be ignored by the configured projector instance
 	//   - as the intend is to have multiple projectors running, each watching a specific environment,
-	//     the environment will be used as a suffix for the leader election ID as well as SQL schema.
+	//     the environment will be used as a suffix for the leader election ID.
 	// If Empty,
 	//   - all CRs will be projected regardless of their environment label. This can also be used for clusters which only have one environment.
 	// Env: ENVIRONMENT_FILTER
@@ -194,6 +198,7 @@ func Load() (*Config, error) {
 func setDefaults(v *viper.Viper) {
 	// Database
 	v.SetDefault("database_url", "postgres://localhost:5432/controlplane?sslmode=disable")
+	v.SetDefault("db_create", false)
 	v.SetDefault("db_max_open_conns", 100)
 	v.SetDefault("db_max_idle_conns", 30)
 	v.SetDefault("db_conn_max_lifetime", "5m")

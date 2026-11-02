@@ -134,6 +134,8 @@ stringData:
   url: postgres://user:password@your-db-host:5432/controlplane?sslmode=require
 ```
 
+The database is the path of the URL (`/controlplane` above) and must already exist, unless you set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap. The Projector then creates it on startup, which needs the `CREATEDB` role attribute and an existing database named after the login user.
+
 For development or testing, you can include the `database` component instead, which deploys an in-cluster PostgreSQL and creates the Secret automatically:
 
 ```yaml
@@ -146,12 +148,6 @@ The `database` component uses hardcoded credentials and is intended for developm
 :::
 
 ### ControlPlane API configuration
-
-When the Projector's `ENVIRONMENT_FILTER` is set, it watches only CRs whose
-`cp.ei.telekom.de/environment` label matches, creates the same-named PostgreSQL
-schema if missing, and migrates its tables there. Restarts reuse that schema.
-The Projector's database role needs permission to create the schema and migrate its tables.
-
 
 The ControlPlane API reads its configuration from a ConfigMap named `controlplane-api-config`. When the custom overlay consumes the remote bundle, patch that generated ConfigMap:
 

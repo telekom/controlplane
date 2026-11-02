@@ -140,6 +140,7 @@ func Run() error {
 		"periodicResync", cfg.PeriodicResync,
 		"leaderElection", cfg.LeaderElection,
 		"environment", cfg.EnvironmentFilter,
+		"createDatabase", cfg.CreateDatabase,
 	)
 
 	// --- Database ---
@@ -241,24 +242,19 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("parsing database url: %w", err)
 	}
 
-	if cfg.EnvironmentFilter != "" {
-		poolConfig.ConnConfig.RuntimeParams["search_path"] = pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()
-	}
-
 	poolConfig.MaxConns = int32(cfg.MaxOpenConns)
 	poolConfig.MinConns = int32(cfg.MaxIdleConns)
 	poolConfig.MaxConnLifetime = cfg.ConnMaxLifetime
 
+	if cfg.CreateDatabase {
+		if err := ensureDatabase(ctx, poolConfig.ConnConfig); err != nil {
+			return nil, err
+		}
+	}
+
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
-	}
-
-	if cfg.EnvironmentFilter != "" {
-		if _, err := pool.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()); err != nil {
-			pool.Close()
-			return nil, fmt.Errorf("creating PostgreSQL schema %q: %w", cfg.EnvironmentFilter, err)
-		}
 	}
 
 	db := stdlib.OpenDBFromPool(pool)
@@ -267,6 +263,37 @@ func openDatabase(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
 	return db, nil
+}
+
+// ensureDatabase creates the database named in connConfig if it does not exist.
+// shortcut: concurrent startups may race on CREATE DATABASE; the losing pod fails and is restarted.
+func ensureDatabase(ctx context.Context, connConfig *pgx.ConnConfig) error {
+	cfg := connConfig.Copy()
+	name := cfg.Database
+	// CREATE DATABASE must run from another database; omitting it uses the login user's default.
+	cfg.Database = ""
+	conn, err := pgx.ConnectConfig(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("connecting to PostgreSQL to create database %q: %w", name, err)
+	}
+	defer func() {
+		if closeErr := conn.Close(ctx); closeErr != nil {
+			setupLog.Error(closeErr, "closing PostgreSQL connection used for database creation")
+		}
+	}()
+
+	var exists bool
+	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)", name).Scan(&exists); err != nil {
+		return fmt.Errorf("checking PostgreSQL database %q: %w", name, err)
+	}
+	if exists {
+		return nil
+	}
+	if _, err := conn.Exec(ctx, "CREATE DATABASE "+pgx.Identifier{name}.Sanitize()); err != nil {
+		return fmt.Errorf("creating PostgreSQL database %q: %w", name, err)
+	}
+	setupLog.Info("created PostgreSQL database", "database", name)
+	return nil
 }
 
 // newDBReadyCheck returns a healthz.Checker that pings the database.

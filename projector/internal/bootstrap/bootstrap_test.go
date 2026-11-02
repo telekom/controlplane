@@ -7,19 +7,17 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
-	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
 	"github.com/jackc/pgx/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
@@ -44,76 +42,6 @@ func moduleNames(mods []module.Module) []string {
 	}
 	return names
 }
-
-var _ = Describe("openDatabase", func() {
-	var (
-		ctx context.Context
-		cfg *config.Config
-	)
-
-	BeforeEach(func() {
-		url := os.Getenv("CP_TEST_POSTGRES_URL")
-		if url == "" {
-			Skip("set CP_TEST_POSTGRES_URL to run PostgreSQL integration tests")
-		}
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
-		DeferCleanup(cancel)
-		cfg = &config.Config{
-			DatabaseURL:       url,
-			EnvironmentFilter: fmt.Sprintf("projector-test-%d", time.Now().UnixNano()),
-			MaxOpenConns:      2,
-			MaxIdleConns:      1,
-			ConnMaxLifetime:   time.Minute,
-		}
-	})
-
-	It("creates the environment schema before migration and reuses it on restart", func() {
-		for i := range 2 {
-			db, err := openDatabase(ctx, cfg)
-			Expect(err).NotTo(HaveOccurred())
-			DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
-			if i == 0 {
-				DeferCleanup(func() {
-					_, err := db.ExecContext(ctx, "DROP SCHEMA "+pgx.Identifier{cfg.EnvironmentFilter}.Sanitize()+" CASCADE")
-					Expect(err).NotTo(HaveOccurred())
-				})
-			}
-
-			var schemaName string
-			Expect(db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schemaName)).To(Succeed())
-			Expect(schemaName).To(Equal(cfg.EnvironmentFilter))
-			Expect(migrate.NewSchema(entsql.OpenDB(dialect.Postgres, db)).Create(ctx,
-				migrate.WithGlobalUniqueID(true),
-				migrate.WithDropIndex(true),
-				migrate.WithDropColumn(true),
-			)).To(Succeed())
-			var count int
-			Expect(db.QueryRowContext(ctx,
-				"SELECT count(*) FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'zones'",
-				cfg.EnvironmentFilter).Scan(&count)).To(Succeed())
-			Expect(count).To(Equal(1))
-		}
-	})
-
-	It("uses public with the default search_path when the environment filter is unset", func() {
-		cfg.EnvironmentFilter = ""
-		db, err := openDatabase(ctx, cfg)
-		Expect(err).NotTo(HaveOccurred())
-		DeferCleanup(func() { Expect(db.Close()).To(Succeed()) })
-
-		var schemaName string
-		Expect(db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schemaName)).To(Succeed())
-		Expect(schemaName).To(Equal("public"))
-	})
-
-	It("returns schema creation failures instead of continuing to migration", func() {
-		cfg.EnvironmentFilter = "pg_projector_test"
-		db, err := openDatabase(ctx, cfg)
-		Expect(db).To(BeNil())
-		Expect(err).To(MatchError(ContainSubstring(`creating PostgreSQL schema "pg_projector_test"`)))
-	})
-})
 
 var _ = Describe("registerSchemesAndModules", func() {
 	var (
@@ -222,4 +150,59 @@ var _ = Describe("registerSchemesAndModules", func() {
 		Entry("ai_gateway only", false, false, false, true),
 		Entry("all enabled", true, true, true, true),
 	)
+})
+
+var _ = Describe("openDatabase", func() {
+	var (
+		ctx    context.Context
+		cfg    *config.Config
+		name   string
+		exists func() bool
+	)
+
+	BeforeEach(func() {
+		testURL := os.Getenv("CP_TEST_POSTGRES_URL")
+		if testURL == "" {
+			Skip("set CP_TEST_POSTGRES_URL to run PostgreSQL integration tests")
+		}
+		ctx = context.Background()
+		admin, err := pgx.Connect(ctx, testURL)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(admin.Close, ctx)
+
+		name = fmt.Sprintf("projector-test-%d", time.Now().UnixNano())
+		databaseURL, err := url.Parse(testURL)
+		Expect(err).NotTo(HaveOccurred())
+		databaseURL.Path = "/" + name
+		cfg = &config.Config{DatabaseURL: databaseURL.String(), MaxOpenConns: 2, MaxIdleConns: 1, ConnMaxLifetime: time.Minute}
+
+		exists = func() bool {
+			var ok bool
+			Expect(admin.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)", name).Scan(&ok)).To(Succeed())
+			return ok
+		}
+		DeferCleanup(func() {
+			_, err := admin.Exec(ctx, "DROP DATABASE IF EXISTS "+pgx.Identifier{name}.Sanitize()+" WITH (FORCE)")
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	It("does not create a missing database by default", func() {
+		db, err := openDatabase(ctx, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(db.Close)
+		Expect(exists()).To(BeFalse())
+	})
+
+	It("creates the database from DATABASE_URL when DB_CREATE is set and reuses it on restart", func() {
+		cfg.CreateDatabase = true
+		for range 2 {
+			db, err := openDatabase(ctx, cfg)
+			Expect(err).NotTo(HaveOccurred())
+			var current string
+			Expect(db.QueryRowContext(ctx, "SELECT current_database()").Scan(&current)).To(Succeed())
+			Expect(current).To(Equal(name))
+			Expect(db.Close()).To(Succeed())
+		}
+	})
 })
