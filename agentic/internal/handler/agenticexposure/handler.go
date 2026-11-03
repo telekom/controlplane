@@ -5,6 +5,7 @@
 package agenticexposure
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -120,7 +121,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 			})
 			// Keep the order stable, like FindCrossZoneAgenticSubscriptionZones, so the status does not change
 			slices.SortFunc(proxyZones, func(a, b ctypes.TypedObjectRef) int {
-				return strings.Compare(a.Namespace+"/"+a.Name, b.Namespace+"/"+b.Name)
+				return cmp.Or(strings.Compare(a.Namespace, b.Namespace), strings.Compare(a.Name, b.Name))
 			})
 		}
 	}
