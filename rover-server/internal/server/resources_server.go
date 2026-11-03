@@ -50,7 +50,7 @@ func (s *Server) GetAllResources(c *fiber.Ctx) error {
 }
 
 func resourceURL(c *fiber.Ctx, group, team string, limit int32, cursor string) string {
-	u := &url.URL{Path: c.Path()}
+	u := &url.URL{Path: linkPath(c)}
 	query := u.Query()
 	query.Set("group", group)
 	query.Set("team", team)

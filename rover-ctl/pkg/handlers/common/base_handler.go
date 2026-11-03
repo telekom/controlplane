@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -453,14 +454,27 @@ func (h *BaseHandler) execPagedInfoRequest(ctx context.Context, firstURL string)
 }
 
 // listPageURL returns the list request URL for a raw cursor or a pagination link.
+// URL parsing only probes the format: values that are not absolute URLs are
+// opaque cursors and are sent as the cursor query parameter. Values starting
+// with an http(s) scheme are treated as links and must parse.
 func listPageURL(reqURL, cursor string) (string, error) {
 	if cursor == "" {
 		return reqURL, nil
 	}
-	if parsed, err := url.Parse(cursor); err == nil && parsed.IsAbs() {
+	parsed, err := url.Parse(cursor)
+	if err == nil && parsed.IsAbs() {
 		return nextPageURL(reqURL, cursor)
 	}
+	if looksLikeLink(cursor) {
+		return "", &PaginationLinkError{Reason: PaginationLinkMalformedURL, err: err}
+	}
 	return reqURL + "?" + url.Values{"cursor": {cursor}}.Encode(), nil
+}
+
+// looksLikeLink reports whether s starts with an http or https scheme.
+func looksLikeLink(s string) bool {
+	lower := strings.ToLower(s)
+	return strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://")
 }
 
 // nextPageURL rebuilds a continuation request from the original request URL.
@@ -471,24 +485,33 @@ func nextPageURL(first, next string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "parsing request URL")
 	}
-	invalid := errors.New("server returned an invalid pagination link")
 	link, err := url.Parse(next)
 	if err != nil {
-		return "", invalid
+		return "", &PaginationLinkError{Reason: PaginationLinkMalformedURL, err: err}
 	}
 	linkQuery, err := url.ParseQuery(link.RawQuery)
 	if err != nil {
-		return "", invalid
+		return "", &PaginationLinkError{Reason: PaginationLinkInvalidQuery, err: err}
 	}
 	cursor := linkQuery["cursor"]
-	if len(cursor) != 1 || cursor[0] == "" {
-		return "", invalid
+	if len(cursor) > 1 {
+		return "", &PaginationLinkError{Reason: PaginationLinkDuplicateCursor}
+	}
+	if len(cursor) == 0 || cursor[0] == "" {
+		return "", &PaginationLinkError{Reason: PaginationLinkMissingCursor}
 	}
 	query := base.Query()
 	query.Set("cursor", cursor[0])
 	if limit, ok := linkQuery["limit"]; ok {
-		if n, err := strconv.Atoi(limit[0]); len(limit) != 1 || err != nil || n <= 0 {
-			return "", invalid
+		if len(limit) != 1 {
+			return "", &PaginationLinkError{Reason: PaginationLinkInvalidLimit}
+		}
+		n, err := strconv.Atoi(limit[0])
+		if err != nil {
+			return "", &PaginationLinkError{Reason: PaginationLinkInvalidLimit, err: err}
+		}
+		if n <= 0 {
+			return "", &PaginationLinkError{Reason: PaginationLinkInvalidLimit}
 		}
 		query.Set("limit", limit[0])
 	}

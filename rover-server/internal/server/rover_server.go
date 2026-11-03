@@ -29,9 +29,9 @@ func (s *Server) GetAllRovers(c *fiber.Ctx) error {
 	if err != nil {
 		return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
 	}
-	res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Self)
+	res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), linkPath(c), query, res.UnderscoreLinks.Self)
 	if res.UnderscoreLinks.Next != "" {
-		res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Next)
+		res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), linkPath(c), query, res.UnderscoreLinks.Next)
 	}
 
 	return c.JSON(res)
@@ -123,9 +123,9 @@ func (s *Server) GetManyApplicationInfo(c *fiber.Ctx) error {
 		if err != nil {
 			return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
 		}
-		res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Self)
+		res.UnderscoreLinks.Self = buildPageURL(c.BaseURL(), linkPath(c), query, res.UnderscoreLinks.Self)
 		if res.UnderscoreLinks.Next != "" {
-			res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), c.Path(), query, res.UnderscoreLinks.Next)
+			res.UnderscoreLinks.Next = buildPageURL(c.BaseURL(), linkPath(c), query, res.UnderscoreLinks.Next)
 		}
 	}
 

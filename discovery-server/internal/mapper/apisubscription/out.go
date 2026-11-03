@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/go-logr/logr"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -95,6 +96,8 @@ func mapFailover(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 
 	nsByZone, err := zonesByStatusNamespace(ctx, in.Status.FailoverRoutes, zoneStore)
 	if err != nil {
+		// Failover is best-effort; the subscription is returned without it.
+		logr.FromContextOrDiscard(ctx).Error(err, "Failed to resolve failover zones, omitting failover", "failoverRoutes", len(in.Status.FailoverRoutes))
 		return
 	}
 

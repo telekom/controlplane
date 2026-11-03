@@ -235,8 +235,10 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	if len(params.Names) > 0 {
 		names := slices.Clone(params.Names)
 		slices.Sort(names)
+		names = slices.Compact(names)
+		rovers = make([]*roverv1.Rover, 0, len(names))
 		namespace := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team
-		for _, name := range slices.Compact(names) {
+		for _, name := range names {
 			rover, err := r.Store.Get(ctx, namespace, name)
 			if problems.IsNotFound(err) {
 				continue

@@ -7,6 +7,8 @@ package common_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -263,36 +265,70 @@ var _ = Describe("Pagination links", func() {
 		Entry("info", false),
 	)
 
+	expectLinkError := func(err error, reason, secret string) {
+		Expect(err).To(MatchError(ContainSubstring("invalid pagination link")))
+		var linkErr *common.PaginationLinkError
+		Expect(errors.As(err, &linkErr)).To(BeTrue())
+		Expect(linkErr.Reason).To(Equal(reason))
+		Expect(err.Error()).To(Equal("server returned an invalid pagination link: " + reason))
+		Expect(fmt.Sprintf("%v", err)).NotTo(ContainSubstring(secret))
+		Expect(err.Error()).NotTo(ContainSubstring(server.URL))
+	}
+
 	DescribeTable("rejects invalid pagination links",
-		func(link string) {
+		func(link, reason string, hasCause bool) {
 			links = []string{link}
 			_, err := handler.List(ctxFor("/rover/api"))
-			Expect(err).To(MatchError(ContainSubstring("invalid pagination link")))
+			expectLinkError(err, reason, "secret")
+			Expect(errors.Unwrap(err) != nil).To(Equal(hasCause))
 			Expect(recorded()).To(HaveLen(1))
 			requests = nil
 			_, err = handler.InfoMany(ctxFor("/rover/api"), nil)
-			Expect(err).To(MatchError(ContainSubstring("invalid pagination link")))
+			expectLinkError(err, reason, "secret")
 			Expect(recorded()).To(HaveLen(1))
 		},
-		Entry("missing cursor", "SERVER/rovers?limit=2"),
-		Entry("empty cursor", "SERVER/rovers?cursor="),
-		Entry("duplicate cursor", "SERVER/rovers?cursor=a&cursor=b"),
-		Entry("duplicate limit", "SERVER/rovers?cursor=a&limit=1&limit=2"),
-		Entry("non-numeric limit", "SERVER/rovers?cursor=a&limit=x"),
-		Entry("zero limit", "SERVER/rovers?cursor=a&limit=0"),
-		Entry("malformed query", "SERVER/rovers?cursor=%zz"),
+		Entry("missing cursor", "SERVER/rovers?limit=2&secret=1", common.PaginationLinkMissingCursor, false),
+		Entry("empty cursor", "SERVER/rovers?cursor=&secret=1", common.PaginationLinkMissingCursor, false),
+		Entry("duplicate cursor", "SERVER/rovers?cursor=secret&cursor=b", common.PaginationLinkDuplicateCursor, false),
+		Entry("duplicate limit", "SERVER/rovers?cursor=secret&limit=1&limit=2", common.PaginationLinkInvalidLimit, false),
+		Entry("non-numeric limit", "SERVER/rovers?cursor=secret&limit=x", common.PaginationLinkInvalidLimit, true),
+		Entry("zero limit", "SERVER/rovers?cursor=secret&limit=0", common.PaginationLinkInvalidLimit, false),
+		Entry("malformed query", "SERVER/rovers?cursor=secret%zz", common.PaginationLinkInvalidQuery, true),
 	)
 
-	It("rejects malformed info links and rebuilds relative ones", func() {
-		links = []string{"http://[::1/rovers?cursor=a"}
-		_, err := handler.InfoMany(ctxFor("/rover/api"), nil)
-		Expect(err).To(MatchError(ContainSubstring("invalid pagination link")))
-		Expect(recorded()).To(HaveLen(1))
+	It("rejects malformed URL-shaped links and keeps the cause", func() {
+		links = []string{"http://[::1/rovers?cursor=secret"}
+		for _, run := range []func() error{
+			func() error { _, err := handler.InfoMany(ctxFor("/rover/api"), nil); return err },
+			func() error { _, err := handler.List(ctxFor("/rover/api")); return err },
+			func() error {
+				_, err := handler.ListWithCursor(ctxFor("/rover/api"), "HTTPS://user:secret@[::1/x")
+				return err
+			},
+		} {
+			requests = nil
+			err := run()
+			expectLinkError(err, common.PaginationLinkMalformedURL, "secret")
+			var urlErr *url.Error
+			Expect(errors.As(err, &urlErr)).To(BeTrue())
+		}
+	})
 
-		requests, links = nil, []string{"/elsewhere?cursor=c2"}
-		_, err = handler.InfoMany(ctxFor("/rover/api"), nil)
+	It("rebuilds relative info links from the original request", func() {
+		links = []string{"/elsewhere?cursor=c2"}
+		_, err := handler.InfoMany(ctxFor("/rover/api"), nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(recorded()[1].Path).To(Equal("/rover/api/rovers/info"))
 		Expect(recorded()[1].Query()).To(Equal(url.Values{"cursor": {"c2"}}))
+	})
+
+	It("sends non-URL values as opaque cursors", func() {
+		for _, cursor := range []string{"team/a b", "%zz", "a&b=c"} {
+			requests = nil
+			_, err := handler.ListWithCursor(ctxFor("/rover/api"), cursor)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(recorded()[0].Path).To(Equal("/rover/api/rovers"))
+			Expect(recorded()[0].Query()).To(Equal(url.Values{"cursor": {cursor}}))
+		}
 	})
 })

@@ -6,8 +6,11 @@ package apisubscription
 
 import (
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/funcr"
 	"github.com/stretchr/testify/mock"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -86,9 +89,15 @@ var _ = Describe("Failover zone lookup", func() {
 	It("leaves failover unset on lookup errors", func() {
 		s := csmocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
 		s.EXPECT().List(mock.Anything, namespaceQuery("zone-a", "")).Return(nil, context.Canceled).Once()
+		var logs []string
+		logger := funcr.New(func(prefix, args string) { logs = append(logs, args) }, funcr.Options{})
 		out := api.ApiSubscriptionResponse{}
-		mapFailover(context.Background(), failoverSub("zone-a"), &out, s)
+		mapFailover(logr.NewContext(context.Background(), logger), failoverSub("zone-a"), &out, s)
 		Expect(out.Failover).To(BeNil())
+		Expect(logs).To(HaveLen(1))
+		Expect(logs[0]).To(ContainSubstring("Failed to resolve failover zones"))
+		Expect(logs[0]).To(ContainSubstring(context.Canceled.Error()))
+		Expect(strings.Contains(logs[0], `"failoverRoutes"=1`)).To(BeTrue())
 	})
 
 	It("does not list zones without failover routes", func() {
