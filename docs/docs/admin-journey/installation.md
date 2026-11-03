@@ -139,7 +139,7 @@ kubectl get crds | grep cp.ei.telekom.de
 
 ### TLS verification for Keycloak, Kong and OIDC discovery
 
-The Identity, Gateway and Admin controllers enforce certificate-chain and hostname verification for Keycloak and Kong API requests, their token requests, and OIDC discovery. The former `SKIP_TLS_VERIFY` setting no longer disables verification for these connections; remove it from controller and shared environment ConfigMaps.
+The Identity and Gateway controllers enforce certificate-chain and hostname verification for Keycloak and Kong API requests, their token requests, and Identity's realm issuer discovery. The former `SKIP_TLS_VERIFY` setting no longer disables verification for these connections; remove it from controller and shared environment ConfigMaps.
 
 For endpoints signed by a private CA, configure [custom CA certificates](./environments-and-zones.md#custom-ca-certificates). These certificates extend system trust without disabling verification.
 
@@ -408,6 +408,8 @@ The available access rights are:
 ### Reference: configuring the File Manager {#reference-configuring-file-manager}
 
 The File Manager provides a storage API for files — primarily OpenAPI specifications. Like the Secret Manager, it is deployed by the default overlay with **empty configuration** and needs a storage backend.
+
+If you turn the File Manager off (`FEATURE_FILE_MANAGER_ENABLED=false`), the Rover Server stores only the metadata of an `ApiSpecification`, and reading it returns no specification content. Applying an `ApiChangelog` or `ApiRoadmap` is rejected, because their content is stored only in the File Manager.
 
 #### Backend options
 

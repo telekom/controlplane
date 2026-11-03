@@ -27,9 +27,23 @@ func NewCommand() *cobra.Command {
 		FileCommand: base.NewFileCommand(
 			"apply",
 			"Apply a resource configuration",
-			"Apply a resource configuration from file or directory to the server",
+			"Apply a resource configuration from file or directory to the server\n\n"+
+				base.RecursiveHelp,
 		),
 	}
+
+	cmd.AddRecursiveFlag()
+	cmd.Cmd.Example = `  # Apply resources from a single file
+  roverctl apply -f rover.yaml
+
+  # Apply all .yaml, .yml and .json files in a directory and up to two levels of subdirectories
+  roverctl apply -f ./resources
+
+  # Include up to five levels of subdirectories
+  roverctl apply -f ./resources --max-depth 5
+
+  # Apply all .yaml, .yml and .json files directly inside a directory, ignoring subdirectories
+  roverctl apply -f ./resources --recursive=false`
 
 	cmd.Cmd.MarkFlagRequired("file")
 

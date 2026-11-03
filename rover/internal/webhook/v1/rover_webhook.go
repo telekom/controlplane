@@ -165,7 +165,65 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, err
 	}
 
+	if err := r.validateListeners(ctx, valErr, rover, environment, zone); err != nil {
+		return nil, err
+	}
+
 	return valErr.BuildWarnings(), valErr.BuildError()
+}
+
+func (r *RoverValidator) validateListeners(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string, zone *adminv1.Zone) error {
+	if len(rover.Spec.Listeners) == 0 {
+		return nil
+	}
+
+	listenersPath := field.NewPath("spec").Child("listeners")
+
+	// Listeners require the Spectre feature to be enabled
+	if !cconfig.FeatureSpectre.IsEnabled() {
+		valErr.AddInvalidError(listenersPath, "", "listeners require the spectre feature to be enabled")
+		return valErr.BuildError()
+	}
+
+	for i, listener := range rover.Spec.Listeners {
+		listenerPath := listenersPath.Index(i)
+
+		// Consumer must be a non-empty application name.
+		if listener.Consumer == "" {
+			valErr.AddRequiredError(listenerPath.Child("consumer"), "consumer is required")
+		}
+		validateListenerApplicationID(valErr, listenerPath.Child("consumer"), listener.Consumer)
+		validateListenerApplicationID(valErr, listenerPath.Child("provider"), listener.Provider)
+
+		// apiBasePath is required (only supported mode)
+		if listener.ApiBasePath == "" {
+			valErr.AddRequiredError(listenerPath.Child("apiBasePath"), "apiBasePath is required")
+		}
+
+		// eventType is not yet supported
+		if listener.EventType != "" {
+			valErr.AddInvalidError(listenerPath.Child("eventType"), listener.EventType, "event listeners are not yet supported")
+		}
+
+		if listener.EventFilter != nil {
+			valErr.AddInvalidError(listenerPath.Child("eventFilter"), "", "eventFilter is not yet supported")
+		}
+	}
+
+	if ls := rover.Spec.ListenerSubscription; ls != nil && ls.Callback != "" {
+		validateExternalURL(valErr, field.NewPath("spec").Child("listenerSubscription").Child("callback"), ls.Callback)
+	}
+
+	return nil
+}
+
+// validateListenerApplicationID rejects a listener consumer or provider that is
+// read as a full application ID "<group>--<team>--<name>" (two or more "--")
+// but has an empty segment.
+func validateListenerApplicationID(valErr *cerrors.ValidationError, path *field.Path, value string) {
+	if parts := strings.SplitN(value, "--", 3); len(parts) == 3 && slices.Contains(parts, "") {
+		valErr.AddInvalidError(path, value, `a value with two or more "--" is a full application ID "<group>--<team>--<name>" and must not have an empty segment; a bare application name must not contain "--"`)
+	}
 }
 
 func (r *RoverValidator) validateZone(ctx context.Context, valErr *cerrors.ValidationError, rover *roverv1.Rover, environment string) (client.ObjectKey, *adminv1.Zone, error) {
@@ -647,6 +705,10 @@ func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) 
 	return team, err
 }
 
+// reservedEventTypePrefix is the namespace used internally by Spectre for
+// listener event types. User-created event types must not start with it.
+const reservedEventTypePrefix = "de.telekom.ei.listener"
+
 func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Event == nil {
 		return nil
@@ -654,6 +716,14 @@ func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerr
 
 	if !cconfig.FeaturePubSub.IsEnabled() {
 		return nil
+	}
+
+	if strings.HasPrefix(exposure.Event.EventType, reservedEventTypePrefix) {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("exposures").Index(idx).Child("event").Child("eventType"),
+			exposure.Event.EventType,
+			fmt.Sprintf("the %q event-type prefix is reserved for internal Spectre use", reservedEventTypePrefix),
+		)
 	}
 
 	if err := r.validateApproval(ctx, valErr, environment, exposure.Event.Approval); err != nil {
@@ -823,6 +893,13 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 		return nil
 
 	case roverv1.TypeEvent:
+		if strings.HasPrefix(sub.Event.EventType, reservedEventTypePrefix) {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("eventType"),
+				sub.Event.EventType,
+				fmt.Sprintf("the %q event-type prefix is reserved for internal Spectre use", reservedEventTypePrefix),
+			)
+		}
 		if sub.Event.Delivery.Callback != "" {
 			validateExternalURL(valErr,
 				field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("delivery").Child("callback"),

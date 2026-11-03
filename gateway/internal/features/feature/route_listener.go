@@ -1,0 +1,119 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package feature
+
+import (
+	"cmp"
+	"context"
+	"slices"
+
+	"github.com/pkg/errors"
+
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+)
+
+var _ features.Feature = &RouteListenerFeature{}
+
+var InstanceRouteListenerFeature = &RouteListenerFeature{
+	priority: InstanceLastMileSecurityFeature.Priority() + 3,
+}
+
+type RouteListenerFeature struct {
+	priority int
+}
+
+// Name implements features.Feature.
+func (f *RouteListenerFeature) Name() gatewayv1.FeatureType {
+	return gatewayv1.FeatureTypeRouteListener
+}
+
+// Priority implements features.Feature.
+func (f *RouteListenerFeature) Priority() int {
+	return f.priority
+}
+
+// IsUsed implements features.Feature.
+func (f *RouteListenerFeature) IsUsed(_ context.Context, builder features.FeaturesBuilder) bool {
+	return len(builder.GetRouteListeners()) > 0
+}
+
+// Apply implements features.Feature.
+func (f *RouteListenerFeature) Apply(_ context.Context, builder features.FeaturesBuilder) error {
+	// Defensive: reject unsupported route modes even if a RouteListener was
+	// attached manually or via another builder path. Pass-through routes skip
+	// authentication, and failover routes overwrite /listener upstream to /proxy.
+	if route, ok := builder.GetRoute(); ok {
+		if route.Spec.PassThrough {
+			return errors.New("RouteListener feature is not compatible with pass-through routes")
+		}
+		if route.Spec.Traffic.Failover != nil {
+			return errors.New("RouteListener feature is not compatible with failover routes")
+		}
+	}
+
+	jc := builder.JumperConfig()
+	if jc.RouteListener == nil {
+		jc.RouteListener = make(map[plugin.ConsumerId]plugin.RouteListenerEntry)
+	}
+
+	// jumper_config.routeListener is keyed by consumer only, so two RouteListeners
+	// for the same consumer on this route cannot both be represented. Sort by name so
+	// the outcome does not depend on the order the RouteListeners were listed.
+	routeListeners := slices.Clone(builder.GetRouteListeners())
+	slices.SortStableFunc(routeListeners, func(a, b *gatewayv1.RouteListener) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+
+	for _, rl := range routeListeners {
+		cid := plugin.ConsumerId(rl.Spec.Consumer)
+		if existing, ok := jc.RouteListener[cid]; ok {
+			// Two observers watching the same consumer+route produce identical
+			// entries — that is not a conflict, just a duplicate to skip.
+			if existing.Issue == rl.Spec.Issue && existing.ServiceOwner == rl.Spec.ServiceOwner {
+				if jc.GatewayClient != nil &&
+					(jc.GatewayClient.Id != rl.Spec.GatewayClient.ClientId ||
+						jc.GatewayClient.Issuer != rl.Spec.GatewayClient.Issuer) {
+					return errors.Errorf("conflicting GatewayClient for consumer %q: client %q/%q vs %q/%q",
+						cid, jc.GatewayClient.Id, jc.GatewayClient.Issuer,
+						rl.Spec.GatewayClient.ClientId, rl.Spec.GatewayClient.Issuer)
+				}
+				continue
+			}
+			return errors.Errorf("conflicting RouteListeners for consumer %q: issue %q vs %q (jumper supports one listener entry per consumer per route)",
+				cid, existing.Issue, rl.Spec.Issue)
+		}
+
+		jc.RouteListener[cid] = plugin.RouteListenerEntry{
+			Issue:        rl.Spec.Issue,
+			ServiceOwner: rl.Spec.ServiceOwner,
+		}
+
+		// jumper reads the publisher credentials from a single top-level
+		// gatewayClient. Every listener on a route resolves the same zone-level
+		// "gateway" Client, so writing it once per listener is idempotent — this
+		// mirrors the legacy gateway
+		// (KongCeClient.appendOrUpdateListenerForRequestTransformerPlugin).
+		//
+		// Secret is intentionally left unset: it must be resolved through
+		// secret-manager (secrets.Get) rather than carried literally in a CR spec,
+		// and RouteListenerSpec.GatewayClient does not hold a secret reference yet.
+		candidate := &plugin.GatewayClient{
+			Id:     rl.Spec.GatewayClient.ClientId,
+			Issuer: rl.Spec.GatewayClient.Issuer,
+		}
+		if jc.GatewayClient != nil && *jc.GatewayClient != *candidate {
+			return errors.Errorf("conflicting route-wide GatewayClient: %q/%q vs %q/%q",
+				jc.GatewayClient.Id, jc.GatewayClient.Issuer, candidate.Id, candidate.Issuer)
+		}
+		jc.GatewayClient = candidate
+	}
+
+	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostListenerUrl))
+
+	return nil
+}

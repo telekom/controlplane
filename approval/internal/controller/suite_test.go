@@ -25,6 +25,7 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/config"
+	"github.com/telekom/controlplane/common/pkg/controller/index"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -48,6 +49,9 @@ const (
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
+	// mgrClient is the cached client of the manager, with the owner index the
+	// ApprovalBuilder lists by.
+	mgrClient client.Client
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -120,6 +124,8 @@ var _ = BeforeSuite(func() {
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
+	Expect(index.SetOwnerIndex(ctx, k8sManager.GetFieldIndexer(), &approvalv1.ApprovalRequest{})).To(Succeed())
+	mgrClient = k8sManager.GetClient()
 
 	err = (&ApprovalExpirationReconciler{
 		Client:   k8sManager.GetClient(),

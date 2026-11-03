@@ -6,6 +6,7 @@ package rover
 
 import (
 	"context"
+	stderrors "errors"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -30,7 +31,9 @@ import (
 	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/file"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/permission"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
 var _ handler.Handler[*roverv1.Rover] = (*RoverHandler)(nil)
@@ -55,6 +58,18 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 		return err
 	}
 
+	// A Blocked listener error is returned only after permissions and cleanup,
+	// so one unresolvable listener does not hold back the rest of the Rover.
+	var listenersErr error
+	if config.FeatureSpectre.IsEnabled() {
+		if err := spectre.HandleListeners(ctx, c, roverObj); err != nil {
+			if be, ok := stderrors.AsType[ctrlerrors.BlockedError](err); !ok || !be.IsBlocked() {
+				return errors.Wrap(err, "failed to handle listeners")
+			}
+			listenersErr = errors.Wrap(err, "failed to handle listeners")
+		}
+	}
+
 	if err := h.handlePermissions(ctx, c, roverObj, logger); err != nil {
 		return err
 	}
@@ -62,6 +77,10 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	// Cleanup all objects owned by Rover
 	if _, err := c.CleanupAll(ctx, client.OwnedBy(roverObj)); err != nil {
 		return errors.Wrap(err, "failed to cleanup all")
+	}
+
+	if listenersErr != nil {
+		return listenersErr
 	}
 
 	setRoverConditions(c, roverObj)
@@ -85,6 +104,10 @@ func addKnownTypes(c client.JanitorClient) {
 	if config.FeatureAiGateway.IsEnabled() {
 		c.AddKnownTypeToState(&agenticv1.AgenticExposure{})
 		c.AddKnownTypeToState(&agenticv1.AgenticSubscription{})
+	}
+	if config.FeatureSpectre.IsEnabled() {
+		c.AddKnownTypeToState(&spectrev1.SpectreApplication{})
+		c.AddKnownTypeToState(&spectrev1.Listener{})
 	}
 }
 

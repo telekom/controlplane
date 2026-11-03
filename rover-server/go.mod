@@ -14,6 +14,7 @@ require (
 	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/file/api v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
+	github.com/telekom/controlplane/spectre v0.0.0
 )
 
 replace (
@@ -21,13 +22,18 @@ replace (
 	github.com/telekom/controlplane/agentic/api => ../agentic/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
+	github.com/telekom/controlplane/approval/api => ../approval/api
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/file-manager => ../file-manager
 	github.com/telekom/controlplane/file/api => ../file/api
+	github.com/telekom/controlplane/gateway/api => ../gateway/api
+	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/pubsub/api => ../pubsub/api
 	github.com/telekom/controlplane/rover/api => ../rover/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
+	github.com/telekom/controlplane/spectre => ../spectre
 )
 
 require (
@@ -54,8 +60,8 @@ require (
 	golang.org/x/text v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.37.0
-	k8s.io/apimachinery v0.37.1
-	k8s.io/client-go v0.37.1
+	k8s.io/apimachinery v0.37.2
+	k8s.io/client-go v0.37.2
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 	sigs.k8s.io/controller-runtime v0.25.2
 )
@@ -167,9 +173,9 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -187,7 +193,7 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.37.1 // indirect
+	k8s.io/api v0.37.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect

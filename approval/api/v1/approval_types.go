@@ -11,6 +11,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Approval keys of the two gates of a Spectre Listener.
+const (
+	ApprovalKeyProvider = "provider"
+	ApprovalKeyConsumer = "consumer"
+)
+
+// +kubebuilder:validation:XValidation:rule="(has(self.approvalKey) ? self.approvalKey : '') == (has(oldSelf.approvalKey) ? oldSelf.approvalKey : '')",message="spec.approvalKey is immutable after creation"
+
 // ApprovalSpec defines the desired state of Approval
 type ApprovalSpec struct {
 	// Action defines the action that is requested to be performed on the target object
@@ -45,6 +53,14 @@ type ApprovalSpec struct {
 
 	// ApprovedRequest contains the reference to the request that was approved with this approval
 	ApprovedRequest *types.ObjectRef `json:"approvedRequest,omitempty"`
+
+	// ApprovalKey identifies an independent decision for the same target.
+	// Empty: one Approval per target, as used by API, Event and File subscriptions.
+	// Spectre sets provider or consumer to keep the two gates of a Listener apart.
+	// It cannot be added, removed or changed after creation.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self in ['', 'provider', 'consumer']",message="spec.approvalKey must be empty, provider or consumer"
+	ApprovalKey string `json:"approvalKey,omitempty"`
 }
 
 // ApprovalStatus defines the observed state of Approval
@@ -109,6 +125,33 @@ func (a *Approval) StateChanged() bool {
 // the object in its final shape client-side.
 func (a *Approval) AppendDecision(d Decision) {
 	a.Spec.Decisions = TrimDecisions(append(a.Spec.Decisions, d))
+}
+
+// stateBeforeExpiry returns the state the Approval was in before it expired.
+// The expiration handler records that state as a decision before the Expired
+// decision, so the latest decision resulting in a state other than Expired is
+// authoritative; decisions without a resulting state (e.g. comments) are skipped.
+// Status.LastState is only the fallback without such a decision, as it can be
+// stale (e.g. a resume not yet reconciled, or failed notifications).
+func (a *Approval) stateBeforeExpiry() ApprovalState {
+	for i := len(a.Spec.Decisions) - 1; i >= 0; i-- {
+		if state := a.Spec.Decisions[i].ResultingState; state != "" && state != ApprovalStateExpired {
+			return state
+		}
+	}
+	return a.Status.LastState
+}
+
+// IsExpiredAfterSuspension reports whether the Approval expired while it was
+// suspended, so it stays denied.
+func (a *Approval) IsExpiredAfterSuspension() bool {
+	return a.Spec.State == ApprovalStateExpired && a.stateBeforeExpiry() == ApprovalStateSuspended
+}
+
+// IsExpiredAfterGrant reports whether the Approval expired while it was
+// granted, so access stays granted.
+func (a *Approval) IsExpiredAfterGrant() bool {
+	return a.Spec.State == ApprovalStateExpired && a.stateBeforeExpiry() == ApprovalStateGranted
 }
 
 var _ types.Object = &Approval{}

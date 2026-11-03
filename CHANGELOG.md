@@ -1,3 +1,15 @@
+# [0.44.0](https://github.com/telekom/controlplane/compare/v0.43.1...v0.44.0) (2026-10-30)
+
+
+### Bug Fixes
+
+* controller status, approval and lifecycle fixes ([#787](https://github.com/telekom/controlplane/issues/787)) ([6c33e47](https://github.com/telekom/controlplane/commit/6c33e47adefa88ae4da0b7d5e701752f96020d65))
+
+
+### Features
+
+* **roverctl:** add recursive apply and delete directory handling ([#813](https://github.com/telekom/controlplane/issues/813)) ([c2be11e](https://github.com/telekom/controlplane/commit/c2be11e3c27b57f97ac09ec91faca85b88bf8f40))
+
 ## [0.43.1](https://github.com/telekom/controlplane/compare/v0.43.0...v0.43.1) (2026-10-28)
 
 

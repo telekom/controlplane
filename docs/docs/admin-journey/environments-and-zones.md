@@ -30,6 +30,10 @@ spec:
 
 The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
+:::caution
+If `realmName` differs from the environment name, set [`spec.overwriteEnvironmentName`](#event-environment-name) to the same value on every EventConfig in the environment. Otherwise Horizon drops events, and Spectre Listeners are Blocked with `event environment mismatch`.
+:::
+
 :::tip
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
 :::
@@ -66,9 +70,7 @@ The Admin operator records a Warning event on the Zone for each managed sub-reso
 kubectl describe zone <name> -n <environment>
 ```
 
-During OIDC discovery for a preset's token URL, the Admin operator also records a Warning event with reason `OIDCIssuerMismatch` on the Zone if the advertised issuer differs from the configured issuer or is missing. The event names the preset and both issuer values. A trailing slash alone does not count as a mismatch.
-
-This warning does not block reconciliation: the configured issuer is retained and the discovered token endpoint is used if it passes validation. No issuer comparison is performed when an existing token URL is reused from the Zone status.
+A preset's token URL is `presets[].tokenUrl` if set, otherwise `identityProviders[].tokenUrl`, otherwise the default Realm's resolved `status.issuerUrl` (trailing slashes removed) followed by `/protocol/openid-connect/token`. The Admin operator makes no HTTP request to resolve it. The derived URL must be an absolute HTTPS URL without userinfo, query, or fragment. When neither override is set, reconciliation is retried until the default Realm reports an issuer.
 
 ### Creating a Zone
 
@@ -214,7 +216,7 @@ No manual realm or client setup is needed. All gateways in a Zone share one auto
 
 Use `tls.configMapRef` when the Control Plane must trust a private certificate authority (CA) for gateway or identity-provider connections. The certificates **extend the operator's system trust store**; they do not replace it. HTTPS still verifies certificate chains and hostnames. With no `tls` configuration, these connections use system roots only.
 
-This setting covers gateway and identity-provider **admin APIs and authentication token endpoints**, plus the Admin operator's OpenID Connect (OIDC) discovery requests. It does not configure gateway-to-backend TLS, Redis TLS, or certificates served to API consumers. Existing internal CA mounts and Secret-Manager trust configuration are unchanged. There is no option to disable TLS verification in the operator resources.
+This setting covers gateway and identity-provider **admin APIs and authentication token endpoints**. It does not configure gateway-to-backend TLS, Redis TLS, or certificates served to API consumers. Existing internal CA mounts and Secret-Manager trust configuration are unchanged. There is no option to disable TLS verification in the operator resources.
 
 Before using this feature, install the updated Zone, Gateway, IdentityProvider, and Realm CRDs and the corresponding operators and RBAC. Admin needs ConfigMap read/watch and write permissions; Gateway and Identity need `get`, `list`, and `watch`. ConfigMaps are read through the operators' Kubernetes caches, including ordinary ConfigMaps without platform labels.
 
@@ -289,8 +291,6 @@ spec:
 ```
 
 Admin collects CA references from **every configured gateway and identity-provider entry**, not just the default preset. It validates them together and publishes their deduplicated union to one managed ConfigMap: `zone-ca-bundle`, key `ca-bundle.pem`, in `<environment>--<zone>` (`dev--dataplane1` here). Every generated Gateway and IdentityProvider uses that same local bundle, even if its own Zone entry has no `tls` field. Trust is therefore shared across the Zone, not isolated per endpoint. The current Zone provisioning model still requires exactly one identity provider; this feature does not add multi-IDP provisioning.
-
-Admin's OIDC discovery uses the same validated union directly, without waiting to read back the managed ConfigMap. Existing discovery-result reuse is unchanged; updating a CA is not a new connectivity probe.
 
 #### Validation and last valid configuration
 
@@ -586,6 +586,15 @@ mesh:
   zoneNames:
     - dataplane2
     - dataplane3
+```
+
+### Event environment name
+
+`spec.overwriteEnvironmentName` overrides the environment name sent to Horizon. If omitted, the Control Plane environment name is used. It must equal the zone's realm (the Environment `spec.realmName`).
+
+```yaml
+spec:
+  overwriteEnvironmentName: default
 ```
 
 ### Overriding identity client defaults

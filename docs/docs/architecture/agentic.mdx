@@ -76,8 +76,8 @@ API subscriptions. The condition message provides the specific cause.
 | `False` | `PreconditionNotMet` | An active server, ready exposure, required route reference, or AI Gateway feature is unavailable. |
 | `False` | `ValidationFailed` | The base path has a case conflict, or requested OAuth2 scopes are invalid or undefined by the server. |
 | `False` | `AccessDenied` | Visibility rules disallow the subscription, or its approval or approval request was denied. |
-| `False` | `ApprovalPending` | An approval decision is pending. |
-| `False` | `Processing` | A previously pending approval was granted; provisioning is in progress. |
+| `False` | `ApprovalPending` | An approval decision is pending, or the approval request was granted more than 5 minutes ago and the approval controller has not issued the Approval. |
+| `False` | `Processing` | The approval request is granted (always the case for `Auto`) and the Approval is not issued yet, or a previously pending approval was granted and provisioning is in progress. |
 | `False` | `SubResourceNotReady` | The child-resource readiness check has not passed. |
 
 Once approval is granted, a previous `ApprovalPending` reason is cleared before
