@@ -23,7 +23,8 @@ type Config struct {
 	DatabaseURL string `mapstructure:"database_url" validate:"required"`
 
 	// CreateDatabase creates the database in DatabaseURL if missing, using the
-	// same credentials to connect to database.
+	// database host default name.
+	// When false (the default), the operations team must create the database in advance.
 	// Env: DB_CREATE
 	CreateDatabase bool `mapstructure:"db_create"`
 

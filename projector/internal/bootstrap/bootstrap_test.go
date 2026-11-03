@@ -152,6 +152,28 @@ var _ = Describe("registerSchemesAndModules", func() {
 	)
 })
 
+var _ = Describe("managerOptions", func() {
+	DescribeTable("scopes the leader election ID without changing the configuration",
+		func(environment, expectedID string) {
+			cfg := &config.Config{
+				EnvironmentFilter: environment,
+				LeaderElection:    true,
+				LeaderElectionID:  "custom-projector",
+			}
+
+			for range 2 {
+				opts := managerOptions(cfg)
+				Expect(opts.LeaderElection).To(BeTrue())
+				Expect(opts.LeaderElectionID).To(Equal(expectedID))
+				Expect(cfg.LeaderElectionID).To(Equal("custom-projector"))
+			}
+		},
+		Entry("unfiltered", "", "custom-projector"),
+		Entry("first environment", "env-a", "custom-projector-env-a"),
+		Entry("second environment", "env-b", "custom-projector-env-b"),
+	)
+})
+
 var _ = Describe("openDatabase", func() {
 	var (
 		ctx    context.Context

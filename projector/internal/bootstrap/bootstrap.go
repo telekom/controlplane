@@ -192,23 +192,7 @@ func Run() error {
 	}
 
 	// --- Controller Manager ---
-	cacheOpts := cache.Options{}
-	if cfg.EnvironmentFilter != "" {
-		cfg.LeaderElectionID += "-" + cfg.EnvironmentFilter
-		cacheOpts.DefaultLabelSelector = labels.SelectorFromSet(labels.Set{
-			shared.EnvironmentLabelKey: cfg.EnvironmentFilter,
-		})
-	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme,
-		Metrics: metricsserver.Options{
-			BindAddress: cfg.MetricsBindAddress,
-		},
-		HealthProbeBindAddress: cfg.HealthProbeBindAddress,
-		LeaderElection:         cfg.LeaderElection,
-		LeaderElectionID:       cfg.LeaderElectionID,
-		Cache:                  cacheOpts,
-	})
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions(cfg))
 	if err != nil {
 		return fmt.Errorf("creating manager: %w", err)
 	}
@@ -232,6 +216,27 @@ func Run() error {
 	// --- Start ---
 	setupLog.Info("starting manager", "modules", len(modules))
 	return mgr.Start(ctrl.SetupSignalHandler())
+}
+
+func managerOptions(cfg *config.Config) ctrl.Options {
+	opts := ctrl.Options{
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: cfg.MetricsBindAddress,
+		},
+		HealthProbeBindAddress: cfg.HealthProbeBindAddress,
+		LeaderElection:         cfg.LeaderElection,
+		LeaderElectionID:       cfg.LeaderElectionID,
+	}
+	if cfg.EnvironmentFilter != "" {
+		opts.LeaderElectionID += "-" + cfg.EnvironmentFilter
+		opts.Cache = cache.Options{
+			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
+				shared.EnvironmentLabelKey: cfg.EnvironmentFilter,
+			}),
+		}
+	}
+	return opts
 }
 
 // openDatabase creates a pgx connection pool and returns the underlying *sql.DB
