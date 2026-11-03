@@ -10,21 +10,13 @@ import (
 	"net/url"
 	"sort"
 
-	corev1 "k8s.io/api/core/v1"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
-func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
+func populatePresetStatus(_ context.Context, hc *HandlingContext) error {
 	statuses := make([]adminv1.PresetStatus, 0, len(hc.Zone.Spec.Presets))
-	tokenURLs := make(map[string]string, len(hc.Zone.Spec.Presets))
-	previousStatuses := make(map[string]int, len(hc.Zone.Status.Presets))
-	for i := range hc.Zone.Status.Presets {
-		previousStatuses[hc.Zone.Status.Presets[i].Name] = i
-	}
 	for i := range hc.Zone.Spec.Presets {
 		preset := &hc.Zone.Spec.Presets[i]
 		gateway, err := hc.Zone.Spec.GetGateway(preset.GatewayRef)
@@ -39,7 +31,7 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 		if err != nil {
 			return ctrlerrors.BlockedErrorf("cannot resolve gateway status for preset %q: %s", preset.Name, err)
 		}
-		links, issuer, err := presetLinks(hc, preset, idp)
+		links, err := presetLinks(hc, preset, idp)
 		if err != nil {
 			return err
 		}
@@ -47,26 +39,10 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 		if tokenURL == "" {
 			tokenURL = idp.TokenUrl
 		}
-		if tokenURL == "" { //nolint:nestif // Token URL precedence is intentionally evaluated in one place.
-			tokenURL = tokenURLs[issuer]
-			if previousIndex, found := previousStatuses[preset.Name]; found {
-				previous := &hc.Zone.Status.Presets[previousIndex]
-				if tokenURL == "" && previous.Links.Issuer == issuer && validateDiscoveredTokenURL(previous.Links.TokenUrl) == nil {
-					tokenURL = previous.Links.TokenUrl
-					tokenURLs[issuer] = tokenURL
-				}
-			}
-			if tokenURL == "" {
-				var advertisedIssuer string
-				tokenURL, advertisedIssuer, err = discoverPresetTokenURL(ctx, hc, issuer)
-				if err != nil {
-					return ctrlerrors.RetryableErrorf("failed OIDC discovery for preset %q: %s", preset.Name, err)
-				}
-				if !issuersEqual(advertisedIssuer, issuer) {
-					contextutil.RecorderFromContextOrDie(ctx).Eventf(hc.Zone, corev1.EventTypeWarning, ReasonOIDCIssuerMismatch,
-						"OIDC discovery for preset %q advertised issuer %q, configured issuer is %q", preset.Name, advertisedIssuer, issuer)
-				}
-				tokenURLs[issuer] = tokenURL
+		if tokenURL == "" {
+			tokenURL, err = defaultRealmTokenURL(hc, preset.Name)
+			if err != nil {
+				return err
 			}
 		}
 		links.TokenUrl = tokenURL
@@ -79,24 +55,18 @@ func populatePresetStatus(ctx context.Context, hc *HandlingContext) error {
 	return nil
 }
 
-func discoverPresetTokenURL(ctx context.Context, hc *HandlingContext, issuer string) (string, string, error) {
-	doer, release, err := discoveryClient(ctx, hc, issuer)
-	if err != nil {
-		return "", "", err
+func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.IdentityProviderConfig) (adminv1.Links, error) {
+	if hc.DefaultIdentityRealm == nil {
+		return adminv1.Links{}, ctrlerrors.RetryableErrorf("cannot build links for preset %q: default identity realm is not resolved", preset.Name)
 	}
-	defer release()
-	return discoverTokenURL(ctx, doer, issuer)
-}
-
-func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.IdentityProviderConfig) (adminv1.Links, string, error) {
 	hostname, err := issuerHostname(idp)
 	if err != nil {
-		return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot resolve issuer hostname for preset %q: %s", preset.Name, err)
+		return adminv1.Links{}, ctrlerrors.BlockedErrorf("cannot resolve issuer hostname for preset %q: %s", preset.Name, err)
 	}
 	issuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.DefaultIdentityRealm.Name)
 	internalIssuer, err := internalIssuerURL(hc)
 	if err != nil {
-		return adminv1.Links{}, "", err
+		return adminv1.Links{}, err
 	}
 	baseURL := preset.GetDefaultURL()
 	lmsBase := baseURL
@@ -105,7 +75,7 @@ func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.Ident
 	}
 	lmsIssuer, err := url.JoinPath(lmsBase, "auth/realms", hc.DefaultIdentityRealm.Name)
 	if err != nil {
-		return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot build LMS issuer for preset %q: %s", preset.Name, err)
+		return adminv1.Links{}, ctrlerrors.BlockedErrorf("cannot build LMS issuer for preset %q: %s", preset.Name, err)
 	}
 	links := adminv1.Links{Url: baseURL, Issuer: issuer, LmsIssuer: lmsIssuer, InternalIssuer: internalIssuer}
 	if hc.TeamApiIdentityRealm != nil {
@@ -114,11 +84,11 @@ func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.Ident
 	if cconfig.FeaturePermission.IsEnabled() && hc.Zone.Spec.Permissions != nil {
 		links.PermissionsUrl, err = url.JoinPath(baseURL, hc.Zone.Spec.Permissions.ApiBasePath)
 		if err != nil {
-			return adminv1.Links{}, "", ctrlerrors.BlockedErrorf("cannot build permissions URL for preset %q: %s", preset.Name, err)
+			return adminv1.Links{}, ctrlerrors.BlockedErrorf("cannot build permissions URL for preset %q: %s", preset.Name, err)
 		}
 		hc.Zone.EnableFeature(adminv1.FeaturePermissions)
 	} else {
 		hc.Zone.ManageFeature(adminv1.FeaturePermissions, false)
 	}
-	return links, issuer, nil
+	return links, nil
 }
