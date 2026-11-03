@@ -35,6 +35,9 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 	if idp.Admin.Url == nil || *idp.Admin.Url == "" {
 		return ctrlerrors.BlockedErrorf("identity provider %q must define admin.url", idp.Name)
 	}
+	if idp.IssuerHostname == "" {
+		return ctrlerrors.BlockedErrorf("identity provider %q must define issuerHostname", idp.Name)
+	}
 	identityProvider := &identityapi.IdentityProvider{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      naming.ForIdentityProvider(hc.Zone, idp.Name),
