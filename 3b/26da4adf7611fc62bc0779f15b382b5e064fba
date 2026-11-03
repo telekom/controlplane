@@ -1,0 +1,19 @@
+admin/go.mod
+  s_2951af08e925b8::t_2653d740c0919b 99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3b26da4adf7611fc62bc0779f15b382b5e064fba",
+  "prompts": {},
+  "sessions": {
+    "s_2951af08e925b8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f0c47fcffeLGBPuBWjoBfaTg",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
