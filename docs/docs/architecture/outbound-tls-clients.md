@@ -35,7 +35,6 @@ The source contract allows only CA certificate blocks and whitespace. `cabundle`
 
 | Component | Actual remote callers | Authentication and HTTP behavior |
 | --- | --- | --- |
-| Admin | OIDC discovery during Zone status population | Unauthenticated, 10-second timeout, cloned default transport with environment proxy support. Uses an uncached client with the validated in-memory Zone union and closes it after discovery. Existing discovery-result reuse remains. |
 | Gateway | Route and Consumer create/update/delete handlers | Client credentials; token URL remains the issuer plus `/protocol/openid-connect/token`. Raw transport, 10-second timeout, 100 maximum idle connections per host, existing Gateway metrics. |
 | Identity | Realm and Client create/update/delete handlers, including realm issuer discovery | Initial password grant is eager, followed by token refresh. Raw transport, TLS 1.3 minimum, 10-second timeout or `CLIENT_TIMEOUT`, existing Identity metrics. Issuer discovery shares the TLS transport and timeout without sending OAuth credentials. |
 
@@ -58,7 +57,7 @@ One cleanup loop per factory checks for unused clients every minute. A version i
 
 ## Context and authentication lifetime
 
-The context passed at construction bounds the token source and must stay valid for as long as the client is used. Cached token sources use the **operator lifetime**, never a reconciliation context retained from client construction. A standalone client from `tlsclient.New` may use the reconciliation context when it is closed before the reconciliation ends, as Admin does for OIDC discovery. Each token HTTP request has the profile's timeout; there is no single construction deadline that expires the shared token source later. API requests still carry the current reconciliation context. A canceled caller may have to wait for a shared, timeout-bounded token refresh; there is no separate context-aware token broker.
+The context passed at construction bounds the token source and must stay valid for as long as the client is used. Cached token sources use the **operator lifetime**, never a reconciliation context retained from client construction. A standalone client from `tlsclient.New` may use the reconciliation context when it is closed before the reconciliation ends. Each token HTTP request has the profile's timeout; there is no single construction deadline that expires the shared token source later. API requests still carry the current reconciliation context. A canceled caller may have to wait for a shared, timeout-bounded token refresh; there is no separate context-aware token broker.
 
 Identity falls back to a password grant only when refresh returns HTTP 400 or 401. Transient refresh failures do not trigger password re-authentication. The Identity-supplied error classifier retains existing retry behavior, including the delay for HTTP 429 and retries for 5xx responses. Initial password-grant failures remain wrapped acquisition errors rather than passing through that refresh classifier.
 

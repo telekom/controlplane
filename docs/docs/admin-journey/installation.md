@@ -139,7 +139,7 @@ kubectl get crds | grep cp.ei.telekom.de
 
 ### TLS verification for Keycloak, Kong and OIDC discovery
 
-The Identity, Gateway and Admin controllers enforce certificate-chain and hostname verification for Keycloak and Kong API requests, their token requests, and OIDC discovery. The former `SKIP_TLS_VERIFY` setting no longer disables verification for these connections; remove it from controller and shared environment ConfigMaps.
+The Identity and Gateway controllers enforce certificate-chain and hostname verification for Keycloak and Kong API requests, their token requests, and Identity's realm issuer discovery. The former `SKIP_TLS_VERIFY` setting no longer disables verification for these connections; remove it from controller and shared environment ConfigMaps.
 
 For endpoints signed by a private CA, configure [custom CA certificates](./environments-and-zones.md#custom-ca-certificates). These certificates extend system trust without disabling verification.
 
