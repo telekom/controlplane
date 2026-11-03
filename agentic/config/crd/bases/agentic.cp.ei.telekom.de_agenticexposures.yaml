@@ -430,8 +430,8 @@ spec:
                 type: array
               variant:
                 default: MCP
-                description: Variant defines whether the exposure serves an MCP server,
-                  a Telecontext MCP server, or an A2A agent.
+                description: Variant identifies the type of agentic resource served
+                  by the exposure.
                 enum:
                 - MCP
                 - TELECONTEXTMCP
