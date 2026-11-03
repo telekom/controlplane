@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
@@ -179,11 +180,10 @@ func (r *RoadmapController) Delete(ctx context.Context, resourceId string) error
 	}
 
 	// Delete file from file-manager using the Contents field
-	err = file.GetFileManager().DeleteFile(ctx, roadmap.Spec.Contents)
-	if err != nil {
-		if errors.Is(err, file.ErrNotFound) {
-			// File not found is OK, continue to delete CRD
-		} else {
+	if cconfig.FeatureFileManager.IsEnabled() && roadmap.Spec.Contents != "" {
+		err = file.GetFileManager().DeleteFile(ctx, roadmap.Spec.Contents)
+		// File not found is OK, continue to delete CRD
+		if err != nil && !errors.Is(err, file.ErrNotFound) {
 			return err
 		}
 	}
@@ -223,6 +223,10 @@ func (r *RoadmapController) GetStatus(ctx context.Context, resourceId string) (r
 
 // uploadFile uploads the items JSON to file-manager
 func (r *RoadmapController) uploadFile(ctx context.Context, itemsMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, problems.BadRequest("ApiRoadmap requires the file manager, which is disabled in this environment")
+	}
+
 	if len(itemsMarshaled) == 0 {
 		return nil, errors.New("items JSON has length 0")
 	}
@@ -271,6 +275,14 @@ func (r *RoadmapController) isHashEqual(ctx context.Context, id mapper.ResourceI
 
 // downloadFile downloads items JSON from file-manager
 func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) ([]api.ApiRoadmapItem, error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	if fileId == "" {
+		return nil, nil
+	}
+
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
