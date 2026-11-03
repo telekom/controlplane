@@ -1,0 +1,192 @@
+projector/internal/domain/apisubscription/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 163-164,244-245
+projector/internal/domain/application/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 21-24
+projector/internal/domain/approvalrequest/types.go
+  s_7f16d4800e0d39::t_15b8d88178077b 7,9,23,54
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 55
+projector/internal/infrastructure/cachekeys/cachekeys.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 32-36,60-63
+  s_8d9d0eac8beb07::t_0397c638ad3121 64
+projector/internal/domain/approval/translator.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 61-71,123
+projector/internal/domain/approval/repository_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 20,24,219-274,309-350,633-643
+  s_8d9d0eac8beb07::t_50e278d5d9dbd9 644
+  s_7f16d4800e0d39::t_f315a8a7c7271b 275-308
+projector/internal/domain/apiexposure/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 21-24
+projector/internal/domain/application/repository.go
+  s_8d9d0eac8beb07::t_bc04ff20ae6676 259
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 211-212,258
+projector/internal/domain/listener/translator_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-93
+projector/internal/domain/listener/types.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-27
+projector/internal/domain/approval/types.go
+  s_7f16d4800e0d39::t_15b8d88178077b 7,9,25,55
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 56
+projector/config/rbac/role.yaml
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 74-83
+projector/internal/domain/listener/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-105,108-231
+  s_c3dcd0b88aa640::t_092367ea7325bd 106-107
+  s_8d9d0eac8beb07::t_5f2e6b7a2c0ca3 232-233
+projector/internal/infrastructure/idresolver.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 286-313,407-443
+  s_8d9d0eac8beb07::t_6b1366d5fee8cb 444
+projector/README.md
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 39,103,107
+  s_8d9d0eac8beb07::t_3cb1274c02918d 108
+projector/internal/domain/approvalrequest/translator.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 62-72,118
+projector/internal/bootstrap/bootstrap_test.go
+  s_285dbb2d0e4ba5::t_2de35b3098d4ab 156
+  s_8d9d0eac8beb07::t_1731ca178f7fb8 116-117
+  s_285dbb2d0e4ba5::t_9736422b344d59 14,124,126-127,157-167
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 20,25,48,57,66,104-115
+projector/internal/domain/api/name_projection_test.go
+  s_285dbb2d0e4ba5::t_9736422b344d59 1-111
+projector/go.mod
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 41,60
+projector/internal/domain/approvalrequest/repository.go
+  s_7f16d4800e0d39::t_15b8d88178077b 30,241-242,258
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 15,59-75,144-147,149,167-168,184-186,202,204,216-218,227-230,259
+projector/internal/domain/apisubscription/module.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 22-25
+projector/internal/domain/listener/translator.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-90
+projector/internal/domain/approval/translator_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 48-77,233-244
+  s_7f16d4800e0d39::t_f315a8a7c7271b 29-47
+projector/internal/domain/listener/listener_suite_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-17
+projector/internal/domain/listener/module_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-159
+projector/internal/module/module_test.go
+  s_8d9d0eac8beb07::t_a97886ff9777ad 51
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 5,8-9,14-15,18-24,26,31,37-50
+projector/internal/module/module.go
+  s_c3dcd0b88aa640::t_092367ea7325bd 45-50,69
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 11-15,27,70-104,123-125
+  s_8d9d0eac8beb07::t_2336c73791ffb5 126
+projector/internal/domain/approvalrequest/translator_test.go
+  s_7f16d4800e0d39::t_f315a8a7c7271b 29-47
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 48-77,233-244
+projector/internal/domain/approval/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 15,58-74,143-157,159-164,183-188,204-206,222,224,226-230,241-243,252-255,284
+  s_7f16d4800e0d39::t_15b8d88178077b 29,266-267,283
+projector/internal/domain/api/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 69
+projector/internal/domain/listener/processor.go
+  s_c3dcd0b88aa640::t_092367ea7325bd 46-47,56,59-62,71-74
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-45,48-55,57-58,63-70,75-79
+  s_8d9d0eac8beb07::t_0bc237bfc8ea76 80-82
+projector/internal/domain/listener/repository.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-139
+projector/internal/bootstrap/bootstrap.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 26,43,62,93-97,193-195
+projector/internal/domain/approvalrequest/repository_test.go
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 19,23,217-258,288-325,602-612
+  s_7f16d4800e0d39::t_f315a8a7c7271b 259-287
+  s_8d9d0eac8beb07::t_2f73fa93c7678f 613
+projector/internal/domain/listener/repository_test.go
+  s_c3dcd0b88aa640::t_c51a396021c313 144-149,157
+  s_8d9d0eac8beb07::t_7577172dbdd5ce 1-143,150-156,158-168,170,172-174
+  s_8d9d0eac8beb07::t_d16256779aec45 169
+  s_8d9d0eac8beb07::t_da62b821dccb74 171
+  s_8d9d0eac8beb07::t_d3fca65f185509 175-177
+identity/test/mocks/keycloakservice/mock_KeycloakService.go
+  s_71ea4e6cbd4a4c::t_6a42273d650a50 195-196
+admin/internal/handler/zone/handler_test.go
+  s_71ea4e6cbd4a4c::t_374b225d9d5f2a 266,291,323-324
+  s_1ba7bf644251f1::t_69abc8b2ac3caa 309
+  s_6c85b0bc98ca0a::t_49787ffaf38a3a 244-245,302-303,314,319,381,438
+admin/internal/handler/zone/identity.go
+  s_6c85b0bc98ca0a::t_6a5931f40cfa49 155-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "74110e6e94751fcdec44d8ff8be7916999a24bbd",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1ba7bf644251f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6d3a6f4ffeAGoGn4FuDcZIKK",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_280cf34b4bb176": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5cc8102ffeBYonDq7bId55MA",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_285dbb2d0e4ba5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2757b341ffeBuHS7GqoHhwZ3u",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_5a9cfa9186a610": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6d3d6d6ffeki8vf5o6g2F1b2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
+    "s_6c85b0bc98ca0a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca27f8bbffe4KPXznIt8vBmYd",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_71ea4e6cbd4a4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca4e29a7ffeDehjPAV18juQSW",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_7f16d4800e0d39": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2757b389ffeIEHBCSuR8ZQlSs",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_8d9d0eac8beb07": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f278b3750ffeawFs6RCuCgKtUj",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_c3dcd0b88aa640": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2749f99affeRPMJYYEaxTty9D",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}
