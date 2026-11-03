@@ -281,7 +281,8 @@ func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1
 // Note: case-conflict detection is handled at the CR handler level (McpServer/AgentCard handlers),
 // not here. For exposure/subscription case-conflict checks, use ServerMustExist.
 func FindActiveServer(ctx context.Context, basePath string, variant *agenticv1.AgenticVariant) (bool, *ServerInfo, error) {
-	if variant == nil || *variant == agenticv1.AgenticVariantMCP || *variant == agenticv1.AgenticVariantTelecontextMCP {
+	switch {
+	case variant == nil:
 		found, server, err := FindActiveMcpServer(ctx, basePath)
 		if err != nil {
 			return false, nil, err
@@ -292,12 +293,21 @@ func FindActiveServer(ctx context.Context, basePath string, variant *agenticv1.A
 				Oauth2Scopes: server.Spec.Oauth2Scopes,
 			}, nil
 		}
-		if variant != nil {
+	case *variant == agenticv1.AgenticVariantMCP, *variant == agenticv1.AgenticVariantTelecontextMCP:
+		found, server, err := FindActiveMcpServer(ctx, basePath)
+		if err != nil {
+			return false, nil, err
+		}
+		if !found {
 			return false, nil, nil
 		}
-	}
-
-	if variant != nil && *variant != agenticv1.AgenticVariantAgent {
+		return true, &ServerInfo{
+			BasePath:     server.Spec.BasePath,
+			Oauth2Scopes: server.Spec.Oauth2Scopes,
+		}, nil
+	case *variant == agenticv1.AgenticVariantAgent:
+		// Continue to the AgentCard lookup below.
+	default:
 		return false, nil, errors.Errorf("unsupported agentic variant %q", *variant)
 	}
 
