@@ -23,6 +23,7 @@ var processingReasons = map[string]bool{
 	condition.ReasonSubResourceNotReady: true, // "SubResourceNotReady"
 	condition.ReasonProvisioning:        true, // "Provisioning"
 	condition.ReasonProcessing:          true, // "Processing" (legacy/transitional)
+	"Deleting":                          true, // Spectre Listener draining its capture before deletion
 }
 
 // blockedReasons lists Ready condition reasons that indicate the resource is blocked
@@ -211,18 +212,12 @@ func MapStatus(conditions []metav1.Condition, objectGeneration int64) api.Status
 // has stale conditions, processingState is set to Processing to reflect that
 // the overall pipeline is not yet done.
 func MapRoverStatus(ctx context.Context, rover *v1.Rover, stores *store.Stores) (api.Status, error) {
-	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
-
 	result, err := GetAllRoverProblems(ctx, rover, stores)
 	if err != nil {
-		return status, err
+		return MapStatus(rover.GetConditions(), rover.GetGeneration()), err
 	}
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
-		status.ProcessingState = api.ProcessingStateProcessing
-	}
-
-	reconcileWithSubResources(rover.GetConditions(), &status, result)
+	status, _ := ResolveRoverStatus(rover, result)
 
 	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 

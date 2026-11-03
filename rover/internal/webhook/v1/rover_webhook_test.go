@@ -1361,6 +1361,167 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 	})
 
+	Context("Listener consumer validation", func() {
+		It("should accept a listener with an external consumer", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "some-other-app",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			// Use callback delivery to bypass EventConfig lookup (not registered in test scheme).
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should accept a listener whose consumer matches the Rover name", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    roverWithListener.Name,
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should reject a listener with an empty consumer", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     "https://callback.example.com/events",
+			}
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			assertValidationFailedWith(warnings, err, "consumer is required")
+		})
+
+		newRoverWithListenerCallback := func(callback string) *roverv1.Rover {
+			roverWithListener := roverObj.DeepCopy()
+			roverWithListener.Spec.Listeners = []roverv1.RoverListener{
+				{
+					Consumer:    "some-other-app",
+					Provider:    "provider-app",
+					ApiBasePath: "/api/v1",
+				},
+			}
+			roverWithListener.Spec.ListenerSubscription = &roverv1.ListenerSubscription{
+				DeliveryType: "callback",
+				Callback:     callback,
+			}
+			return roverWithListener
+		}
+
+		It("should reject a listener callback pointing at a cluster-internal or local address", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			for _, localURL := range []string{
+				"http://localhost:8080/callback",
+				"http://127.0.0.1:8080/callback",
+				"http://[::1]:8080/callback",
+				"http://0.0.0.0:8080/callback",
+				"http://169.254.169.254/latest/meta-data",
+				"http://my-svc.my-ns.svc.cluster.local:8080/callback",
+				"http://my-svc.my-ns.svc:8080/callback",
+				"http://kubernetes:8080/callback",
+				"http://localhost.:8080/callback",
+				"http://public.example.com@127.0.0.1:8080/callback",
+			} {
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback(localURL))
+				assertValidationFailedWith(warnings, err, "must not point at a cluster-internal or local address")
+				Expect(err.Error()).To(ContainSubstring("spec.listenerSubscription.callback"), "expected %q to be rejected", localURL)
+			}
+		})
+
+		It("should allow a listener callback pointing at a public or private (corporate) address", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			for _, allowedURL := range []string{
+				"https://callbacks.example.com/events",
+				"http://10.0.0.5:8080/callback",     // corporate/on-prem RFC1918 — allowed by policy
+				"http://192.168.1.10:8080/callback", // corporate/on-prem RFC1918 — allowed by policy
+			} {
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback(allowedURL))
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred(), "expected %q to be allowed", allowedURL)
+			}
+		})
+
+		It("should reject a listener callback without an http(s) scheme", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, newRoverWithListenerCallback("ftp://callbacks.example.com/events"))
+			assertValidationFailedWith(warnings, err, "URL must start with http:// or https://")
+		})
+
+		It("should accept a full application ID as listener consumer and provider", func() {
+			cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+			defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+			roverWithListener := newRoverWithListenerCallback("https://callback.example.com/events")
+			roverWithListener.Spec.Listeners[0].Consumer = "eni--team--app"
+			roverWithListener.Spec.Listeners[0].Provider = "eni--other--provider"
+			warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		DescribeTable("should reject a listener application ID with an empty segment",
+			func(field, id string) {
+				cconfig.FeatureSpectre = cconfig.NewFeature("spectre", true)
+				defer func() { cconfig.FeatureSpectre = cconfig.NewFeature("spectre", false) }()
+
+				roverWithListener := newRoverWithListenerCallback("https://callback.example.com/events")
+				if field == "consumer" {
+					roverWithListener.Spec.Listeners[0].Consumer = id
+				} else {
+					roverWithListener.Spec.Listeners[0].Provider = id
+				}
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithListener)
+				assertValidationFailedWith(warnings, err, "must not have an empty segment")
+				Expect(err.Error()).To(ContainSubstring("spec.listeners[0]." + field))
+			},
+			Entry("consumer with an empty name", "consumer", "eni--team--"),
+			Entry("consumer with an empty group", "consumer", "--team--app"),
+			Entry("consumer with an empty team", "consumer", "eni----app"),
+			Entry("provider with an empty name", "provider", "eni--team--"),
+			Entry("provider with an empty group", "provider", "--team--app"),
+			Entry("provider with an empty team", "provider", "eni----app"),
+		)
+	})
+
 	Context("External IDs validation", func() {
 		var zoneWithPolicies *adminv1.Zone
 

@@ -6,15 +6,18 @@ package publisher
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	"github.com/telekom/controlplane/pubsub/internal/index"
 )
 
 var _ handler.Handler[*pubsubv1.Publisher] = &PublisherHandler{}
@@ -46,6 +49,20 @@ func (h *PublisherHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Pub
 }
 
 func (h *PublisherHandler) Delete(ctx context.Context, obj *pubsubv1.Publisher) error {
-	// TODO: Call quasar/Config Server REST API to deregister publisher (if needed in the future)
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	// Block deletion while any Subscriber (live or terminating) still references this Publisher.
+	// A terminating Subscriber needs the Publisher to resolve EventStore and issue the Horizon DELETE.
+	var subscribers pubsubv1.SubscriberList
+	publisherRef := obj.Namespace + "/" + obj.Name
+	if err := c.List(ctx, &subscribers, client.MatchingFields{index.SubscriberPublisherIndex: publisherRef}); err != nil {
+		return errors.Wrapf(err, "failed to list Subscribers referencing Publisher %q", publisherRef)
+	}
+
+	if len(subscribers.Items) > 0 {
+		return ctrlerrors.RetryableWithDelayErrorf(2*time.Second,
+			"Publisher %q still referenced by %d Subscriber(s)", publisherRef, len(subscribers.Items))
+	}
+
 	return nil
 }
