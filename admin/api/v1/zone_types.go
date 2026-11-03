@@ -206,7 +206,8 @@ type Preset struct {
 	// +kubebuilder:validation:Required
 	IdentityProviderRef string `json:"identityProviderRef"`
 	// TokenUrl is the token endpoint for this zone preset
-	// By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
+	// If empty, the identity provider's tokenUrl is used, otherwise the default realm's resolved issuer URL
+	// followed by /protocol/openid-connect/token.
 	// +kubebuilder:validation:Format=uri
 	// +kubebuilder:validation:Optional
 	TokenUrl string `json:"tokenUrl,omitempty"`

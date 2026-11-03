@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,8 +42,6 @@ var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 type ZoneHandler struct {
 	// Client is the manager client. It is required.
 	Client client.Client
-	// HTTPClient overrides the OIDC discovery client.
-	HTTPClient *http.Client
 }
 
 func (h *ZoneHandler) clientOrDie() client.Client {
@@ -59,7 +56,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	c := cclient.ClientFromContextOrDie(ctx)
 	cclient.EnableFeature(c, cclient.CollectSubResources)
 
-	hc, err := newHandlingContext(ctx, obj, h.HTTPClient, kubeClient)
+	hc, err := newHandlingContext(ctx, obj, kubeClient)
 	if err != nil {
 		return err
 	}

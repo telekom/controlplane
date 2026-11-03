@@ -37,6 +37,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvals
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - application.cp.ei.telekom.de
   resources:
   - applications

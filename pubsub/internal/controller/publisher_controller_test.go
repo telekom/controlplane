@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -23,10 +21,42 @@ import (
 )
 
 var _ = Describe("Publisher Controller", func() {
+	Context("MapSubscriberToPublisher", func() {
+		It("should enqueue exactly the referenced Publisher", func() {
+			reconciler := &PublisherReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
+
+			subscriber := &pubsubv1.Subscriber{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sub-1",
+					Namespace: "team-a",
+				},
+				Spec: pubsubv1.SubscriberSpec{
+					Publisher: ctypes.ObjectRef{Name: "my-publisher", Namespace: "team-b"},
+				},
+			}
+
+			requests := reconciler.MapSubscriberToPublisher(ctx, subscriber)
+
+			Expect(requests).To(HaveLen(1))
+			Expect(requests[0].NamespacedName.Name).To(Equal("my-publisher"))
+			Expect(requests[0].NamespacedName.Namespace).To(Equal("team-b"))
+		})
+
+		It("should return nil for non-Subscriber objects", func() {
+			reconciler := &PublisherReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
+
+			publisher := &pubsubv1.Publisher{
+				ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "default"},
+			}
+
+			requests := reconciler.MapSubscriberToPublisher(ctx, publisher)
+
+			Expect(requests).To(BeNil())
+		})
+	})
+
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
-
-		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,

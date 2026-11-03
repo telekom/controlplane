@@ -306,7 +306,7 @@ func (m *memorySecretManager) DeleteApplication(context.Context, string, string,
 // newTestHandlingContext creates a HandlingContext by running the constructor
 // (which creates the namespace and fetches the environment).
 func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *HandlingContext {
-	hc, err := newHandlingContext(testCtx, zone, nil, k8sClient)
+	hc, err := newHandlingContext(testCtx, zone, k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }
