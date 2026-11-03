@@ -100,13 +100,43 @@ projector/internal/domain/listener/repository_test.go
   s_8d9d0eac8beb07::t_d16256779aec45 169
   s_8d9d0eac8beb07::t_da62b821dccb74 171
   s_8d9d0eac8beb07::t_d3fca65f185509 175-177
+identity/test/mocks/keycloakservice/mock_KeycloakService.go
+  s_71ea4e6cbd4a4c::t_6a42273d650a50 189-190
+admin/internal/handler/zone/handler_test.go
+  s_71ea4e6cbd4a4c::t_374b225d9d5f2a 268,308,343,516-517
+  s_1ba7bf644251f1::t_69abc8b2ac3caa 428
+  s_6c85b0bc98ca0a::t_49787ffaf38a3a 219,245-246,360-361,460,485,736,754
+  s_280cf34b4bb176::t_5953400f65f900 233,240
+admin/internal/handler/zone/identity.go
+  s_6c85b0bc98ca0a::t_6a5931f40cfa49 146-147
 ---
 {
   "schema_version": "authorship/3.0.0",
   "git_ai_version": "1.7.6",
   "base_commit_sha": "8dd875c8bf7b79ca061735749cc7223876c73e8b",
   "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
   "sessions": {
+    "s_1ba7bf644251f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6d3a6f4ffeAGoGn4FuDcZIKK",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_280cf34b4bb176": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5cc8102ffeBYonDq7bId55MA",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
     "s_285dbb2d0e4ba5": {
       "agent_id": {
         "tool": "opencode",
@@ -114,6 +144,30 @@ projector/internal/domain/listener/repository_test.go
         "model": "unknown"
       },
       "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_5a9cfa9186a610": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6d3d6d6ffeki8vf5o6g2F1b2",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
+    "s_6c85b0bc98ca0a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca27f8bbffe4KPXznIt8vBmYd",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_71ea4e6cbd4a4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca4e29a7ffeDehjPAV18juQSW",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
     },
     "s_7f16d4800e0d39": {
       "agent_id": {

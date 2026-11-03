@@ -146,6 +146,22 @@ controlplane-api/internal/resolvers/model/info_types.go
       },
       "human_author": "Miká Juznik <mika.juznik@telekom.de>"
     },
+    "s_0969157c1400c3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0add305ffezqWI9tTSuEoEP4",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_1c7f61d309d731": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0dd3787ffeFHZCyveCakyiBR",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
     "s_3a7a532b3224f9": {
       "agent_id": {
         "tool": "opencode",
@@ -178,6 +194,14 @@ controlplane-api/internal/resolvers/model/info_types.go
       },
       "human_author": "Miká Juznik <mika.juznik@telekom.de>"
     },
+    "s_b0c8d90952d656": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0dd856cffe5FOPgJsOf12U6B",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    },
     "s_c4f8fa2c7fb4df": {
       "agent_id": {
         "tool": "opencode",
@@ -185,6 +209,14 @@ controlplane-api/internal/resolvers/model/info_types.go
         "model": "unknown"
       },
       "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_dd6bd4091247bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0e0bc5affe5wfAGi4DeIYBlq",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
     },
     "s_f32231a3eece7e": {
       "agent_id": {
