@@ -1,3 +1,10 @@
+## [0.45.1](https://github.com/telekom/controlplane/compare/v0.45.0...v0.45.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* complete discovery and Rover pagination while preserving credential masking ([#811](https://github.com/telekom/controlplane/issues/811)) ([e7afce6](https://github.com/telekom/controlplane/commit/e7afce635661164548ea4bc264f68c1a1b1293e2))
+
 # [0.45.0](https://github.com/telekom/controlplane/compare/v0.44.0...v0.45.0) (2026-11-03)
 
 
