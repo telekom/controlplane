@@ -136,24 +136,24 @@ func (c *apiExposureController) GetSubscriptions(ctx context.Context, applicatio
 		return nil, verifyErr
 	}
 
-	// Fetch all subscriptions (cross-namespace — no prefix, no app label filter)
-	// and filter by basePath. Subscribers come from different teams/apps.
+	// Subscribers come from different teams/apps, so only the basePath filter applies.
 	// Exposure access does not authorize disclosure of subscriber credentials:
 	// the plain store is used so no secrets are resolved, and every response is
 	// masked regardless of the caller's scope.
 	listOpts := store.NewListOpts()
-	allSubs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionStore, listOpts)
+	listOpts.Filters = append(listOpts.Filters, store.Filter{
+		Path:  "spec.apiBasePath",
+		Op:    store.OpEqual,
+		Value: exposure.Spec.ApiBasePath,
+	})
+	subs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	targetBasePath := exposure.Spec.ApiBasePath
-	matchingSubs := make([]api.ApiSubscriptionResponse, 0)
-	for _, sub := range allSubs {
-		if sub.Spec.ApiBasePath != targetBasePath {
-			continue
-		}
-		matchingSubs = append(matchingSubs, subscriptionmapper.MapResponse(ctx, sub, c.stores))
+	matchingSubs := make([]api.ApiSubscriptionResponse, len(subs))
+	for i, sub := range subs {
+		matchingSubs[i] = subscriptionmapper.MapResponse(ctx, sub, c.stores)
 	}
 
 	basePath := fmt.Sprintf("/applications/%s/apiexposures/%s/apisubscriptions", applicationId, apiExposureName)

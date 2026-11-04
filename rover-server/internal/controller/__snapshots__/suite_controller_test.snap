@@ -3,7 +3,7 @@
 {
  "_links": {
   "next": "",
-  "self": "http://example.com/rovers?cursor="
+  "self": "http://example.com/rovers?limit=20"
  },
  "items": [
   {
@@ -44,7 +44,7 @@
 {
  "_links": {
   "next": "",
-  "self": "http://example.com/rovers?cursor="
+  "self": "http://example.com/rovers?limit=20"
  },
  "items": [
   {
@@ -85,7 +85,7 @@
 {
  "_links": {
   "next": "",
-  "self": "http://example.com/rovers?cursor="
+  "self": "http://example.com/rovers?limit=20"
  },
  "items": [
   {
@@ -126,7 +126,7 @@
 {
  "_links": {
   "next": "",
-  "self": "http://example.com/rovers?cursor="
+  "self": "http://example.com/rovers?limit=20"
  },
  "items": [
   {
@@ -319,6 +319,10 @@
 
 [Rover Controller Get all rover applications info should return all applications info successfully - 1]
 {
+ "_links": {
+  "next": "",
+  "self": "http://example.com/rovers/info?limit=20"
+ },
  "applications": [
   {
    "errors": [

@@ -81,6 +81,27 @@ Validation rules enforced by the Rover webhook:
 
 Because file transfer happens directly over SFTP, a Rover that only exposes/subscribes to file types yields a **logical** Application (`needsClient` and `needsConsumer` are `false`). If the same Rover also has an API or event subscription, an event exposure, or any listener, a client is still required. A listener needs the client to get a token for its SSE stream. Callback delivery keeps the client too, so switching between delivery types never removes the application's credentials.
 
+## Rover and Application Info Pagination
+
+`GET /rovers` and `GET /rovers/info` read one page per request. The default and maximum `limit` are **20**; the minimum is **1**. Follow `_links.next` until it is empty to retrieve subsequent pages. Continuation URLs retain the page size and encode the cursor. Authorization scope is enforced on every request; application-info listing requires a team client.
+
+For `GET /rovers/info?names=app-a&names=app-b`, the server directly looks up the named Rovers in the caller's team. Up to **100 names** are accepted, duplicates are returned once, and missing names are skipped. All matches are returned in name order without pagination links. In this mode, `limit` and `cursor` do not affect selection, although supplied query values must still pass validation.
+
+`roverctl get-info` follows application-info continuation links automatically when no names are supplied. Explicit-name lookups use a single request. Other endpoints retain their existing page-size limits. The `sort` and `shallowInfo` behavior is unchanged by this pagination update.
+
+`roverctl` does not call the scheme, host or path of a `next` link. It rebuilds each follow-up request from the original request URL, keeps that request's query parameters, and takes only `cursor` and `limit` from the link. A link without exactly one non-empty `cursor`, with an invalid `limit`, or with a malformed URL or query fails with a fixed reason; the link itself is not printed. Values passed as a cursor that are not `http(s)://` URLs are sent unchanged as opaque cursors.
+
+### Pagination links behind a gateway prefix
+
+Rover Server builds `_links` from the scheme and host of the incoming request, as reported by the web framework (which honours `X-Forwarded-Host` and `X-Forwarded-Proto`).
+
+For the path, links use the `requestPath` claim from the authenticated JWT, preserving gateway prefixes such as `/rover/api`. The token issuer is responsible for providing the correct public request path.
+
+- The claim is used whether or not Last-Mile Security (LMS) validation is enabled. LMS validation is disabled by default.
+- If the claim is missing, empty or not a string, links use the incoming request path. Requests without JWT authentication, including internal-listener and mock-authentication requests, also use the incoming path.
+
+When `listeners.external.jwt.lms.basePath` is set, the JWT middleware additionally checks that `requestPath` equals that base path plus the incoming request path and that `operation` matches the request method. These comparisons ignore case; mismatches are rejected before reaching the handlers. Each listener supports one configured LMS base path.
+
 ## Related Pages
 
 - [User Journey: Onboarding](../user-journey/onboarding.md)

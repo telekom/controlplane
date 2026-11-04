@@ -164,7 +164,7 @@ var _ = Describe("Request failure diagnostics", func() {
 			if page == 1 {
 				next = "page-2"
 			}
-			fmt.Fprintf(w, `{"links":{"next":%q},"items":[{"n":%d}]}`, next, page)
+			fmt.Fprintf(w, `{"_links":{"next":%q},"items":[{"n":%d}]}`, next, page)
 		}
 
 		items, err := newHandler().List(tokenCtx())
@@ -226,7 +226,7 @@ var _ = Describe("Request failure diagnostics", func() {
 			apiHandler = func(w http.ResponseWriter, r *http.Request) {
 				path, query = r.URL.Path, r.URL.RawQuery
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprint(w, `{}`)
+				fmt.Fprint(w, `{"applications":[]}`)
 			}
 			h := newHandler()
 			h.SupportsInfo = true
