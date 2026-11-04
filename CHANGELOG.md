@@ -1,3 +1,15 @@
+# [0.45.0](https://github.com/telekom/controlplane/compare/v0.44.0...v0.45.0) (2026-11-03)
+
+
+### Bug Fixes
+
+* **rover-server, discovery-server:** informer recovery, file-manager handling and Approval RBAC ([#788](https://github.com/telekom/controlplane/issues/788)) ([6ab15fb](https://github.com/telekom/controlplane/commit/6ab15fb9ec17820e5053f91448e424544b6754dc))
+
+
+### Features
+
+* **spectre:** add Spectre operator for API traffic listeners ([#506](https://github.com/telekom/controlplane/issues/506)) ([7d91943](https://github.com/telekom/controlplane/commit/7d919433ee3148d5082d09708d7f1a061a01e149))
+
 # [0.44.0](https://github.com/telekom/controlplane/compare/v0.43.1...v0.44.0) (2026-10-30)
 
 
