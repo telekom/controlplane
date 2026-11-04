@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -72,7 +71,7 @@ var _ = Describe("Team Webhook", func() {
 				Name:     "default",
 				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url: ptr.To("http://idp-admin.test.local:8080"),
+					Url: "http://idp-admin.test.local:8080",
 				},
 			}},
 		},

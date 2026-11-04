@@ -82,6 +82,7 @@ var _ = Describe("Event active scopes", Ordered, func() {
 		}}
 		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{{
 			Name: "default", IssuerHostname: "identity.example.com",
+			Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"},
 		}}
 		zone.Spec.Presets = []adminv1.Preset{{
 			Name: "default", Type: adminv1.GatewayTypeEvent, Default: true,

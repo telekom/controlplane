@@ -41,7 +41,7 @@ func reconcileInternalRoutes(ctx context.Context, hc *HandlingContext) error {
 }
 
 // reconcileTeamApiIdentityRealm creates the identity realm required by TeamAPI routes
-// and derives the TeamIssuer link from the identity provider URL.
+// whose resolved issuer is used for the TeamIssuer link and trusted issuers.
 func reconcileTeamApiIdentityRealm(ctx context.Context, hc *HandlingContext) error {
 	hasTeamRoutes := slices.ContainsFunc(hc.Zone.Spec.ManagedRoutes.Routes, func(route adminv1.ManagedRouteConfig) bool {
 		return route.Type == adminv1.ManagedRouteTypeTeamAPI
@@ -110,6 +110,15 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		return nil, ctrlerrors.BlockedErrorf("cannot resolve gateway %q for preset %q", preset.GatewayRef, preset.Name)
 	}
 
+	// Authenticated routes trust the issuer the identity operator resolved for the team API realm.
+	var trustedIssuer string
+	if !passThrough {
+		var err error
+		if trustedIssuer, err = realmIssuerURL(hc.TeamApiIdentityRealm); err != nil {
+			return nil, err
+		}
+	}
+
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeNameValue(gateway.Name + "--" + naming.ForGatewayRoute(routeConfig)),
@@ -150,19 +159,6 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		}
 
 		if !passThrough {
-			// Derive trusted issuer from the identity provider URL and team API identity realm
-			idp, idpErr := hc.Zone.Spec.GetIdentityProviderByName(preset.IdentityProviderRef)
-			if idpErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot resolve identity provider for route %s: %s", routeConfig.Name, idpErr)
-			}
-			hostname, hostnameErr := issuerHostname(idp)
-			if hostnameErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot resolve trusted issuer hostname for route %s: %s", routeConfig.Name, hostnameErr)
-			}
-			trustedIssuer, issuerErr := url.JoinPath("https://"+hostname, "auth/realms/", hc.TeamApiIdentityRealm.Name)
-			if issuerErr != nil {
-				return ctrlerrors.BlockedErrorf("cannot build trusted issuer URL for route %s: %s", routeConfig.Name, issuerErr)
-			}
 			route.Spec.Security = gatewayapi.Security{
 				DisableAccessControl: true,
 				TrustedIssuers:       []string{trustedIssuer},

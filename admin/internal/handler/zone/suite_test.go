@@ -139,7 +139,7 @@ func newTestZone(name string) *adminv1.Zone {
 			IdentityProviders: []adminv1.IdentityProviderConfig{{
 				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &identityAdminURL,
+					Url:      identityAdminURL,
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",

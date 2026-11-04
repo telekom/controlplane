@@ -66,11 +66,13 @@ type RedisConfig struct {
 }
 
 type IdentityProviderAdminConfig struct {
-	// Url is the base URL of the identity provider admin API.
-	// If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
-	// +kubebuilder:validation:Optional
+	// Url is the identity provider admin API endpoint, e.g. "https://iam-admin.example.com/auth/admin/realms".
+	// It is only used to administer the identity provider and to discover realm issuers.
+	// It never determines the public issuer. It may share a host with the public issuer or use a separate admin-only host.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Format=uri
-	Url *string `json:"url,omitempty"`
+	Url string `json:"url"`
 	// ClientId is the client ID to authenticate with the identity provider admin API.
 	ClientId string `json:"clientId"`
 	// UserName is the username to authenticate with the identity provider admin API.
@@ -108,6 +110,12 @@ type IdentityProviderConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name  string                      `json:"name"`
 	Admin IdentityProviderAdminConfig `json:"admin"`
+	// IssuerHostname optionally overrides the public issuer host.
+	// On World zones it sets the frontendUrl "https://<issuerHostname>/auth" on the
+	// zone's public realms. If absent, the controller leaves the realm frontendUrl unset and
+	// uses the issuer the identity provider advertises through OIDC discovery.
+	// It is never derived from admin.url.
+	// +optional
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Format=hostname
 	IssuerHostname string `json:"issuerHostname,omitempty"`

@@ -88,7 +88,7 @@ var _ = Describe("Agentic active scopes", Ordered, func() {
 		zone.Spec.Gateways[0].Admin = adminv1.GatewayAdminConfig{
 			Url: "https://admin.example.com", IdentityProviderRef: "primary",
 		}
-		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}}
+		zone.Spec.IdentityProviders = []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"}}}
 		for i := range zone.Spec.Presets {
 			zone.Spec.Presets[i].IdentityProviderRef = "primary"
 			zone.Spec.Presets[i].Urls[0].BasePath = "/"
