@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/gofiber/fiber/v2"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -64,48 +65,59 @@ func main() {
 
 	log.Info("loaded configuration", "configfile", configFile)
 
-	client, err := database.NewEntClient(ctx, cfg.Database.URL)
-	if err != nil {
-		log.Error(err, "failed to create ent client")
-		os.Exit(1)
-	}
-	client.Intercept(interceptor.TeamFilterInterceptor())
-
-	var services service.Services
-	if cfg.Kubernetes.Enabled {
-		k8sClient, err := newK8sClient(cfg.Kubernetes)
-		if err != nil {
-			log.Error(err, "failed to create Kubernetes client")
-			os.Exit(1)
-		}
-		scopedClient := cc.NewScopedClient(k8sClient, cfg.Kubernetes.Environment)
-
-		var resourceChecker service.ResourceChecker
-		if cfg.RoverServer.BaseURL != "" {
-			token := accesstoken.NewAccessToken(cfg.RoverServer.TokenFilePath)
-			resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, cfg.Kubernetes.Environment, token, cfg.RoverServer.CaFilePath)
-		} else {
-			resourceChecker = service.NewNoopResourceChecker()
-		}
-
-		services = service.Services{
-			Team:        service.NewTeamK8sService(scopedClient, resourceChecker),
-			Group:       service.NewGroupK8sService(scopedClient, service.NewEntTeamChecker(client)),
-			Application: service.NewApplicationK8sService(scopedClient),
-			Approval:    service.NewApprovalK8sService(scopedClient),
-		}
-		log.Info("Kubernetes integration enabled")
-	} else {
-		log.Info("Kubernetes integration disabled, mutations will be unavailable")
-	}
-
-	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.FileManager.BaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
+	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
 
-	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
+	environments := cfg.Kubernetes.Environments
+	clients := make([]*ent.Client, 0, len(environments))
+	gqlCtrls := make([]*gqlcontroller.Controller, 0, len(environments))
+	for _, env := range environments {
+		entClient, err := database.NewEntClient(ctx, cfg.Database.URLFor(env))
+		if err != nil {
+			log.Error(err, "failed to create ent client")
+			os.Exit(1)
+		}
+		entClient.Intercept(interceptor.TeamFilterInterceptor())
+
+		var services service.Services
+		if cfg.Kubernetes.Enabled {
+			k8sClient, err := newK8sClient(cfg.Kubernetes)
+			if err != nil {
+				log.Error(err, "failed to create Kubernetes client")
+				os.Exit(1)
+			}
+			scopedClient := cc.NewScopedClient(k8sClient, env)
+
+			var resourceChecker service.ResourceChecker
+			if cfg.RoverServer.BaseURL != "" {
+				token := accesstoken.NewAccessToken(cfg.RoverServer.TokenFilePath)
+				resourceChecker = service.NewRoverResourceChecker(cfg.RoverServer.BaseURL, env, token, cfg.RoverServer.CaFilePath)
+			} else {
+				resourceChecker = service.NewNoopResourceChecker()
+			}
+
+			services = service.Services{
+				Team:        service.NewTeamK8sService(scopedClient, resourceChecker),
+				Group:       service.NewGroupK8sService(scopedClient, service.NewEntTeamChecker(entClient)),
+				Application: service.NewApplicationK8sService(scopedClient),
+				Approval:    service.NewApprovalK8sService(scopedClient),
+			}
+			log.Info("Kubernetes integration enabled")
+		} else {
+			log.Info("Kubernetes integration disabled, mutations will be unavailable")
+		}
+		clients = append(clients, entClient)
+
+		srv := newGraphQLServer(entClient, services, secretResolver, cfg.FileManager.BaseURL)
+		pathEnvironment := ""
+		if cfg.GraphQL.PerEnvironmentPathPrefix {
+			pathEnvironment = env
+		}
+		gqlCtrls = append(gqlCtrls, gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled, pathEnvironment))
+		log.Info("serving environment", "environment", env, "pathPrefix", pathEnvironment)
+	}
 
 	// jwtOpts turns the listener's jwt block into full SecurityOpts. controlplane-api
 	// has no server-specific check-access templates (GraphQL guards via business
@@ -150,7 +162,11 @@ func main() {
 			Internal: buildListener(cfg.Listeners.Internal, true),
 			External: buildListener(cfg.Listeners.External, false),
 		},
-		Register: gqlCtrl.RegisterRoutes,
+		Register: func(router fiber.Router, guard []fiber.Handler) {
+			for _, gqlCtrl := range gqlCtrls {
+				gqlCtrl.RegisterRoutes(router, guard)
+			}
+		},
 	}
 
 	ctx = logr.NewContext(ctx, log.WithName("server"))
@@ -169,8 +185,10 @@ func main() {
 	<-ctx.Done()
 	log.Info("shutting down server")
 
-	if err := client.Close(); err != nil {
-		log.Error(err, "failed to close database client")
+	for _, client := range clients {
+		if err := client.Close(); err != nil {
+			log.Error(err, "failed to close database client")
+		}
 	}
 }
 

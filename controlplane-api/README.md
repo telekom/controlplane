@@ -150,8 +150,11 @@ The following fields can be configured:
 | Field                       | Default                                                                            | Description                              |
 |-----------------------------|------------------------------------------------------------------------------------|------------------------------------------|
 | `database.url`              | `postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable` | PostgreSQL connection string             |
+| `database.urlTemplate`      | | Alternative to `database.url`, required for several environments: `<env>` is replaced by each environment, for example `postgres://host/cp_<env>`. |
 | `server.address`            | `:8080`                                                                            | Server listen address                    |
 | `graphql.playgroundEnabled` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
+| `graphql.perEnvironmentPathPrefix` | `false` | Serve each environment at `/<environment>/graphql`, for callers of that environment only. Required for several environments. |
+| `kubernetes.environments`   | `poc` | Environments served: a list, or a comma-separated string such as `KUBERNETES_ENVIRONMENTS=av,bond`. |
 | `security.enabled`          | `false`                                                                            | Enable JWT authentication                |
 | `log.level`                 | `info`                                                                             | Log level (debug, info, warn, error)     |
 | `fileManager.baseUrl`       | `https://file-manager.controlplane-system.svc.cluster.local/api`                   | Base URL of the file-manager API, including `/api`. Used to build `specificationUrl` (`<baseUrl>/v1/files/<fileId>`). Empty disables `specificationUrl`. |

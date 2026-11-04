@@ -118,5 +118,62 @@ database:
 			// rejected fail-closed rather than starting fail-open.
 			Expect(func() { config.GetConfigOrDie(path) }).To(Panic())
 		})
+
+		const mockListener = `
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock
+`
+		It("serves several environments from the URL template", func() {
+			cfg := config.GetConfigOrDie(writeConfig(mockListener + `
+graphql:
+  perEnvironmentPathPrefix: true
+database:
+  urlTemplate: postgres://host/cp_<env>?sslmode=disable
+kubernetes:
+  environments: [av, bond]
+`))
+			Expect(cfg.Kubernetes.Environments).To(Equal([]string{"av", "bond"}))
+			Expect(cfg.Database.URLFor("bond")).To(Equal("postgres://host/cp_bond?sslmode=disable"))
+		})
+
+		It("accepts a comma-separated environment string", func() {
+			cfg := config.GetConfigOrDie(writeConfig(mockListener + `
+graphql:
+  perEnvironmentPathPrefix: true
+database:
+  urlTemplate: postgres://host/<env>
+kubernetes:
+  environments: av,bond
+`))
+			Expect(cfg.Kubernetes.Environments).To(Equal([]string{"av", "bond"}))
+		})
+
+		It("reads the environment list and URL template from environment variables", func() {
+			GinkgoT().Setenv("KUBERNETES_ENVIRONMENTS", "av,bond")
+			GinkgoT().Setenv("DATABASE_URLTEMPLATE", "postgres://host/<env>")
+			GinkgoT().Setenv("GRAPHQL_PERENVIRONMENTPATHPREFIX", "true")
+			cfg := config.GetConfigOrDie(writeConfig(mockListener))
+			Expect(cfg.Kubernetes.Environments).To(Equal([]string{"av", "bond"}))
+			Expect(cfg.Database.URLFor("av")).To(Equal("postgres://host/av"))
+		})
+
+		It("keeps database.url for a single environment", func() {
+			cfg := config.GetConfigOrDie(writeConfig(mockListener))
+			Expect(cfg.Kubernetes.Environments).To(Equal([]string{"poc"}))
+			Expect(cfg.Database.URLFor("poc")).To(Equal(config.DefaultConfig().Database.URL))
+		})
+
+		DescribeTable("rejects inconsistent environment config", func(extra, message string) {
+			Expect(func() { config.GetConfigOrDie(writeConfig(mockListener + extra)) }).To(PanicWith(MatchError(ContainSubstring(message))))
+		},
+			Entry("no environment", "kubernetes:\n  environments: []\n", "at least one environment"),
+			Entry("url and urlTemplate", "database:\n  url: postgres://host/cp\n  urlTemplate: postgres://host/<env>\n", "mutually exclusive"),
+			Entry("template without placeholder", "database:\n  urlTemplate: postgres://host/cp\n", "must contain <env>"),
+			Entry("several environments without prefix", "database:\n  urlTemplate: postgres://host/<env>\nkubernetes:\n  environments: [av, bond]\n", "perEnvironmentPathPrefix"),
+			Entry("several environments without template", "graphql:\n  perEnvironmentPathPrefix: true\nkubernetes:\n  environments: [av, bond]\n", "database.urlTemplate"),
+		)
 	})
 })
