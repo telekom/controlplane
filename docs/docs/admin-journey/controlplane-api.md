@@ -270,7 +270,7 @@ Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases fo
 
 ## Running multiple environments in one cluster
 
-By default, one ControlPlane API and one Projector serve every environment from a single database. To keep environments isolated, deploy **one ControlPlane API and Projector pair per environment**, each with its own database. Deployments without the settings below keep the single-environment behavior.
+By default, one ControlPlane API and one Projector serve every environment from a single database. To keep environments isolated, deploy **one Projector per environment**, each with its own database, and **one ControlPlane API** that serves all of them. Deployments without the settings below keep the single-environment behavior.
 
 ### How the isolation works
 
@@ -278,49 +278,70 @@ By default, one ControlPlane API and one Projector serve every environment from 
 |---|---|---|
 | Projector | `ENVIRONMENT_FILTER=<environment>` | Watches only resources labeled `cp.ei.telekom.de/environment=<environment>`, and appends `-<environment>` to its leader election ID, so the instances do not compete for one lease. |
 | Projector | `DATABASE_URL` | Writes into the environment's own database. With `DB_CREATE: "true"` it creates that database on startup (see [Database](#database)). |
-| ControlPlane API | `DATABASE_URL` | Reads from the same database as the environment's Projector. |
-| ControlPlane API | `KUBERNETES_ENVIRONMENT` | Overrides `kubernetes.environment` in the configuration file. Mutations write to this environment. |
-| ControlPlane API | Service and Ingress | Each instance gets its own Service and external hostname. The GraphQL paths stay unchanged. |
+| ControlPlane API | `kubernetes.environments` | Lists the environments it serves. Mutations write to the environment of the request. |
+| ControlPlane API | `database.urlTemplate` | Replaces `database.url`. `<env>` is replaced by each environment, so every environment reads its Projector's database. |
+| ControlPlane API | `graphql.perEnvironmentPathPrefix` | Serves each environment at `/<environment>/graphql/query` and its Playground at `/<environment>/graphql`. Requests whose environment does not match the path are rejected with `403`. |
 
-### Recommended Kustomize layout
+### ControlPlane API
+
+```yaml title="controlplane-api config.yaml"
+graphql:
+  perEnvironmentPathPrefix: true
+kubernetes:
+  environments:
+    - dev
+    - qa
+```
+
+Set the database URL through the environment, so the credentials stay in a Secret. Remove `DATABASE_URL`, because `database.url` and `database.urlTemplate` are mutually exclusive:
+
+```yaml title="controlplane-api Deployment patch"
+env:
+  - name: DATABASE_URL
+    $patch: delete
+  - name: DB_USER
+    valueFrom:
+      secretKeyRef:
+        name: controlplane-db
+        key: username
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: controlplane-db
+        key: password
+  - name: DATABASE_URLTEMPLATE
+    value: postgres://$(DB_USER):$(DB_PASSWORD)@<db-host>:5432/<env>
+```
+
+The same settings are available as `KUBERNETES_ENVIRONMENTS=dev,qa` and `GRAPHQL_PERENVIRONMENTPATHPREFIX=true`. The API refuses to start if it lists several environments without both `perEnvironmentPathPrefix` and `urlTemplate`, or if `urlTemplate` does not contain `<env>`.
+
+Keep in mind:
+
+- **All environments run the same ControlPlane API version.** Upgrade the Projectors together, so every database has a schema this version can read.
+- **The API opens one connection pool per environment.** Size `max_connections` of the database server accordingly.
+
+### Projector per environment
 
 Use one base and one small overlay per environment:
 
 ```text
 environments/
 ├── kustomization.yaml   # resources: [dev, qa]
-├── base/                # imports both components and sets the shared settings
-├── dev/                 # name suffix, environment label, hostname
+├── base/                # imports the Projector and sets the shared settings
+├── dev/                 # name suffix and environment label
 └── qa/
 ```
 
-The base imports the `config/default` folder of **both** components and derives every environment-specific value from one label. Each overlay sets `app.kubernetes.io/instance` to its environment name, and both containers read it through the Kubernetes downward API:
+The base derives every environment-specific value from one label. Each overlay sets `app.kubernetes.io/instance` to its environment name, and the Projector reads it through the Kubernetes downward API:
 
 ```yaml title="environments/base/kustomization.yaml"
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - https://github.com/telekom/controlplane//controlplane-api/config/default/?ref=<version>
   - https://github.com/telekom/controlplane//projector/config/default/?ref=<version>
 
 patches:
-  - target:
-      kind: Deployment
-      name: controlplane-api
-    patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: controlplane-api
-      spec:
-        template:
-          spec:
-            containers:
-              - name: manager
-                env:
-                  - name: KUBERNETES_ENVIRONMENT
-                    value: $(CP_ENVIRONMENT)
   - target:
       kind: Deployment
       name: projector-controller-manager
@@ -339,7 +360,7 @@ patches:
                     value: $(CP_ENVIRONMENT)
                   - name: LEADER_ELECTION
                     value: "true"
-  # Applies to both Deployments. The name is required but ignored, because target selects.
+  # The name is required but ignored, because target selects.
   - target:
       kind: Deployment
     patch: |-
@@ -372,7 +393,7 @@ patches:
                     valueFrom: null
 ```
 
-Each overlay only sets the name suffix, the label, and the hostname:
+Each overlay only sets the name suffix and the label:
 
 ```yaml title="environments/qa/kustomization.yaml"
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -388,71 +409,26 @@ labels:
   - includeSelectors: true
     pairs:
       app.kubernetes.io/instance: qa
-
-patches:
-  - target:
-      kind: Ingress
-      name: controlplane-api-ingress
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: controlplane-api-qa.example.com
-
-# nameSuffix does not rename the Certificate's DNS names or its Secret.
-replacements:
-  - source:
-      kind: Service
-      name: controlplane-api
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Certificate
-        fieldPaths:
-          - spec.dnsNames.0
-          - spec.dnsNames.1
-        options:
-          delimiter: "."
-          index: 0
-  - source:
-      kind: Certificate
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Certificate
-        fieldPaths:
-          - spec.secretName
-      - select:
-          kind: Deployment
-          name: controlplane-api
-        fieldPaths:
-          - spec.template.spec.volumes.[name=cert-volume].secret.secretName
 ```
 
 Keep these rules in mind:
 
-- **Import `config/default` per environment.** Each environment then gets its own ServiceAccount, RBAC bindings, and metrics Service. Do not import the components once and add extra Deployments next to them: the shared metrics Service would select the pods of every environment.
+- **Import `config/default` per environment.** Each Projector then gets its own ServiceAccount, RBAC bindings, and metrics Service. Do not import the Projector once and add extra Deployments next to it: the shared metrics Service would select the pods of every environment.
 - **Treat every environment the same way**, including the first. Use `nameSuffix` and the `instance` label with `includeSelectors: true` in every overlay, so each Service only selects its own pods.
-- **Keep the certificate replacements** in each overlay. Without them, all Certificates write to the same Secret and carry the wrong DNS names.
+- **Use the same environment names** in the overlays and in `kubernetes.environments`, so the API reads the database each Projector writes.
 - **Check the order of environment variables.** Kubernetes only expands `$(VAR)` from variables defined earlier in the list. Strategic-merge patches can insert new entries before existing ones, which is why the shared patch above comes last. Inspect the rendered output with `kubectl kustomize`: if a reference stays unexpanded, all Projectors would use a database literally named `$(CP_ENVIRONMENT)`.
-- **Mount the same API configuration file in every instance** and let `KUBERNETES_ENVIRONMENT` set the environment, instead of keeping one copy of the file per environment.
 
 :::tip Separate database credentials
-The example reuses one database role for all environments, which is fine for test environments. In production, give each environment its own database role and Secret: replace the shared `DATABASE_URL` patch with one `secretKeyRef` per overlay.
+The example reuses one database role for all environments, which is fine for test environments. In production, give each environment its own database role.
 :::
 
 ### Internal callers
 
-Components that call the ControlPlane API inside the cluster, such as the organization server (`CPAPI_ENDPOINT`), talk to exactly one environment. Point them at that environment's Service, for example `https://controlplane-api-qa.controlplane-system.svc.cluster.local:9443/graphql/query`.
+Components that call the ControlPlane API inside the cluster, such as the organization server (`CPAPI_ENDPOINT`), use the environment's path, for example `https://controlplane-api.controlplane-system.svc.cluster.local:9443/qa/graphql/query`. They must send `X-Environment` with the same environment.
 
 ### Tokens and access
 
-The token requirements from [Keycloak integration](#keycloak-integration) still apply to every instance. Set the `env` claim to the instance's environment. The realms that the Control Plane creates for each zone, including the internal `rover` realm, do not add these claims (see [Token Claims](./environments-and-zones.md#token-claims)), so configure them in those realms as well.
-
-:::warning 
-Environment isolation is not enforced on tokens yet.
-The ControlPlane API does not compare the token's `env` claim with its own environment yet, so separate hostnames are **not** an authorization boundary. 
-:::
-
+The token requirements from [Keycloak integration](#keycloak-integration) still apply. The `env` claim must name the environment in the path, so use one client per environment. The realms that the Control Plane creates for each zone, including the internal `rover` realm, do not add these claims (see [Token Claims](./environments-and-zones.md#token-claims)), so configure them in those realms as well.
 
 ## Verify the deployment
 
