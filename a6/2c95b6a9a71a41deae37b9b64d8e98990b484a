@@ -1,0 +1,968 @@
+rover/internal/handler/rover/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,13-14,17,20-21,23-25,32,81,83,95,97-100,102-186
+spectre/test/e2e/e2e_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-328
+spectre/config/rbac/metrics_reader_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-13
+spectre/config/default/metrics_service.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-22
+.github/workflows/docs-build.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 25
+spectre/internal/handler/util/eventconfig_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-379
+common/pkg/controller/controller.go
+  s_b78ca1a587f4d4::t_226ad24c981720 91-99,251-254,256-257,291-301,303-317,319
+gateway/internal/features/builder.go
+  s_b78ca1a587f4d4::t_226ad24c981720 47-48,76-78,147-154,386
+spectre/config/rbac/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-32
+spectre/test/e2e/e2e_suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-108
+approval/internal/webhook/v1/approval_webhook_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9,13-14,17,235-343,575,625-762,764-769
+common-server/internal/informer/nocache_informer_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9-13,16,21,25-26,28,146-757
+  s_b78ca1a587f4d4::t_ec7392a25fd380 758-759
+rover/internal/handler/rover/spectre/application_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-363
+approval/config/crd/bases/approval.cp.ei.telekom.de_approvalrequests.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 62-71,273-276
+approval/api/v1/scoped_names.go
+  s_6acfe536e1c341::t_916113eb47166c 1-136
+install/components/notificationtemplates/approvalrequest--listen-consumer--created--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-162
+rover/internal/controller/rover_controller_spectre_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-559
+tools/route-tester/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 21-22,83
+approval/internal/handler/approvalrequest/grant_source_test.go
+  s_b78ca1a587f4d4::t_dddbd3ded453bd 248
+  s_6acfe536e1c341::t_916113eb47166c 1-247,249-351
+sftp/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 30-32,151
+approval/internal/handler/util/notification.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,77-79,95,127,181-196,281-296,312-363
+approval/api/v1/builder/conditions.go
+  s_b78ca1a587f4d4::t_226ad24c981720 8-16,20,37-76,78-81,83,96-166,168-169,173
+common-server/helm/Chart.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 6,10
+docs/docs/architecture/api.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 23-24,28
+  s_b78ca1a587f4d4::t_23225b3fdc5d4f 29
+install/components/notificationtemplates/approvalrequest--listen-provider--updated--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-161
+identity/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 35-37,157
+spectre/internal/handler/util/naming.go
+  s_6acfe536e1c341::t_916113eb47166c 1-61
+spectre/internal/handler/util/placement_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-761
+admin/internal/handler/zone/suite_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 309
+spectre/PROJECT
+  s_6acfe536e1c341::t_916113eb47166c 1-30
+rover/internal/webhook/v1/rover_webhook.go
+  s_b78ca1a587f4d4::t_226ad24c981720 168-171,175-228,708-711,721-728,896-902
+spectre/config/rbac/listener_editor_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-37
+gateway/pkg/kong/client/plugin/jumper.go
+  s_b78ca1a587f4d4::t_226ad24c981720 15,56-74,81-85
+spectre/Dockerfile
+  s_6acfe536e1c341::t_916113eb47166c 1-35
+spectre/api/v1/objectlist_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-52
+approval/api/v1/builder/cleanup.go
+  s_6acfe536e1c341::t_916113eb47166c 1-109
+spectre/config/rbac/role_binding.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-19
+common-server/internal/informer/export_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-18
+gateway/pkg/kong/client/plugin/jumper_wire_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-86
+gateway/config/rbac/routelistener_viewer_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-33
+gateway/internal/controller/route_controller.go
+  s_b78ca1a587f4d4::t_226ad24c981720 63-65,88-99
+  s_b78ca1a587f4d4::t_49fcd5b7cc6ce5 100-102
+application/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,62-63
+discovery-server/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 33,35-36
+approval/api/v1/unscoped_naming_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-107
+common/pkg/client/client_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 347-348
+gateway/config/samples/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 12
+event/config/crd/bases/event.cp.ei.telekom.de_eventtypes.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 98-100
+.gitignore
+  s_b78ca1a587f4d4::t_226ad24c981720 27-28
+pubsub/internal/controller/publisher_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 24-57
+api/internal/handler/apiexposure/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 596,603
+rover/internal/controller/suite_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 30,37,88,119-123
+  s_b78ca1a587f4d4::t_1b5e0c94f9fbeb 124
+rover-ctl/pkg/commands/get-info/cmd_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 130-132
+install/overlays/local/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 19,31-32,135
+  s_b78ca1a587f4d4::t_dd20c94ab7e652 136
+spectre/internal/controller/spectreapplication_controller.go
+  s_6acfe536e1c341::t_916113eb47166c 1-302
+controlplane-api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 35-36,146
+docs/docs/admin-journey/environments-and-zones.md
+  s_b78ca1a587f4d4::t_226ad24c981720 33-36,73,219,591-597
+  s_b78ca1a587f4d4::t_932eff1b957b6a 598-599
+rover-server/internal/controller/apispecification.go
+  s_b78ca1a587f4d4::t_226ad24c981720 74-77,79-82,345-348,392
+  s_b78ca1a587f4d4::t_87fb5e51d45f25 393-395
+spectre/internal/handler/spectreapplication_handler_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1571
+gateway/internal/features/mock/mock_FeaturesBuilder.go
+  s_b78ca1a587f4d4::t_226ad24c981720 83-128,498-540,542-543
+  s_b78ca1a587f4d4::t_fcbfe7cfe25d63 541,544
+docs/docs/architecture/admin.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 56
+gateway/internal/features/feature/route_listener.go
+  s_6acfe536e1c341::t_916113eb47166c 1-119
+rover-server/internal/mapper/rover/out/listener_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-136
+rover-server/internal/mapper/status/problems.go
+  s_b78ca1a587f4d4::t_226ad24c981720 10,88-93,162-200,244-247,249-253,255-256,259-265
+  s_6acfe536e1c341::t_916113eb47166c 257
+rover-server/internal/mapper/status/status_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 21,831-1140,1314-1379
+approval/internal/controller/approvalexpiration_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 11,16-17,19,223-433
+  s_b78ca1a587f4d4::t_3b2457bef56403 434
+CHANGELOG.md
+  s_b78ca1a587f4d4::t_226ad24c981720 1-12
+agentic/internal/handler/agenticsubscription/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 185
+file/internal/handler/filesubscription/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 65,77,126,134,138,143,163,184,189
+spectre/config/prometheus/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-15
+pubsub/internal/handler/publisher/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 11-12,14,166,169-233,238-270
+spectre/internal/handler/listener_filter.go
+  s_6acfe536e1c341::t_916113eb47166c 1-61
+admin/internal/handler/zone/oidc_test.go
+  s_b78ca1a587f4d4::t_8809fd1955b8d6 197
+  s_b78ca1a587f4d4::t_226ad24c981720 22,24-29,33,49-53,62,73,86,88,92-99,102-104,106,109-117,120-125,128-134,136-137,140-144,147-151,153-156,159-175,177-182,184-185,188-190,192,194-196,198-200
+  s_6acfe536e1c341::t_916113eb47166c 191
+approval/api/v1/builder/builder_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 8-9,360-411,577-662
+  s_b78ca1a587f4d4::t_d17cf26571e722 663
+gateway/config/rbac/routelistener_editor_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-37
+rover/api/v1/rover_types_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 485-556
+spectre/test/utils/utils.go
+  s_6acfe536e1c341::t_916113eb47166c 1-216
+common/README.md
+  s_b78ca1a587f4d4::t_226ad24c981720 92
+gateway/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 38-40,157
+install/components/notificationtemplates/approvalrequest--listen-provider--created--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-162
+rover-server/internal/controller/agentspecification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 179-188
+rover-server/config/rbac/role.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 93-101
+install/components/notificationtemplates/approvalrequest--listen-consumer--updated--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-169
+rover-server/internal/mapper/applicationinfo/listener_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-168
+common-server/internal/informer/util_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9,11,13-15,18,20-22,36-69,73,77,81,85,89,93-100,134-218,220
+  s_b78ca1a587f4d4::t_1c585dfc905275 219
+gateway/internal/features/feature/circuit_breaker_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 148,167,176-199,225,238,249-315
+install/components/notificationtemplates/approval--listen-provider--updated--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-195
+rover/internal/handler/rover/spectre/application.go
+  s_6acfe536e1c341::t_916113eb47166c 1-86
+rover-server/internal/controller/filespecification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 80
+hack/spectre-e2e.sh
+  s_6acfe536e1c341::t_916113eb47166c 1-2905
+install/components/notificationtemplates/approval--listen-consumer--updated--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-195
+common/pkg/config/feature.go
+  s_b78ca1a587f4d4::t_226ad24c981720 53
+pubsub/config/crd/bases/pubsub.cp.ei.telekom.de_publishers.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 26-27,50-51
+rover/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 15-16,80
+docs/docs/architecture/rover.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 29-32,39,82
+pubsub/internal/handler/subscriber/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 489-519
+admin/config/samples/admin_v1_zone.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 28
+rover/internal/controller/rover_controller.go
+  s_b78ca1a587f4d4::t_226ad24c981720 32,69-71,108-116,154-166
+  s_b78ca1a587f4d4::t_891c628ea59eb5 167-178
+pubsub/internal/index/index.go
+  s_b78ca1a587f4d4::t_226ad24c981720 20-22,38-48,50
+  s_b78ca1a587f4d4::t_fb564b2a954319 49
+admin/internal/handler/zone/oidc.go
+  s_b78ca1a587f4d4::t_226ad24c981720 12,15-16,18-22,24-26,28-30,32,35,37-38,40-41
+notification/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 17,84-85
+rover-ctl/docs/roverctl.md
+  s_b78ca1a587f4d4::t_226ad24c981720 31
+rover-server/internal/controller/roadmap.go
+  s_b78ca1a587f4d4::t_226ad24c981720 20,183-186,226-229,278-285
+rover-server/internal/mapper/rover/out/rover.go
+  s_b78ca1a587f4d4::t_226ad24c981720 45-47
+rover/api/v1/rover_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 46-49,137,166-172
+  s_b78ca1a587f4d4::t_26ba0dfd7cfd83 173
+spectre/config/manager/manager.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-95
+spectre/config/prometheus/monitor.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-31
+spectre/internal/controller/listener_controller.go
+  s_6acfe536e1c341::t_916113eb47166c 1-625
+spectre/internal/controller/listener_controller_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-186
+.github/workflows/codeql.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 63,84
+approval/api/v1/scoped_names_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-543
+spectre/internal/controller/suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-191
+spectre/internal/controller/watch_integration_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1248
+event/README.md
+  s_b78ca1a587f4d4::t_226ad24c981720 88
+install/components/notificationtemplates/approvalrequest--listen-provider--created--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-154
+rover-server/internal/mapper/status/resolve_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-64
+spectre/config/crd/kustomizeconfig.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-16
+approval/internal/webhook/v1/approval_webhook.go
+  s_6acfe536e1c341::t_916113eb47166c 111
+  s_b78ca1a587f4d4::t_226ad24c981720 10,14,29,71-73,94-99,103-109,112-113,124-131,135-138,170-212,214
+  s_b78ca1a587f4d4::t_2b16567862712b 213,215
+docs/docs/user-journey/subscribing-to-apis.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 33
+spectre/config/samples/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-8
+docs/docs/architecture/gateway.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 134
+spectre/go.sum.license
+  s_6acfe536e1c341::t_916113eb47166c 1-3
+gateway/config/crd/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 13
+install/components/notificationtemplates/approvalexpiration--listen-consumer--reminder--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-153
+organization/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 13,81-82
+spectre/api/v1/listener_types.go
+  s_6acfe536e1c341::t_916113eb47166c 1-151
+install/components/notificationtemplates/approvalrequest--listen-provider--updated--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-169
+install/components/notificationtemplates/approval--listen-provider--updated--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-179
+spectre/internal/handler/util/naming_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-126
+rover-server/internal/controller/mcpspecification.go
+  s_b78ca1a587f4d4::t_226ad24c981720 251-254
+spectre/internal/handler/util/placement.go
+  s_6acfe536e1c341::t_916113eb47166c 1-450
+spectre/internal/handler/util/suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-17
+approval/api/v1/builder/builder_cleanup_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-422
+AGENTS.md
+  s_b78ca1a587f4d4::t_226ad24c981720 60
+rover-ctl/docs/roverctl_reset-secret.md
+  s_b78ca1a587f4d4::t_226ad24c981720 38
+spectre/internal/handler/listener_handler.go
+  s_6acfe536e1c341::t_916113eb47166c 1-914
+event/api/v1/eventtype_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 27
+gateway/api/v1/zz_generated.deepcopy.go
+  s_b78ca1a587f4d4::t_226ad24c981720 544-558,880-977
+  s_b78ca1a587f4d4::t_1f70e3741c871b 978
+spectre/internal/handler/authorization_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-647
+admin/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 33-35,99,136
+spectre/internal/controller/index.go
+  s_6acfe536e1c341::t_916113eb47166c 1-41
+spectre/internal/handler/listener_bridge.go
+  s_6acfe536e1c341::t_916113eb47166c 1-145
+approval/internal/handler/approvalrequest/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,12,17,33-39,48,62,73,154,157,173,176,184,187-192,195-211,214-230,233,236-240,242-243,246-253,258-265,273-278,286-448,463-473,476,480
+spectre/api/v1/spectreapplication_types.go
+  s_6acfe536e1c341::t_916113eb47166c 1-99
+spectre/internal/controller/schema.go
+  s_6acfe536e1c341::t_916113eb47166c 1-35
+spectre/internal/controller/integration_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1655
+spectre/internal/handler/util/callback.go
+  s_6acfe536e1c341::t_916113eb47166c 1-51
+rover-ctl/pkg/parser/parser_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 243-417
+gateway/internal/features/feature/route_listener_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-554
+admin/internal/handler/zone/links.go
+  s_b78ca1a587f4d4::t_226ad24c981720 18,34,42-45,58-60,64,69,78,87,93
+api/internal/controller/apisubscription_controller_ratelimiting_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 140
+gateway/api/v1/features.go
+  s_b78ca1a587f4d4::t_226ad24c981720 30
+gateway/internal/features/feature/priority_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 46-47,88,133-136,138-139,142-143
+rover-server/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 17,25,31-33,36,63-64,176-178,196
+spectre/config/rbac/metrics_auth_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-21
+agentic/internal/handler/agenticsubscription/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 285,287-288,305,307-308,316-334,340,342-343,514-533,672,674-675
+gateway/internal/handler/routelistener/handler_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-251
+install/overlays/default/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 33,35,37,39,41,43,45,47,49,51,53,55,58,60,63,65
+spectre/config/default/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-238
+spectre/internal/handler/listener_approval.go
+  s_6acfe536e1c341::t_916113eb47166c 1-523
+spectre/internal/handler/spectreapplication_publisher.go
+  s_6acfe536e1c341::t_916113eb47166c 1-119
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_b78ca1a587f4d4::t_226ad24c981720 36
+event/internal/handler/eventsubscription/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 331,333-334,351,353-354,362-380,386,388-389,411,413-414,965-983
+  s_b78ca1a587f4d4::t_52661f2c91f710 984-985
+gateway/internal/controller/index.go
+  s_b78ca1a587f4d4::t_226ad24c981720 54-68
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 409-410
+rover-server/internal/controller/mcpspecification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 178-187
+install/components/notificationtemplates/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 31-46
+permission/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,60-61
+common-server/pkg/store/inmemory/inmemory_store.go
+  s_b78ca1a587f4d4::t_226ad24c981720 407,417,442-462
+api/internal/controller/apisubscription_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 256,265,278,424,493,554,558-559,813-1163
+rover-server/internal/mapper/rover/in/listener_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-168
+spectre/api/v1/zz_generated.deepcopy.go
+  s_6acfe536e1c341::t_916113eb47166c 1-435
+approval/internal/controller/suite_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 28,52-54,127-128
+spectre/internal/handler/export_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-71
+event/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 29,31-32,145
+admin/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 13,71-72
+approval/api/v1/approvalrequest_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 15-16,48-55
+agentic/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 26-28,125
+rover-ctl/docs/roverctl_resource_get.md
+  s_b78ca1a587f4d4::t_226ad24c981720 37
+file/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 42-43,140,146
+spectre/internal/handler/listener_drain_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1199
+approval/internal/webhook/v1/approval_key_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-137
+docs/docs/architecture/event.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 223-224,236
+spectre/api/v1/listener_status_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-254
+spectre/go.mod
+  s_6acfe536e1c341::t_916113eb47166c 1-147
+spectre/Makefile
+  s_6acfe536e1c341::t_916113eb47166c 1-270
+.github/workflows/scorecard.yml
+  s_b78ca1a587f4d4::t_226ad24c981720 44,66,75
+api/internal/handler/apisubscription/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 96-104,189
+rover-server/internal/mapper/applicationinfo/status_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-264
+identity/internal/handler/client/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 232
+docs/docs/admin-journey/installation.md
+  s_b78ca1a587f4d4::t_226ad24c981720 142,412
+  s_b78ca1a587f4d4::t_16a11a3b000783 413
+spectre/config/manager/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-6
+gateway/internal/handler/routelistener/suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-17
+spectre/internal/controller/listener_mapper_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1328
+event/internal/handler/eventconfig/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 275-291,381,399,412,429,452,469,498,601,615
+spectre/docs/spectre-domain-architecture.md
+  s_6acfe536e1c341::t_916113eb47166c 1-169
+api/internal/controller/remoteapisubscription_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 215,257
+approval/internal/handler/approvalrequest/revocation_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-131
+approval/internal/handler/approval/notifications_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 11-13,16,27-45
+  s_b78ca1a587f4d4::t_4cfbf8c2c8d6ff 46
+gateway/internal/handler/route/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 85-102,184
+identity/internal/controller/realm_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 129-148
+rover-ctl/docs/roverctl_apply.md
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,15-30,34-38,55
+rover-server/internal/mapper/status/status.go
+  s_b78ca1a587f4d4::t_226ad24c981720 26,217,220
+spectre/internal/handler/listener_placement.go
+  s_6acfe536e1c341::t_916113eb47166c 1-264
+tools/snapshotter/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 25,119-120
+common/pkg/controller/controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 14,20,22,30,51-113,402-572
+  s_b78ca1a587f4d4::t_2e9b90cb8a8c23 573-574
+identity/internal/handler/client/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 1161-1181
+install/components/notificationtemplates/approval--listen-consumer--updated--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-179
+approval/internal/controller/approvalrequest_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 8-10,14-15,561-1893,1895-2019
+rover-server/internal/mapper/rover/in/listener.go
+  s_6acfe536e1c341::t_916113eb47166c 1-77
+rover-ctl/pkg/commands/apply/cmd_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 120-124,194-283
+  s_b78ca1a587f4d4::t_7136c093816ff8 284-285
+.goreleaser.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 238-246,774-779
+  s_b78ca1a587f4d4::t_75a5948d2104ca 780-792
+approval/api/v1/scoped_identity.go
+  s_6acfe536e1c341::t_916113eb47166c 1-82
+hack/local-setup.sh
+  s_b78ca1a587f4d4::t_226ad24c981720 60
+rover-ctl/docs/roverctl_resource.md
+  s_b78ca1a587f4d4::t_226ad24c981720 54
+spectre/internal/handler/spectreapplication_route.go
+  s_6acfe536e1c341::t_916113eb47166c 1-442
+spectre/internal/handler/listener_placement_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-2777
+rover/internal/controller/rover_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 200-206,251-257
+rover-server/internal/controller/eventspecification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 89,172-176
+file-manager/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 148,150-151
+gateway/internal/controller/routelistener_controller.go
+  s_6acfe536e1c341::t_916113eb47166c 1-92
+rover-ctl/docs/roverctl_get-info.md
+  s_b78ca1a587f4d4::t_226ad24c981720 39
+spectre/README.md
+  s_6acfe536e1c341::t_916113eb47166c 1-54
+docs/docs/architecture/outbound-tls-clients.md
+  s_b78ca1a587f4d4::t_226ad24c981720 60
+.github/workflows/dependabot-tidy.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 50
+gateway/config/rbac/role.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 31,47,57
+spectre/config/crd/bases/spectre.cp.ei.telekom.de_listeners.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-651
+rover/api/v1/zz_generated.deepcopy.go
+  s_b78ca1a587f4d4::t_226ad24c981720 1182-1223,1726-1755,1798-1809,1911-1924
+spectre/internal/handler/listener_drain.go
+  s_6acfe536e1c341::t_916113eb47166c 1-311
+gateway/internal/controller/suite_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 152-158
+rover/internal/webhook/v1/rover_webhook_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 1364-1524
+.github/ci/modules.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 133-138
+approval/api/v1/builder/builder.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,33-38,62,81-83,108-109,112,116-123,125-162,204,206,213-217,226-251,278,294-298,300,302,332,335-336,351-368,371,375-382,387,395,402,406-421,423,428,433,438,445-455
+  s_b78ca1a587f4d4::t_d614a334ce7232 456
+rover-ctl/docs/roverctl_resource_list.md
+  s_b78ca1a587f4d4::t_226ad24c981720 36
+rover-server/pkg/store/stores_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-115
+notification/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 26-28,140
+approval/internal/controller/approvalrequest_controller.go
+  s_b78ca1a587f4d4::t_226ad24c981720 16-20,51-56,60-64,71-105
+rover-server/internal/controller/filemanager_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-205
+gateway/PROJECT
+  s_b78ca1a587f4d4::t_226ad24c981720 48-56
+spectre/PROJECT.license
+  s_6acfe536e1c341::t_916113eb47166c 1-3
+.github/workflows/component-package-build.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 140
+rover-server/pkg/store/stores.go
+  s_b78ca1a587f4d4::t_226ad24c981720 23,64-66,155-160
+  s_b78ca1a587f4d4::t_6866b0e31bd985 161-162
+rover-server/internal/controller/suite_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 95,97,102
+rover/config/rbac/role.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 185-197
+rover-server/internal/api/server.gen.go
+  s_9b9cdf70d660a1::t_a9e742e2f3a781 2821-3011
+  s_b78ca1a587f4d4::t_226ad24c981720 408-443,1036-1044,1506-1541,1692-1697,1713-1719,1748-1767,1775-1781,1836-1841
+approval/internal/handler/approvalrequest/notifications_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 11-13,16,45-61
+  s_b78ca1a587f4d4::t_31ff3c384a53b7 62-63
+docs/docs/architecture/agentic.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 79-80
+docs/docs/architecture/spectre.mdx
+  s_6acfe536e1c341::t_916113eb47166c 1-86
+secret-manager/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 31-33
+api/internal/handler/apisubscription/util.go
+  s_b78ca1a587f4d4::t_226ad24c981720 42,71
+pubsub/docs/pubsub-domain-architecture.md
+  s_b78ca1a587f4d4::t_226ad24c981720 18,29-35,59-62,126,140,177,179,183,185-187,197
+gateway/cmd/main.go
+  s_b78ca1a587f4d4::t_226ad24c981720 27-28,184-188
+  s_b78ca1a587f4d4::t_2aebd46c0d7a7b 189-190
+spectre/config/default/manager_metrics_patch.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-8
+spectre/config/rbac/listener_viewer_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-33
+spectre/internal/handler/util/eventconfig.go
+  s_6acfe536e1c341::t_916113eb47166c 1-90
+event/internal/handler/eventconfig/proxy_route_resilience_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-134
+rover-server/internal/mapper/status/problems_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 188-229
+approval/internal/handler/approvalexpiration/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 64-74,130-138
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 1291-1403,1966-1969,2241-2286
+rover-ctl/pkg/commands/delete/cmd.go
+  s_b78ca1a587f4d4::t_226ad24c981720 30-31,35-46
+  s_b78ca1a587f4d4::t_fa443ed7b520b3 47
+.github/workflows/component-build.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 186,197,231-245,247-250,276
+rover/internal/handler/rover/spectre/suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-17
+gateway/internal/handler/routelistener/handler.go
+  s_6acfe536e1c341::t_916113eb47166c 1-65
+approval/internal/handler/approval/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 43,205,208,227,230
+common-server/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 37-38,124
+pubsub/config/crd/bases/pubsub.cp.ei.telekom.de_subscribers.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 26-27,50-51
+rover/cmd/main.go
+  s_b78ca1a587f4d4::t_226ad24c981720 44,71-72
+  s_b78ca1a587f4d4::t_5abd86b3d4e4dd 73
+rover-server/internal/controller/apispecification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 17-21,23,25-31,228-340
+  s_b78ca1a587f4d4::t_d56c0577178f43 341
+approval/README.md
+  s_b78ca1a587f4d4::t_226ad24c981720 71-73,93,152
+rover-server/internal/mapper/rover/out/listener.go
+  s_6acfe536e1c341::t_916113eb47166c 1-55
+.github/workflows/release.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 60,71
+approval/api/v1/builder/conditions_scoped_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-328
+approval/internal/handler/approvalrequest/grant_source.go
+  s_6acfe536e1c341::t_916113eb47166c 1-80
+rover-ctl/pkg/commands/base/file_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 71-94,152-186
+  s_b78ca1a587f4d4::t_e689b7d3a6c676 187
+event/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 14,79-80
+spectre/config/prometheus/monitor_tls_patch.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-23
+docs/docs/developer-journey/creating-an-operator.md
+  s_b78ca1a587f4d4::t_226ad24c981720 68-69,150,164-165,193
+  s_b78ca1a587f4d4::t_20e1e3e036d131 194
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routelisteners.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-184
+gateway/internal/controller/routelistener_controller_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-200
+rover-ctl/pkg/commands/base/file.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9,16-17,21-24,33,41-57,60-61,70-73,82
+.github/workflows/release-goreleaser.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 57,59,65
+organization-server/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 77-79
+rover/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 20,32-34,44,49-50,53,56,155
+spectre/internal/handler/spectreapplication_handler.go
+  s_6acfe536e1c341::t_916113eb47166c 1-324
+spectre/api/v1/groupversion_info.go
+  s_6acfe536e1c341::t_916113eb47166c 1-28
+rover/internal/controller/index.go
+  s_b78ca1a587f4d4::t_226ad24c981720 12,22-24,27-42,117-134
+approval/config/crd/bases/approval.cp.ei.telekom.de_approvals.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 62-71,293-296
+rover-server/internal/controller/rover_listener_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-65
+approval/internal/handler/util/notification_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 13-14,243-319
+  s_b78ca1a587f4d4::t_694727d5f55c6c 320
+pubsub/internal/handler/publisher/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9,13,20,52-66
+organization-server/internal/mapper/mapper.go
+  s_b78ca1a587f4d4::t_226ad24c981720 115,119-122,163-165
+spectre/config/samples/spectre_v1_spectreapplication.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-14
+identity/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,62-63
+spectre/internal/handler/listener_filter_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-186
+pubsub/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 24-25,128,133
+spectre/config/rbac/leader_election_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-44
+admin/internal/handler/zone/handlingContext.go
+  s_b78ca1a587f4d4::t_226ad24c981720 61
+spectre/config/network-policy/allow-metrics-traffic.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-31
+install/components/notificationtemplates/approvalrequest--listen-consumer--updated--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-161
+rover-server/internal/controller/changelog.go
+  s_b78ca1a587f4d4::t_226ad24c981720 184-187,228,283
+  s_b78ca1a587f4d4::t_88ec044fd3dc88 284-286
+.github/ci/module-graph.json
+  s_b78ca1a587f4d4::t_226ad24c981720 208,213-214,217-219,235,241-243,245-246,264-276
+  s_b78ca1a587f4d4::t_b3600d8cbf04c7 277-279
+api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 40-42,141
+docs/docs/architecture/overview.md
+  s_b78ca1a587f4d4::t_226ad24c981720 101
+pubsub/api/v1/publisher_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 16-17,58-59
+spectre/config/crd/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-21
+event/internal/handler/eventconfig/route_resilience_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-98
+common/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 17-19
+approval/api/v1/builder/conditions_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-211
+gateway/api/v1/routelistener_types.go
+  s_6acfe536e1c341::t_916113eb47166c 1-86
+spectre/config/rbac/metrics_auth_role_binding.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-16
+rover-ctl/docs/roverctl_delete.md
+  s_b78ca1a587f4d4::t_226ad24c981720 9-10,15-30,34-38,55
+docs/docs/reference/api.md
+  s_b78ca1a587f4d4::t_226ad24c981720 13,24,27,29,34,36,38-39,57-71,110,129-143,156,201-213,239-243,261-270,272
+  s_b78ca1a587f4d4::t_bdc5852a73d35c 271,273
+rover/internal/handler/rover/spectre/handler_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-847
+admin/api/v1/zone_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 209-210
+admin/internal/handler/zone/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 59
+gateway/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,62-63
+rover-server/internal/mapper/status/response.go
+  s_b78ca1a587f4d4::t_226ad24c981720 79-95,110,118-121,129
+gateway/internal/features/feature/circuit_breaker.go
+  s_b78ca1a587f4d4::t_226ad24c981720 90,104-112,128
+spectre/api/v1/listener_status_types.go
+  s_6acfe536e1c341::t_916113eb47166c 1-55
+event/api/v1/types_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 8-9,18-33
+  s_b78ca1a587f4d4::t_0ba49284c2056b 34
+spectre/internal/handler/provider_binding_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-307
+spectre/config/rbac/leader_election_role_binding.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-19
+docs/docs/architecture/pubsub.mdx
+  s_b78ca1a587f4d4::t_226ad24c981720 8,32,36-38,41-42,50
+common-server/internal/informer/nocache_informer.go
+  s_b78ca1a587f4d4::t_226ad24c981720 10,21,25,31,33-35,37-48,52,57-94,99-101,113,135-140,143-157,164-166,187-190,209-229,237-240,264-267,269,278,284-296,309-312,315,331,335,339-343,370,373,376-403,429-436,452,455,460,465-479,483-484,486-487,496-500,503-505,509,513-514,521,523,527-530,534-539,562,564-586,593-594,597-645
+rover-server/api/openapi.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 2711-2717,3081-3086,4047-4109
+.github/workflows/ci.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 169,288
+install/components/notificationtemplates/approvalrequest--listen-consumer--created--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-154
+pubsub/internal/controller/publisher_controller.go
+  s_b78ca1a587f4d4::t_226ad24c981720 40,57-60,68-76
+  s_b78ca1a587f4d4::t_ff37d25f7958c3 77-78
+approval/internal/webhook/v1/approvalrequest_webhook_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 58-77
+rover/internal/handler/rover/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 9,34,36,61-72,82-85,108-111
+rover-ctl/pkg/commands/delete/cmd_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 119-126,161-246
+  s_b78ca1a587f4d4::t_6fd49cc5498814 247-248
+file/internal/handler/filesubscription/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 386,388-389,403-451,486-487,569-570,617-618,665-666
+spectre/config/crd/bases/spectre.cp.ei.telekom.de_spectreapplications.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-260
+spectre/config/default/cert_metrics_manager_patch.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-34
+rover-ctl/docs/roverctl_resource_delete.md
+  s_b78ca1a587f4d4::t_226ad24c981720 37
+spectre/internal/handler/authorization.go
+  s_6acfe536e1c341::t_916113eb47166c 1-323
+event/internal/handler/eventsubscription/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 230
+.github/workflows/release-roverctl-image.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 46,54
+gateway/internal/handler/route/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 138,144,147-152,168,189-194,214,224-263,307,313-318,335,342-349
+organization-server/internal/mapper/mapper_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 175,192-205,244-251,267,281-289,316-323
+spectre/config/rbac/service_account.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-12
+permission/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 16-18,122
+common-server/pkg/store/inmemory/inmemory_store_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 12,18,64-82,434-450
+  s_b78ca1a587f4d4::t_11492df738de94 451
+pubsub/README.md
+  s_b78ca1a587f4d4::t_226ad24c981720 38-41,46-47
+rover/internal/handler/rover/spectre/handler.go
+  s_6acfe536e1c341::t_916113eb47166c 1-311
+rover-ctl/docs/roverctl_get-secret.md
+  s_b78ca1a587f4d4::t_226ad24c981720 36
+spectre/config/network-policy/kustomization.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-6
+approval/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 14-15,86
+gateway/config/rbac/routelistener_admin_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-31
+rover-ctl/pkg/handlers/v0/rover_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 262-367
+spectre/internal/handler/provider_binding.go
+  s_6acfe536e1c341::t_916113eb47166c 1-182
+spectre/config/samples/spectre_v1_listener.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-13
+gateway/config/rbac/kustomization.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 47-53
+spectre/config/rbac/listener_admin_role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-31
+sftp/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,71-72
+approval/api/v1/builder/builder_scoped_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-1238
+approval/api/v1/approval_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 14-21,56-63,130-155
+  s_b78ca1a587f4d4::t_64cc7379edffa3 156
+event/internal/handler/eventconfig/handler.go
+  s_b78ca1a587f4d4::t_226ad24c981720 75-145,151
+approval/api/v1/decisions_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 98-169
+rover-server/internal/mapper/applicationinfo/out.go
+  s_b78ca1a587f4d4::t_226ad24c981720 22,24,102-104,191,195-198,438-512
+  s_b78ca1a587f4d4::t_7abf525aaeba1f 513
+approval/internal/webhook/v1/revocation_lift_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-269
+api/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 13,80-81
+discovery-server/config/rbac/role.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 40-46
+  s_b78ca1a587f4d4::t_234b9af968f54b 39
+install/components/notificationtemplates/approvalexpiration--listen-consumer--reminder--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-153
+rover/api/v1/listener_types.go
+  s_6acfe536e1c341::t_916113eb47166c 1-75
+api/internal/handler/apiexposure/handler_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 21,32,957-995
+pubsub/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 12,61-62
+rover/internal/handler/rover/application/application.go
+  s_b78ca1a587f4d4::t_226ad24c981720 130-133,135-137
+approval/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 20-22,125
+projector/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 23-25
+rover/internal/handler/rover/application/application_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 30-35,62-70
+  s_b78ca1a587f4d4::t_6cdff032bec774 71
+rover-ctl/pkg/parser/parser.go
+  s_b78ca1a587f4d4::t_226ad24c981720 33-38,48-52,61-77,94-99,113-116,130-145,148,153-154,156-163,167-169,171-172,174,177-178,180-186
+rover-server/internal/controller/agentspecification.go
+  s_b78ca1a587f4d4::t_226ad24c981720 250-253
+application/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 35-36,69,138
+rover-server/internal/mapper/rover/in/rover.go
+  s_b78ca1a587f4d4::t_226ad24c981720 45-55,83-86
+  s_b78ca1a587f4d4::t_5e30a6024bfe9b 87
+spectre/AGENTS.md
+  s_6acfe536e1c341::t_916113eb47166c 1-326
+api/internal/controller/apisubscription_trusted_teams_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 54-60
+.github/workflows/docs-deploy.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 29
+install/components/notificationtemplates/approvalexpiration--listen-provider--reminder--decider--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-153
+install/components/notificationtemplates/approvalexpiration--listen-provider--reminder--requester--mail--template.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-153
+organization/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 26-28,143
+rover-server/internal/mapper/status/status_matrix_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 138-145
+spectre/internal/handler/listener_handler_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-4138
+pubsub/api/v1/subscriber_types.go
+  s_b78ca1a587f4d4::t_226ad24c981720 16-17,66-67
+spectre/internal/handler/listener_approval_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-216
+spectre/internal/handler/suite_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-17
+rover-ctl/pkg/commands/apply/cmd.go
+  s_b78ca1a587f4d4::t_226ad24c981720 30-31,35-46
+  s_b78ca1a587f4d4::t_57e50fc08ac27f 47
+.github/workflows/rover-ctl-base-image.yaml
+  s_b78ca1a587f4d4::t_226ad24c981720 72
+organization/internal/controller/team_controller_test.go
+  s_b78ca1a587f4d4::t_226ad24c981720 320-329,681,691
+agentic/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 13,78-79
+spectre/internal/handler/util/callback_test.go
+  s_6acfe536e1c341::t_916113eb47166c 1-104
+spectre/cmd/main.go
+  s_6acfe536e1c341::t_916113eb47166c 1-213
+spectre/config/rbac/role.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-125
+approval/internal/webhook/v1/approvalrequest_webhook.go
+  s_b78ca1a587f4d4::t_226ad24c981720 53
+docs/docs/overview/components.md
+  s_b78ca1a587f4d4::t_226ad24c981720 100-101
+file/api/go.mod
+  s_b78ca1a587f4d4::t_226ad24c981720 11,60-61
+gateway/config/samples/gateway_v1_routelistener.yaml
+  s_6acfe536e1c341::t_916113eb47166c 1-22
+spectre/.gitignore
+  s_6acfe536e1c341::t_916113eb47166c 1-34
+admin/api/go.sum
+  s_b78ca1a587f4d4::t_b60c83dbc9bb0f 163-164,167-170
+admin/go.sum
+  s_b78ca1a587f4d4::t_2161762e270ec0 263-264,267-268,271-272,279-280
+agentic/api/go.sum
+  s_b78ca1a587f4d4::t_220ddba793e811 181-182,185-188
+agentic/go.sum
+  s_b78ca1a587f4d4::t_748c02e2772921 251-252,255-256,259-260,267-268
+api/api/go.sum
+  s_b78ca1a587f4d4::t_933157c608c612 181-182,185-188
+api/go.sum
+  s_b78ca1a587f4d4::t_10a79b759d4baf 261-262,265-266,269-270,277-278
+application/api/go.sum
+  s_b78ca1a587f4d4::t_c60d00534738a7 135-136,139-142
+application/go.sum
+  s_b78ca1a587f4d4::t_1e79250e03a398 263-264,267-268,271-272,279-280
+approval/api/go.sum
+  s_b78ca1a587f4d4::t_173d929f3533b9 193-194,197-200
+approval/go.sum
+  s_b78ca1a587f4d4::t_cbef4a21f38637 251-252,255-256,259-260,267-268
+common-server/go.sum
+  s_b78ca1a587f4d4::t_a82696c8bac779 277-278,281-284
+common/go.sum
+  s_b78ca1a587f4d4::t_087992fede6924 227-228,231-234
+controlplane-api/go.sum
+  s_b78ca1a587f4d4::t_e084442f97d6c3 323-324,327-330
+discovery-server/go.sum
+  s_b78ca1a587f4d4::t_eef1e157d2aa06 430-431,434-437
+event/api/go.sum
+  s_b78ca1a587f4d4::t_990445f992e43d 181-182,185-188
+event/go.sum
+  s_b78ca1a587f4d4::t_33f2978c7d70fd 263-264,267-268,271-272,279-280
+file-manager/go.sum
+  s_b78ca1a587f4d4::t_267c7d8da4b26d 432-433,436-439
+file/api/go.sum
+  s_b78ca1a587f4d4::t_f12c3bce9fe0d6 135-136,139-142
+file/go.sum
+  s_b78ca1a587f4d4::t_b307800c4bf21f 263-264,267-268,271-272,279-280
+gateway/api/go.sum
+  s_b78ca1a587f4d4::t_1f5d0b8bbe3f36 135-136,139-142
+gateway/go.sum
+  s_b78ca1a587f4d4::t_a0523ed5449132 415-416,419-420,423-424,431-432
+identity/api/go.sum
+  s_b78ca1a587f4d4::t_ea5ebbefadc716 135-136,139-142
+identity/go.sum
+  s_b78ca1a587f4d4::t_0bd1a0a4ce85ff 414-415,418-419,422-423,430-431
+notification/api/go.sum
+  s_b78ca1a587f4d4::t_0c39260e9c6f13 183-184,187-190
+notification/go.sum
+  s_b78ca1a587f4d4::t_fb21d3473f4ca5 282-283,286-287,290-291,298-299
+organization-server/go.sum
+  s_b78ca1a587f4d4::t_f74c0dd6be6326 393-394,397-400
+organization/api/go.sum
+  s_b78ca1a587f4d4::t_d5d55f5a1267ee 183-184,187-190
+organization/go.sum
+  s_b78ca1a587f4d4::t_817a243125f2ac 270-271,274-275,278-279,286-287
+permission/api/go.sum
+  s_b78ca1a587f4d4::t_8c21569f4310dc 135-136,139-142
+permission/go.sum
+  s_b78ca1a587f4d4::t_72d9348ad02477 251-252,255-256,259-260,267-268
+projector/go.sum
+  s_b78ca1a587f4d4::t_0274f2f4337fff 284-285,288-291
+pubsub/api/go.sum
+  s_b78ca1a587f4d4::t_08dddf5fc16bb2 135-136,139-142
+pubsub/go.sum
+  s_b78ca1a587f4d4::t_d322bbed5fb4ab 263-264,267-268,271-272,279-280
+rover-server/go.sum
+  s_b78ca1a587f4d4::t_18bb2677f0ee57 331-336,445-446,449-452
+rover-server/internal/controller/__snapshots__/suite_controller_test.snap
+  s_b78ca1a587f4d4::t_70db4ad184d170 571,1232,1753
+rover-server/internal/mapper/rover/in/__snapshots__/rover_test.snap
+  s_b78ca1a587f4d4::t_752daf30b07341 46-49,85-89,119-122,188-191,282-285,351-354,365-373,392-400,430-438
+rover-server/internal/mapper/rover/out/__snapshots__/rover_test.snap
+  s_b78ca1a587f4d4::t_7c6bda1c145698 11-19,37-46,52-63
+rover/api/go.sum
+  s_b78ca1a587f4d4::t_48a1338c6e5b18 179-180,183-186
+rover/go.sum
+  s_b78ca1a587f4d4::t_fce50258c205a8 265-266,269-270,273-274,281-282
+secret-manager/go.sum
+  s_b78ca1a587f4d4::t_d98dd93b48828a 459-460,463-466
+sftp/api/go.sum
+  s_b78ca1a587f4d4::t_2c413a144e9e77 159-160,163-166
+sftp/go.sum
+  s_b78ca1a587f4d4::t_8c3f4197af914b 413-414,417-418,421-422,429-430
+spectre/go.sum
+  s_b78ca1a587f4d4::t_d8221c5fb9c489 1-282
+tools/route-tester/go.sum
+  s_b78ca1a587f4d4::t_ae0be78ab70c00 149-150,153-156
+tools/snapshotter/go.sum
+  s_b78ca1a587f4d4::t_1ddc16a5c24e27 244-245,248-251
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a62c95b6a9a71a41deae37b9b64d8e98990b484a",
+  "prompts": {},
+  "sessions": {
+    "s_6acfe536e1c341": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5e21f832ffeLS09wxoSrRZMVZ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9b9cdf70d660a1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5e189d84ffe0OMMKE4pBwha0i",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b78ca1a587f4d4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f792edbffeXLfNCNPqhgBbQU",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

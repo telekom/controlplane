@@ -1,0 +1,21 @@
+approval/internal/handler/approvalrequest/grant_source_test.go
+  s_b78ca1a587f4d4::t_3ef55f523b1e84 248
+.gitleaksignore
+  s_b78ca1a587f4d4::t_3ef55f523b1e84 8-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8c66a9575dbeacfbec19b2a8fd621e5e7319d6a7",
+  "prompts": {},
+  "sessions": {
+    "s_b78ca1a587f4d4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f792edbffeXLfNCNPqhgBbQU",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
