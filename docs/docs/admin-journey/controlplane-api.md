@@ -428,7 +428,9 @@ Components that call the ControlPlane API inside the cluster, such as the organi
 
 ### Tokens and access
 
-The token requirements from [Keycloak integration](#keycloak-integration) still apply. The `env` claim must name the environment in the path, so use one client per environment. The realms that the Control Plane creates for each zone, including the internal `rover` realm, do not add these claims (see [Token Claims](./environments-and-zones.md#token-claims)), so configure them in those realms as well.
+:::info
+The manual [Keycloak integration](#keycloak-integration) also applies to multiple environments: trust one issuer and create one client per environment, each with its own hardcoded `env` claim. The ControlPlane API rejects a token whose `env` claim does not match the environment in the path with `403`.
+:::
 
 ## Verify the deployment
 
@@ -469,6 +471,7 @@ For local development with `mode: mock`, any JWT with valid claims works — the
 | GraphQL Playground not accessible | Playground disabled in config | Set `graphql.playgroundEnabled: true` in the ControlPlane API configuration. |
 | Playground queries return 401 | Missing or invalid Authorization header | Add `{ "Authorization": "Bearer <token>" }` in the Playground Headers tab. With `mode: mock`, any JWT with valid claims works. |
 | 403 `Missing field 'env'` | The token has no `env` claim | Add a hardcoded `env` claim to the client's realm. See [Keycloak integration](#keycloak-integration). |
+| 403 `Caller does not belong to environment <environment>` | The token's `env` claim, or `X-Environment` on the internal listener, names another environment than the path | Use the client of that environment. See [Tokens and access](#tokens-and-access). |
 | 403 `No valid scope found` | The token's `scope` claim has no `tardis:<team\|group\|admin>:<read\|obfuscated\|all>` value | Add the client scope with **Include in token scope** enabled, and assign it as Default or request it in the token request. |
 | A Projector instance projects nothing | `ENVIRONMENT_FILTER` does not match the resources' `cp.ei.telekom.de/environment` label | Check the label on the custom resources and the value of `ENVIRONMENT_FILTER`. Resources without the label are ignored when a filter is set. |
 
