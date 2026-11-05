@@ -47,7 +47,7 @@ func failoverSub(namespaces ...string) *apiv1.ApiSubscription {
 	s.Spec.ApiBasePath = "/api/v1"
 	s.Spec.Traffic.Failover = &apiv1.SubscriberFailover{Enabled: true}
 	for _, ns := range namespaces {
-		s.Status.FailoverRoutes = append(s.Status.FailoverRoutes, ctypes.ObjectRef{Name: "route", Namespace: ns})
+		s.Status.FailoverRoutes = append(s.Status.FailoverRoutes, ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "route", Namespace: ns}})
 	}
 	return s
 }

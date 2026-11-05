@@ -87,7 +87,7 @@ func newFilterApiSubscription(namespace, name, basePath, clientSecret string) *a
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: apiv1.ApiSubscriptionSpec{
 			ApiBasePath: basePath,
-			Zone:        ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"},
+			Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "dataplane1", Namespace: "poc"}},
 			Security: &apiv1.SubscriberSecurity{
 				M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 					Client: &apiv1.OAuth2ClientCredentials{ClientId: "client", ClientSecret: clientSecret},

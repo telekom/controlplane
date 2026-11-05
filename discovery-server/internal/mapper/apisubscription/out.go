@@ -120,7 +120,7 @@ func mapFailover(ctx context.Context, in *apiv1.ApiSubscription, out *api.ApiSub
 }
 
 // zonesByStatusNamespace queries each distinct route namespace and drains its results.
-func zonesByStatusNamespace(ctx context.Context, routes []ctypes.ObjectRef, zoneStore store.ObjectStore[*adminv1.Zone]) (map[string]*adminv1.Zone, error) {
+func zonesByStatusNamespace(ctx context.Context, routes []ctypes.TypedObjectRef, zoneStore store.ObjectStore[*adminv1.Zone]) (map[string]*adminv1.Zone, error) {
 	zonesByNamespace := make(map[string]*adminv1.Zone, len(routes))
 	queried := make(map[string]struct{}, len(routes))
 	for _, route := range routes {
