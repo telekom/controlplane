@@ -80,7 +80,7 @@ var _ = Describe("verifyProviderBinding", func() {
 	// makeExposure creates an ApiExposure in the provider's team namespace
 	// (listenerNamespace), matching real Rover behavior where ApiExposures
 	// live alongside the Application, not in the zone namespace.
-	makeExposure := func(uid, appLabel string, active bool, routeRef *ctypes.ObjectRef, proxyRoutes []ctypes.ObjectRef) apiv1.ApiExposure {
+	makeExposure := func(uid, appLabel string, active bool, routeRef *ctypes.TypedObjectRef, proxyRoutes []ctypes.TypedObjectRef) apiv1.ApiExposure {
 		labels := map[string]string{}
 		if appLabel != "" {
 			labels[cconfig.BuildLabelKey("application")] = appLabel
@@ -117,7 +117,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				applicationName,
 				true,
-				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace}},
 				nil,
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
@@ -140,7 +140,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				applicationName,
 				true,
-				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace}},
 				nil,
 			)
 			exposure.Spec.Approval = apiv1.Approval{Strategy: apiv1.ApprovalStrategyFourEyes}
@@ -155,12 +155,16 @@ var _ = Describe("verifyProviderBinding", func() {
 	Context("matching provider via proxyRoutes", func() {
 		It("should return a ProviderBinding when Route is in proxyRoutes", func() {
 			route := makeRoute(exposureUID)
+			proxyRef := ctypes.TypedObjectRef{
+				TypeMeta:  metav1.TypeMeta{Kind: "Route", APIVersion: gatewayv1.GroupVersion.String()},
+				ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+			}
 			exposure := makeExposure(
 				exposureUID,
 				applicationName,
 				true,
 				nil, // no direct route ref
-				[]ctypes.ObjectRef{{Name: routeName, Namespace: routeNamespace}},
+				[]ctypes.TypedObjectRef{proxyRef},
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
 
@@ -169,10 +173,12 @@ var _ = Describe("verifyProviderBinding", func() {
 			Expect(binding).NotTo(BeNil())
 			Expect(binding.ApiExposureName).To(Equal(exposureName))
 			Expect(binding.IsPrimaryRoute).To(BeFalse())
-			Expect(binding.ProxyRoutes).To(Equal([]ctypes.ObjectRef{{Name: routeName, Namespace: routeNamespace}}))
+			Expect(binding.ProxyRoutes).To(Equal([]ctypes.TypedObjectRef{proxyRef}))
 			// The binding holds a copy, not the exposure's status slice.
 			exposure.Status.ProxyRoutes[0].Name = "mutated"
+			exposure.Status.ProxyRoutes[0].Kind = "mutated"
 			Expect(binding.ProxyRoutes[0].Name).To(Equal(routeName))
+			Expect(binding.ProxyRoutes[0].Kind).To(Equal("Route"))
 		})
 	})
 
@@ -183,7 +189,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				"other-application", // different from providerAppName
 				true,
-				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace}},
 				nil,
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
@@ -238,7 +244,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				applicationName,
 				false, // inactive
-				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace}},
 				nil,
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
@@ -257,7 +263,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				applicationName,
 				true,
-				&ctypes.ObjectRef{Name: "different-route", Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "different-route", Namespace: routeNamespace}},
 				nil,
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
@@ -275,7 +281,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				applicationName,
 				true,
 				nil, // no direct route
-				[]ctypes.ObjectRef{{Name: "other-route", Namespace: routeNamespace}},
+				[]ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: "other-route", Namespace: routeNamespace}}},
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})
 
@@ -293,7 +299,7 @@ var _ = Describe("verifyProviderBinding", func() {
 				exposureUID,
 				"", // no application label
 				true,
-				&ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace},
+				&ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: routeNamespace}},
 				nil,
 			)
 			mockListExposures([]apiv1.ApiExposure{exposure})

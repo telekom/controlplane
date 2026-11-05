@@ -187,11 +187,11 @@ func newPlFixtures(observerZone string) *plFixtures {
 			UID:       plExposureUID,
 			Labels:    map[string]string{cconfig.BuildLabelKey("application"): "p-app"},
 		},
-		Spec: apiv1.ApiExposureSpec{ApiBasePath: plPath, Zone: plZoneRef("p")},
+		Spec: apiv1.ApiExposureSpec{ApiBasePath: plPath, Zone: ctypes.TypedObjectRef{ObjectRef: plZoneRef("p")}},
 		Status: apiv1.ApiExposureStatus{
 			Active:      true,
-			Route:       new(plRouteRef("p")),
-			ProxyRoutes: []ctypes.ObjectRef{plRouteRef("c")},
+			Route:       &ctypes.TypedObjectRef{ObjectRef: plRouteRef("p")},
+			ProxyRoutes: []ctypes.TypedObjectRef{{ObjectRef: plRouteRef("c")}},
 		},
 	}
 	f.sa = &spectrev1.SpectreApplication{
@@ -742,7 +742,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 	It("H3: A in a third zone captures in C's zone and delivers at A through C's proxy callback for A", func() {
 		f := newPlFixtures("a3")
 		f.routes["a3"] = plRoute("a3") // proxy route serving another subscriber in a3
-		f.exposure.Status.ProxyRoutes = append(f.exposure.Status.ProxyRoutes, plRouteRef("a3"))
+		f.exposure.Status.ProxyRoutes = append(f.exposure.Status.ProxyRoutes, ctypes.TypedObjectRef{ObjectRef: plRouteRef("a3")})
 		h := newPlHarness(f)
 		l, calls := h.provision()
 
@@ -768,7 +768,7 @@ var _ = Describe("Listener capture placement (controller)", func() {
 
 	It("H4: skips a candidate whose Route is not referenced by the exposure", func() {
 		f := newPlFixtures("c")
-		f.exposure.Status.ProxyRoutes = []ctypes.ObjectRef{{Name: "other-name", Namespace: plZoneNs("c")}}
+		f.exposure.Status.ProxyRoutes = []ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: "other-name", Namespace: plZoneNs("c")}}}
 		h := newPlHarness(f)
 		l, _ := h.provision()
 
@@ -899,8 +899,8 @@ var _ = Describe("Listener capture placement (controller)", func() {
 	It("H8: drains applied capture whose Route became unsupported when no other candidate works", func() {
 		f := newPlFixtures("c")
 		f.apps[1].Spec.Zone = plZoneRef("c") // P in c as well: a single-zone topology
-		f.exposure.Spec.Zone = plZoneRef("c")
-		f.exposure.Status.Route = new(plRouteRef("c"))
+		f.exposure.Spec.Zone = ctypes.TypedObjectRef{ObjectRef: plZoneRef("c")}
+		f.exposure.Status.Route = &ctypes.TypedObjectRef{ObjectRef: plRouteRef("c")}
 		f.exposure.Status.ProxyRoutes = nil
 		f.routes["p"] = nil
 		h := newPlHarness(f)
@@ -1765,10 +1765,10 @@ var _ = Describe("Listener capture stop (controller)", func() {
 						cconfig.BuildLabelKey("application"): "other-app",
 					},
 				},
-				Spec: apiv1.ApiExposureSpec{ApiBasePath: plPath, Zone: plZoneRef("c")},
+				Spec: apiv1.ApiExposureSpec{ApiBasePath: plPath, Zone: ctypes.TypedObjectRef{ObjectRef: plZoneRef("c")}},
 			}
 			Expect(h.raw.Create(context.Background(), foreign)).To(Succeed())
-			foreign.Status = apiv1.ApiExposureStatus{Active: true, Route: new(plRouteRef("c"))}
+			foreign.Status = apiv1.ApiExposureStatus{Active: true, Route: &ctypes.TypedObjectRef{ObjectRef: plRouteRef("c")}}
 			Expect(h.raw.Update(context.Background(), foreign)).To(Succeed())
 			route := &gatewayv1.Route{}
 			Expect(h.exists(new(plRouteRef("c")), route)).To(BeTrue())

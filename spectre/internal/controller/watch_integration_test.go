@@ -196,13 +196,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 				Upstreams:   []apiv1.Upstream{{Url: "https://api.watch.example.com"}},
 				Visibility:  apiv1.VisibilityZone,
 				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-				Zone:        ctypes.ObjectRef{Name: "aws", Namespace: watchNs},
+				Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "aws", Namespace: watchNs}},
 			},
 		}
 		Expect(directClient.Create(ctx, watchExposure)).To(Succeed())
 		watchExposure.Status = apiv1.ApiExposureStatus{
 			Active: true,
-			Route:  &ctypes.ObjectRef{Name: "api-v1-watch", Namespace: watchZNs},
+			Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "api-v1-watch", Namespace: watchZNs}},
 		}
 		Expect(directClient.Status().Update(ctx, watchExposure)).To(Succeed())
 
@@ -678,13 +678,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 					Upstreams:   []apiv1.Upstream{{Url: "https://api.s3.example.com"}},
 					Visibility:  apiv1.VisibilityZone,
 					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-					Zone:        ctypes.ObjectRef{Name: "aws", Namespace: watchNs},
+					Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "aws", Namespace: watchNs}},
 				},
 			}
 			Expect(directClient.Create(ctx, s3Exposure)).To(Succeed())
 			s3Exposure.Status = apiv1.ApiExposureStatus{
 				Active: true,
-				Route:  &ctypes.ObjectRef{Name: util.MakeRouteName(s3BasePath), Namespace: watchZNs},
+				Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: util.MakeRouteName(s3BasePath), Namespace: watchZNs}},
 			}
 			Expect(directClient.Status().Update(ctx, s3Exposure)).To(Succeed())
 
@@ -980,13 +980,13 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 					Upstreams:   []apiv1.Upstream{{Url: "https://api.s9.example.com"}},
 					Visibility:  apiv1.VisibilityZone,
 					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-					Zone:        ctypes.ObjectRef{Name: "aws", Namespace: s9Ns},
+					Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "aws", Namespace: s9Ns}},
 				},
 			}
 			Expect(directClient.Create(ctx, exposure)).To(Succeed())
 			exposure.Status = apiv1.ApiExposureStatus{
 				Active: true,
-				Route:  &ctypes.ObjectRef{Name: routeName, Namespace: s9AwsNs},
+				Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: s9AwsNs}},
 			}
 			Expect(directClient.Status().Update(ctx, exposure)).To(Succeed())
 

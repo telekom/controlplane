@@ -43,7 +43,7 @@ type ProviderBinding struct {
 	IsPrimaryRoute bool
 	// ProxyRoutes is a copy of the exposure's status.proxyRoutes: one per
 	// cross-zone subscriber zone, whose traffic transits the primary route.
-	ProxyRoutes []ctypes.ObjectRef
+	ProxyRoutes []ctypes.TypedObjectRef
 	// ApprovalStrategy is the exposure's spec.approval.strategy.
 	ApprovalStrategy apiv1.ApprovalStrategy
 }

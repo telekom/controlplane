@@ -623,7 +623,7 @@ var _ = Describe("ListenerHandler", func() {
 							Spec: apiv1.ApiExposureSpec{ApiBasePath: testApiBasePath, Approval: approval},
 							Status: apiv1.ApiExposureStatus{
 								Active: true,
-								Route:  &ctypes.ObjectRef{Name: routeName, Namespace: listenerZoneStatus},
+								Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: listenerZoneStatus}},
 							},
 						},
 					},

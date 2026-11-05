@@ -368,7 +368,7 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 				Status: apiv1.ApiExposureStatus{
 					Active: true,
-					Route:  &ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"},
+					Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"}},
 				},
 			}
 			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
@@ -387,7 +387,7 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 				Status: apiv1.ApiExposureStatus{
 					Active:      true,
-					ProxyRoutes: []ctypes.ObjectRef{{Name: routeName, Namespace: "zone-ns"}},
+					ProxyRoutes: []ctypes.TypedObjectRef{{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"}}},
 				},
 			}
 			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
@@ -418,7 +418,7 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 				Status: apiv1.ApiExposureStatus{
 					Active: true,
-					Route:  &ctypes.ObjectRef{Name: "unrelated-route", Namespace: "zone-ns"},
+					Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "unrelated-route", Namespace: "zone-ns"}},
 				},
 			}
 			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)
@@ -435,7 +435,7 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 				},
 				Status: apiv1.ApiExposureStatus{
 					Active: true,
-					Route:  &ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"},
+					Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: "zone-ns"}},
 				},
 			}
 			reqs := reconciler.mapApiExposureToListeners(ctx, exposure)

@@ -234,13 +234,13 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Upstreams:   []apiv1.Upstream{{Url: "https://api.provider.example.com"}},
 				Visibility:  apiv1.VisibilityZone,
 				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+				Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace}},
 			},
 		}
 		Expect(k8sClient.Create(ctx, ordersExposure)).To(Succeed())
 		ordersExposure.Status = apiv1.ApiExposureStatus{
 			Active: true,
-			Route:  &ctypes.ObjectRef{Name: "api-v1-orders", Namespace: zoneStatusNs},
+			Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "api-v1-orders", Namespace: zoneStatusNs}},
 		}
 		Expect(k8sClient.Status().Update(ctx, ordersExposure)).To(Succeed())
 
@@ -258,13 +258,13 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 				Upstreams:   []apiv1.Upstream{{Url: "https://api.cross.example.com"}},
 				Visibility:  apiv1.VisibilityZone,
 				Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
-				Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+				Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace}},
 			},
 		}
 		Expect(k8sClient.Create(ctx, crossExposure)).To(Succeed())
 		crossExposure.Status = apiv1.ApiExposureStatus{
 			Active: true,
-			Route:  &ctypes.ObjectRef{Name: "api-v1-cross", Namespace: zoneStatusNs},
+			Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "api-v1-cross", Namespace: zoneStatusNs}},
 		}
 		Expect(k8sClient.Status().Update(ctx, crossExposure)).To(Succeed())
 
@@ -1423,13 +1423,13 @@ func createCrossTeamListener(
 			Upstreams:   []apiv1.Upstream{{Url: "https://" + host}},
 			Visibility:  apiv1.VisibilityZone,
 			Approval:    approval,
-			Zone:        ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace},
+			Zone:        ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace}},
 		},
 	}
 	Expect(k8sClient.Create(ctx, exposure)).To(Succeed())
 	exposure.Status = apiv1.ApiExposureStatus{
 		Active: true,
-		Route:  &ctypes.ObjectRef{Name: routeName, Namespace: zoneStatusNs},
+		Route:  &ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: routeName, Namespace: zoneStatusNs}},
 	}
 	Expect(k8sClient.Status().Update(ctx, exposure)).To(Succeed())
 
