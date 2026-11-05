@@ -283,6 +283,7 @@ func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1
 func FindActiveServer(ctx context.Context, basePath string, variant *agenticv1.AgenticVariant) (bool, *ServerInfo, error) {
 	switch {
 	case variant == nil:
+		// Without an active exposure, the resource type is unknown; try MCP first, then AgentCard.
 		found, server, err := FindActiveMcpServer(ctx, basePath)
 		if err != nil {
 			return false, nil, err
@@ -341,6 +342,7 @@ func ServerMustExist(ctx context.Context, basePath string, variant *agenticv1.Ag
 	c := cclient.ClientFromContextOrDie(ctx)
 	normalizedLabel := labelutil.NormalizeLabelValue(basePath)
 
+	// Restrict case-conflict checks to the exposure's resource type when its variant is known.
 	if variant == nil || *variant == agenticv1.AgenticVariantMCP || *variant == agenticv1.AgenticVariantTelecontextMCP {
 		mcpList := &agenticv1.McpServerList{}
 		if err := c.List(ctx, mcpList, client.MatchingLabels{
@@ -355,6 +357,7 @@ func ServerMustExist(ctx context.Context, basePath string, variant *agenticv1.Ag
 		}
 	}
 
+	// With no active exposure, the resource type is unknown, so include AgentCards in the case-conflict search too.
 	if variant == nil || *variant == agenticv1.AgenticVariantAgent {
 		agentList := &agenticv1.AgentCardList{}
 		if err := c.List(ctx, agentList, client.MatchingLabels{
