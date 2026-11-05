@@ -37,6 +37,7 @@ var (
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.EventSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.AgenticSubscriptionInfo)(nil)
 	_ gqlmodel.SubscriptionInfo = (*gqlmodel.FileSubscriptionInfo)(nil)
+	_ gqlmodel.SubscriptionInfo = (*gqlmodel.ListenerInfo)(nil)
 )
 
 var _ = Describe("SubscriptionInfo", func() {
@@ -68,7 +69,7 @@ var _ = Describe("SubscriptionInfo", func() {
 		for _, typ := range possibleTypes {
 			implementors = append(implementors, typ.Name)
 		}
-		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "FileSubscriptionInfo"))
+		Expect(implementors).To(ConsistOf("ApiSubscriptionInfo", "EventSubscriptionInfo", "AgenticSubscriptionInfo", "FileSubscriptionInfo", "ListenerInfo"))
 		Expect(schema.Types).NotTo(HaveKey("OwnedSubscriptionInfo"))
 		for _, name := range []string{"Approval", "ApprovalRequest"} {
 			Expect(schema.Types[name].Fields.ForName("subscription").Type.String()).To(Equal("SubscriptionInfo!"))
@@ -178,7 +179,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(6))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
@@ -232,7 +233,7 @@ var _ = Describe("SubscriptionInfo", func() {
 				}
 				Expect(json.Unmarshal(recorder.Body.Bytes(), &response)).To(Succeed())
 				Expect(response.Errors).To(BeEmpty())
-				Expect(response.Data.Approvals.Edges).To(HaveLen(4))
+				Expect(response.Data.Approvals.Edges).To(HaveLen(6))
 				for _, edge := range response.Data.Approvals.Edges {
 					owner := edge.Node.Subscription.OwnerApplication
 					Expect(owner.ID).To(Equal(strconv.Itoa(seed.AppBeta.ID)))
@@ -254,6 +255,7 @@ var _ = Describe("SubscriptionInfo", func() {
 							... on EventSubscriptionInfo { eventType }
 							... on AgenticSubscriptionInfo { basePath }
 							... on FileSubscriptionInfo { fileType serviceUrl serviceExternalUrl }
+							... on ListenerInfo { resourceName }
 						} } }
 					}
 				} %s`, field, selection, fragment)
@@ -274,6 +276,7 @@ var _ = Describe("SubscriptionInfo", func() {
 					FileType           string
 					ServiceURL         string
 					ServiceExternalURL string
+					ResourceName       string
 					OwnerApplication   struct{ ID, Name string }
 				}
 				var response struct {
@@ -296,8 +299,21 @@ var _ = Describe("SubscriptionInfo", func() {
 						ServiceURL:         "subscription.internal.example.com:8080",
 						ServiceExternalURL: "subscription.external.example.com:8080",
 					},
+					"ListenerInfo": {ID: strconv.Itoa(seed.ListenerReady.ID), ResourceName: "api-alpha"},
 				}
-				Expect(response.Data[field].Edges).To(HaveLen(4))
+				remaining := map[string]int{
+					"ApiSubscriptionInfo":     1,
+					"EventSubscriptionInfo":   1,
+					"AgenticSubscriptionInfo": 1,
+					"FileSubscriptionInfo":    1,
+					"ListenerInfo":            1,
+				}
+				if field == "approvals" {
+					Expect(response.Data[field].Edges).To(HaveLen(6))
+					remaining["ListenerInfo"] = 2
+				} else {
+					Expect(response.Data[field].Edges).To(HaveLen(5))
+				}
 				for _, edge := range response.Data[field].Edges {
 					actual := edge.Node.Subscription
 					Expect(expected).To(HaveKey(actual.Typename))
@@ -306,7 +322,10 @@ var _ = Describe("SubscriptionInfo", func() {
 					want.OwnerApplication.ID = strconv.Itoa(seed.AppBeta.ID)
 					want.OwnerApplication.Name = seed.AppBeta.Name
 					Expect(actual).To(Equal(want))
-					delete(expected, actual.Typename)
+					remaining[actual.Typename]--
+					if remaining[actual.Typename] == 0 {
+						delete(expected, actual.Typename)
+					}
 				}
 				Expect(expected).To(BeEmpty())
 			},

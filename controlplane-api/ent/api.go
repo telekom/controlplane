@@ -32,6 +32,8 @@ type Api struct {
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Namespace holds the value of the "namespace" field.
 	Namespace string `json:"namespace,omitempty"`
+	// Name holds the value of the "name" field.
+	Name *string `json:"name,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
 	// Version holds the value of the "version" field.
@@ -97,7 +99,7 @@ func (*Api) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case api.FieldID:
 			values[i] = new(sql.NullInt64)
-		case api.FieldStatusPhase, api.FieldStatusMessage, api.FieldNamespace, api.FieldBasePath, api.FieldVersion, api.FieldCategory, api.FieldSpecification:
+		case api.FieldStatusPhase, api.FieldStatusMessage, api.FieldNamespace, api.FieldName, api.FieldBasePath, api.FieldVersion, api.FieldCategory, api.FieldSpecification:
 			values[i] = new(sql.NullString)
 		case api.FieldCreatedAt, api.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -155,6 +157,13 @@ func (_m *Api) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field namespace", values[i])
 			} else if value.Valid {
 				_m.Namespace = value.String
+			}
+		case api.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = new(string)
+				*_m.Name = value.String
 			}
 		case api.FieldBasePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -271,6 +280,11 @@ func (_m *Api) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("namespace=")
 	builder.WriteString(_m.Namespace)
+	builder.WriteString(", ")
+	if v := _m.Name; v != nil {
+		builder.WriteString("name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("base_path=")
 	builder.WriteString(_m.BasePath)

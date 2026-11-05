@@ -70,13 +70,16 @@ type ApiExposureEdges struct {
 	API *Api `json:"api,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*ApiSubscription `json:"subscriptions,omitempty"`
+	// Listeners holds the value of the listeners edge.
+	Listeners []*Listener `json:"listeners,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
 	totalCount [2]map[string]int
 
 	namedSubscriptions map[string][]*ApiSubscription
+	namedListeners     map[string][]*Listener
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -108,6 +111,15 @@ func (e ApiExposureEdges) SubscriptionsOrErr() ([]*ApiSubscription, error) {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
+}
+
+// ListenersOrErr returns the Listeners value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApiExposureEdges) ListenersOrErr() ([]*Listener, error) {
+	if e.loadedTypes[3] {
+		return e.Listeners, nil
+	}
+	return nil, &NotLoadedError{edge: "listeners"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -297,6 +309,11 @@ func (_m *ApiExposure) QuerySubscriptions() *ApiSubscriptionQuery {
 	return NewApiExposureClient(_m.config).QuerySubscriptions(_m)
 }
 
+// QueryListeners queries the "listeners" edge of the ApiExposure entity.
+func (_m *ApiExposure) QueryListeners() *ListenerQuery {
+	return NewApiExposureClient(_m.config).QueryListeners(_m)
+}
+
 // Update returns a builder for updating this ApiExposure.
 // Note that you need to call ApiExposure.Unwrap() before calling this method if this ApiExposure
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -399,6 +416,30 @@ func (_m *ApiExposure) appendNamedSubscriptions(name string, edges ...*ApiSubscr
 		_m.Edges.namedSubscriptions[name] = []*ApiSubscription{}
 	} else {
 		_m.Edges.namedSubscriptions[name] = append(_m.Edges.namedSubscriptions[name], edges...)
+	}
+}
+
+// NamedListeners returns the Listeners named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *ApiExposure) NamedListeners(name string) ([]*Listener, error) {
+	if _m.Edges.namedListeners == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedListeners[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *ApiExposure) appendNamedListeners(name string, edges ...*Listener) {
+	if _m.Edges.namedListeners == nil {
+		_m.Edges.namedListeners = make(map[string][]*Listener)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedListeners[name] = []*Listener{}
+	} else {
+		_m.Edges.namedListeners[name] = append(_m.Edges.namedListeners[name], edges...)
 	}
 }
 

@@ -31,6 +31,10 @@ func (Api) Mixin() []ent.Mixin {
 
 func (Api) Fields() []ent.Field {
 	return []ent.Field{
+		field.Text("name").
+			Optional().
+			Nillable().
+			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		field.Text("base_path").
 			NotEmpty(),
 		field.Text("version").
