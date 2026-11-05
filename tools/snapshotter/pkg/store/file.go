@@ -144,12 +144,17 @@ func (f *FileStore[T]) GetVersion(ctx context.Context, id string, version int, s
 
 // Set implements SnapshotStore.
 func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
+	dirMode, fileMode := os.FileMode(0o755), os.FileMode(0o644)
+	sensitive := isSensitive(snap)
+	if sensitive {
+		dirMode, fileMode = 0o700, 0o600
+	}
 	versions, err := f.getAvailableVersions(ctx, snap.ID())
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			return err
 		}
-		err = os.MkdirAll(filepath.Dir(f.makeFilePath(snap.ID(), 0)), 0o755)
+		err = os.MkdirAll(filepath.Dir(f.makeFilePath(snap.ID(), 0)), dirMode)
 		if err != nil {
 			return err
 		}
@@ -175,7 +180,7 @@ func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
 
 	path := f.makeFilePath(snap.ID(), newVersion)
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, dirMode); err != nil {
 		return err
 	}
 
@@ -184,8 +189,14 @@ func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
 		return err
 	}
 	zap.L().Debug("storing snapshot", zap.String("id", snap.ID()), zap.Int("version", newVersion), zap.Int("size", len(data)))
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, fileMode); err != nil {
 		return err
+	}
+	if sensitive {
+		// WriteFile keeps the mode of an already existing file
+		if err := os.Chmod(path, fileMode); err != nil {
+			return err
+		}
 	}
 
 	return nil

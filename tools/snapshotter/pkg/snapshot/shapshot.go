@@ -6,6 +6,7 @@ package snapshot
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -50,6 +51,30 @@ type Snapshot struct {
 	Zone        string `yaml:"zone" json:"zone"`
 	Id          string `yaml:"id" json:"id"`
 	State       *State `yaml:"state" json:"state"`
+	// Raw marks a snapshot that holds the unmodified gateway state
+	// (no obfuscators/decoders applied). Only raw snapshots can be applied.
+	Raw bool `yaml:"raw,omitempty" json:"raw,omitempty"`
+}
+
+// Sensitive reports whether the snapshot may contain confidential data.
+func (s *Snapshot) Sensitive() bool {
+	return s.Raw
+}
+
+// DeepCopy returns an independent copy of the snapshot via a JSON round-trip.
+func (s *Snapshot) DeepCopy() *Snapshot {
+	if s == nil {
+		return nil
+	}
+	data, err := json.Marshal(s)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to marshal snapshot: %v", err))
+	}
+	out := &Snapshot{}
+	if err := json.Unmarshal(data, out); err != nil {
+		panic(fmt.Sprintf("Failed to unmarshal snapshot: %v", err))
+	}
+	return out
 }
 
 func (s *Snapshot) ID() string {
