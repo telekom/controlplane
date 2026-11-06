@@ -46,3 +46,24 @@ var _ = Describe("MapSubscriberSecurityToGateway", func() {
 		Entry("client_secret_post", agenticv1.TokenRequestClientSecretPost, gatewayapi.TokenRequestClientSecretPost),
 	)
 })
+
+var _ = Describe("AsUpstream", func() {
+	DescribeTable("keeps the percent-encoding of the path",
+		func(rawUrl, expectedPath string) {
+			upstream, err := AsUpstream(rawUrl, 0)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(upstream.Path).To(Equal(expectedPath))
+		},
+		Entry("encoded spaces",
+			"https://provider.example.com/api/url%20encoded%20path", "/api/url%20encoded%20path"),
+		Entry("encoded slash",
+			"https://provider.example.com/files/a%2Fb", "/files/a%2Fb"),
+		Entry("encoded percent sign",
+			"https://provider.example.com/discounts/100%25", "/discounts/100%25"),
+		Entry("double-encoded space",
+			"https://provider.example.com/items/a%2520b", "/items/a%2520b"),
+		Entry("path without encoding",
+			"https://provider.example.com/api/v1", "/api/v1"),
+	)
+})

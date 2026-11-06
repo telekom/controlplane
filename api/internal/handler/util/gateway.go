@@ -13,6 +13,7 @@ import (
 )
 
 // AsUpstream converts a raw URL to an Upstream struct, extracting the scheme, hostname, port, and path.
+// The path keeps its encoding because the gateway forwards it verbatim.
 func AsUpstream(rawUrl string, weight int32) (ups gatewayapi.Upstream, err error) {
 	u, err := url.Parse(rawUrl)
 	if err != nil {
@@ -25,7 +26,7 @@ func AsUpstream(rawUrl string, weight int32) (ups gatewayapi.Upstream, err error
 		Scheme:   u.Scheme,
 		Hostname: u.Hostname(),
 		Port:     port,
-		Path:     u.Path,
+		Path:     u.EscapedPath(),
 		Weight:   weight,
 	}, nil
 }
