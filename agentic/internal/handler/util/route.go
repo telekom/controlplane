@@ -281,7 +281,7 @@ func AsUpstream(rawUrl string, weight int32) (gatewayapi.Upstream, error) {
 		Scheme:   u.Scheme,
 		Hostname: u.Hostname(),
 		Port:     gatewayapi.GetPortOrDefaultFromScheme(u),
-		Path:     u.Path,
+		Path:     u.EscapedPath(),
 		Weight:   weight,
 	}, nil
 }

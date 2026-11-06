@@ -80,7 +80,7 @@ roverctl apply -f rover.yaml
 | Field | Description |
 | ----- | ----------- |
 | `basePath` | The public API path. Must match an existing Api resource and be unique across the platform. This is how consumers will reach your API. |
-| `upstream` | The internal URL where your service is running. The gateway proxies incoming requests to this address. |
+| `upstream` | The internal URL where your service is running. The gateway proxies incoming requests to this address. Encoded characters in the path, such as `%20`, are forwarded unchanged. |
 | `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
 
 ### What Happens

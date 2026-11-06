@@ -437,6 +437,6 @@ func parseSSEUpstream(rawUrl string) (gatewayv1.Upstream, error) {
 		Scheme:   u.Scheme,
 		Hostname: u.Hostname(),
 		Port:     gatewayv1.GetPortOrDefaultFromScheme(u),
-		Path:     u.Path,
+		Path:     u.EscapedPath(),
 	}, nil
 }
