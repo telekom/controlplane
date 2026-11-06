@@ -95,7 +95,7 @@ require (
 	github.com/telekom/controlplane/common v0.0.0 // indirect
 	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/telekom/controlplane/gateway/api v0.0.0 // indirect
-	github.com/tidwall/gjson v1.19.0 // indirect
+	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
