@@ -5,13 +5,20 @@
 package bootstrap
 
 import (
+	"context"
+	"fmt"
+	"net/url"
+	"os"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
 	"github.com/telekom/controlplane/projector/internal/domain/eventtype"
 	"github.com/telekom/controlplane/projector/internal/domain/filetype"
@@ -143,4 +150,81 @@ var _ = Describe("registerSchemesAndModules", func() {
 		Entry("ai_gateway only", false, false, false, true),
 		Entry("all enabled", true, true, true, true),
 	)
+})
+
+var _ = Describe("managerOptions", func() {
+	DescribeTable("scopes the leader election ID without changing the configuration",
+		func(environment, expectedID string) {
+			cfg := &config.Config{
+				EnvironmentFilter: environment,
+				LeaderElection:    true,
+				LeaderElectionID:  "custom-projector",
+			}
+
+			for range 2 {
+				opts := managerOptions(cfg)
+				Expect(opts.LeaderElection).To(BeTrue())
+				Expect(opts.LeaderElectionID).To(Equal(expectedID))
+				Expect(cfg.LeaderElectionID).To(Equal("custom-projector"))
+			}
+		},
+		Entry("unfiltered", "", "custom-projector"),
+		Entry("first environment", "env-a", "custom-projector-env-a"),
+		Entry("second environment", "env-b", "custom-projector-env-b"),
+	)
+})
+
+var _ = Describe("openDatabase", func() {
+	var (
+		ctx    context.Context
+		cfg    *config.Config
+		name   string
+		exists func() bool
+	)
+
+	BeforeEach(func() {
+		testURL := os.Getenv("CP_TEST_POSTGRES_URL")
+		if testURL == "" {
+			Skip("set CP_TEST_POSTGRES_URL to run PostgreSQL integration tests")
+		}
+		ctx = context.Background()
+		admin, err := pgx.Connect(ctx, testURL)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(admin.Close, ctx)
+
+		name = fmt.Sprintf("projector-test-%d", time.Now().UnixNano())
+		databaseURL, err := url.Parse(testURL)
+		Expect(err).NotTo(HaveOccurred())
+		databaseURL.Path = "/" + name
+		cfg = &config.Config{DatabaseURL: databaseURL.String(), MaxOpenConns: 2, MaxIdleConns: 1, ConnMaxLifetime: time.Minute}
+
+		exists = func() bool {
+			var ok bool
+			Expect(admin.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)", name).Scan(&ok)).To(Succeed())
+			return ok
+		}
+		DeferCleanup(func() {
+			_, err := admin.Exec(ctx, "DROP DATABASE IF EXISTS "+pgx.Identifier{name}.Sanitize()+" WITH (FORCE)")
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	It("does not create a missing database by default", func() {
+		db, err := openDatabase(ctx, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(db.Close)
+		Expect(exists()).To(BeFalse())
+	})
+
+	It("creates the database from DATABASE_URL when DB_CREATE is set and reuses it on restart", func() {
+		cfg.CreateDatabase = true
+		for range 2 {
+			db, err := openDatabase(ctx, cfg)
+			Expect(err).NotTo(HaveOccurred())
+			var current string
+			Expect(db.QueryRowContext(ctx, "SELECT current_database()").Scan(&current)).To(Succeed())
+			Expect(current).To(Equal(name))
+			Expect(db.Close()).To(Succeed())
+		}
+	})
 })

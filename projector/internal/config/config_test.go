@@ -25,6 +25,7 @@ var _ = Describe("Load", func() {
 
 		// Database
 		Expect(cfg.DatabaseURL).To(Equal("postgres://localhost:5432/controlplane?sslmode=disable"))
+		Expect(cfg.CreateDatabase).To(BeFalse())
 		Expect(cfg.MaxOpenConns).To(Equal(100))
 		Expect(cfg.MaxIdleConns).To(Equal(30))
 		Expect(cfg.ConnMaxLifetime).To(Equal(5 * time.Minute))
@@ -61,12 +62,16 @@ var _ = Describe("Load", func() {
 		Expect(cfg.HealthProbeBindAddress).To(Equal(":8081"))
 		Expect(cfg.LeaderElection).To(BeFalse())
 		Expect(cfg.LeaderElectionID).To(Equal("projector.cp.ei.telekom.de"))
+
+		// Environment Filter
+		Expect(cfg.EnvironmentFilter).To(Equal(""))
 	})
 
 	It("reads values from environment variables", func() {
 		// Database
 		GinkgoT().Setenv("DATABASE_URL", "postgres://test:test@db:5432/test")
 		GinkgoT().Setenv("DB_MAX_OPEN_CONNS", "50")
+		GinkgoT().Setenv("DB_CREATE", "true")
 		GinkgoT().Setenv("DB_MAX_IDLE_CONNS", "20")
 		GinkgoT().Setenv("DB_CONN_MAX_LIFETIME", "2m")
 
@@ -103,12 +108,16 @@ var _ = Describe("Load", func() {
 		GinkgoT().Setenv("LEADER_ELECTION", "true")
 		GinkgoT().Setenv("LEADER_ELECTION_ID", "custom-id")
 
+		// Environment Filter
+		GinkgoT().Setenv("ENVIRONMENT_FILTER", "test-env")
+
 		cfg, err := Load()
 		Expect(err).NotTo(HaveOccurred())
 
 		// Database
 		Expect(cfg.DatabaseURL).To(Equal("postgres://test:test@db:5432/test"))
 		Expect(cfg.MaxOpenConns).To(Equal(50))
+		Expect(cfg.CreateDatabase).To(BeTrue())
 		Expect(cfg.MaxIdleConns).To(Equal(20))
 		Expect(cfg.ConnMaxLifetime).To(Equal(2 * time.Minute))
 
@@ -144,6 +153,7 @@ var _ = Describe("Load", func() {
 		Expect(cfg.HealthProbeBindAddress).To(Equal(":9091"))
 		Expect(cfg.LeaderElection).To(BeTrue())
 		Expect(cfg.LeaderElectionID).To(Equal("custom-id"))
+		Expect(cfg.EnvironmentFilter).To(Equal("test-env"))
 	})
 
 	It("falls back to default when env var is set to empty string", func() {
@@ -162,6 +172,13 @@ var _ = Describe("Load", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("validating config"))
 		Expect(err.Error()).To(ContainSubstring("MaxOpenConns"))
+	})
+
+	It("rejects an invalid database creation flag", func() {
+		GinkgoT().Setenv("DB_CREATE", "invalid")
+
+		_, err := Load()
+		Expect(err).To(MatchError(ContainSubstring("unmarshalling config")))
 	})
 
 	It("returns a validation error when a numeric field is negative", func() {
