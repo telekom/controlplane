@@ -139,7 +139,7 @@ func newTestZone(name string) *adminv1.Zone {
 			IdentityProviders: []adminv1.IdentityProviderConfig{{
 				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &identityAdminURL,
+					Url:      identityAdminURL,
 					ClientId: "test-idp-admin-id",
 					UserName: "test-idp-admin-username",
 					Password: "test-idp-admin-password",
@@ -190,7 +190,7 @@ func newTestContextWithClient(zone *adminv1.Zone, c client.Client) context.Conte
 // returns a ZoneHandler.
 func newTestHandler() *ZoneHandler {
 	useSecretManager()
-	return &ZoneHandler{}
+	return &ZoneHandler{Client: k8sClient}
 }
 
 // useSecretManager installs a fresh in-memory secret-manager as the global secret-manager
@@ -306,7 +306,7 @@ func (m *memorySecretManager) DeleteApplication(context.Context, string, string,
 // newTestHandlingContext creates a HandlingContext by running the constructor
 // (which creates the namespace and fetches the environment).
 func newTestHandlingContext(testCtx context.Context, zone *adminv1.Zone) *HandlingContext {
-	hc, err := newHandlingContext(testCtx, zone, (&ZoneHandler{}).httpClient())
+	hc, err := newHandlingContext(testCtx, zone, k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 	return hc
 }

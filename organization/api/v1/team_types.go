@@ -176,6 +176,16 @@ func TeamNamespace(environment, fullTeamName string) string {
 	return environment + "--" + fullTeamName
 }
 
+// TeamNameFromNamespace extracts the Team name (<group>--<team>) by removing the
+// first <environment>-- prefix. Namespaces without "--" are returned unchanged.
+// This is a naming-convention helper, not a namespace validator or a Team lookup.
+func TeamNameFromNamespace(namespace string) string {
+	if idx := strings.Index(namespace, "--"); idx >= 0 {
+		return namespace[idx+2:]
+	}
+	return namespace
+}
+
 // FindTeamForNamespace finds the team for the given namespace.
 // The namespace must follow the naming convention <environment>--<group>--<team>.
 func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) {

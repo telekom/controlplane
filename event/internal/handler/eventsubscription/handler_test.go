@@ -328,10 +328,10 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
-		// 2. Cleanup old ApprovalRequests
+		// 2. List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// 3. Get Approval — return a Granted Approval
 		fakeClient.EXPECT().
@@ -348,11 +348,31 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// Approval not found — results in Pending
+		fakeClient.EXPECT().
+			Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
+			Return(apierrors.NewNotFound(schema.GroupResource{}, "")).Once()
+	}
+
+	// The ApprovalRequest is granted (Auto) but the approval controller has not
+	// issued the Approval yet.
+	mockApprovalBuilderRequestGranted := func() {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, _ controllerutil.MutateFn) {
+				obj.(*approvalv1.ApprovalRequest).Spec.State = approvalv1.ApprovalStateGranted
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		fakeClient.EXPECT().
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
+
 		fakeClient.EXPECT().
 			Get(ctx, mock.Anything, mock.AnythingOfType("*v1.Approval")).
 			Return(apierrors.NewNotFound(schema.GroupResource{}, "")).Once()
@@ -363,9 +383,10 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.ApprovalRequest"), mock.Anything).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// Approval found with Rejected state
 		fakeClient.EXPECT().
@@ -387,9 +408,10 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			}).
 			Return(controllerutil.OperationResultNone, nil).Once()
 
+		// List owner ApprovalRequests for scoped cleanup (replaces legacy Cleanup call)
 		fakeClient.EXPECT().
-			Cleanup(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
-			Return(0, nil).Once()
+			List(ctx, mock.AnythingOfType("*v1.ApprovalRequestList"), mock.Anything).
+			Return(nil).Once()
 
 		// Approval found with Granted state (but RequestDenied takes priority from request)
 		fakeClient.EXPECT().
@@ -938,6 +960,27 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			Expect(processingCond).ToNot(BeNil())
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(processingCond.Reason).To(Equal("Blocked"))
+		})
+
+		It("should report processing when the request is granted but the Approval is not issued yet", func() {
+			exposure := makeReadyEventExposure(testEventType)
+			setupUpToApproval(exposure)
+			mockApprovalBuilderRequestGranted()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonProcessing))
+
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
+			Expect(processingCond.Reason).To(Equal(condition.ReasonProcessing))
+			Expect(obj.Status.Subscriber).To(BeNil())
 		})
 
 		It("should set NotReady and cleanup when approval is denied", func() {

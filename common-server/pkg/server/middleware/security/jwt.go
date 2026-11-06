@@ -16,6 +16,15 @@ import (
 
 var UserContextKey = "user"
 
+type authenticatedRequestPathKey struct{}
+
+// AuthenticatedRequestPath returns the authenticated JWT's non-empty requestPath
+// claim, independently of whether optional LMS validation is enabled.
+func AuthenticatedRequestPath(c *fiber.Ctx) (path string, ok bool) {
+	path, ok = c.Locals(authenticatedRequestPathKey{}).(string)
+	return path, ok
+}
+
 func mapIssuerUrls(issuers []string) []string {
 	jwkUrls := make([]string, 0, len(issuers))
 	for _, issuer := range issuers {
@@ -92,6 +101,10 @@ func NewJWT(opts JWTOpts) fiber.Handler {
 			if err := lmsChecks(claims, c.Method(), c.Path()); err != nil {
 				return err
 			}
+		}
+
+		if requestPath, ok := util.NotNilOfType[string](claims["requestPath"]); ok && requestPath != "" {
+			c.Locals(authenticatedRequestPathKey{}, requestPath)
 		}
 
 		return nil

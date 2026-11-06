@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -107,7 +106,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Name:     "default",
 					TokenUrl: "http://idp.test.local:8080",
 					Admin: adminv1.IdentityProviderAdminConfig{
-						Url: ptr.To("http://idp-admin.test.local:8080"),
+						Url: "http://idp-admin.test.local:8080",
 					},
 				}},
 			},
@@ -317,16 +316,16 @@ var _ = Describe("Team Controller", Ordered, func() {
 				}, timeout, interval).Should(Succeed())
 
 				By("Updating team members to trigger member change notification")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
-				Expect(err).NotTo(HaveOccurred())
-
-				originalMemberChangeRef := team.Status.NotificationsRef["team-members-changed"]
-				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
-					Name:  "new-member",
-					Email: "newmember@example.com",
-				})
-				err = k8sClient.Update(ctx, team)
-				Expect(err).NotTo(HaveOccurred())
+				var originalMemberChangeRef *types.ObjectRef
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).To(Succeed())
+					originalMemberChangeRef = team.Status.NotificationsRef["team-members-changed"]
+					team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
+						Name:  "new-member",
+						Email: "newmember@example.com",
+					})
+					g.Expect(k8sClient.Update(ctx, team)).To(Succeed())
+				}, timeout, interval).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					By("Getting the updated team")
@@ -613,7 +612,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Name:     "default",
 					TokenUrl: "http://idp.test.local:8080",
 					Admin: adminv1.IdentityProviderAdminConfig{
-						Url: ptr.To("http://idp-admin.test.local:8080"),
+						Url: "http://idp-admin.test.local:8080",
 					},
 				}},
 			},
@@ -678,7 +677,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				err = k8sClient.Create(ctx, team)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Checking if ErrorOccurred in team processing")
+				By("Checking if team processing is blocked")
 				Eventually(func(g Gomega) {
 					By("Getting the latest version of team object")
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
@@ -688,7 +687,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					readyCondition := meta.FindStatusCondition(team.GetConditions(), condition.ConditionTypeReady)
 					g.Expect(readyCondition).NotTo(BeNil())
 					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonError))
+					g.Expect(readyCondition.Reason).To(Equal(condition.ReasonBlocked))
 					g.Expect(readyCondition.Message).To(ContainSubstring("no zone with managed routes found"))
 
 					By("Checking the team namespace in status")

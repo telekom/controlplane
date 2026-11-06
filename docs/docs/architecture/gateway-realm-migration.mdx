@@ -97,7 +97,7 @@ Examples for a Route `eni-foo-v1`:
 - **Targets follow the upstream ID.** The circuit-breaker target is written to the upstream by its ID, so it works while the upstream is being renamed.
 - **Nothing is written before every lookup has succeeded.** Route, service and circuit-breaker upstream are looked up, including the duplicate and sharing checks, before the first write. A blocked migration leaves Kong unchanged, so the service never points to an upstream that was renamed away.
 - **Service sharing is checked before a rename.** A service found through its route or under a legacy name is renamed only if no other Kong route uses it; otherwise the reconcile is blocked and a delete skips the service. Once the service is named `P--R`, this check no longer runs.
-- **Circuit-breaker removal.** When the circuit breaker is disabled or removed, the service is pointed back to the proxy before the upstream is deleted. For a Route with a prefix the upstream is found by discovery even without a stored `upstreamId`; a foreign upstream is never deleted.
+- **Circuit-breaker removal.** When the circuit breaker is disabled or removed, or the Route leaves primary, the service is updated before the upstream is deleted. The upstream selected by the other features is kept, including Jumper's `/listener` endpoint when RouteListeners are attached. For a Route with a prefix the upstream is found by discovery even without a stored `upstreamId`; a foreign upstream is never deleted. Kong deletes the upstream's targets with it.
 
 :::note Known risk
 The circuit-breaker upstream is written before the service. Within one reconcile, the service host can point to the old upstream name for a few seconds after the upstream was renamed.

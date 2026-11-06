@@ -127,4 +127,31 @@ var _ = Describe("Condition Tests", func() {
 		})
 
 	})
+
+	Context("NewWaitingForTakeoverMessage function", func() {
+		It("should describe a base path conflict with the owning team", func() {
+			Expect(NewWaitingForTakeoverMessage("Api", ConflictIdentifierBasePath, "/eni/test/v1", "team-a", NoApplication)).To(Equal(
+				`Another Api with base path "/eni/test/v1" already exists and prevents this instance from becoming active. It is owned by team "team-a". ` +
+					"When the existing instance is deleted, this instance will be processed automatically. " +
+					"You do not need to submit it again."))
+		})
+
+		It("should describe a type conflict with the owning team", func() {
+			Expect(NewWaitingForTakeoverMessage("EventType", ConflictIdentifierType, "de.telekom.test.v1", "team-b", NoApplication)).To(Equal(
+				`Another EventType with type "de.telekom.test.v1" already exists and prevents this instance from becoming active. It is owned by team "team-b". ` +
+					MessageWaitingForTakeover))
+		})
+
+		It("should include the owning application when given", func() {
+			Expect(NewWaitingForTakeoverMessage("ApiExposure", ConflictIdentifierBasePath, "/eni/test/v1", "team-a", "app-1")).To(Equal(
+				`Another ApiExposure with base path "/eni/test/v1" already exists and prevents this instance from becoming active. It is owned by team "team-a", application "app-1". ` +
+					MessageWaitingForTakeover))
+		})
+
+		It("should quote user-controlled values", func() {
+			Expect(NewWaitingForTakeoverMessage("Api", ConflictIdentifierBasePath, `/a"b`, `t"1`, `app"x`)).To(Equal(
+				`Another Api with base path "/a\"b" already exists and prevents this instance from becoming active. It is owned by team "t\"1", application "app\"x". ` +
+					MessageWaitingForTakeover))
+		})
+	})
 })

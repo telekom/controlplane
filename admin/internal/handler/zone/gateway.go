@@ -83,6 +83,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 				Url:          config.Admin.Url,
 			},
 			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, hc.Zone.Status.RealmName),
+			TLS:        hc.managedTLS(),
 		}
 
 		if hc.Zone.Spec.Redis != nil {

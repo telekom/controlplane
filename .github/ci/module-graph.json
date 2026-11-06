@@ -18,7 +18,8 @@
       "common",
       "common-server",
       "gateway",
-      "identity"
+      "identity",
+      "organization"
     ]
   },
   "api": {
@@ -96,6 +97,7 @@
       "common-server",
       "gateway",
       "identity",
+      "organization",
       "pubsub",
       "secret-manager"
     ]
@@ -110,6 +112,7 @@
       "common-server",
       "gateway",
       "identity",
+      "organization",
       "secret-manager",
       "sftp"
     ]
@@ -202,13 +205,18 @@
       "agentic",
       "api",
       "application",
+      "approval",
       "common",
       "common-server",
       "event",
       "file",
+      "gateway",
+      "identity",
       "organization",
       "permission",
-      "secret-manager"
+      "pubsub",
+      "secret-manager",
+      "spectre"
     ]
   },
   "rover-ctl": {
@@ -224,13 +232,18 @@
       "agentic",
       "api",
       "application",
+      "approval",
       "common",
       "common-server",
       "event",
       "file",
       "file-manager",
+      "gateway",
+      "identity",
+      "pubsub",
       "rover",
-      "secret-manager"
+      "secret-manager",
+      "spectre"
     ]
   },
   "secret-manager": {
@@ -245,6 +258,22 @@
     "depends_on": [
       "common",
       "common-server",
+      "secret-manager"
+    ]
+  },
+  "spectre": {
+    "path": "spectre",
+    "depends_on": [
+      "admin",
+      "api",
+      "application",
+      "approval",
+      "common",
+      "common-server",
+      "event",
+      "gateway",
+      "identity",
+      "pubsub",
       "secret-manager"
     ]
   },

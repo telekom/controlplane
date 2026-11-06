@@ -53,10 +53,6 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 		return false
 	}
 
-	if route.IsProxy() {
-		return false
-	}
-
 	if !isDeleteScenario(route) {
 		return true
 	}
@@ -84,15 +80,24 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 func handleDeletion(builder features.FeaturesBuilder) {
 	current := builder.GetUpstream()
 	if current == nil {
-		current = client.NewUpstreamOrDie(plugin.LocalhostProxyUrl)
+		current = client.NewUpstreamOrDie(jumperUrl(builder))
 	}
 	builder.SetUpstream(&client.UpstreamRemoval{Upstream: current})
 }
 
-// isDeleteScenario reports whether the CB is disabled or removed.
+// jumperUrl keeps the jumper /listener endpoint set by the RouteListener feature,
+// which runs before this feature, so circuit-breaker routes keep capturing events.
+func jumperUrl(builder features.FeaturesBuilder) string {
+	if len(builder.GetRouteListeners()) > 0 {
+		return plugin.LocalhostListenerUrl
+	}
+	return plugin.LocalhostProxyUrl
+}
+
+// isDeleteScenario reports whether the CB is disabled, removed, or the route is no longer primary.
 func isDeleteScenario(route *gatewayv1.Route) bool {
 	cb := route.Spec.Traffic.CircuitBreaker
-	return cb == nil || !cb.Enabled
+	return cb == nil || !cb.Enabled || route.IsProxy()
 }
 
 // handleApply makes the Kong client write the upstream and target the service points to.
@@ -152,7 +157,7 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 
 	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as the Kong route)
 	builder.SetUpstream(&client.CircuitBreakerUpstream{
-		CustomUpstream: client.CustomUpstream{Scheme: "http", Host: routeName, Port: 8080, Path: "/proxy"},
+		CustomUpstream: client.CustomUpstream{Scheme: "http", Host: routeName, Port: 8080, Path: client.NewUpstreamOrDie(jumperUrl(builder)).GetPath()},
 		Upstream:       &upstreamBody,
 		Target:         &targetsBody,
 	})

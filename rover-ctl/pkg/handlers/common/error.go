@@ -70,6 +70,33 @@ func (e *RequestError) Unwrap() error {
 	return e.err
 }
 
+// Reasons reported by PaginationLinkError.
+const (
+	PaginationLinkMalformedURL    = "malformed URL"
+	PaginationLinkInvalidQuery    = "invalid query encoding"
+	PaginationLinkMissingCursor   = "missing cursor"
+	PaginationLinkDuplicateCursor = "duplicate cursor"
+	PaginationLinkInvalidLimit    = "invalid limit"
+)
+
+var _ error = &PaginationLinkError{}
+
+// PaginationLinkError is returned when a server continuation link cannot be
+// used. Error() only contains a fixed reason; the wrapped parse error may
+// quote the link or cursor and is only available through errors.Is/errors.As.
+type PaginationLinkError struct {
+	Reason string
+	err    error
+}
+
+func (e *PaginationLinkError) Error() string {
+	return "server returned an invalid pagination link: " + e.Reason
+}
+
+func (e *PaginationLinkError) Unwrap() error {
+	return e.err
+}
+
 var _ error = &ResponseDecodeError{}
 
 // ResponseDecodeError is returned when a successful response body cannot be

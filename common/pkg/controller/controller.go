@@ -88,9 +88,15 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	env, ok := GetEnvironment(object)
 	if !ok {
-		logger.V(0).Info("Environment label is missing")
-		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
-		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
+		// Deletion cleanup needs the environment, so a deleted object that still
+		// has the finalizer stays Blocked until the label is re-added.
+		message := "Environment label is missing"
+		if IsBeingDeleted(object) {
+			message = "Environment label is missing; re-add it to finish deletion"
+		}
+		logger.V(0).Info("Environment label is missing", "beingDeleted", IsBeingDeleted(object))
+		c.Event(ctx, object, "Warning", "Processing", message)
+		if object.SetCondition(condition.NewBlockedCondition(message)) {
 			StampObservedGeneration(object)
 			if updateErr := c.Client.Status().Update(ctx, object); updateErr != nil {
 				return HandleError(ctx, updateErr, object, c.Recorder)
@@ -242,8 +248,13 @@ func GetEnvironment(object metav1.Object) (string, bool) {
 	return e, ok
 }
 
+// FirstSetup adds the finalizer and initializes the conditions. The finalizer is
+// only added to objects with an environment label, because deletion cleanup
+// needs the environment. Without the finalizer, such objects can be deleted
+// right away.
 func FirstSetup(ctx context.Context, c client.Client, object common_types.Object) (bool, error) {
-	if !controllerutil.ContainsFinalizer(object, config.FinalizerName) {
+	_, hasEnvironment := GetEnvironment(object)
+	if hasEnvironment && !controllerutil.ContainsFinalizer(object, config.FinalizerName) {
 		controllerutil.AddFinalizer(object, config.FinalizerName)
 		if err := c.Update(ctx, object); err != nil {
 			return false, err
@@ -277,13 +288,35 @@ func HandleError(ctx context.Context, err error, obj common_types.Object, record
 	return result, retryErr
 }
 
-// EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil
-// and the Ready condition is not already set to false.
+// EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil.
+//
+// A blocked error sets the reason Blocked, matching the Processing condition set by HandleError,
+// and always carries the current message. Any other error sets the reason Error; if Ready is
+// already False with reason Error, its message is kept, so errors whose text changes on every
+// attempt do not cause a status write each time. Either kind replaces a Ready=False with reason
+// Error or Blocked. A Ready=False with any other reason was set by the handler and is kept.
+// Conflict errors are ignored, as in HandleError.
+//
+// The return value reports whether the condition changed; it is best-effort and callers
+// persist the status regardless.
 func EnsureNotReadyOnError(_ context.Context, _ client.Client, obj common_types.Object, err error) bool {
-	if err != nil && !meta.IsStatusConditionFalse(obj.GetConditions(), condition.ConditionTypeReady) {
-		return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, err.Error()))
+	if err == nil || apierrors.IsConflict(err) {
+		return false
 	}
-	return false
+	ready := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+	notReady := ready != nil && ready.Status == metav1.ConditionFalse
+	if notReady && ready.Reason != condition.ReasonError && ready.Reason != condition.ReasonBlocked {
+		return false
+	}
+
+	var be ctrlerrors.BlockedError
+	if errors.As(err, &be) && be.IsBlocked() {
+		return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonBlocked, err.Error()))
+	}
+	if notReady && ready.Reason == condition.ReasonError {
+		return false
+	}
+	return obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonError, err.Error()))
 }
 
 // StampObservedGeneration sets ObservedGeneration on all conditions to match

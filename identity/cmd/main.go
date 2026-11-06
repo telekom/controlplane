@@ -22,6 +22,7 @@ import (
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/internal/controller"
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -139,6 +140,16 @@ func main() {
 	ctx := ctrl.SetupSignalHandler()
 	controller.RegisterIndexesOrDie(ctx, mgr)
 
+	keycloakServices, err := keycloak.NewServiceFactory(ctx, mgr.GetClient())
+	if err != nil {
+		setupLog.Error(err, "unable to create keycloak service factory")
+		os.Exit(1)
+	}
+	if err = mgr.Add(keycloakServices); err != nil {
+		setupLog.Error(err, "unable to add keycloak service factory to manager")
+		os.Exit(1)
+	}
+
 	if err = (&controller.IdentityProviderReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -147,15 +158,17 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.ClientReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: keycloakServices,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Client")
 		os.Exit(1)
 	}
 	if err = (&controller.RealmReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		ClientFactory: keycloakServices,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Realm")
 		os.Exit(1)

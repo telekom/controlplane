@@ -577,11 +577,12 @@ var _ = Describe("Realm route", func() {
 			Expect(kongFake.calls).NotTo(ContainElement("GET /upstreams/bond.eni-example-v1"))
 		})
 
-		It("deletes the located upstream and its target by ID", func() {
+		It("deletes the located upstream by ID and lets Kong cascade target deletion", func() {
 			id := kongFake.add("upstreams", cpEntity("bond--eni-example-v1"))
 			route.SetTargetsId("t1")
 			Expect(client.DeleteUpstream(ctx, route)).To(Succeed())
-			Expect(kongFake.writes()).To(Equal([]string{"DELETE /upstreams/" + id, "DELETE /upstreams/" + id + "/targets/t1"}))
+			Expect(kongFake.writes()).To(Equal([]string{"DELETE /upstreams/" + id}))
+			Expect(kongFake.get("upstreams", id)).To(BeNil())
 		})
 
 		It("skips a foreign upstream without blocking", func() {

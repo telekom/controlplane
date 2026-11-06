@@ -25,7 +25,8 @@ type AdminConfig struct {
 }
 
 // GatewaySpec defines the desired state of Gateway
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.namePrefix) || oldSelf.namePrefix == '' || (has(self.namePrefix) && self.namePrefix != '')",message="namePrefix cannot be removed once set"
+//
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.namePrefix) || size(oldSelf.namePrefix) == 0 || (has(self.namePrefix) && size(self.namePrefix) != 0)",message="namePrefix cannot be removed once set"
 type GatewaySpec struct {
 	Redis *RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig  `json:"admin"`
@@ -39,6 +40,11 @@ type GatewaySpec struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	// +kubebuilder:validation:MaxLength=63
 	NamePrefix string `json:"namePrefix,omitempty"`
+
+	// TLS configures additional CA certificates trusted for the admin API and token endpoint.
+	// The referenced ConfigMap must be in the namespace of the Gateway.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway

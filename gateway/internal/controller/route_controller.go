@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
+	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
 // RouteReconciler reconciles a Route object
@@ -33,11 +35,14 @@ type RouteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	// KongClients is the operator wide Kong client factory.
+	KongClients *kongutil.ClientFactory
 
 	cc.Controller[*gatewayv1.Route]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes/finalizers,verbs=update
@@ -48,8 +53,11 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.KongClients == nil {
+		return errors.New("kong client factory is required")
+	}
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&routehandler.RouteHandler{KongClients: r.KongClients}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor,
@@ -60,6 +68,9 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.Gateway{},
 			handler.EnqueueRequestsFromMapFunc(r.mapGatewayToRoutes),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, NamePrefixChangedPredicate()))).
+		Watches(&gatewayv1.RouteListener{},
+			handler.EnqueueRequestsFromMapFunc(r.mapRouteListenerToRoute),
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -117,4 +128,19 @@ func (r *RouteReconciler) mapGatewayToRoutes(ctx context.Context, obj client.Obj
 	}
 	slices.SortFunc(requests, func(a, b reconcile.Request) int { return strings.Compare(a.String(), b.String()) })
 	return requests
+}
+
+func (r *RouteReconciler) mapRouteListenerToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
+	routeListener, ok := obj.(*gatewayv1.RouteListener)
+	if !ok {
+		return nil
+	}
+
+	// The RouteListener's spec.route references the Route it attaches to.
+	route := &gatewayv1.Route{}
+	if err := r.Get(ctx, routeListener.Spec.Route.K8s(), route); err != nil {
+		return nil
+	}
+
+	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
 }

@@ -96,7 +96,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		idpAdminUrl := "https://idp-admin.example.com"
 		zone := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default", Labels: labels}, Spec: adminv1.ZoneSpec{
 			Visibility:        adminv1.ZoneVisibilityEnterprise,
-			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default", IssuerHostname: "idp.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: &idpAdminUrl}}},
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default", IssuerHostname: "idp.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: idpAdminUrl}}},
 			Gateways:          []adminv1.GatewayConfig{{Name: "default", Admin: adminv1.GatewayAdminConfig{Url: "https://gateway-admin.example.com"}}},
 			Presets:           []adminv1.Preset{{Name: "event", Type: adminv1.GatewayTypeEvent, Default: true, GatewayRef: "default", IdentityProviderRef: "default", Urls: []adminv1.UrlConfig{{Scheme: "https", Hostname: name + ".example.com", Port: 443, BasePath: "/"}}}},
 		}}

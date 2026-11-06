@@ -61,6 +61,16 @@ If the issuer cannot be determined, for example because the discovery request fa
 Without a `frontendUrl`, Keycloak derives the issuer from the request it receives (depending on its hostname configuration). The issuer discovered through the internal admin URL may then differ from the issuer seen by external clients. Set `frontendUrl`, or configure a fixed Keycloak hostname, to get a stable public issuer.
 :::
 
+## Admin Connection Trust and Snapshots
+
+`IdentityProvider.spec.tls.configMapRef` optionally references CA certificates in a ConfigMap in the IDP's namespace. Realm and Client operations use these certificates, in addition to system roots, for both password/refresh token requests and the Keycloak admin API. Trust failures appear on those operations, not as proactive IdentityProvider readiness checks.
+
+A Realm's `status.connection` records its IDP name, namespace, and UID, plus the optional CA reference and originating namespace; it contains no certificate bytes. Deletion can therefore use the stored connection without reading a live IDP. Clients use the same Realm snapshot and shared IDP-scoped factory. Old and new connection versions can coexist during reconciliation.
+
+Legacy Realms without `status.connection` keep system-only behavior and Realm-scoped cache isolation. Present but incomplete connection metadata blocks the operation rather than silently discarding custom TLS. Missing trust retains finalizers when remote deletion is required; the existing Client exception for a missing or non-ready Realm remains unchanged.
+
+See [standalone examples](../admin-journey/environments-and-zones.md#standalone-gateway-and-identityprovider) and [Outbound TLS Clients](./outbound-tls-clients.md) for the shared factory, leases, authentication lifetime, and recovery.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which identity provider to use.

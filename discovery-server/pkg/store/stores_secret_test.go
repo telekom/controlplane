@@ -14,6 +14,7 @@ import (
 	csstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
+	"github.com/telekom/controlplane/discovery-server/pkg/store"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -40,10 +41,7 @@ var _ = Describe("Secret Store Integration", func() {
 			secretMgr = fake.NewMockSecretManager(GinkgoT())
 			wrappedStore = secrets.WrapStore(
 				mockStore,
-				[]string{
-					"spec.security.m2m.client.clientSecret",
-					"spec.security.m2m.basic.password",
-				},
+				store.SecretsForKinds["ApiSubscription"],
 				secrets.NewSecretManagerResolver(secretMgr),
 			)
 		})
@@ -95,6 +93,17 @@ var _ = Describe("Secret Store Integration", func() {
 				Expect(result.Spec.Security.M2M.Basic.Password).To(Equal(resolvedSecret))
 				Expect(result.Spec.Security.M2M.Client.ClientSecret).To(Equal("plain-secret"))
 			})
+
+			It("resolves clientKey placeholder", func() {
+				obj := newApiSubscription("", "plain-password")
+				obj.Spec.Security.M2M.Client.ClientKey = secretPlaceholder
+				mockStore.EXPECT().Get(ctx, "default", "test-sub").Return(obj, nil)
+				secretMgr.EXPECT().Get(ctx, "test-secret-id").Return(resolvedSecret, nil)
+
+				result, err := wrappedStore.Get(ctx, "default", "test-sub")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Spec.Security.M2M.Client.ClientKey).To(Equal(resolvedSecret))
+			})
 		})
 
 		Context("List", func() {
@@ -130,11 +139,7 @@ var _ = Describe("Secret Store Integration", func() {
 			secretMgr = fake.NewMockSecretManager(GinkgoT())
 			wrappedStore = secrets.WrapStore(
 				mockStore,
-				[]string{
-					"spec.security.m2m.externalIDP.client.clientSecret",
-					"spec.security.m2m.externalIDP.basic.password",
-					"spec.security.m2m.basic.password",
-				},
+				store.SecretsForKinds["ApiExposure"],
 				secrets.NewSecretManagerResolver(secretMgr),
 			)
 		})
@@ -174,6 +179,17 @@ var _ = Describe("Secret Store Integration", func() {
 				result, err := wrappedStore.Get(ctx, "default", "test-exp")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal(resolvedSecret))
+			})
+
+			It("resolves externalIDP clientKey placeholder", func() {
+				obj := newApiExposure("", "plain-pass")
+				obj.Spec.Security.M2M.ExternalIDP.Client.ClientKey = secretPlaceholder
+				mockStore.EXPECT().Get(ctx, "default", "test-exp").Return(obj, nil)
+				secretMgr.EXPECT().Get(ctx, "test-secret-id").Return(resolvedSecret, nil)
+
+				result, err := wrappedStore.Get(ctx, "default", "test-exp")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Spec.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal(resolvedSecret))
 			})
 
 			It("resolves externalIDP basic password placeholder", func() {

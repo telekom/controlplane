@@ -16,6 +16,11 @@ type IdentityProviderSpec struct {
 	AdminClientId string `json:"adminClientId"`
 	AdminUserName string `json:"adminUserName"`
 	AdminPassword string `json:"adminPassword"`
+
+	// TLS configures additional CA certificates trusted for the admin API and token endpoint.
+	// The referenced ConfigMap must be in the namespace of the IdentityProvider.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // IdentityProviderStatus defines the observed state of IdentityProvider

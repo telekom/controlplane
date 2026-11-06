@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -230,7 +229,7 @@ func NewZone(name, environment string) *adminv1.Zone {
 			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "default",
 				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url: ptr.To("http://idp-admin.test.local:8080"),
+					Url: "http://idp-admin.test.local:8080",
 				},
 			}},
 		},

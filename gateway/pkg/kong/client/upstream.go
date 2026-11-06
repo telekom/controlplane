@@ -107,7 +107,7 @@ func (c *kongClient) upstreamRefForDelete(ctx context.Context, route CustomRoute
 
 // removeUpstream deletes the upstream and its target and clears their IDs.
 func (c *kongClient) removeUpstream(ctx context.Context, route CustomRoute, upstreamRef string) error {
-	if err := c.deleteUpstreamAndTargets(ctx, route, upstreamRef); err != nil {
+	if err := c.deleteUpstreamAndTargets(ctx, upstreamRef); err != nil {
 		return err
 	}
 	route.SetUpstreamId("")
@@ -131,17 +131,18 @@ func (c *kongClient) locatedUpstream(ctx context.Context, route CustomRoute, des
 	return newLocatedEntity(d), nil
 }
 
+// DeleteUpstream deletes the upstream of the route. Kong deletes its targets with it.
 func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) error {
 	upstreamRef, err := c.upstreamRefForDelete(ctx, route)
 	if err != nil {
 		return err
 	}
-	return c.deleteUpstreamAndTargets(ctx, route, upstreamRef)
+	return c.deleteUpstreamAndTargets(ctx, upstreamRef)
 }
 
-// deleteUpstreamAndTargets deletes the upstream and the stored target. An empty reference
+// deleteUpstreamAndTargets deletes the upstream; Kong cascades the deletion to its targets. An empty reference
 // means there is nothing to delete.
-func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, route CustomRoute, upstreamRef string) error {
+func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, upstreamRef string) error {
 	if upstreamRef == "" {
 		return nil
 	}
@@ -151,17 +152,6 @@ func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, route CustomR
 	}
 	if err := CheckStatusCode(upstreamResponse, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
 		return fmt.Errorf("failed to delete upstream (%d): %s: %w", upstreamResponse.StatusCode(), summarizeBody(upstreamResponse.Body), err)
-	}
-
-	if route.GetTargetsId() != "" {
-		// targets don't have names, so we use the ID directly
-		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, upstreamRef, route.GetTargetsId())
-		if err != nil {
-			return fmt.Errorf("failed to delete upstream targets: %w", HandleClientError(err))
-		}
-		if err := CheckStatusCode(targetsResponse, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
-			return fmt.Errorf("failed to delete upstream targets (%d): %s: %w", targetsResponse.StatusCode(), summarizeBody(targetsResponse.Body), err)
-		}
 	}
 	return nil
 }
@@ -369,7 +359,7 @@ func (e targetEntity) Write(ctx context.Context, desired *kong.CreateTargetForUp
 	if err != nil {
 		return nil, fmt.Errorf("failed to write target: %w", HandleClientError(err))
 	}
-	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON200},
+	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON201},
 		http.StatusOK, http.StatusCreated)
 }
 

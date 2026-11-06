@@ -271,7 +271,7 @@ func (c *kongClient) deleteRealmRoute(ctx context.Context, route CustomRoute) er
 			return err
 		}
 	}
-	return c.deleteUpstreamAndTargets(ctx, route, upstreamRef)
+	return c.deleteUpstreamAndTargets(ctx, upstreamRef)
 }
 
 func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName string) error {

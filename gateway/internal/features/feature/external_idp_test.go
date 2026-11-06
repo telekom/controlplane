@@ -758,6 +758,54 @@ var _ = Describe("ExternalIDPFeature", func() {
 				})
 			})
 
+			Context("when provider clientKey is a secret reference", func() {
+				It("resolves the clientKey from the secret manager", func() {
+					originalGet := secretManagerApi.Get
+					defer func() { secretManagerApi.Get = originalGet }()
+					secretManagerApi.Get = func(_ context.Context, ref string) (string, error) {
+						if ref == "$<client-key-ref>" {
+							return "resolved-private-key", nil
+						}
+						return ref, nil
+					}
+
+					route := &gatewayv1.Route{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test-route",
+							Namespace: "test-ns",
+						},
+						Spec: gatewayv1.RouteSpec{
+							Type:    gatewayv1.RouteTypePrimary,
+							Traffic: gatewayv1.Traffic{},
+							Security: gatewayv1.Security{
+								M2M: &gatewayv1.Machine2MachineAuthentication{
+									ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  gatewayv1.TokenRequestClientSecretBasic,
+										GrantType:     "client_credentials",
+										Client: &gatewayv1.OAuth2ClientCredentials{
+											ClientId:  "my-client-id",
+											ClientKey: "$<client-key-ref>",
+										},
+									},
+								},
+							},
+						},
+					}
+					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+					jumperConfig := plugin.NewJumperConfig()
+
+					builder.EXPECT().GetRoute().Return(route, true)
+					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
+					builder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+
+					err := f.Apply(ctx, builder)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(jumperConfig.OAuth[feature.DefaultProviderKey].ClientKey).To(Equal("resolved-private-key"))
+				})
+			})
+
 			Context("when secret manager fails for provider refresh token", func() {
 				It("returns a wrapped error", func() {
 					originalGet := secretManagerApi.Get

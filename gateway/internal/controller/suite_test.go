@@ -106,9 +106,13 @@ var _ = BeforeSuite(func() {
 
 	// Override kongutil.GetClientFor to always return our mock
 	originalGetClientFor := kongutil.GetClientFor
-	kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-		return mockKongClient, nil
+	kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+		return mockKongClient, func() {}, nil
 	}
+
+	kongClients, err := kongutil.NewClientFactory(ctx, k8sManager.GetClient())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(k8sManager.Add(kongClients)).To(Succeed())
 
 	// Override secrets.Get to be an identity function (no real secret resolution needed)
 	originalSecretsGet := secretsapi.Get
@@ -125,20 +129,29 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&RouteReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &testmock.EventRecorder{},
+		Client:      k8sManager.GetClient(),
+		Scheme:      k8sManager.GetScheme(),
+		Recorder:    &testmock.EventRecorder{},
+		KongClients: kongClients,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsumerReconciler{
+		Client:      k8sManager.GetClient(),
+		Scheme:      k8sManager.GetScheme(),
+		Recorder:    &testmock.EventRecorder{},
+		KongClients: kongClients,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&ConsumeRouteReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ConsumeRouteReconciler{
+	err = (&RouteListenerReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},

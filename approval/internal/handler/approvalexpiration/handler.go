@@ -61,6 +61,17 @@ func (h *Handler) CreateOrUpdate(ctx context.Context, ae *v1.ApprovalExpiration)
 	if now.After(ae.Spec.Expiration.Time) || now.Equal(ae.Spec.Expiration.Time) {
 		logger.Info("Approval has expired, transitioning to Expired state", "expiration", ae.Spec.Expiration.Time)
 		_, err := c.CreateOrUpdate(ctx, approval, func() error {
+			// Record the state before the expiry if no decision shows it, as the
+			// approval builder reads it from the decisions once the approval
+			// controller has overwritten Status.LastState.
+			if n := len(approval.Spec.Decisions); n == 0 || approval.Spec.Decisions[n-1].ResultingState != approval.Spec.State {
+				approval.AppendDecision(v1.Decision{
+					Name:           v1.SystemDecisionName,
+					Comment:        fmt.Sprintf("Approval was %s when it expired", approval.Spec.State),
+					Timestamp:      &metav1.Time{Time: now},
+					ResultingState: approval.Spec.State,
+				})
+			}
 			approval.Spec.State = v1.ApprovalStateExpired
 			approval.AppendDecision(v1.Decision{
 				Name:           v1.SystemDecisionName,
@@ -116,14 +127,15 @@ func (h *Handler) sendReminder(ctx context.Context, ae *v1.ApprovalExpiration, a
 
 	notificationData := util.ReminderNotificationData{
 		NotificationData: util.NotificationData{
-			Owner:     ae,
-			StateNew:  string(approval.Spec.State),
-			StateOld:  string(approval.Spec.State),
-			Target:    &approval.Spec.Target,
-			Requester: &approval.Spec.Requester,
-			Decider:   &approval.Spec.Decider,
-			Scenario:  util.NotificationScenarioUpdated,
-			Action:    approval.Spec.Action,
+			Owner:       ae,
+			StateNew:    string(approval.Spec.State),
+			StateOld:    string(approval.Spec.State),
+			Target:      &approval.Spec.Target,
+			Requester:   &approval.Spec.Requester,
+			Decider:     &approval.Spec.Decider,
+			Scenario:    util.NotificationScenarioUpdated,
+			Action:      approval.Spec.Action,
+			ApprovalKey: approval.Spec.ApprovalKey,
 		},
 		ExpirationDate: ae.Spec.Expiration.Format(time.RFC3339),
 		DaysRemaining:  fmt.Sprintf("%d", daysRemaining),

@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +25,7 @@ func identityProvider(name, password string) adminv1.IdentityProviderConfig {
 	return adminv1.IdentityProviderConfig{
 		Name: name,
 		Admin: adminv1.IdentityProviderAdminConfig{
-			Url:      &adminURL,
+			Url:      adminURL,
 			ClientId: "admin-client",
 			UserName: "admin",
 			Password: password,
@@ -95,6 +96,21 @@ var _ = Describe("Zone validation", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
+	})
+
+	It("accepts valid TLS references and rejects invalid ones", func() {
+		zone := validZone()
+		zone.Spec.Gateways[0].TLS = &ctypes.TLSConfig{ConfigMapRef: ctypes.ConfigMapKeyRef{Name: "custom-ca", Key: "ca.pem"}}
+		zone.Spec.IdentityProviders[0].TLS = &ctypes.TLSConfig{ConfigMapRef: ctypes.ConfigMapKeyRef{Name: "custom-ca", Key: "ca.pem"}}
+		_, err := validator.ValidateCreate(ctx, zone)
+		Expect(err).NotTo(HaveOccurred())
+
+		zone.Spec.Gateways[0].TLS.ConfigMapRef.Name = "Invalid_Name"
+		zone.Spec.IdentityProviders[0].TLS.ConfigMapRef.Key = ""
+		_, err = validator.ValidateCreate(ctx, zone)
+		Expect(apierrors.IsInvalid(err)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("spec.gateways[0].tls.configMapRef.name")))
+		Expect(err).To(MatchError(ContainSubstring("spec.identityProviders[0].tls.configMapRef.key")))
 	})
 
 	DescribeTable("validates aggregated gateway route limits on create and update",
@@ -542,7 +558,7 @@ var _ = Describe("Zone validation", func() {
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
 		},
 		Entry("gateway admin HTTP URL", func(z *adminv1.Zone) { z.Spec.Gateways[0].Admin.Url = "http://gateway.example.com" }, "admin.url"),
-		Entry("IDP admin HTTP URL", func(z *adminv1.Zone) { *z.Spec.IdentityProviders[0].Admin.Url = "http://idp.example.com" }, "admin.url"),
+		Entry("IDP admin HTTP URL", func(z *adminv1.Zone) { z.Spec.IdentityProviders[0].Admin.Url = "http://idp.example.com" }, "admin.url"),
 		Entry("IDP token HTTP URL", func(z *adminv1.Zone) { z.Spec.IdentityProviders[0].TokenUrl = "http://idp.example.com/token" }, "tokenUrl"),
 		Entry("preset token HTTP URL", func(z *adminv1.Zone) { z.Spec.Presets[0].TokenUrl = "http://idp.example.com/token" }, "tokenUrl"),
 		Entry("invalid issuer hostname", func(z *adminv1.Zone) { z.Spec.IdentityProviders[0].IssuerHostname = "https://idp.example.com" }, "issuerHostname"),
@@ -551,24 +567,18 @@ var _ = Describe("Zone validation", func() {
 		Entry("hidden-only URL list", func(z *adminv1.Zone) { z.Spec.Presets[0].Urls[0].Hidden = true }, "non-hidden URL"),
 	)
 
-	It("requires an admin URL hostname when issuerHostname is absent", func() {
+	It("requires the identity provider admin URL", func() {
 		zone := validZone()
-		zone.Spec.IdentityProviders[0].IssuerHostname = ""
-		zone.Spec.IdentityProviders[0].Admin.Url = nil
+		zone.Spec.IdentityProviders[0].Admin.Url = ""
 		_, err := validator.ValidateCreate(ctx, zone)
-		Expect(err).To(MatchError(ContainSubstring("issuerHostname")))
+		Expect(err).To(MatchError(ContainSubstring("admin.url")))
 		Expect(apierrors.IsInvalid(err)).To(BeTrue())
 	})
 
-	It("does not require issuerHostname when an invalid-scheme admin URL has a usable hostname", func() {
+	It("does not require issuerHostname", func() {
 		zone := validZone()
 		zone.Spec.IdentityProviders[0].IssuerHostname = ""
-		adminURL := "http://idp.example.com/admin"
-		zone.Spec.IdentityProviders[0].Admin.Url = &adminURL
-
 		_, err := validator.ValidateCreate(ctx, zone)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("admin.url"))
-		Expect(err.Error()).NotTo(ContainSubstring("issuerHostname"))
+		Expect(err).NotTo(HaveOccurred())
 	})
 })

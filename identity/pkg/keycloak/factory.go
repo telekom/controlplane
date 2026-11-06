@@ -6,156 +6,214 @@ package keycloak
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/tls"
+	"errors"
 	"fmt"
-	"net/url"
-	"os"
-	"strings"
-	"sync"
 	"time"
 
-	"golang.org/x/oauth2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
+	"github.com/telekom/controlplane/common-server/pkg/client/tlsclient"
+	"github.com/telekom/controlplane/common/pkg/cabundle"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
 )
 
-// ServiceFactory creates KeycloakService instances for a given RealmStatus.
+const (
+	profileName       = "identity"
+	realmOwnerKind    = "identity.cp.ei.telekom.de/Realm"
+	idpOwnerKind      = "identity.cp.ei.telekom.de/IdentityProvider"
+	defaultTimeout    = 10 * time.Second
+	metricsClientName = "identity"
+)
+
+// ServiceFactory creates KeycloakService instances for the admin connection
+// described by a RealmStatus of a Realm.
 type ServiceFactory interface {
-	ServiceFor(realmStatus identityv1.RealmStatus) (KeycloakService, error)
+	// ServiceFor returns a service for status, which belongs to realm and may
+	// carry resolved secrets, and a function releasing it. The release
+	// function must be called once the service is no longer used.
+	ServiceFor(ctx context.Context, realm *identityv1.Realm, status identityv1.RealmStatus) (KeycloakService, func(), error)
 }
 
-// ServiceFactoryFunc adapts a plain function to the
+// ServiceFactoryFunc adapts a function with the ServiceFor signature to the
 // ServiceFactory interface. Useful for tests.
-type ServiceFactoryFunc func(identityv1.RealmStatus) (KeycloakService, error)
+type ServiceFactoryFunc func(ctx context.Context, realm *identityv1.Realm, status identityv1.RealmStatus) (KeycloakService, func(), error)
 
-//nolint:gocritic // Function adapter preserves the shared ServiceFactory signature.
-func (f ServiceFactoryFunc) ServiceFor(s identityv1.RealmStatus) (KeycloakService, error) {
-	return f(s)
+// ServiceFor implements ServiceFactory by calling f.
+//
+//nolint:gocritic // ServiceFactory keeps a value-based status for callers.
+func (f ServiceFactoryFunc) ServiceFor(ctx context.Context, realm *identityv1.Realm, status identityv1.RealmStatus) (KeycloakService, func(), error) {
+	return f(ctx, realm, status)
 }
 
-// serviceFactory is the production implementation with caching.
-// Cached services are keyed by a SHA-256 digest of the connection
-// parameters so that credentials are not stored as plaintext map keys.
-type serviceFactory struct {
-	mu    sync.RWMutex
-	cache map[string]KeycloakService
+// configError marks an invalid connection configuration. It satisfies the
+// ctrlerrors.BlockedError interface via duck-typing.
+type configError struct {
+	err error
 }
 
-// NewServiceFactory creates a new cached production factory.
-func NewServiceFactory() ServiceFactory {
-	return &serviceFactory{cache: make(map[string]KeycloakService)}
+func (e *configError) Error() string {
+	return e.err.Error()
 }
 
-//nolint:gocritic // ServiceFactory keeps a value-based API for callers.
-func (f *serviceFactory) ServiceFor(status identityv1.RealmStatus) (KeycloakService, error) {
-	key := cacheKey(&status)
+func (e *configError) Unwrap() error {
+	return e.err
+}
 
-	// Fast path: read lock only.
-	f.mu.RLock()
-	if svc, ok := f.cache[key]; ok {
-		f.mu.RUnlock()
-		return svc, nil
-	}
-	f.mu.RUnlock()
+// IsBlocked satisfies the ctrlerrors.BlockedError interface.
+func (e *configError) IsBlocked() bool {
+	return true
+}
 
-	// Slow path: acquire write lock, double-check.
-	f.mu.Lock()
-	defer f.mu.Unlock()
+func connectionErrorf(format string, a ...any) error {
+	return &configError{err: fmt.Errorf(format, a...)}
+}
 
-	if svc, ok := f.cache[key]; ok {
-		return svc, nil
-	}
+// CachedServiceFactory is the production ServiceFactory. A single instance
+// is shared by all controllers of the operator and must be added to the
+// manager to clean up idle clients.
+type CachedServiceFactory struct {
+	clients *tlsclient.Factory
+	reader  client.Reader
+}
 
-	svc, err := NewKeycloakServiceFor(&status)
+var _ ServiceFactory = &CachedServiceFactory{}
+
+// NewServiceFactory creates the factory. ctx is the operator lifetime and
+// reader is used to read CA bundle ConfigMaps (the manager cached client).
+// The HTTP timeout defaults to 10s and can be overridden via CLIENT_TIMEOUT.
+func NewServiceFactory(ctx context.Context, reader client.Reader, opts ...tlsclient.FactoryOption) (*CachedServiceFactory, error) {
+	p, err := profile(commonclient.EnvClientTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	f.cache[key] = svc
-	return svc, nil
+	clients, err := tlsclient.NewFactory(ctx, []tlsclient.Profile{p}, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("creating keycloak client factory: %w", err)
+	}
+	return &CachedServiceFactory{clients: clients, reader: reader}, nil
 }
 
-// cacheKey produces a SHA-256 hex digest of the connection parameters.
-func cacheKey(s *identityv1.RealmStatus) string {
-	if s == nil {
-		return ""
+func profile(rawTimeout string) (tlsclient.Profile, error) {
+	timeout := defaultTimeout
+	if rawTimeout != "" {
+		var err error
+		timeout, err = time.ParseDuration(rawTimeout)
+		if err != nil {
+			return tlsclient.Profile{}, fmt.Errorf("invalid CLIENT_TIMEOUT value: %w", err)
+		}
 	}
-
-	h := sha256.New()
-	if _, err := fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s",
-		s.AdminUrl, s.AdminTokenUrl, s.AdminClientId,
-		s.AdminUserName, s.AdminPassword); err != nil {
-		panic(fmt.Sprintf("write cache key hash: %v", err))
-	}
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return tlsclient.Profile{
+		Name:              profileName,
+		Transport:         tlsclient.TransportRaw,
+		Timeout:           timeout,
+		MinTLSVersion:     tls.VersionTLS13,
+		MetricsClientName: metricsClientName,
+		MetricsReplacePatterns: []string{
+			`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID,
+		},
+		ClassifyTokenError: classifyOAuth2Error,
+	}, nil
 }
 
-// EnvSkipTlsVerify is the environment variable that disables TLS
-// certificate and hostname verification for Keycloak token and admin
-// requests. Only the value "true" (case-insensitive) enables it.
-const EnvSkipTlsVerify = "SKIP_TLS_VERIFY"
-
-func skipTlsVerify() bool {
-	return strings.EqualFold(strings.TrimSpace(os.Getenv(EnvSkipTlsVerify)), "true")
+// Start runs the cleanup of idle clients. It implements manager.Runnable.
+func (f *CachedServiceFactory) Start(ctx context.Context) error {
+	return f.clients.Start(ctx)
 }
 
-// NewKeycloakServiceFor builds the full HTTP client stack and wraps
-// it in a KeycloakService.
-func NewKeycloakServiceFor(status *identityv1.RealmStatus) (KeycloakService, error) {
-	if status == nil {
-		return nil, fmt.Errorf("realm status is nil")
-	}
+// NeedLeaderElection lets the cleanup run on every replica.
+func (f *CachedServiceFactory) NeedLeaderElection() bool {
+	return false
+}
 
-	tokenUrl, err := url.Parse(status.AdminTokenUrl)
+// ServiceFor implements ServiceFactory. Clients are scoped to the
+// IdentityProvider recorded in status.Connection, or to the Realm for
+// legacy statuses without connection metadata (system roots only).
+//
+//nolint:gocritic // ServiceFactory keeps a value-based status for callers.
+func (f *CachedServiceFactory) ServiceFor(ctx context.Context, realm *identityv1.Realm, status identityv1.RealmStatus) (KeycloakService, func(), error) {
+	lease, err := f.acquire(ctx, realm, &status)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token URL: %w", err)
+		return nil, nil, err
 	}
-
-	endpointUrl, err := url.Parse(status.AdminUrl)
+	apiClient, err := api.NewClientWithResponses(lease.Client().APIURL(), api.WithHTTPClient(lease.Client().Doer()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse keycloak admin URL: %w", err)
+		lease.Release()
+		return nil, nil, fmt.Errorf("failed to create keycloak admin client: %w", err)
+	}
+	return NewKeycloakService(apiClient,
+		WithIssuerDiscovery(lease.Client().UnauthenticatedDoer(), lease.Client().APIURL())), lease.Release, nil
+}
+
+func (f *CachedServiceFactory) acquire(ctx context.Context, realm *identityv1.Realm, status *identityv1.RealmStatus) (*tlsclient.Lease, error) {
+	if realm == nil {
+		return nil, errors.New("realm is nil")
+	}
+	spec := tlsclient.Spec{
+		Profile: profileName,
+		APIURL:  status.AdminUrl,
+		Auth: tlsclient.Auth{
+			Mode:     tlsclient.AuthPassword,
+			TokenURL: status.AdminTokenUrl,
+			ClientID: status.AdminClientId,
+			Username: status.AdminUserName,
+			Password: status.AdminPassword,
+		},
+	}
+	if err := f.applyConnection(&spec, realm, status.Connection); err != nil {
+		return nil, err
 	}
 
-	// 1. Base HTTP client with TLS + timeout.
-	baseClient := commonclient.NewBaseHttpClient(
-		commonclient.WithClientTimeout(10*time.Second),
-		commonclient.WithSkipTlsVerify(skipTlsVerify()),
-	)
-
-	// 2. OAuth2 token via Resource Owner Password Credentials.
-	oauth2Cfg := oauth2.Config{
-		ClientID: status.AdminClientId,
-		Endpoint: oauth2.Endpoint{TokenURL: tokenUrl.String()},
-	}
-
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, baseClient)
-	token, err := oauth2Cfg.PasswordCredentialsToken(ctx, status.AdminUserName, status.AdminPassword)
+	lease, err := f.clients.Acquire(ctx, spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve token: %w", err)
+		return nil, classifyAcquireError(err)
 	}
+	return lease, nil
+}
 
-	httpClient := oauth2.NewClient(ctx, newReAuthTokenSource(ctx, &oauth2Cfg, status.AdminUserName, status.AdminPassword, token))
-
-	// 3. Metrics wrapper.
-	metricsClient := metrics.WithMetrics(httpClient,
-		metrics.WithClientName("identity"),
-		metrics.WithReplacePatterns(
-			`([^\/]+--[^\/]+--[^\/]+)`,
-			`([^\/]+--[^\/]+)`,
-			metrics.ReplacePatternUID,
-		),
-	)
-
-	// 4. oapi-codegen typed client.
-	apiClient, err := api.NewClientWithResponses(endpointUrl.String(), api.WithHTTPClient(metricsClient))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create keycloak admin client: %w", err)
+// applyConnection sets owner and CA of spec from the connection metadata.
+func (f *CachedServiceFactory) applyConnection(spec *tlsclient.Spec, realm *identityv1.Realm, conn *identityv1.RealmConnection) error {
+	if conn == nil {
+		spec.Owner = tlsclient.Owner{Kind: realmOwnerKind, Namespace: realm.Namespace, Name: realm.Name, UID: string(realm.UID)}
+		return nil
 	}
+	if err := validateConnection(conn); err != nil {
+		return connectionErrorf("realm %s/%s has incomplete connection metadata: %w", realm.Namespace, realm.Name, err)
+	}
+	idp := conn.IdentityProvider
+	spec.Owner = tlsclient.Owner{Kind: idpOwnerKind, Namespace: idp.Namespace, Name: idp.Name, UID: string(idp.UID)}
+	if conn.TLS == nil {
+		return nil
+	}
+	if f.reader == nil {
+		return fmt.Errorf("realm %s/%s references a CA bundle but no resolver is configured", realm.Namespace, realm.Name)
+	}
+	spec.CA = cabundle.NewResolver(f.reader, conn.TLS.Namespace, conn.TLS.ConfigMapRef)
+	return nil
+}
 
-	// 5. Domain service. Issuer discovery uses the unauthenticated base
-	// client so the admin token is never sent to the discovery endpoint.
-	return NewKeycloakService(apiClient, WithIssuerDiscovery(baseClient, status.AdminUrl)), nil
+func validateConnection(conn *identityv1.RealmConnection) error {
+	idp := conn.IdentityProvider
+	if idp.Name == "" || idp.Namespace == "" || idp.UID == "" {
+		return errors.New("identity provider name, namespace and uid are required")
+	}
+	if conn.TLS != nil && (conn.TLS.Namespace == "" || conn.TLS.ConfigMapRef.Name == "" || conn.TLS.ConfigMapRef.Key == "") {
+		return errors.New("tls namespace, configmap name and key are required")
+	}
+	return nil
+}
+
+// classifyAcquireError blocks on invalid CA configuration. Other errors are
+// returned unchanged and retried.
+func classifyAcquireError(err error) error {
+	if errors.Is(err, cabundle.ErrInvalidBundle) ||
+		errors.Is(err, cabundle.ErrSourceNotFound) ||
+		errors.Is(err, cabundle.ErrSourceForbidden) ||
+		errors.Is(err, tlsclient.ErrInvalidCA) {
+		return connectionErrorf("invalid CA configuration: %w", err)
+	}
+	return err
 }

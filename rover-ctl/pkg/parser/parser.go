@@ -30,9 +30,12 @@ const (
 )
 
 type ObjectParser struct {
-	validator *validator.Validate
-	objects   []types.Object
-	index     int
+	validator  *validator.Validate
+	objects    []types.Object
+	index      int
+	recursive  bool
+	limitDepth bool
+	maxDepth   int
 
 	hooks map[HookStage]HookFunc
 }
@@ -42,13 +45,33 @@ type HookFunc func(obj types.Object) error
 type Option func(*Options)
 
 type Options struct {
-	Validate bool
-	Hooks    map[HookStage]HookFunc
+	Validate   bool
+	Recursive  bool
+	LimitDepth bool
+	MaxDepth   int
+	Hooks      map[HookStage]HookFunc
 }
 
 func EnableValidation() Option {
 	return func(opts *Options) {
 		opts.Validate = true
+	}
+}
+
+// WithRecursive enables recursive discovery of supported files in nested
+// directories when a directory is parsed. Symlinked directories are not followed.
+func WithRecursive(recursive bool) Option {
+	return func(opts *Options) {
+		opts.Recursive = recursive
+	}
+}
+
+// WithMaxDepth limits directory discovery relative to the input directory at
+// depth 0. Without this option, recursive discovery is unlimited.
+func WithMaxDepth(maxDepth int) Option {
+	return func(opts *Options) {
+		opts.LimitDepth = true
+		opts.MaxDepth = maxDepth
 	}
 }
 
@@ -68,9 +91,12 @@ func NewObjectParser(opts ...Option) *ObjectParser {
 	}
 
 	op := &ObjectParser{
-		objects: make([]types.Object, 0),
-		index:   0,
-		hooks:   options.Hooks,
+		objects:    make([]types.Object, 0),
+		index:      0,
+		hooks:      options.Hooks,
+		recursive:  options.Recursive,
+		limitDepth: options.LimitDepth,
+		maxDepth:   options.MaxDepth,
 	}
 	if options.Validate {
 		op.validator = validator.New()
@@ -82,6 +108,10 @@ func NewObjectParser(opts ...Option) *ObjectParser {
 func (p *ObjectParser) Parse(path string) error {
 	if path == "" {
 		return errors.New("path cannot be empty")
+	}
+
+	if p.limitDepth && p.maxDepth < 0 {
+		return errors.Errorf("max depth must be 0 or greater, got %d", p.maxDepth)
 	}
 
 	info, err := os.Stat(path)
@@ -97,28 +127,9 @@ func (p *ObjectParser) Parse(path string) error {
 }
 
 func (p *ObjectParser) parseDirectory(dirPath string) error {
-	entries, err := os.ReadDir(dirPath)
+	filesProcessed, err := p.walkDirectory(dirPath, 0)
 	if err != nil {
-		return errors.Wrap(err, "failed to read directory "+dirPath)
-	}
-
-	filesProcessed := 0
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		fileName := entry.Name()
-		ext := strings.ToLower(filepath.Ext(fileName))
-
-		if ext == ".yaml" || ext == ".yml" || ext == ".json" {
-			filePath := filepath.Join(dirPath, fileName)
-			err := p.parseFile(filePath)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse file "+filePath)
-			}
-			filesProcessed++
-		}
+		return err
 	}
 
 	if filesProcessed == 0 {
@@ -126,6 +137,53 @@ func (p *ObjectParser) parseDirectory(dirPath string) error {
 	}
 
 	return nil
+}
+
+// walkDirectory parses supported files in dirPath in lexicographic order and,
+// if recursive parsing is enabled, descends depth-first within the depth limit.
+// It returns the number of supported files processed.
+func (p *ObjectParser) walkDirectory(dirPath string, depth int) (int, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to read directory "+dirPath)
+	}
+
+	filesProcessed := 0
+	for _, entry := range entries {
+		entryPath := filepath.Join(dirPath, entry.Name())
+
+		if entry.IsDir() {
+			if !p.recursive || (p.limitDepth && depth >= p.maxDepth) {
+				continue
+			}
+			count, err := p.walkDirectory(entryPath, depth+1)
+			if err != nil {
+				return filesProcessed, err
+			}
+			filesProcessed += count
+			continue
+		}
+
+		if !isSupportedFile(entry.Name()) {
+			continue
+		}
+
+		if err := p.parseFile(entryPath); err != nil {
+			return filesProcessed, errors.Wrap(err, "failed to parse file "+entryPath)
+		}
+		filesProcessed++
+	}
+
+	return filesProcessed, nil
+}
+
+func isSupportedFile(fileName string) bool {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".yaml", ".yml", ".json":
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *ObjectParser) parseFile(filePath string) error {
