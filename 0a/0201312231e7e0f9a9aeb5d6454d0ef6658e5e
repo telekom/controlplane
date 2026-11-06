@@ -1,0 +1,68 @@
+event/api/v1/event_shared_types.go
+  s_9575c9093a0498::t_b8e98376a89c6b 11-13
+event/internal/handler/util/naming.go
+  s_9575c9093a0498::t_b8e98376a89c6b 26,51
+event/internal/handler/util/naming_test.go
+  s_9575c9093a0498::t_b8e98376a89c6b 9-10,12,54
+  s_9575c9093a0498::t_6609497ee575b4 11
+docs/docs/user-journey/subscribing-to-apis.mdx
+  s_9575c9093a0498::t_b8e98376a89c6b 89
+rover-server/internal/api/server.gen.go
+  s_ba5a9752f3fa99::t_82636e8c7777e4 1051,2823-3015
+  s_ba5a9752f3fa99::t_f4600e80cac83b 1047-1049,1052-1053
+  s_e968e705833226::t_f88e8f49d4bbba 1050
+rover-server/internal/mapper/applicationinfo/out.go
+  s_9575c9093a0498::t_b8e98376a89c6b 13,35,131-147,154,207
+  s_ba5a9752f3fa99::t_a5614487eac609 128-130,148-153,155-158,208-210
+rover-server/internal/controller/rover_pagination_test.go
+  s_ba5a9752f3fa99::t_5c62f1a6bcf8b6 152-167
+rover-server/api/openapi.yaml
+  s_9575c9093a0498::t_b8e98376a89c6b 2697-2700
+  s_ba5a9752f3fa99::t_f4600e80cac83b 2696
+docs/docs/user-journey/exposing-events.mdx
+  s_9575c9093a0498::t_b8e98376a89c6b 129
+  s_ba5a9752f3fa99::t_f4600e80cac83b 130
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_9575c9093a0498::t_99398afe94d1da 673-737
+  s_9575c9093a0498::t_b8e98376a89c6b 135
+  s_ba5a9752f3fa99::t_11c42271baac16 202,620,624-672,738-739,809
+rover-server/internal/mapper/applicationinfo/variables_test.go
+  s_9575c9093a0498::t_b8e98376a89c6b 127,133,140
+  s_ba5a9752f3fa99::t_11c42271baac16 141,146,149,152-154,156-179
+rover-server/internal/controller/__snapshots__/suite_controller_test.snap
+  s_ba5a9752f3fa99::t_f59896d4ab9ce1 244,282-285,364,402-405,470,508-511
+rover-server/internal/mapper/applicationinfo/__snapshots__/out_test.snap
+  s_ba5a9752f3fa99::t_ebc5be7afd8dfc 93,136,174-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0a0201312231e7e0f9a9aeb5d6454d0ef6658e5e",
+  "prompts": {},
+  "sessions": {
+    "s_9575c9093a0498": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fa6969affeiVjVIBsZAk9yeQ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ba5a9752f3fa99": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fa3de50ffeTd3RHbr4TMQzK1",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e968e705833226": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4f8b9c2fffe44YuAJSenNAlQ7",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
