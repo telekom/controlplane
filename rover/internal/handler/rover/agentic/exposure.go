@@ -50,7 +50,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		agenticExposure.Labels = map[string]string{
-			agenticv1.AgenticBasePathLabelKey:   labelutil.NormalizeLabelValue(exp.BasePath),
+			agenticv1.BasePathLabelKey:          labelutil.NormalizeLabelValue(exp.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}

@@ -71,10 +71,10 @@ func CreateAgenticRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:             LabelValueDomain,
-			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
-			config.BuildLabelKey("zone"):      zone.Name,
-			config.BuildLabelKey("type"):      "mcp",
+			config.DomainLabelKey:        LabelValueDomain,
+			agenticv1.BasePathLabelKey:   labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
+			config.BuildLabelKey("zone"): zone.Name,
+			config.BuildLabelKey("type"): "mcp",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -195,10 +195,10 @@ func CreateAgenticProxyRoute(
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			config.DomainLabelKey:             LabelValueDomain,
-			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
-			config.BuildLabelKey("zone"):      proxyZone.Name,
-			config.BuildLabelKey("type"):      "mcp-proxy",
+			config.DomainLabelKey:        LabelValueDomain,
+			agenticv1.BasePathLabelKey:   labelutil.NormalizeLabelValue(basePath),
+			config.BuildLabelKey("zone"): proxyZone.Name,
+			config.BuildLabelKey("type"): "mcp-proxy",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -243,7 +243,7 @@ func CleanupOldAgenticRoutes(ctx context.Context, basePath string) (int, error) 
 
 	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
 		client.MatchingLabels{
-			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+			agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 		},
 	})
 	if err != nil {

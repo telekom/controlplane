@@ -350,10 +350,10 @@ func (h *AgenticSubscriptionHandler) createConsumeRoute(
 		}
 
 		consumeRoute.Labels = map[string]string{
-			config.DomainLabelKey:             util.LabelValueDomain,
-			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
-			config.BuildLabelKey("zone"):      obj.Spec.Zone.Name,
-			config.BuildLabelKey("type"):      "mcp-subscription",
+			config.DomainLabelKey:        util.LabelValueDomain,
+			agenticv1.BasePathLabelKey:   labelutil.NormalizeLabelValue(obj.Spec.BasePath),
+			config.BuildLabelKey("zone"): obj.Spec.Zone.Name,
+			config.BuildLabelKey("type"): "mcp-subscription",
 		}
 
 		consumeRoute.Spec = gatewayapi.ConsumeRouteSpec{
