@@ -34,7 +34,7 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 	// List all AgentCards with the same basePath
 	cardList := &agenticv1.AgentCardList{}
 	if err := c.List(ctx, cardList, client.MatchingLabels{
-		agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to list AgentCards for basePath %q", obj.Spec.BasePath)
 	}

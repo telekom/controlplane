@@ -81,6 +81,7 @@ func Parse() {
 	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
 	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
 
+	BasePathLabelKey = BuildLabelKey("basepath")
 	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
 
 	for f := range features {

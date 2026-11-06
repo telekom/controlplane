@@ -8,6 +8,7 @@ var (
 	EnvironmentLabelKey = BuildLabelKey("environment")
 	OwnerUidLabelKey    = BuildLabelKey("owner.uid")
 	DomainLabelKey      = BuildLabelKey("domain")
+	BasePathLabelKey    = BuildLabelKey("basepath")
 )
 
 func BuildLabelKey(key string) string {

@@ -76,7 +76,7 @@ func FindActiveMcpServer(ctx context.Context, basePath string) (bool, *agenticv1
 
 	serverList := &agenticv1.McpServerList{}
 	if err := c.List(ctx, serverList, client.MatchingLabels{
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
 		return false, nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 	}
@@ -113,7 +113,7 @@ func FindAgenticExposures(ctx context.Context, basePath string) ([]agenticv1.Age
 
 	exposureList := &agenticv1.AgenticExposureList{}
 	if err := c.List(ctx, exposureList, client.MatchingLabels{
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to list AgenticExposures for basePath %q", basePath)
 	}
@@ -183,7 +183,7 @@ func FindCrossZoneAgenticSubscriptionZones(ctx context.Context, basePath, exposu
 
 	subList := &agenticv1.AgenticSubscriptionList{}
 	if err := c.List(ctx, subList, client.MatchingLabels{
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
 		return nil, false, errors.Wrapf(err, "failed to list AgenticSubscriptions for basePath %q", basePath)
 	}
@@ -243,7 +243,7 @@ func FindActiveAgentCard(ctx context.Context, basePath string) (bool, *agenticv1
 
 	cardList := &agenticv1.AgentCardList{}
 	if err := c.List(ctx, cardList, client.MatchingLabels{
-		agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(basePath),
 	}); err != nil {
 		return false, nil, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
 	}
@@ -329,7 +329,7 @@ func ServerMustExist(ctx context.Context, basePath string) (*ServerInfo, bool, e
 	// Check McpServers
 	mcpList := &agenticv1.McpServerList{}
 	if err := c.List(ctx, mcpList, client.MatchingLabels{
-		agenticv1.AgenticBasePathLabelKey: normalizedLabel,
+		agenticv1.BasePathLabelKey: normalizedLabel,
 	}); err != nil {
 		return nil, false, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 	}
@@ -342,7 +342,7 @@ func ServerMustExist(ctx context.Context, basePath string) (*ServerInfo, bool, e
 	// Check AgentCards
 	agentList := &agenticv1.AgentCardList{}
 	if err := c.List(ctx, agentList, client.MatchingLabels{
-		agenticv1.AgentBasePathLabelKey: normalizedLabel,
+		agenticv1.BasePathLabelKey: normalizedLabel,
 	}); err != nil {
 		return nil, false, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
 	}

@@ -73,8 +73,8 @@ func (r *AgentCardReconciler) MapAgentCardToAgentCard(ctx context.Context, obj c
 
 	list := &agenticv1.AgentCardList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:     card.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(card.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: card.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(card.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}

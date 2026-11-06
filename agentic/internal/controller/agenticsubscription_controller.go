@@ -101,8 +101,8 @@ func (r *AgenticSubscriptionReconciler) MapAgenticExposureToAgenticSubscription(
 
 	list := &agenticv1.AgenticSubscriptionList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       exposure.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: exposure.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
@@ -178,15 +178,15 @@ func (r *AgenticSubscriptionReconciler) MapRouteToAgenticSubscription(ctx contex
 		return nil
 	}
 
-	basePathLabel := route.Labels[agenticv1.AgenticBasePathLabelKey]
+	basePathLabel := route.Labels[agenticv1.BasePathLabelKey]
 	if basePathLabel == "" {
 		return nil
 	}
 
 	list := &agenticv1.AgenticSubscriptionList{}
 	err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       route.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: basePathLabel,
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  basePathLabel,
 	})
 	if err != nil {
 		logger.Error(err, "failed to list AgenticSubscriptions for Route")

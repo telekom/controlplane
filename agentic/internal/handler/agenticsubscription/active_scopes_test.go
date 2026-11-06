@@ -76,12 +76,12 @@ var _ = Describe("Agentic active scopes", Ordered, func() {
 		}
 		server := makeReadyMcpServer("/mcp/weather/v1")
 		server.Spec.Oauth2Scopes = []string{"read", "write"}
-		server.Labels = map[string]string{agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath)}
+		server.Labels = map[string]string{agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath)}
 		persist(&server)
 		exposure := makeReadyAgenticExposure(server.Spec.BasePath, "test-zone")
 		exposure.Spec.Upstreams = []agenticv1.Upstream{{Url: "https://example.com"}}
 		exposure.Spec.Approval.Strategy = agenticv1.ApprovalStrategySimple
-		exposure.Labels = map[string]string{agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath)}
+		exposure.Labels = map[string]string{agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath)}
 		persist(&exposure)
 		zone := makeReadyZoneWithAiGateway("test-zone")
 		zone.Spec.Visibility = adminv1.ZoneVisibilityEnterprise
