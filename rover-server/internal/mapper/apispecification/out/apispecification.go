@@ -20,10 +20,6 @@ func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile map[s
 		return res, errors.New("input api specification crd is nil")
 	}
 
-	if inFile == nil {
-		return res, errors.New("input api specification is nil")
-	}
-
 	res = api.ApiSpecificationResponse{
 		Category:      in.Spec.Category,
 		Id:            mapper.MakeResourceId(in),

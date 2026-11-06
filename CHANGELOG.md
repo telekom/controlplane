@@ -1,3 +1,63 @@
+## [0.45.1](https://github.com/telekom/controlplane/compare/v0.45.0...v0.45.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* complete discovery and Rover pagination while preserving credential masking ([#811](https://github.com/telekom/controlplane/issues/811)) ([e7afce6](https://github.com/telekom/controlplane/commit/e7afce635661164548ea4bc264f68c1a1b1293e2))
+
+# [0.45.0](https://github.com/telekom/controlplane/compare/v0.44.0...v0.45.0) (2026-11-03)
+
+
+### Bug Fixes
+
+* **rover-server, discovery-server:** informer recovery, file-manager handling and Approval RBAC ([#788](https://github.com/telekom/controlplane/issues/788)) ([6ab15fb](https://github.com/telekom/controlplane/commit/6ab15fb9ec17820e5053f91448e424544b6754dc))
+
+
+### Features
+
+* **spectre:** add Spectre operator for API traffic listeners ([#506](https://github.com/telekom/controlplane/issues/506)) ([7d91943](https://github.com/telekom/controlplane/commit/7d919433ee3148d5082d09708d7f1a061a01e149))
+
+# [0.44.0](https://github.com/telekom/controlplane/compare/v0.43.1...v0.44.0) (2026-10-30)
+
+
+### Bug Fixes
+
+* controller status, approval and lifecycle fixes ([#787](https://github.com/telekom/controlplane/issues/787)) ([6c33e47](https://github.com/telekom/controlplane/commit/6c33e47adefa88ae4da0b7d5e701752f96020d65))
+
+
+### Features
+
+* **roverctl:** add recursive apply and delete directory handling ([#813](https://github.com/telekom/controlplane/issues/813)) ([c2be11e](https://github.com/telekom/controlplane/commit/c2be11e3c27b57f97ac09ec91faca85b88bf8f40))
+
+## [0.43.1](https://github.com/telekom/controlplane/compare/v0.43.0...v0.43.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **conditions:** improve customer usability and self-service messages ([#809](https://github.com/telekom/controlplane/issues/809)) ([3bd8f78](https://github.com/telekom/controlplane/commit/3bd8f78d7ab97eeb5a993942b390a154d8082cd0))
+* **gateway:** circuit-breaker upstream cleanup and target create response ([#724](https://github.com/telekom/controlplane/issues/724)) ([45222ba](https://github.com/telekom/controlplane/commit/45222ba1b1e62d91d8e8aee2d99e84322f80f7a4))
+
+# [0.43.0](https://github.com/telekom/controlplane/compare/v0.42.2...v0.43.0) (2026-10-27)
+
+
+### Features
+
+* **tls:** support custom CA bundles for outbound clients ([#777](https://github.com/telekom/controlplane/issues/777)) ([ca5570e](https://github.com/telekom/controlplane/commit/ca5570e5c99a366623c7222a8c64a8fc12fb0f84))
+
+## [0.42.2](https://github.com/telekom/controlplane/compare/v0.42.1...v0.42.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **discovery-server:** prevent exposure subscriber credential disclosure ([#808](https://github.com/telekom/controlplane/issues/808)) ([3f98b60](https://github.com/telekom/controlplane/commit/3f98b604a17f448eefbd6ef1b6c494e1cefe145f))
+
+## [0.42.1](https://github.com/telekom/controlplane/compare/v0.42.0...v0.42.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **rover:** Fix rover status reports ([#792](https://github.com/telekom/controlplane/issues/792)) ([d28fbe2](https://github.com/telekom/controlplane/commit/d28fbe21f299e363c6b3e7161e1a11c819bef97d))
+
 # [0.42.0](https://github.com/telekom/controlplane/compare/v0.41.5...v0.42.0) (2026-10-22)
 
 

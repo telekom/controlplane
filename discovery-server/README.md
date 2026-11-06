@@ -65,6 +65,8 @@ The server watches 8 types of Custom Resources across 5 API groups:
 | `EventSubscription` | `event.cp.ei.telekom.de` | Event subscriptions |
 | `EventType` | `event.cp.ei.telekom.de` | Registry of known event types |
 
+Subscription failover gateway URLs are resolved using exact `Zone.status.namespace` queries for the distinct failover route namespaces. Every matching store page is read, so zone selection is not capped at the first 100 zones.
+
 ## Usage
 
 ### Security
@@ -131,6 +133,8 @@ All list endpoints support pagination via `offset`, `limit`, and `sort` query pa
 | `GET` | `/applications/{applicationId}/apiexposures/{apiExposureName}/status` | Get exposure status |
 | `GET` | `/applications/{applicationId}/apiexposures/{apiExposureName}/apisubscriptions` | List all subscriptions to this exposure |
 
+The exposure subscriptions endpoint returns subscriptions from all teams whose `apiBasePath` exactly matches the exposure. The match is applied in the store, so only matching subscriptions are loaded. Subscriber credentials are always obfuscated, regardless of the caller's scope. Subscriber secrets are never resolved, so missing secret references do not fail the request.
+
 #### API Subscriptions
 
 | Method | Path | Description |
@@ -147,6 +151,8 @@ All list endpoints support pagination via `offset`, `limit`, and `sort` query pa
 | `GET` | `/applications/{applicationId}/eventexposures/{eventExposureName}` | Get a specific event exposure |
 | `GET` | `/applications/{applicationId}/eventexposures/{eventExposureName}/status` | Get event exposure status |
 | `GET` | `/applications/{applicationId}/eventexposures/{eventExposureName}/eventsubscriptions` | List subscriptions to this exposure |
+
+The exposure subscriptions endpoint returns subscriptions from all teams whose `eventType` exactly matches the exposure. The match is applied in the store, so only matching subscriptions are loaded.
 
 #### Event Subscriptions
 

@@ -98,7 +98,7 @@ var _ = Describe("HandlerRealm", func() {
 
 	Context("CreateOrUpdate", func() {
 		It("should return an error when the realm is nil", func() {
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.CreateOrUpdate(context.Background(), nil)
 
 			Expect(err).To(HaveOccurred())
@@ -113,7 +113,7 @@ var _ = Describe("HandlerRealm", func() {
 				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
 				Return(&notFoundError{})
 
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			By("expecting a BlockedError")
@@ -142,7 +142,7 @@ var _ = Describe("HandlerRealm", func() {
 				}).
 				Return(nil)
 
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -163,7 +163,7 @@ var _ = Describe("HandlerRealm", func() {
 				}).
 				Return(nil)
 
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -187,7 +187,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "", fmt.Errorf("secret manager unavailable")
 			})
 
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -210,8 +210,8 @@ var _ = Describe("HandlerRealm", func() {
 			})
 
 			factoryErr := fmt.Errorf("oauth2 token failure")
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return nil, factoryErr
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return nil, nil, factoryErr
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -242,8 +242,8 @@ var _ = Describe("HandlerRealm", func() {
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil, fmt.Errorf("keycloak 503: service unavailable"))
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -283,8 +283,8 @@ var _ = Describe("HandlerRealm", func() {
 				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
 				Return(nil)
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -344,8 +344,8 @@ var _ = Describe("HandlerRealm", func() {
 			// ConfigureSecretRotationPolicy should NOT be called — mockery
 			// will fail the test if it is called unexpectedly.
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -388,8 +388,8 @@ var _ = Describe("HandlerRealm", func() {
 				ConfigureClientScopes(mock.Anything, "test-realm", mock.Anything).
 				Return(nil)
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -438,8 +438,8 @@ var _ = Describe("HandlerRealm", func() {
 				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
 				Return(fmt.Errorf("keycloak 403: forbidden"))
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -476,8 +476,8 @@ var _ = Describe("HandlerRealm", func() {
 				DeleteSecretRotationPolicy(mock.Anything, "test-realm").
 				Return(fmt.Errorf("keycloak 500: internal server error"))
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -505,8 +505,8 @@ var _ = Describe("HandlerRealm", func() {
 		}
 
 		handlerFor := func(svc keycloak.KeycloakService) *HandlerRealm {
-			return NewHandlerRealm(keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return svc, nil
+			return NewHandlerRealm(keycloak.ServiceFactoryFunc(func(context.Context, *identityv1.Realm, identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return svc, func() {}, nil
 			}))
 		}
 
@@ -647,8 +647,8 @@ var _ = Describe("HandlerRealm", func() {
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(nil)
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -669,7 +669,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "", fmt.Errorf("secret manager unavailable")
 			})
 
-			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			handler := NewHandlerRealm(unusedFactory)
 			err := handler.Delete(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -692,8 +692,8 @@ var _ = Describe("HandlerRealm", func() {
 			})
 
 			factoryErr := fmt.Errorf("oauth2 token failure")
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return nil, factoryErr
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return nil, nil, factoryErr
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -724,8 +724,8 @@ var _ = Describe("HandlerRealm", func() {
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(fmt.Errorf("keycloak 500: internal server error"))
 
-			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
-				return mockSvc, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ context.Context, _ *identityv1.Realm, _ identityv1.RealmStatus) (keycloak.KeycloakService, func(), error) {
+				return mockSvc, func() {}, nil
 			})
 
 			handler := NewHandlerRealm(factory)

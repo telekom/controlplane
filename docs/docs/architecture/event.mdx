@@ -95,7 +95,7 @@ The publish route is the front door for sending events. A publishing service sim
 
 When the publisher sits in the same zone as the event backend, the local publish route hands the events straight to the backend. When the publisher sits in a *proxy* zone that runs no backend of its own, the publish route there forwards the events to the target zone, whose own publish route then delivers them to the backend. Either way, the publisher uses the exact same kind of address.
 
-The Route resource is named `publish`; its public paths are **`/horizon/events/v1`** and the alias **`/horizon/publish/v1`**, not `/publish`. Gateway preset base paths may prefix these paths. The proxy forwards to the backend gateway's `/horizon/events/v1` path.
+The Route resource is named `horizon-events`; its public paths are **`/horizon/events/v1`** and the alias **`/horizon/publish/v1`**, not `/publish`. Gateway preset base paths may prefix these paths. The proxy forwards to the backend gateway's `/horizon/events/v1` path. Event Route names (`horizon-events`, `horizon-callback-<zone>`, `horizon-voyager-<zone>`, `horizon-sse--<eventType>`) equal the legacy-compatible Kong base names, so the Gateway can adopt existing entities that use them.
 
 ```mermaid
 sequenceDiagram
@@ -126,10 +126,10 @@ sequenceDiagram
     autonumber
     box dataplane1 — backend zone
         participant H1 as Horizon H1
-        participant G1 as G1<br/>callback--dataplane3<br/>PROXY
+        participant G1 as G1<br/>horizon-callback-dataplane3<br/>PROXY
     end
     box dataplane3 — subscriber zone, even if proxy
-        participant G3 as G3<br/>callback--dataplane3<br/>PRIMARY
+        participant G3 as G3<br/>horizon-callback-dataplane3<br/>PRIMARY
         participant S as Subscriber URL U
     end
     Note over H1,G1: Configured first hop is G1, never exposure gateway G2
@@ -220,7 +220,8 @@ Subscribers in **dp2** similarly use G2's own-zone SSE `PROXY` → G1 `PRIMARY` 
 The Event domain has the broadest cross-domain interaction surface in the platform:
 
 - **Rover domain** — Rover files create EventExposure and EventSubscription resources.
-- **PubSub domain** — The Event domain creates EventStore, Publisher, and Subscriber resources.
+- **PubSub domain** — The Event domain creates EventStore, Publisher, and Subscriber resources. The Spectre domain also creates Publishers and Subscribers as a peer business-logic domain.
+- **Spectre domain** — A peer domain that independently creates PubSub resources (Publishers and Subscribers) for application listeners. Both domains share the same EventStore, which is owned exclusively by EventConfig.
 - **Gateway domain** — Creates routes for publishing, SSE delivery, and cross-zone proxy communication, plus the managed callback Consumer.
 - **Identity domain** — Creates clients for OAuth2 token exchange between zones.
 - **Application domain** — Reads Application resources for publisher and subscriber metadata.
@@ -232,3 +233,4 @@ The Event domain has the broadest cross-domain interaction surface in the platfo
 - [User Journey: Exposing Events](../user-journey/exposing-events.mdx)
 - [User Journey: Subscribing to Events](../user-journey/subscribing-to-events.mdx)
 - [Architecture: PubSub Domain](./pubsub.mdx)
+- [Architecture: Spectre Domain](./spectre.mdx)

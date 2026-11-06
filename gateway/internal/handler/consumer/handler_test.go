@@ -39,9 +39,12 @@ var _ = Describe("ConsumerHandler", func() {
 		mockKC      *clientmock.MockKongClient
 		mockBuilder *featmock.MockFeaturesBuilder
 		consumer    *gatewayv1.Consumer
+		releases    int
 	)
+	releaseLease := func() { releases++ }
 
 	BeforeEach(func() {
+		releases = 0
 		handler = &consumerhandler.ConsumerHandler{}
 		mockClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		mockKC = clientmock.NewMockKongClient(GinkgoT())
@@ -74,8 +77,8 @@ var _ = Describe("ConsumerHandler", func() {
 	setupFeatureBuilderOverrides := func() {
 		originalGetClientFor := kongutil.GetClientFor
 		DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-		kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-			return mockKC, nil
+		kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+			return mockKC, releaseLease, nil
 		}
 
 		originalNewFeatureBuilder := features.NewFeatureBuilder
@@ -121,10 +124,13 @@ var _ = Describe("ConsumerHandler", func() {
 				setupFeatureBuilderOverrides()
 
 				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
-				mockBuilder.EXPECT().BuildForConsumer(mock.Anything).Return(nil)
+				mockBuilder.EXPECT().BuildForConsumer(mock.Anything).Run(func(_ context.Context) {
+					Expect(releases).To(BeZero(), "lease must be held while building")
+				}).Return(nil)
 
 				err := handler.CreateOrUpdate(ctx, consumer)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(releases).To(Equal(1), "lease must be released")
 
 				Expect(meta.IsStatusConditionTrue(consumer.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
 				Expect(meta.IsStatusConditionFalse(consumer.GetConditions(), condition.ConditionTypeProcessing)).To(BeTrue())
@@ -138,8 +144,8 @@ var _ = Describe("ConsumerHandler", func() {
 				// Don't override features.NewFeatureBuilder - let the real one see the not-ready gateway
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				err := handler.CreateOrUpdate(ctx, consumer)
@@ -177,14 +183,15 @@ var _ = Describe("ConsumerHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(nil)
 
 				err := handler.Delete(ctx, consumer)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(releases).To(Equal(1), "lease must be released")
 			})
 		})
 
@@ -203,8 +210,8 @@ var _ = Describe("ConsumerHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return mockKC, nil
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, releaseLease, nil
 				}
 
 				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(fmt.Errorf("kong delete error"))
@@ -219,8 +226,8 @@ var _ = Describe("ConsumerHandler", func() {
 
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
-				kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-					return nil, fmt.Errorf("failed to create kong client")
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return nil, nil, fmt.Errorf("failed to create kong client")
 				}
 
 				err := handler.Delete(ctx, consumer)

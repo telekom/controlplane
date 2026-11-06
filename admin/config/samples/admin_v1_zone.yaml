@@ -20,12 +20,15 @@ spec:
   identityProviders:
     - name: primary
       admin:
-        url: https://identity.example.com/auth/admin/realms
+        # Required. Used only for administration and issuer discovery; may be an admin-only host.
+        url: https://identity-admin.example.com/auth/admin/realms
         clientId: admin-cli
         userName: admin
         password: change-me
-      issuerHostname: identity.example.com
-      # tokenUrl is discovered from each generated realm issuer when omitted.
+      # Optional, World zones only: sets the realm frontendUrl to https://<issuerHostname>/auth.
+      # Without it the issuer is the one the identity provider advertises through OIDC discovery.
+      # issuerHostname: identity.example.com
+      # tokenUrl defaults to the default realm's resolved issuer plus /protocol/openid-connect/token.
       secretRotation:
         enabled: true
         gracePeriod: 168h

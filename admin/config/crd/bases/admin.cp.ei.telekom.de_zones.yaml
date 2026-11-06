@@ -129,6 +129,35 @@ spec:
                     name:
                       pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                       type: string
+                    tls:
+                      description: |-
+                        TLS configures additional CA certificates trusted when connecting to this gateway.
+                        The referenced ConfigMap must be in the namespace of the Zone.
+                      properties:
+                        configMapRef:
+                          description: ConfigMapRef references the PEM encoded CA
+                            certificates.
+                          properties:
+                            key:
+                              description: Key in the ConfigMap data containing PEM
+                                encoded CA certificates.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - configMapRef
+                      type: object
                   required:
                   - admin
                   - name
@@ -154,9 +183,11 @@ spec:
                           type: string
                         url:
                           description: |-
-                            Url is the base URL of the identity provider admin API.
-                            If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+                            Url is the identity provider admin API endpoint, e.g. "https://iam-admin.example.com/auth/admin/realms".
+                            It is only used to administer the identity provider and to discover realm issuers.
+                            It never determines the public issuer. It may share a host with the public issuer or use a separate admin-only host.
                           format: uri
+                          minLength: 1
                           type: string
                         userName:
                           description: UserName is the username to authenticate with
@@ -165,6 +196,7 @@ spec:
                       required:
                       - clientId
                       - password
+                      - url
                       - userName
                       type: object
                     allowedOrigins:
@@ -178,6 +210,12 @@ spec:
                       type: array
                       x-kubernetes-list-type: set
                     issuerHostname:
+                      description: |-
+                        IssuerHostname optionally overrides the public issuer host.
+                        On World zones it sets the frontendUrl "https://<issuerHostname>/auth" on the
+                        zone's public realms. If absent, the controller leaves the realm frontendUrl unset and
+                        uses the issuer the identity provider advertises through OIDC discovery.
+                        It is never derived from admin.url.
                       format: hostname
                       maxLength: 253
                       type: string
@@ -236,6 +274,35 @@ spec:
                       - expirationPeriod
                       - gracePeriod
                       - notificationThresholds
+                      type: object
+                    tls:
+                      description: |-
+                        TLS configures additional CA certificates trusted when connecting to this identity provider.
+                        The referenced ConfigMap must be in the namespace of the Zone.
+                      properties:
+                        configMapRef:
+                          description: ConfigMapRef references the PEM encoded CA
+                            certificates.
+                          properties:
+                            key:
+                              description: Key in the ConfigMap data containing PEM
+                                encoded CA certificates.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name of the ConfigMap.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      required:
+                      - configMapRef
                       type: object
                     tokenUrl:
                       format: uri
@@ -348,7 +415,8 @@ spec:
                     tokenUrl:
                       description: |-
                         TokenUrl is the token endpoint for this zone preset
-                        By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
+                        If empty, the identity provider's tokenUrl is used, otherwise the default realm's resolved issuer URL
+                        followed by /protocol/openid-connect/token.
                       format: uri
                       type: string
                     type:

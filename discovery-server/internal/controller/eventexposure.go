@@ -125,21 +125,23 @@ func (c *eventExposureController) GetSubscriptions(ctx context.Context, applicat
 		return nil, verifyErr
 	}
 
-	// Fetch all event subscriptions (cross-namespace — no prefix, no app label filter)
-	// and filter by eventType. Subscribers come from different teams/apps.
+	// Subscribers come from different teams/apps, so no prefix or app label
+	// filter applies. The eventType filter runs in the store, so only
+	// matching subscriptions are loaded and mapped.
 	listOpts := store.NewListOpts()
-	allSubs, err := pagination.FetchAll(ctx, c.stores.EventSubscriptionStore, listOpts)
+	listOpts.Filters = append(listOpts.Filters, store.Filter{
+		Path:  "spec.eventType",
+		Op:    store.OpEqual,
+		Value: exposure.Spec.EventType,
+	})
+	subs, err := pagination.FetchAll(ctx, c.stores.EventSubscriptionStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	targetEventType := exposure.Spec.EventType
-	matchingSubs := make([]api.EventSubscriptionResponse, 0)
-	for _, sub := range allSubs {
-		if sub.Spec.EventType != targetEventType {
-			continue
-		}
-		matchingSubs = append(matchingSubs, eventsubscriptionmapper.MapResponse(ctx, sub, c.stores))
+	matchingSubs := make([]api.EventSubscriptionResponse, len(subs))
+	for i, sub := range subs {
+		matchingSubs[i] = eventsubscriptionmapper.MapResponse(ctx, sub, c.stores)
 	}
 
 	basePath := fmt.Sprintf("/applications/%s/eventexposures/%s/eventsubscriptions", applicationId, eventExposureName)

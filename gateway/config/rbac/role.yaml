@@ -10,6 +10,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - events
   verbs:
   - create
@@ -20,6 +28,7 @@ rules:
   - consumeroutes
   - consumers
   - gateways
+  - routelisteners
   - routes
   verbs:
   - create
@@ -35,6 +44,7 @@ rules:
   - consumeroutes/finalizers
   - consumers/finalizers
   - gateways/finalizers
+  - routelisteners/finalizers
   - routes/finalizers
   verbs:
   - update
@@ -44,6 +54,7 @@ rules:
   - consumeroutes/status
   - consumers/status
   - gateways/status
+  - routelisteners/status
   - routes/status
   verbs:
   - get

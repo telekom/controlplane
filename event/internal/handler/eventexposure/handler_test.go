@@ -490,6 +490,7 @@ var _ = Describe("EventExposureHandler", func() {
 				},
 				Spec: eventv1.EventExposureSpec{
 					EventType: "de.telekom.eni.quickstart.v1",
+					Provider:  ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "other-app", Namespace: "prod--events--other-team"}},
 				},
 				Status: eventv1.EventExposureStatus{
 					Active: true,
@@ -511,6 +512,44 @@ var _ = Describe("EventExposureHandler", func() {
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(Equal(
+				`Another EventExposure with type "de.telekom.eni.quickstart.v1" already exists and prevents this instance from becoming active. It is owned by team "events--other-team", application "other-app". ` +
+					condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
+		})
+
+		It("should omit the application when the existing EventExposure has no provider name", func() {
+			et := makeReadyEventType()
+			mockListEventTypes([]eventv1.EventType{et})
+
+			existingExposure := eventv1.EventExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "other-exposure",
+					Namespace: "default",
+					UID:       "other-uid",
+				},
+				Spec: eventv1.EventExposureSpec{
+					EventType: "de.telekom.eni.quickstart.v1",
+					Provider:  ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "prod--events--other-team"}},
+				},
+				Status: eventv1.EventExposureStatus{Active: true},
+			}
+			mockListEventExposures([]eventv1.EventExposure{existingExposure})
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(Equal(
+				`Another EventExposure with type "de.telekom.eni.quickstart.v1" already exists and prevents this instance from becoming active. It is owned by team "events--other-team". ` +
+					condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should return error when GetZone fails", func() {

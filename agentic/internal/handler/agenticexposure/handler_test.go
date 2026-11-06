@@ -328,7 +328,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 				},
 				Spec: agenticv1.AgenticExposureSpec{
 					BasePath: "/mcp/weather/v1",
-					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "other-ns"},
+					Provider: ctypes.ObjectRef{Name: "other-app", Namespace: "prod--ai--other-team"},
 				},
 				Status: agenticv1.AgenticExposureStatus{
 					Active: true,
@@ -344,7 +344,46 @@ var _ = Describe("AgenticExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(readyCond.Reason).To(Equal("AgenticExposureAlreadyExists"))
+			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
+
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(Equal(
+				`Another AgenticExposure with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "ai--other-team", application "other-app". ` +
+					condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
+		})
+
+		It("should omit the application when the existing AgenticExposure has no provider name", func() {
+			server := makeReadyMcpServer("/mcp/weather/v1")
+			mockListMcpServers([]agenticv1.McpServer{server})
+
+			existingExposure := agenticv1.AgenticExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "other-exposure",
+					Namespace:         "default",
+					UID:               "other-uid",
+					CreationTimestamp: metav1.Now(),
+				},
+				Spec: agenticv1.AgenticExposureSpec{
+					BasePath: "/mcp/weather/v1",
+					Provider: ctypes.ObjectRef{Namespace: "prod--ai--other-team"},
+				},
+				Status: agenticv1.AgenticExposureStatus{Active: true},
+			}
+			mockListAgenticExposures([]agenticv1.AgenticExposure{existingExposure})
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).ToNot(BeNil())
+			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCond).ToNot(BeNil())
+			Expect(readyCond.Message).To(Equal(
+				`Another AgenticExposure with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "ai--other-team". ` +
+					condition.MessageWaitingForTakeover))
+			Expect(processingCond.Message).To(Equal(readyCond.Message))
 		})
 
 		It("should return error when GetZone fails", func() {
@@ -783,7 +822,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway"))
 			// The primary route trusts the LMS issuer of each proxy zone once
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
-				"https://lms.subscriber.example.com", "https://lms.telecontext.example.com"))
+				"https://lms.subscriber.example.com", "https://lms.telecontext.example.com",
+			))
 		})
 
 		It("should add the Telecontext consumer to the primary route when Telecontext is local and another zone subscribes", func() {
@@ -860,7 +900,8 @@ var _ = Describe("AgenticExposureHandler", func() {
 			// The primary route serves the proxy gateway and Telecontext directly
 			Expect(routes["default"].Spec.Security.DefaultConsumers).To(ConsistOf("gateway", "mcp--telecontext--tcapp"))
 			Expect(routes["default"].Spec.Security.TrustedIssuers).To(ConsistOf(
-				"https://issuer.example.com", "https://lms.subscriber.example.com"))
+				"https://issuer.example.com", "https://lms.subscriber.example.com",
+			))
 		})
 
 		DescribeTable("should preserve the variant and cross-zone trusted issuers on provider and subscriber routes", func(variant agenticv1.AgenticVariant, expectedTags []string) {

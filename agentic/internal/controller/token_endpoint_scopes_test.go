@@ -58,7 +58,7 @@ func newScopeFixture() *scopeFixture {
 		ObjectMeta: f.metadata("zone"),
 		Spec: adminv1.ZoneSpec{
 			Visibility:        adminv1.ZoneVisibilityWorld,
-			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}},
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"}}},
 			Gateways:          []adminv1.GatewayConfig{{Name: "gateway", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://gateway-admin.example.com"}}},
 			Presets:           presets,
 		},
@@ -370,7 +370,7 @@ var _ = Describe("External token endpoint scope exception", func() {
 		waitExposure(active)
 		inactive := f.exposure("inactive", []string{"provider"}, true)
 		Eventually(func(g Gomega) {
-			expectReadyReason(g, inactive, "AgenticExposureAlreadyExists", metav1.ConditionFalse)
+			expectReadyReason(g, inactive, condition.ReasonPreconditionNotMet, metav1.ConditionFalse)
 			g.Expect(inactive.Status.Active).To(BeFalse())
 		}, timeout, interval).Should(Succeed())
 		sub := f.subscription([]string{"consumer"})

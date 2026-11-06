@@ -126,6 +126,26 @@ func DeleteRealm(ctx context.Context, namespacedName client.ObjectKey) {
 	Expect(k8sClient.Delete(ctx, realmResource)).To(Succeed())
 }
 
+var _ = Describe("Realm without environment label", func() {
+	It("can be deleted after it was reconciled", func() {
+		realm := realmModel.NewRealm("no-environment", testNamespace, testEnvironment, "some-idp")
+		realm.Labels = nil
+		Expect(k8sClient.Create(ctx, realm)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			current := &identityv1.Realm{}
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(realm), current)).To(Succeed())
+			g.Expect(meta.IsStatusConditionFalse(current.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
+			g.Expect(current.Finalizers).To(BeEmpty())
+		}, timeout, interval).Should(Succeed())
+
+		Expect(k8sClient.Delete(ctx, realm)).To(Succeed())
+		Eventually(func() bool {
+			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(realm), &identityv1.Realm{}))
+		}, timeout, interval).Should(BeTrue())
+	})
+})
+
 var _ = Describe("Realm attribute validation", func() {
 	newRealmWithAttributes := func(name string, attributes map[string]string) *identityv1.Realm {
 		realm := realmModel.NewRealm(name, testNamespace, testEnvironment, "some-idp")
@@ -135,7 +155,7 @@ var _ = Describe("Realm attribute validation", func() {
 
 	DescribeTable("should reject invalid attributes",
 		func(attributes map[string]string, expectedMessage string) {
-			err := k8sClient.Create(ctx, newRealmWithAttributes("invalid-attributes", attributes))
+			err := k8sClient.Create(ctx, newRealmWithAttributes("invalid-attributes", attributes), client.DryRunAll)
 			Expect(err).To(HaveOccurred())
 			Expect(errors.IsInvalid(err)).To(BeTrue(), "expected an invalid error, got %v", err)
 			Expect(err.Error()).To(ContainSubstring(expectedMessage))
@@ -146,6 +166,7 @@ var _ = Describe("Realm attribute validation", func() {
 	DescribeTable("should accept attributes, including a malformed frontendUrl",
 		func(attributes map[string]string) {
 			realm := newRealmWithAttributes("valid-attributes", attributes)
+			// Validate admission without racing controller finalizer setup and cleanup.
 			Expect(k8sClient.Create(ctx, realm, client.DryRunAll)).To(Succeed())
 		},
 		Entry("generic attribute", map[string]string{"displayName": "My Realm"}),

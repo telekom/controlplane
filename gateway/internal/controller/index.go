@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	IndexFieldSpecRoute     = "spec.route"
-	IndexFieldSpecRouteName = "spec.route.name"
+	IndexFieldSpecRoute      = "spec.route"
+	IndexFieldSpecRouteName  = "spec.route.name"
+	IndexFieldSpecGatewayRef = "spec.gatewayRef"
 )
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -48,6 +49,36 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.ConsumeRoute{}, IndexFieldSpecRouteName, filterRouteNameOnConsumeRoute)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for ConsumeRoute", "FieldIndex", IndexFieldSpecRouteName)
+		os.Exit(1)
+	}
+
+	// Index the route by the gateway it references
+	filterGatewayOnRoute := func(obj client.Object) []string {
+		route, ok := obj.(*gatewayv1.Route)
+		if !ok {
+			return nil
+		}
+		return []string{route.Spec.GatewayRef.String()}
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.Route{}, IndexFieldSpecGatewayRef, filterGatewayOnRoute)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for Route", "FieldIndex", IndexFieldSpecGatewayRef)
+		os.Exit(1)
+	}
+
+	// Index the routeListener by the route it references
+	filterRouteOnRouteListener := func(obj client.Object) []string {
+		routeListener, ok := obj.(*gatewayv1.RouteListener)
+		if !ok {
+			return nil
+		}
+		return []string{routeListener.Spec.Route.String()}
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.RouteListener{}, IndexFieldSpecRoute, filterRouteOnRouteListener)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for RouteListener", "FieldIndex", IndexFieldSpecRoute)
 		os.Exit(1)
 	}
 

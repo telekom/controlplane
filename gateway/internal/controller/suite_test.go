@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -104,9 +106,13 @@ var _ = BeforeSuite(func() {
 
 	// Override kongutil.GetClientFor to always return our mock
 	originalGetClientFor := kongutil.GetClientFor
-	kongutil.GetClientFor = func(_ kongutil.GatewayAdminConfig) (kongclient.KongClient, error) {
-		return mockKongClient, nil
+	kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+		return mockKongClient, func() {}, nil
 	}
+
+	kongClients, err := kongutil.NewClientFactory(ctx, k8sManager.GetClient())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(k8sManager.Add(kongClients)).To(Succeed())
 
 	// Override secrets.Get to be an identity function (no real secret resolution needed)
 	originalSecretsGet := secretsapi.Get
@@ -123,20 +129,29 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&RouteReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &testmock.EventRecorder{},
+		Client:      k8sManager.GetClient(),
+		Scheme:      k8sManager.GetScheme(),
+		Recorder:    &testmock.EventRecorder{},
+		KongClients: kongClients,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsumerReconciler{
+		Client:      k8sManager.GetClient(),
+		Scheme:      k8sManager.GetScheme(),
+		Recorder:    &testmock.EventRecorder{},
+		KongClients: kongClients,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&ConsumeRouteReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ConsumeRouteReconciler{
+	err = (&RouteListenerReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &testmock.EventRecorder{},
@@ -167,7 +182,8 @@ var _ = AfterSuite(func() {
 // setupKongMockExpectations configures the MockKongClient to accept all calls
 // and allow reconciliation loops to proceed without error.
 func setupKongMockExpectations() {
-	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockKongClient.On("CreateOrReplaceRoute", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) { recordKongRoute(args.Get(1)) }).Return(nil).Maybe()
 	mockKongClient.On("CreateOrReplacePlugin", mock.Anything, mock.Anything).Return(nil, nil).Maybe()
 	mockKongClient.On("CleanupPlugins", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 	mockKongClient.On("DeleteRoute", mock.Anything, mock.Anything).Return(nil).Maybe()
@@ -213,4 +229,27 @@ func newGateway(name, namespace string) *gatewayv1.Gateway {
 			},
 		},
 	}
+}
+
+var (
+	kongRouteNamesMu sync.Mutex
+	kongRouteNames   = map[string][]string{}
+)
+
+// recordKongRoute records the Kong name each CreateOrReplaceRoute call used, per Route name.
+func recordKongRoute(obj any) {
+	route, ok := obj.(*gatewayv1.Route)
+	if !ok {
+		return
+	}
+	kongRouteNamesMu.Lock()
+	defer kongRouteNamesMu.Unlock()
+	kongRouteNames[route.Name] = append(kongRouteNames[route.Name], route.KongName())
+}
+
+// kongNamesOf returns the Kong names the reconciles of a Route used, in call order.
+func kongNamesOf(routeName string) []string {
+	kongRouteNamesMu.Lock()
+	defer kongRouteNamesMu.Unlock()
+	return slices.Clone(kongRouteNames[routeName])
 }

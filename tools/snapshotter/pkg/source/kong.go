@@ -28,6 +28,7 @@ type KongSource struct {
 	zone            string
 	mux             sync.Mutex
 	kongClient      kong.ClientWithResponsesInterface
+	closeClient     func()
 	tags            []string
 	listRatelimiter *rate.Limiter
 }
@@ -39,16 +40,26 @@ func NewKongSource(kongClient kong.ClientWithResponsesInterface) (source *KongSo
 	}
 }
 
+// NewKongSourceFromConfig creates a source with a client that verifies TLS
+// unless cfg.InsecureSkipVerify is set. The client lives until Close is called.
 func NewKongSourceFromConfig(cfg config.SourceConfig, tags []string) (source Source, err error) {
-	kongClient, err := kongutil.NewClientFor(cfg)
+	kongClient, closeClient, err := kongutil.NewStandaloneClient(context.Background(), cfg, cfg.InsecureSkipVerify)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kong client from config")
 	}
 	s := NewKongSource(kongClient)
+	s.closeClient = closeClient
 	s.environment = cfg.Environment
 	s.zone = cfg.Zone
 	s.tags = tags
 	return s, nil
+}
+
+// Close releases the resources of a client created from config.
+func (k *KongSource) Close() {
+	if k.closeClient != nil {
+		k.closeClient()
+	}
 }
 
 func (k *KongSource) TakeRouteSnapShot(ctx context.Context, routeId string) (snap *snapshot.Snapshot, err error) {

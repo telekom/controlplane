@@ -55,6 +55,26 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(ar.Spec.Decisions).To(HaveLen(1))
 		})
 
+		It("Should add an AUTO-approved decision after an earlier non-granting decision", func() {
+			defaulter := ApprovalRequestCustomDefaulter{}
+			ar := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategyAuto,
+					State:    approvalv1.ApprovalStatePending,
+					Decisions: []approvalv1.Decision{
+						{Name: "Decider", Comment: "Looking into it", ResultingState: approvalv1.ApprovalStatePending},
+					},
+				},
+			}
+
+			err := defaulter.Default(context.Background(), ar)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ar.Spec.Decisions).To(HaveLen(2))
+			Expect(ar.Spec.Decisions[1].Name).To(Equal(approvalv1.SystemDecisionName))
+			Expect(ar.Spec.Decisions[1].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(ar.Spec.Decisions[1].Timestamp).NotTo(BeNil())
+		})
+
 		It("Should not add AUTO-approved decision for non-Auto strategies", func() {
 			defaulter := ApprovalRequestCustomDefaulter{}
 			ar := &approvalv1.ApprovalRequest{

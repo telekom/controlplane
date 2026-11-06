@@ -24,9 +24,9 @@ func (s *Server) GetAllMcpSpecifications(c *fiber.Ctx) error {
 		return commonserver.ReturnWithProblem(c, nil, err)
 	}
 
-	res.UnderscoreLinks.Self = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Self)
+	res.UnderscoreLinks.Self = buildCursorUrl(c.BaseURL(), linkPath(c), res.UnderscoreLinks.Self)
 	if res.UnderscoreLinks.Next != "" {
-		res.UnderscoreLinks.Next = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Next)
+		res.UnderscoreLinks.Next = buildCursorUrl(c.BaseURL(), linkPath(c), res.UnderscoreLinks.Next)
 	}
 
 	return c.JSON(res)

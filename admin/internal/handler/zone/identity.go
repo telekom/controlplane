@@ -6,17 +6,14 @@ package zone
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"slices"
 	"strings"
 
-	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
-	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctrlerrors "github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -48,18 +45,16 @@ func createIdentityProvider(ctx context.Context, hc *HandlingContext) error {
 		identityProvider.Labels[cconfig.BuildLabelKey(zoneLabelName)] = hc.Zone.Name
 		identityProvider.Labels[cconfig.DomainLabelKey] = domainName
 
-		adminURL := ""
-		if idp.Admin.Url != nil {
-			adminURL = *idp.Admin.Url
-		} else if idp.IssuerHostname != "" {
-			adminURL = urls.ForIdentityProviderAdminUrl("https://" + idp.IssuerHostname)
+		if idp.Admin.Url == "" {
+			return ctrlerrors.BlockedErrorf("identity provider %q has no admin.url", idp.Name)
 		}
 
 		identityProvider.Spec = identityapi.IdentityProviderSpec{
-			AdminUrl:      adminURL,
+			AdminUrl:      idp.Admin.Url,
 			AdminPassword: idp.Admin.Password,
 			AdminClientId: idp.Admin.ClientId,
 			AdminUserName: idp.Admin.UserName,
+			TLS:           hc.managedTLS(),
 		}
 
 		return nil
@@ -122,30 +117,24 @@ func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error
 }
 
 // internalIssuerURL returns the issuer URL the identity operator resolved for the
-// internal (rover) realm. Admin consumers must use it instead of deriving one
-// from the public issuer hostname, as the rover realm may live on another host.
-// A trailing "/" is trimmed for consumers that append path suffixes.
+// internal (rover) realm.
 func internalIssuerURL(hc *HandlingContext) (string, error) {
-	issuer := hc.InternalIdentityRealm.Status.IssuerUrl
+	return realmIssuerURL(hc.InternalIdentityRealm)
+}
+
+// realmIssuerURL returns the issuer URL the identity operator resolved for the
+// realm. Public links and trusted issuers must use it instead of building one
+// from a hostname. A trailing "/" is trimmed for consumers that append path suffixes.
+func realmIssuerURL(realm *identityapi.Realm) (string, error) {
+	issuer := realm.Status.IssuerUrl
 	if issuer == "" {
-		return "", ctrlerrors.RetryableErrorf("internal identity realm %q has no resolved issuer URL yet", hc.InternalIdentityRealm.Name)
+		return "", ctrlerrors.RetryableErrorf("identity realm %q has no resolved issuer URL yet", realm.Name)
 	}
 	return strings.TrimSuffix(issuer, "/"), nil
 }
 
-func issuerHostname(idp *adminv1.IdentityProviderConfig) (string, error) {
-	if idp.IssuerHostname != "" {
-		return idp.IssuerHostname, nil
-	}
-	if idp.Admin.Url == nil {
-		return "", fmt.Errorf("identity provider %q has neither issuerHostname nor admin.url", idp.Name)
-	}
-	u, err := url.Parse(*idp.Admin.Url)
-	if err != nil || u.Hostname() == "" {
-		return "", fmt.Errorf("identity provider %q has invalid admin.url", idp.Name)
-	}
-	return u.Hostname(), nil
-}
+// keycloakFrontendURLAttribute is the Keycloak realm attribute overriding the realm base URL.
+const keycloakFrontendURLAttribute = "frontendUrl"
 
 // realmFrontendURL returns the Keycloak frontend (base) URL for the issuer
 // hostname, e.g. "https://iam.example.com/auth".
@@ -158,8 +147,8 @@ type createIdentityRealmOptions struct {
 	Claims         []identityapi.ClaimConfig
 	AllowedOrigins []string
 	SecretRotation *adminv1.SecretRotationConfig
-	// SetFrontendURL sets the realm frontendUrl attribute for world-visible zones.
-	// It must be false for the internal (rover) realm.
+	// SetFrontendURL sets the realm frontendUrl attribute on World zones that
+	// configure an explicit issuerHostname. It must be false for the internal (rover) realm.
 	SetFrontendURL bool
 }
 
@@ -174,17 +163,15 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 		},
 	}
 
-	frontendURL := ""
 	idp, err := hc.Zone.Spec.GetIdentityProvider()
 	if err != nil {
 		return nil, ctrlerrors.BlockedErrorf("cannot resolve identity provider for zone %q: %s", hc.Zone.Name, err)
 	}
-	if opts.SetFrontendURL {
-		if hostname, hostErr := issuerHostname(idp); hostErr == nil {
-			frontendURL = realmFrontendURL(hostname)
-		} else {
-			logr.FromContextOrDiscard(ctx).Info("Cannot resolve issuer hostname, realm frontendUrl is not set", "realm", identityRealm.Name, "reason", hostErr.Error())
-		}
+	// Without an explicit issuerHostname the frontendUrl stays unset, so the identity
+	// operator removes a previously managed value and resolves the issuer through discovery.
+	frontendURL := ""
+	if opts.SetFrontendURL && hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld && idp.IssuerHostname != "" {
+		frontendURL = realmFrontendURL(idp.IssuerHostname)
 	}
 
 	mutator := func() error {
@@ -204,9 +191,9 @@ func createIdentityRealm(ctx context.Context, hc *HandlingContext, realmName str
 			AllowedOrigins: opts.AllowedOrigins,
 		}
 
-		if opts.SetFrontendURL && hc.Zone.Spec.Visibility == adminv1.ZoneVisibilityWorld {
+		if frontendURL != "" {
 			identityRealm.Spec.Attributes = map[string]string{
-				"frontendUrl": frontendURL,
+				keycloakFrontendURLAttribute: frontendURL,
 			}
 		}
 

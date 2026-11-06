@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -207,7 +208,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			targetsResponse([]kong.Target{latest, old}, nil), nil,
 		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
@@ -219,7 +220,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		other.Target = ptr("other:8080")
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse([]kong.Target{other}, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		)
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
@@ -326,14 +327,70 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target list response data is missing")))
 	})
 
+	DescribeTable("decodes a target write answered without a typed body",
+		func(status int) {
+			expectMatchingUpstream(matchingUpstream())
+			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
+			api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
+				&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: status}, Body: []byte(`{"id":"created-target","target":"localhost:8080"}`)}, nil,
+			)
+			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
+			Expect(route.GetTargetsId()).To(Equal("created-target"))
+		},
+		Entry("201 Created", http.StatusCreated),
+		Entry("200 OK", http.StatusOK),
+	)
+
+	DescribeTable("rejects a target write without a usable body",
+		func(body, message string) {
+			expectMatchingUpstream(matchingUpstream())
+			api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
+			api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
+				&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, Body: []byte(body)}, nil,
+			)
+			Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring(message)))
+		},
+		Entry("empty", "", "target response body is missing"),
+		Entry("null", "null", "target response body is missing"),
+		Entry("malformed", "[", "decoding target response"),
+	)
+
 	It("rejects a successful target write without an ID", func() {
 		expectMatchingUpstream(matchingUpstream())
 		api.EXPECT().ListTargetsForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(targetsResponse(nil, nil), nil)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{}}, nil,
 		)
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(MatchError(ContainSubstring("target response ID is missing")))
 	})
+
+	DescribeTable("reads a target response through the generated client", func(status int) {
+		kongAdmin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Method + " " + r.URL.Path {
+			case "GET /upstreams/test-route":
+				w.WriteHeader(http.StatusNotFound)
+			case "PUT /upstreams/test-route":
+				_, _ = w.Write([]byte(`{"id":"upstream-id","name":"test-route"}`))
+			case "GET /upstreams/test-route/targets":
+				_, _ = w.Write([]byte(`{"data":[]}`))
+			case "POST /upstreams/test-route/targets":
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte(`{"id":"target-id","target":"localhost:8080","weight":100}`))
+			default:
+				w.WriteHeader(http.StatusTeapot)
+			}
+		}))
+		DeferCleanup(kongAdmin.Close)
+		adminApi, err := kong.NewClientWithResponses(kongAdmin.URL)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(clientpkg.NewKongClient(adminApi).CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
+		Expect(route.GetTargetsId()).To(Equal("target-id"))
+	},
+		Entry("201 Created", http.StatusCreated),
+		Entry("200 OK with raw-body fallback", http.StatusOK),
+	)
 
 	DescribeTable("does not suppress a changed upstream field",
 		func(change func(*kong.Upstream)) {
@@ -361,7 +418,7 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 			targetsResponse([]kong.Target{retagged}, nil), nil,
 		)
 		api.EXPECT().CreateTargetForUpstreamWithResponse(mock.Anything, "test-route", mock.Anything).Return(
-			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON200: &kong.Target{Id: &targetID}}, nil,
+			&kong.CreateTargetForUpstreamResponse{HTTPResponse: &http.Response{StatusCode: http.StatusCreated}, JSON201: &kong.Target{Id: &targetID}}, nil,
 		).Once()
 
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(Succeed())
@@ -420,5 +477,44 @@ var _ = Describe("CreateOrReplaceUpstream", func() {
 		Expect(client.CreateOrReplaceUpstream(ctx, route, &upstream, &target)).To(
 			MatchError(ContainSubstring("failed to list upstream targets")),
 		)
+	})
+})
+
+var _ = Describe("DeleteUpstream", func() {
+	var (
+		api    *mockclient.MockKongAdminApi
+		client clientpkg.KongClient
+		route  *v1.Route
+	)
+
+	BeforeEach(func() {
+		api = mockclient.NewMockKongAdminApi(GinkgoT())
+		client = clientpkg.NewKongClient(api)
+		route = &v1.Route{ObjectMeta: metav1.ObjectMeta{Name: "test-route"}}
+		route.SetUpstreamId("upstream-id")
+		route.SetTargetsId("target-id")
+	})
+
+	DescribeTable("deletes only the upstream because Kong deletes its targets with it",
+		func(status int) {
+			api.EXPECT().DeleteUpstreamWithResponse(mock.Anything, "test-route").Return(
+				&kong.DeleteUpstreamResponse{HTTPResponse: &http.Response{StatusCode: status}}, nil,
+			)
+
+			Expect(client.DeleteUpstream(context.Background(), route)).To(Succeed())
+		},
+		Entry("deleted", http.StatusNoContent),
+		Entry("already gone", http.StatusNotFound),
+	)
+
+	It("reports a failed upstream delete", func() {
+		api.EXPECT().DeleteUpstreamWithResponse(mock.Anything, "test-route").Return(
+			&kong.DeleteUpstreamResponse{
+				HTTPResponse: &http.Response{StatusCode: http.StatusInternalServerError},
+				Body:         []byte(`{"message":"An unexpected error occurred"}`),
+			}, nil,
+		)
+
+		Expect(client.DeleteUpstream(context.Background(), route)).To(MatchError(ContainSubstring("failed to delete upstream (500)")))
 	})
 })

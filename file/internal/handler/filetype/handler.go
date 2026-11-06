@@ -44,7 +44,7 @@ func (h *FileTypeHandler) CreateOrUpdate(ctx context.Context, obj *filev1.FileTy
 	}
 
 	obj.Status.Active = true
-	obj.SetCondition(condition.NewReadyCondition("FileTypeProvisioned", "FileType has been provisioned"))
+	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "FileType has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("FileType has been provisioned"))
 	return nil
 }

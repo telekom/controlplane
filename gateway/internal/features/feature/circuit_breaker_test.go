@@ -13,10 +13,12 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featmock "github.com/telekom/controlplane/gateway/internal/features/mock"
-	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,203 +29,196 @@ var _ = Describe("CircuitBreakerFeature", func() {
 		ctx     context.Context
 		f       *feature.CircuitBreakerFeature
 		builder *featmock.MockFeaturesBuilder
+		route   *gatewayv1.Route
 	)
 
 	BeforeEach(func() {
 		ctx = contextutil.WithEnv(context.Background(), "test-env")
 		f = feature.InstanceCircuitBreakerFeature
 		builder = featmock.NewMockFeaturesBuilder(GinkgoT())
+		route = &gatewayv1.Route{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
+			Spec: gatewayv1.RouteSpec{
+				Type:    gatewayv1.RouteTypePrimary,
+				Traffic: gatewayv1.Traffic{CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true}},
+			},
+		}
 	})
 
-	Describe("Name()", func() {
-		It("returns FeatureTypeCircuitBreaker", func() {
-			Expect(f.Name()).To(Equal(gatewayv1.FeatureTypeCircuitBreaker))
-		})
-	})
-
-	Describe("Priority()", func() {
-		It("returns 110", func() {
-			Expect(f.Priority()).To(Equal(110))
-		})
+	It("has the circuit-breaker name and highest feature priority", func() {
+		Expect(f.Name()).To(Equal(gatewayv1.FeatureTypeCircuitBreaker))
+		Expect(f.Priority()).To(Equal(110))
 	})
 
 	Describe("IsUsed()", func() {
-		Context("when CircuitBreaker is enabled on a primary route", func() {
-			It("returns true", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Type: gatewayv1.RouteTypePrimary,
-						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
-						},
-					},
-				}
+		DescribeTable("applies enabled primary breakers and cleans up potentially existing upstreams",
+			func(routeType gatewayv1.RouteType, cb *gatewayv1.CircuitBreaker, prefix, upstreamID, targetsID string, expected bool) {
+				route.Spec.Type = routeType
+				route.Spec.Traffic.CircuitBreaker = cb
+				route.SetNamePrefix(prefix)
+				route.SetUpstreamId(upstreamID)
+				route.SetTargetsId(targetsID)
 				builder.EXPECT().GetRoute().Return(route, true)
+				Expect(f.IsUsed(ctx, builder)).To(Equal(expected))
+			},
+			Entry("enabled primary", gatewayv1.RouteTypePrimary, &gatewayv1.CircuitBreaker{Enabled: true}, "", "", "", true),
+			Entry("disabled with stored ID", gatewayv1.RouteTypePrimary, &gatewayv1.CircuitBreaker{Enabled: false}, "", "u1", "", true),
+			Entry("removed realm breaker", gatewayv1.RouteTypePrimary, nil, "bond", "", "", true),
+			Entry("disabled realm breaker", gatewayv1.RouteTypePrimary, &gatewayv1.CircuitBreaker{Enabled: false}, "bond", "", "", true),
+			Entry("target ID only", gatewayv1.RouteTypePrimary, nil, "", "", "t1", true),
+			Entry("removed without IDs", gatewayv1.RouteTypePrimary, nil, "", "", "", false),
+			Entry("proxy without IDs", gatewayv1.RouteTypeProxy, &gatewayv1.CircuitBreaker{Enabled: true}, "", "", "", false),
+			Entry("proxy with stored ID", gatewayv1.RouteTypeProxy, &gatewayv1.CircuitBreaker{Enabled: true}, "", "u1", "", true),
+			Entry("proxy with lost IDs and realm discovery", gatewayv1.RouteTypeProxy, &gatewayv1.CircuitBreaker{Enabled: true}, "bond", "", "", true),
+		)
 
-				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
-			})
-		})
-
-		Context("when CircuitBreaker is disabled but upstreamId exists (cleanup scenario)", func() {
-			It("returns true", func() {
-				route := &gatewayv1.Route{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
-					Spec: gatewayv1.RouteSpec{
-						Type: gatewayv1.RouteTypePrimary,
-						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: false},
-						},
-					},
-				}
-				route.SetUpstreamId("existing-upstream-id")
-				builder.EXPECT().GetRoute().Return(route, true)
-
-				Expect(f.IsUsed(ctx, builder)).To(BeTrue())
-			})
-		})
-
-		Context("when CircuitBreaker is nil and no upstreamId", func() {
-			It("returns false", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Type:    gatewayv1.RouteTypePrimary,
-						Traffic: gatewayv1.Traffic{},
-					},
-				}
-				builder.EXPECT().GetRoute().Return(route, true)
-
-				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
-			})
-		})
-
-		Context("when route is a proxy route", func() {
-			It("returns false", func() {
-				route := &gatewayv1.Route{
-					Spec: gatewayv1.RouteSpec{
-						Type: gatewayv1.RouteTypeProxy,
-						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
-						},
-					},
-				}
-				builder.EXPECT().GetRoute().Return(route, true)
-
-				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
-			})
-		})
-
-		Context("when no route is in the builder", func() {
-			It("returns false", func() {
-				builder.EXPECT().GetRoute().Return(nil, false)
-
-				Expect(f.IsUsed(ctx, builder)).To(BeFalse())
-			})
+		It("returns false without a route", func() {
+			builder.EXPECT().GetRoute().Return(nil, false)
+			Expect(f.IsUsed(ctx, builder)).To(BeFalse())
 		})
 	})
 
 	Describe("Apply()", func() {
-		Context("apply scenario - CircuitBreaker enabled", func() {
-			var (
-				route          *gatewayv1.Route
-				mockKongClient *clientmock.MockKongClient
-			)
-
-			BeforeEach(func() {
-				route = &gatewayv1.Route{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
-					Spec: gatewayv1.RouteSpec{
-						Type: gatewayv1.RouteTypePrimary,
-						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
-						},
-					},
-				}
-				mockKongClient = clientmock.NewMockKongClient(GinkgoT())
-			})
-
-			It("delegates upstream reconciliation to the Kong client", func() {
+		DescribeTable("hands the upstream and target to the Kong client with the service upstream",
+			func(prefix, kongName string, realmTags []string, listeners []*gatewayv1.RouteListener, path string) {
+				route.SetNamePrefix(prefix)
+				var upstream client.Upstream
 				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().CreateOrReplaceUpstream(
-					mock.Anything,
-					route,
-					mock.MatchedBy(func(body *kong.CreateUpstreamJSONRequestBody) bool {
-						return body.Name == route.Name && body.Healthchecks != nil
-					}),
-					mock.MatchedBy(func(body *kong.CreateTargetForUpstreamJSONRequestBody) bool {
-						return body.Target != nil && *body.Target == feature.DefaultTargetsTarget
-					}),
-				).Return(nil)
+				builder.EXPECT().GetRouteListeners().Return(listeners)
+				builder.EXPECT().SetUpstream(mock.Anything).Run(func(u client.Upstream) { upstream = u }).Return()
 
 				Expect(f.Apply(ctx, builder)).To(Succeed())
-			})
+				managed, ok := upstream.(*client.CircuitBreakerUpstream)
+				Expect(ok).To(BeTrue())
+				Expect(managed.GetHostname()).To(Equal(kongName))
+				Expect(managed.GetPort()).To(Equal(8080))
+				Expect(managed.GetPath()).To(Equal(path))
+				Expect(managed.Upstream.Name).To(Equal(kongName))
+				Expect(managed.Upstream.Healthchecks).NotTo(BeNil())
+				Expect(*managed.Upstream.Tags).To(ConsistOf(append([]string{"env--test-env", "upstream--" + kongName, "route--test-route"}, realmTags...)))
+				Expect(*managed.Target.Target).To(Equal(feature.DefaultTargetsTarget))
+				Expect(*managed.Target.Tags).To(ConsistOf(append([]string{"env--test-env", "targets--" + kongName, "route--test-route"}, realmTags...)))
+			},
+			Entry("with name prefix", "bond", "bond--test-route", []string{"realm--bond"}, nil, "/proxy"),
+			Entry("without name prefix", "", "test-route", nil, nil, "/proxy"),
+			Entry("with listener and name prefix", "bond", "bond--test-route", []string{"realm--bond"}, []*gatewayv1.RouteListener{{}}, "/listener"),
+		)
 
-			It("returns a wrapped Kong client error", func() {
+		DescribeTable("hands an upstream removal to the Kong client if the CB is off",
+			func(cb *gatewayv1.CircuitBreaker, current client.Upstream, listeners []*gatewayv1.RouteListener, host, path string) {
+				route.Spec.Traffic.CircuitBreaker = cb
+				var upstream client.Upstream
 				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().CreateOrReplaceUpstream(mock.Anything, route, mock.Anything, mock.Anything).
-					Return(errors.New("connection refused"))
-
-				err := f.Apply(ctx, builder)
-				Expect(err).To(MatchError("failed to create or replace upstream: connection refused"))
-			})
-		})
-
-		Context("delete scenario - CircuitBreaker disabled but upstreamId present", func() {
-			var (
-				route          *gatewayv1.Route
-				mockKongClient *clientmock.MockKongClient
-			)
-
-			BeforeEach(func() {
-				route = &gatewayv1.Route{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-route", Namespace: "test-ns"},
-					Spec: gatewayv1.RouteSpec{
-						Type: gatewayv1.RouteTypePrimary,
-						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: false},
-						},
-					},
+				builder.EXPECT().GetUpstream().Return(current)
+				if current == nil {
+					builder.EXPECT().GetRouteListeners().Return(listeners)
 				}
-				route.SetUpstreamId("existing-upstream-id")
-				route.SetTargetsId("existing-target-id")
-				mockKongClient = clientmock.NewMockKongClient(GinkgoT())
-			})
+				builder.EXPECT().SetUpstream(mock.Anything).Run(func(u client.Upstream) { upstream = u }).Return()
 
-			It("deletes the upstream and clears upstreamId and targetsId", func() {
-				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().DeleteUpstream(mock.Anything, mock.Anything).Return(nil)
+				Expect(f.Apply(ctx, builder)).To(Succeed())
+				removal, ok := upstream.(*client.UpstreamRemoval)
+				Expect(ok).To(BeTrue())
+				Expect(removal.GetHostname()).To(Equal(host))
+				Expect(removal.GetPath()).To(Equal(path))
+			},
+			Entry("disabled, no upstream yet", &gatewayv1.CircuitBreaker{Enabled: false}, nil, nil, "localhost", "/proxy"),
+			Entry("removed, keeps another feature's upstream", nil, client.NewUpstreamOrDie("https://backend.example:443/api"), nil, "backend.example", "/api"),
+			Entry("removed, keeps listener upstream", nil, client.NewUpstreamOrDie(plugin.LocalhostListenerUrl), []*gatewayv1.RouteListener{{}}, "localhost", "/listener"),
+			Entry("disabled, listener fallback", &gatewayv1.CircuitBreaker{Enabled: false}, nil, []*gatewayv1.RouteListener{{}}, "localhost", "/listener"),
+		)
 
-				err := f.Apply(ctx, builder)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(route.GetUpstreamId()).To(BeEmpty())
-				Expect(route.GetTargetsId()).To(BeEmpty())
-			})
+		It("returns an error when no route is in the builder", func() {
+			builder.EXPECT().GetRoute().Return(nil, false)
+			Expect(f.Apply(ctx, builder)).To(MatchError(ContainSubstring("cannot find route")))
+		})
+	})
 
-			It("returns the error when DeleteUpstream fails", func() {
-				builder.EXPECT().GetRoute().Return(route, true)
-				builder.EXPECT().SetUpstream(mock.Anything).Return()
-				builder.EXPECT().GetKongClient().Return(mockKongClient)
-				mockKongClient.EXPECT().DeleteUpstream(mock.Anything, mock.Anything).Return(errors.New("upstream not found"))
+	Describe("lifecycle through the feature builder", func() {
+		var mockKongClient *clientmock.MockKongClient
 
-				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("upstream not found"))
-			})
+		build := func(listeners ...*gatewayv1.RouteListener) error {
+			b := features.NewFeatureBuilder(mockKongClient, route, nil, &gatewayv1.Gateway{})
+			b.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
+			b.EnableFeature(feature.InstanceRouteListenerFeature)
+			b.EnableFeature(feature.InstanceCircuitBreakerFeature)
+			b.AddRouteListeners(listeners...)
+			return b.Build(ctx)
+		}
+
+		BeforeEach(func() {
+			mockKongClient = clientmock.NewMockKongClient(GinkgoT())
+			mockKongClient.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 		})
 
-		Context("error handling", func() {
-			It("returns an error when no route is in the builder", func() {
-				builder.EXPECT().GetRoute().Return(nil, false)
+		DescribeTable("deletes the Kong upstream once the circuit breaker is no longer wanted",
+			func(routeType gatewayv1.RouteType, cb *gatewayv1.CircuitBreaker) {
+				mockKongClient.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.AnythingOfType("*client.CircuitBreakerUpstream")).
+					Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) {
+						r.SetUpstreamId("upstream-id")
+						r.SetTargetsId("target-id")
+					}).Return(nil).Once()
+				Expect(build()).To(Succeed())
+				Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
+				Expect(route.GetTargetsId()).To(Equal("target-id"))
 
-				err := f.Apply(ctx, builder)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("cannot find route"))
-			})
-		})
+				route.Spec.Type = routeType
+				route.Spec.Traffic.CircuitBreaker = cb
+				mockKongClient.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.AnythingOfType("*client.UpstreamRemoval")).
+					Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) {
+						Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
+						r.SetUpstreamId("")
+						r.SetTargetsId("")
+					}).Return(nil).Once()
+				Expect(build()).To(Succeed())
+				Expect(route.Status.Properties).NotTo(HaveKey("upstreamId"))
+				Expect(route.Status.Properties).NotTo(HaveKey("targetsId"))
+				Expect(f.IsUsed(ctx, features.NewFeatureBuilder(mockKongClient, route, nil, &gatewayv1.Gateway{}))).To(BeFalse())
+			},
+			Entry("when disabled", gatewayv1.RouteTypePrimary, &gatewayv1.CircuitBreaker{Enabled: false}),
+			Entry("when removed", gatewayv1.RouteTypePrimary, nil),
+			Entry("when the route becomes a proxy", gatewayv1.RouteTypeProxy, nil),
+			Entry("when the route becomes a failover secondary", gatewayv1.RouteTypeSecondary, nil),
+			Entry("when a proxy still has the breaker enabled", gatewayv1.RouteTypeProxy, &gatewayv1.CircuitBreaker{Enabled: true}),
+		)
+
+		DescribeTable("keeps the jumper /listener path with realm naming",
+			func(enabled bool) {
+				route.SetNamePrefix("bond")
+				route.Spec.Traffic.CircuitBreaker.Enabled = enabled
+				rl := &gatewayv1.RouteListener{
+					ObjectMeta: metav1.ObjectMeta{Name: "rl-1", Namespace: "test-ns"},
+					Spec:       gatewayv1.RouteListenerSpec{Consumer: "consumer-app", ServiceOwner: "provider-app", Issue: "/api/v1/events"},
+				}
+				var receivedUpstream client.Upstream
+				mockKongClient.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).
+					Run(func(_ context.Context, _ client.CustomRoute, u client.Upstream) { receivedUpstream = u }).Return(nil)
+				mockKongClient.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).Return(nil, nil)
+
+				Expect(build(rl)).To(Succeed())
+				Expect(receivedUpstream.GetPath()).To(Equal("/listener"))
+				Expect(receivedUpstream.GetPort()).To(Equal(8080))
+				if enabled {
+					Expect(receivedUpstream.GetHostname()).To(Equal("bond--test-route"))
+				} else {
+					Expect(receivedUpstream.GetHostname()).To(Equal("localhost"))
+				}
+			},
+			Entry("enabled", true),
+			Entry("disabled", false),
+		)
+
+		DescribeTable("returns Kong errors and retains IDs for retry",
+			func(enabled bool) {
+				route.Spec.Traffic.CircuitBreaker.Enabled = enabled
+				route.SetUpstreamId("upstream-id")
+				route.SetTargetsId("target-id")
+				mockKongClient.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(errors.New("connection refused"))
+				Expect(build()).To(MatchError(ContainSubstring("connection refused")))
+				Expect(route.GetUpstreamId()).To(Equal("upstream-id"))
+				Expect(route.GetTargetsId()).To(Equal("target-id"))
+			},
+			Entry("upstream reconciliation", true),
+			Entry("upstream removal", false),
+		)
 	})
 })

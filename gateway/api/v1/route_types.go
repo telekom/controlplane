@@ -85,6 +85,7 @@ type RouteSpec struct {
 	// +kubebuilder:validation:items:MinLength=1
 	// +kubebuilder:validation:items:Pattern=`^[^,/\x00-\x1F\x7F]+$`
 	AdditionalTags []string `json:"additionalTags,omitempty"`
+
 }
 
 // RouteStatus defines the observed state of Route.
@@ -121,6 +122,27 @@ type Route struct {
 	// status defines the observed state of Route
 	// +optional
 	Status RouteStatus `json:"status,omitzero"`
+
+	// Runtime is in-memory state of one reconcile. It is never persisted.
+	Runtime RouteRuntime `json:"-"`
+}
+
+// RouteRuntime is the in-memory state of a Route during one reconcile. Its fields are exported so
+// that semantic equality checks on Route work; it is excluded from the API by json:"-".
+type RouteRuntime struct {
+	// NamePrefix is the effective prefix of the Kong names, taken from the Route's Gateway.
+	NamePrefix string
+	// StoredIds holds the Kong IDs captured before the status properties are rebuilt.
+	StoredIds *StoredIds
+	// PreviousProperties holds the status properties before a rebuild.
+	PreviousProperties map[string]string
+}
+
+// StoredIds are the Kong IDs of the entities of a Route as recorded in its status.
+type StoredIds struct {
+	RouteId    string
+	ServiceId  string
+	UpstreamId string
 }
 
 var _ types.Object = &Route{}
@@ -140,12 +162,44 @@ func (g *Route) SetProperty(key, val string) {
 	g.Status.Properties[key] = val
 }
 
+// GetProperty returns a status property. While the properties are rebuilt, a property that
+// was not written yet falls back to its value before the rebuild.
 func (g *Route) GetProperty(key string) string {
-	if g.Status.Properties == nil {
-		return ""
+	if val, ok := g.Status.Properties[key]; ok {
+		return val
 	}
-	val := g.Status.Properties[key]
-	return val
+	return g.Runtime.PreviousProperties[key]
+}
+
+// StartPropertyRebuild empties the status properties so that only properties written
+// afterwards remain. Until FinishPropertyRebuild, GetProperty still reads the previous
+// values of properties that were not written again.
+func (g *Route) StartPropertyRebuild() {
+	g.Runtime.PreviousProperties = g.Status.Properties
+	g.Status.Properties = map[string]string{}
+}
+
+// FinishPropertyRebuild ends a rebuild. On success, properties not written during the
+// rebuild and properties written empty are dropped. Otherwise the previous properties are
+// kept and overlaid with the ones written during the rebuild.
+func (g *Route) FinishPropertyRebuild(success bool) {
+	previous := g.Runtime.PreviousProperties
+	g.Runtime.PreviousProperties = nil
+	if !success {
+		for key, val := range g.Status.Properties {
+			if previous == nil {
+				previous = map[string]string{}
+			}
+			previous[key] = val
+		}
+		g.Status.Properties = previous
+		return
+	}
+	for key, val := range g.Status.Properties {
+		if val == "" {
+			delete(g.Status.Properties, key)
+		}
+	}
 }
 
 func (g *Route) IsPrimary() bool {
@@ -220,6 +274,64 @@ func (g *Route) GetUpstreamId() string {
 
 func (g *Route) GetTargetsId() string {
 	return g.GetProperty("targetsId")
+}
+
+// KongName returns the name of the Kong entities of this Route: "<namePrefix>--<metadata.name>"
+// if the prefix is set, otherwise metadata.name.
+func (g *Route) KongName() string {
+	if g.Runtime.NamePrefix == "" {
+		return g.Name
+	}
+	return g.Runtime.NamePrefix + "--" + g.Name
+}
+
+// GetKongName implements the RealmRoute interface for Route.
+func (g *Route) GetKongName() string {
+	return g.KongName()
+}
+
+// GetNamePrefix implements the RealmRoute interface for Route.
+func (g *Route) GetNamePrefix() string {
+	return g.Runtime.NamePrefix
+}
+
+// SetNamePrefix sets the effective prefix of the Kong names, the namePrefix of the Route's Gateway.
+func (g *Route) SetNamePrefix(prefix string) {
+	g.Runtime.NamePrefix = prefix
+}
+
+// GetRouteId returns the Kong route ID recorded in the status.
+func (g *Route) GetRouteId() string {
+	return g.GetProperty("routeId")
+}
+
+// SetLegacyName records the legacy Kong name the route was adopted under.
+func (g *Route) SetLegacyName(name string) {
+	g.SetProperty("legacyName", name)
+}
+
+// CaptureStoredIds remembers the Kong IDs currently recorded in the status, so that they
+// survive a reset of the status properties.
+func (g *Route) CaptureStoredIds() {
+	ids := g.currentIds()
+	g.Runtime.StoredIds = &ids
+}
+
+// GetStoredIds returns the captured Kong IDs, or the IDs currently recorded in the status
+// if none were captured.
+func (g *Route) GetStoredIds() StoredIds {
+	if g.Runtime.StoredIds != nil {
+		return *g.Runtime.StoredIds
+	}
+	return g.currentIds()
+}
+
+func (g *Route) currentIds() StoredIds {
+	return StoredIds{
+		RouteId:    g.GetProperty("routeId"),
+		ServiceId:  g.GetProperty("serviceId"),
+		UpstreamId: g.GetProperty("upstreamId"),
+	}
 }
 
 // +kubebuilder:object:root=true

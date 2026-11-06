@@ -10,7 +10,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -66,7 +65,7 @@ func CreateZone(name string) *adminapi.Zone {
 				Name:     "default",
 				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
-					Url: ptr.To("http://idp-admin.test.local:8080"),
+					Url: "http://idp-admin.test.local:8080",
 				},
 			}},
 			Redis: &adminapi.RedisConfig{

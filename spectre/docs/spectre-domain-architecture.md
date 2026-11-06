@@ -1,0 +1,169 @@
+<!--
+SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
+# Spectre Domain -- Architecture Overview
+
+This document describes how the **Spectre domain** (`spectre.cp.ei.telekom.de/v1`) interacts with its surrounding domains in the Control Plane.
+
+## Domain Interaction Diagram
+
+```mermaid
+flowchart TB
+    %% ── Styling ──────────────────────────────────────────────
+    classDef spectreCls fill:#7e57c2,color:#fff,stroke:#512da8,stroke-width:2px
+    classDef pubsubCls  fill:#ef5350,color:#fff,stroke:#c62828,stroke-width:2px
+    classDef gatewayCls fill:#50b86c,color:#fff,stroke:#2e7d42,stroke-width:2px
+    classDef approvalCls fill:#ff7043,color:#fff,stroke:#bf360c,stroke-width:2px
+    classDef eventCls   fill:#4a90d9,color:#fff,stroke:#2c5f8a,stroke-width:2px
+    classDef appCls     fill:#26a69a,color:#fff,stroke:#00796b,stroke-width:2px
+
+    %% ── Spectre Domain (center) ────────────────────────────
+    subgraph spectre["Spectre Domain"]
+        direction TB
+        SpectreApp["SpectreApplication"]:::spectreCls
+        Listener["Listener"]:::spectreCls
+
+        SpectreApp -. "parent of" .-> Listener
+    end
+
+    %% ── PubSub Domain ──────────────────────────────────────
+    subgraph pubsub["PubSub Domain"]
+        direction TB
+        EventStore["EventStore"]:::pubsubCls
+        Publisher["Publisher"]:::pubsubCls
+        Subscriber["Subscriber"]:::pubsubCls
+    end
+
+    %% ── Gateway Domain ─────────────────────────────────────
+    subgraph gateway["Gateway Domain"]
+        direction TB
+        RouteListener["RouteListener"]:::gatewayCls
+        Route["Route"]:::gatewayCls
+    end
+
+    %% ── Approval Domain ────────────────────────────────────
+    subgraph approval["Approval Domain"]
+        direction TB
+        ApprovalRequest["ApprovalRequest"]:::approvalCls
+        Approval["Approval"]:::approvalCls
+    end
+
+    %% ── Event Domain (read-only) ───────────────────────────
+    subgraph event["Event Domain"]
+        direction TB
+        EventConfig["EventConfig"]:::eventCls
+    end
+
+    %% ── Application Domain ─────────────────────────────────
+    subgraph application["Application Domain"]
+        direction TB
+        App["Application"]:::appCls
+    end
+
+    %% ── SpectreApplication interactions ────────────────────
+    SpectreApp -- "creates / owns" --> Publisher
+    SpectreApp -- "creates / owns" --> Subscriber
+    SpectreApp -- "creates / owns" --> Route
+    SpectreApp -. "reads" .-> EventStore
+    SpectreApp -. "reads" .-> EventConfig
+    SpectreApp -. "reads" .-> App
+
+    %% ── Listener interactions ──────────────────────────────
+    Listener -- "creates / owns" --> Subscriber
+    Listener -- "creates / owns" --> RouteListener
+    Listener -- "creates / owns" --> ApprovalRequest
+    Listener -. "reads" .-> Approval
+    Listener -. "reads" .-> EventConfig
+    Listener -. "reads" .-> EventStore
+    Listener -. "reads" .-> Route
+    Listener -- "creates (shared)" --> Publisher
+```
+
+### Legend
+
+| Arrow style | Meaning |
+|---|---|
+| **Solid line** (`--creates/owns-->`) | The controller **creates and owns** this resource (full CRUD lifecycle) |
+| **Solid line** (`--creates (shared)-->`) | The controller **creates** this resource on first use; it is shared and not owned by any single controller object |
+| **Dashed line** (`-.reads.->`) | The controller **reads** this resource during reconciliation (GET/LIST) |
+
+## Interaction Details
+
+### SpectreApplication Handler
+
+Reconciles `SpectreApplication` resources. One SpectreApplication groups all Listeners for a given application.
+
+| Target Domain | Resource | Relationship | Purpose |
+|---|---|---|---|
+| **PubSub** | `Publisher` | creates/owns | Creates the application's Publisher for its listener event type |
+| **PubSub** | `Subscriber` | creates/owns | Creates the application's Subscriber, delivering by callback or SSE |
+| **PubSub** | `EventStore` | reads | Resolves the zone's EventStore for backend connection details |
+| **Gateway** | `Route` | creates/owns | SSE delivery only: a primary SSE Route in the backend zone, plus a proxy SSE Route in the app zone when that zone is a proxy zone |
+| **Event** | `EventConfig` | reads | Reads `CallbackURL` and zone configuration |
+| **Application** | `Application` | reads | Resolves consumer and provider application metadata |
+
+The application's Publisher and Subscriber use event type `de.telekom.ei.listener.<applicationId>`.
+
+### Listener Handler
+
+Reconciles `Listener` resources. Each Listener represents one consumer-to-provider binding for a specific API path.
+
+| Target Domain | Resource | Relationship | Purpose |
+|---|---|---|---|
+| **PubSub** | `Subscriber` | creates/owns | Creates a bridge Subscriber that routes events through the Horizon callback path |
+| **Gateway** | `RouteListener` | creates/owns | Creates a RouteListener that exposes the listener endpoint on the API Gateway |
+| **Gateway** | `Route` | reads | Resolves the existing API Route to extract the service path for the RouteListener |
+| **PubSub** | `Publisher` | creates (shared) | Creates the zone's shared Publisher for `de.telekom.ei.listener` on first use; the bridge Subscribers of all Listeners in the zone reference it, so no single Listener owns it |
+| **PubSub** | `EventStore` | reads | Resolves the capture and delivery zones' EventStores and their environment |
+| **Event** | `EventConfig` | reads | Resolves capture and delivery placement: mesh, `status.callbackUrl`, `status.proxyCallbackUrls` |
+| **Approval** | `ApprovalRequest` | creates/owns | Two keyed gates, one decided by the provider and one by the consumer, capturing consumer, provider, path, delivery mode, callback, and filters |
+| **Approval** | `Approval` | reads | Reads the decision of each gate; both must be granted. The Approval domain creates it with the Listener as owner |
+
+## Ownership Model
+
+Event and Spectre are **peer business-logic domains**. PubSub is a **shared Horizon runtime adapter**.
+
+| PubSub Resource | Created by |
+|---|---|
+| `EventStore` | Event domain (`EventConfig` controller) |
+| `Publisher` | Event domain (`EventExposure`) **and** Spectre domain (`SpectreApplication`: per-app Publisher; `Listener`: the zone's shared Publisher) |
+| `Subscriber` | Event domain (`EventSubscription`) **and** Spectre domain (`SpectreApplication`: the application's Subscriber; `Listener`: bridge Subscribers) |
+
+Users do not create PubSub resources directly. EventStore ownership is unchanged -- Spectre only consumes it.
+
+## Cross-Namespace Children
+
+Spectre creates child resources (Publishers, Subscribers, RouteListeners) in the zone namespace, which differs from the Listener's own namespace. Standard Kubernetes `ownerReferences` cannot cross namespace boundaries, so Spectre uses `OwnerUidLabelKey` labels to track ownership. Deletion cleanup uses label-based listing instead of garbage collection.
+
+## Lifecycle Contracts
+
+- **Deletion order**: Subscriber -> Publisher -> EventStore. A Publisher is retained until all referencing Subscribers have finalized.
+- **Listener Publisher**: the bridge Subscribers of all Listeners in a zone share one Publisher for `de.telekom.ei.listener`. It is created on first use and kept, also after the last Listener in the zone is gone.
+- **Pass-through and failover listeners** are rejected at reconciliation time.
+- **Placement**: capture runs in the consumer zone, else the provider zone; delivery always runs in the observer zone. The result is recorded in `status.appliedPlacement`. When placement fails for good, the Listener is Blocked and its capture is drained; the reason is in `status.draining.reason`.
+- **Circuit-breaker routes** are supported; the circuit-breaker upstream keeps the Jumper `/listener` path.
+- **SSE delivery** works in local and proxy zones. Each SSE Route serves the canonical path `/horizon/sse/v1/de.telekom.ei.listener.<appId>` first (it drives `api_base_path`) and the legacy alias `/spectre-sse/<appId>`, both to the same upstream and subscription. `status.sseUrl` holds the canonical URL on the app zone's gateway including the subscription ID; the SpectreApplication is Ready only once it is set and every SSE Route is Ready. The alias does not cover legacy hostnames/TLS or hash-shortened app IDs of very long team names. Paths match by prefix, so a request for an app without its own Route can land on the Route of an app whose ID is a prefix of it; Pulsar then answers 404 because it enforces the subscriber identity.
+- **Callback traffic** is Gateway-mediated: the Subscriber's callback URL is constructed from `EventConfig.Status.CallbackURL`, routing through the Gateway's callback route.
+
+## Internal Event-Type Namespace
+
+Spectre uses the `de.telekom.ei.listener*` prefix for its internal event types. These are generated automatically from the application ID and are not user-configurable. Ordinary EventType admission does not allow claiming names under this prefix, preventing collisions.
+
+## Registered Schemes
+
+The Spectre operator registers API types from **9 domains** (including itself):
+
+| Domain | API Group | Resources Used |
+|---|---|---|
+| **Spectre** | `spectre.cp.ei.telekom.de` | SpectreApplication, Listener |
+| **PubSub** | `pubsub.cp.ei.telekom.de` | EventStore, Publisher, Subscriber |
+| **Gateway** | `gateway.cp.ei.telekom.de` | RouteListener, Route |
+| **Approval** | `approval.cp.ei.telekom.de` | ApprovalRequest, Approval |
+| **Event** | `event.cp.ei.telekom.de` | EventConfig |
+| **Application** | `application.cp.ei.telekom.de` | Application |
+| **Admin** | `admin.cp.ei.telekom.de` | Zone |
+| **Identity** | `identity.cp.ei.telekom.de` | Realm |
+| **API** | `api.cp.ei.telekom.de` | ApiExposure |

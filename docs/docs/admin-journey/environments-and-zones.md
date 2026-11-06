@@ -30,6 +30,10 @@ spec:
 
 The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
+:::caution
+If `realmName` differs from the environment name, set [`spec.overwriteEnvironmentName`](#event-environment-name) to the same value on every EventConfig in the environment. Otherwise Horizon drops events, and Spectre Listeners are Blocked with `event environment mismatch`.
+:::
+
 :::tip
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
 :::
@@ -66,9 +70,7 @@ The Admin operator records a Warning event on the Zone for each managed sub-reso
 kubectl describe zone <name> -n <environment>
 ```
 
-During OIDC discovery for a preset's token URL, the Admin operator also records a Warning event with reason `OIDCIssuerMismatch` on the Zone if the advertised issuer differs from the configured issuer or is missing. The event names the preset and both issuer values. A trailing slash alone does not count as a mismatch.
-
-This warning does not block reconciliation: the configured issuer is retained and the discovered token endpoint is used if it passes validation. No issuer comparison is performed when an existing token URL is reused from the Zone status.
+A preset's token URL is `presets[].tokenUrl` if set, otherwise `identityProviders[].tokenUrl`, otherwise the default Realm's resolved `status.issuerUrl` (trailing slashes removed) followed by `/protocol/openid-connect/token`. The Admin operator makes no HTTP request to resolve it. The derived URL must be an absolute HTTPS URL without userinfo, query, or fragment. When neither override is set, reconciliation is retried until the default Realm reports an issuer.
 
 ### Creating a Zone
 
@@ -89,11 +91,13 @@ spec:
         url: https://gateway-admin.example.com
   identityProviders:
     - name: primary
+      # Optional public issuer host override, see "Identity Provider Admin URL and Issuer"
       issuerHostname: idp.example.com
       allowedOrigins:
         - https://app.example.com
       admin:
-        url: https://idp.example.com/auth/admin/realms
+        # Required; may be an admin-only host
+        url: https://idp-admin.example.com/auth/admin/realms
         clientId: admin-client
         userName: admin
         password: <your-idp-admin-password>
@@ -117,10 +121,28 @@ spec:
 
 The Zone manages all attributes (`spec.attributes`) of its Realms (internal realms are excluded). Attributes set directly on these Realm resources are overwritten on the next reconciliation.
 
-- **World zones:** the Realms get exactly one attribute, `frontendUrl`, set to `https://<issuerHostname>/auth`. The hostname is the identity provider's `issuerHostname`, or the host of its `admin.url` if no `issuerHostname` is set. If no hostname can be resolved, `frontendUrl` is set to an empty value, which means no frontend URL is configured.
+- **World zones with `issuerHostname`:** the Realms get exactly one attribute, `frontendUrl`, set to `https://<issuerHostname>/auth`.
+- **World zones without `issuerHostname`:** the Realms have no attributes.
 - **Enterprise zones:** the Realms have no attributes.
 
 See [Realm Attributes](../architecture/identity.mdx#realm-attributes).
+
+### Identity Provider Admin URL and Issuer
+
+`spec.identityProviders[].admin.url` is required. It is the Keycloak admin API endpoint (for example `https://idp-admin.example.com/auth/admin/realms`) and is used only to administer Keycloak and to discover realm issuers. The admin URL is never used to build the public issuer. Its host may be the public Keycloak host or a separate admin-only host.
+
+`spec.identityProviders[].issuerHostname` is optional:
+
+- **Set (World zones):** the zone's public Realms get `frontendUrl: https://<issuerHostname>/auth`, so their issuer is `https://<issuerHostname>/auth/realms/<realm>`. On Enterprise zones `issuerHostname` has no effect.
+- **Not set:** the Admin operator does not set a `frontendUrl`. Each Realm's issuer is the one Keycloak advertises in its OIDC discovery document, as resolved by the Identity operator in the Realm's `status.issuerUrl`.
+
+The preset links `issuer` and `teamIssuer`, the default token URL and the trusted issuers of team API routes all use the resolved `status.issuerUrl` of the corresponding Realm. Until a Realm reports an issuer, the Zone reconciliation is retried; it never falls back to the admin host.
+
+Without `issuerHostname`, the issuer is discovered by requesting `<base>/realms/<realm>/.well-known/openid-configuration`, where `<base>` is `admin.url` up to its first `admin` path segment (for example `https://idp-admin.example.com/auth`). The admin host must therefore serve the OIDC discovery endpoint; if it does not, the Realm stays not ready and reports the discovery error. Configure Keycloak with a fixed, full public hostname (for example `KC_HOSTNAME=https://idp.example.com/auth`) and, for a separate admin host, `KC_HOSTNAME_ADMIN`, so the discovered issuer is the public issuer regardless of which host served the request. Without a fixed `KC_HOSTNAME` (for example with `hostname-strict=false`), Keycloak derives the issuer from the request, and the issuer discovered through the admin host would be the admin host. See the [Keycloak hostname guide](https://www.keycloak.org/server/hostname).
+
+:::note Upgrading
+Previously, World zones without `issuerHostname` got a `frontendUrl` derived from the host of `admin.url`. After the upgrade the Admin operator removes it from the Realm spec, and the Identity operator removes it from Keycloak only if it is listed in the Realm's `status.managedAttributes`. A `frontendUrl` configured directly in Keycloak and never managed by the controller is left unchanged and still determines the issuer. To keep the previous issuer, set `issuerHostname` explicitly to the former admin host.
+:::
 
 ### Traffic Types
 
@@ -209,6 +231,188 @@ gateways:
 ```
 
 No manual realm or client setup is needed. All gateways in a Zone share one automatically provisioned `rover` client. For its lifecycle and secret handling, see [Admin Domain](../architecture/admin.mdx#identity-realms-and-the-rover-client).
+
+### Custom CA Certificates
+
+Use `tls.configMapRef` when the Control Plane must trust a private certificate authority (CA) for gateway or identity-provider connections. The certificates **extend the operator's system trust store**; they do not replace it. HTTPS still verifies certificate chains and hostnames. With no `tls` configuration, these connections use system roots only.
+
+This setting covers gateway and identity-provider **admin APIs and authentication token endpoints**. It does not configure gateway-to-backend TLS, Redis TLS, or certificates served to API consumers. Existing internal CA mounts and Secret-Manager trust configuration are unchanged. There is no option to disable TLS verification in the operator resources.
+
+Before using this feature, install the updated Zone, Gateway, IdentityProvider, and Realm CRDs and the corresponding operators and RBAC. Admin needs ConfigMap read/watch and write permissions; Gateway and Identity need `get`, `list`, and `watch`. ConfigMaps are read through the operators' Kubernetes caches, including ordinary ConfigMaps without platform labels.
+
+#### Configure a Zone
+
+Create each source ConfigMap in the **same namespace as the Zone**, not in its generated resource namespace. Both `name` and `key` are required; cross-namespace references and optional references are not supported. Store certificates as text under `data`, not `binaryData`. Source ConfigMaps need no Control Plane labels.
+
+The following complete resource templates assume the `dev` Environment and namespace already exist. Replace each certificate placeholder with the base64 body of your actual PEM-encoded CA certificate, and supply your real endpoint and credential values before applying. Append additional complete `CERTIFICATE` blocks when an endpoint's CA differs from its token endpoint's CA. Never include a private key.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-ca
+  namespace: dev
+data:
+  ca.pem: |
+    -----BEGIN CERTIFICATE-----
+    <GATEWAY_CA_CERTIFICATE_BASE64>
+    -----END CERTIFICATE-----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: identity-ca
+  namespace: dev
+data:
+  ca.pem: |
+    -----BEGIN CERTIFICATE-----
+    <IDENTITY_CA_CERTIFICATE_BASE64>
+    -----END CERTIFICATE-----
+---
+apiVersion: admin.cp.ei.telekom.de/v1
+kind: Zone
+metadata:
+  name: dataplane1
+  namespace: dev
+  labels:
+    cp.ei.telekom.de/environment: dev
+spec:
+  visibility: World
+  gateways:
+    - name: standard
+      admin:
+        identityProviderRef: primary
+        url: https://gateway-admin.example.com
+      tls:
+        configMapRef:
+          name: gateway-ca
+          key: ca.pem
+  identityProviders:
+    - name: primary
+      issuerHostname: idp.example.com
+      admin:
+        url: https://idp.example.com/auth/admin/realms
+        clientId: admin-client
+        userName: admin
+        password: <your-idp-admin-password>
+      tls:
+        configMapRef:
+          name: identity-ca
+          key: ca.pem
+  presets:
+    - name: default
+      type: API
+      default: true
+      gatewayRef: standard
+      identityProviderRef: primary
+      urls:
+        - hostname: api.dataplane1.example.com
+          basePath: /
+```
+
+Admin collects CA references from **every configured gateway and identity-provider entry**, not just the default preset. It validates them together and publishes their deduplicated union to one managed ConfigMap: `zone-ca-bundle`, key `ca-bundle.pem`, in `<environment>--<zone>` (`dev--dataplane1` here). Every generated Gateway and IdentityProvider uses that same local bundle, even if its own Zone entry has no `tls` field. Trust is therefore shared across the Zone, not isolated per endpoint. The current Zone provisioning model still requires exactly one identity provider; this feature does not add multi-IDP provisioning.
+
+#### Validation and last valid configuration
+
+Each referenced value must be nonempty and contain only parseable, header-free PEM `CERTIFICATE` blocks and whitespace. Certificates must be CAs with valid basic constraints and, when key usage is set, certificate-signing permission. Leaf certificates, private keys, malformed PEM, unmatched `BEGIN` lines, and unrelated content are rejected, even when a valid CA follows them; see [strict PEM parsing](../architecture/outbound-tls-clients.md#strict-pem-parsing). Duplicate certificates are removed and the bundle is put in a stable order. The resulting bundle must fit within the ConfigMap's 1 MiB data limit, including its key.
+
+CA validity dates alone do not cause configuration rejection, which permits overlap during rotation. This does **not** disable validity-date checks during an HTTPS connection. Loading the system trust store must also succeed; the client does not silently switch to a custom-only trust store.
+
+Admin resolves all sources before publishing the bundle or changing child connection settings. A missing ConfigMap, missing key, denied read, or invalid bundle blocks Zone reconciliation and leaves the **last valid published bundle and child connection settings intact**. The zone namespace may already have been created. Other Zone changes also wait until the CA configuration is repaired. Transient Kubernetes errors are retried.
+
+“Last valid” means valid CA configuration, not a successful connection to every remote service. The bundle is published before child settings are updated, and these writes are not one transaction: a later failure does not roll back an already published bundle.
+
+Do not edit the managed ConfigMap directly. Admin watches source ConfigMaps and queues referencing Zones when they change; it also watches the managed bundle to repair edits or deletion, provided all source inputs are valid. An unrelated ConfigMap already named `zone-ca-bundle` in the generated namespace is not overwritten. Resolve that naming collision without deleting trust material still in use.
+
+#### Rotation and update timing
+
+All CA reads use the manager's **cached Kubernetes client**, so updates are eventually consistent, not immediately visible to every operator. Each new client acquisition resolves and validates the current cached CA value before reusing a connection client. Once an invalid or missing value is observed, there is no fallback to a stale cached client. A corrupted or deleted managed bundle can therefore interrupt operations until Admin repairs it and caches catch up.
+
+Source changes directly wake the Zone controller, but there is **no CA ConfigMap watch that immediately queues all affected Routes, Consumers, Realms, or Clients**. Those resources pick up changes on their next normal reconciliation or jittered retry. An already running operation can finish with its previously acquired client.
+
+For a safe CA or endpoint migration:
+
+1. Add the new CA while retaining the old CA in the source bundle.
+2. Wait for the managed bundle to update and for affected resources to reconcile successfully.
+3. Change the remote certificates or endpoint settings, keeping both CAs trusted while old and new settings may coexist.
+4. Remove the old CA only after all affected operations, including pending deletions, no longer need it.
+
+#### Removal, retention, and recovery
+
+To return a Zone to system-only trust, remove **all** `tls` references from its gateway and identity-provider entries. Leaving even one reference keeps the Zone-wide union enabled. Do not empty or delete a referenced source as a removal mechanism: that is invalid configuration and preserves the last valid publication.
+
+During reconciliation, Admin clears managed-bundle references from all retained Admin-managed Gateways and IdentityProviders for the Zone, including instances no longer listed in the Zone spec. It does not delete those children or change unmanaged resources. Cleanup runs after the other Zone provisioning steps, so earlier failures can delay it.
+
+The managed bundle is retained while a Gateway or IdentityProvider in the generated namespace, or any Realm connection snapshot, still references it. Realm snapshots remember the CA reference and its originating namespace for later operations, including deletion. Admin retires the bundle on a later Zone reconciliation once those references have disappeared. Deleting the Zone itself retains the bundle alongside its children. Recreating the same-named Zone can reuse a retained bundle carrying the matching Admin/environment/Zone management labels; an old Zone UID does not prevent reuse.
+
+For troubleshooting, inspect the Zone and the resource performing the remote operation:
+
+```bash
+kubectl describe zone dataplane1 -n dev
+kubectl get configmap zone-ca-bundle -n dev--dataplane1 -o yaml
+kubectl describe route <route-name> -n <route-namespace>
+kubectl describe consumer <consumer-name> -n <consumer-namespace>
+kubectl describe realm <realm-name> -n <realm-namespace>
+kubectl describe client <client-name> -n <client-namespace>
+```
+
+Gateway and IdentityProvider readiness is not a proactive CA or connectivity check. Trust errors surface on Route/Consumer or Realm/Client operations. If a required remote deletion cannot acquire valid trust, its finalizer remains. Restore the referenced ConfigMap and key in the recorded namespace, correct its CA content or operator permissions, and allow reconciliation to retry. For a Zone-managed bundle, fix the sources and let Admin repair it while the Zone exists. Do not remove finalizers merely to bypass TLS failures: remote resources may be orphaned. The existing Client-deletion exception is unchanged: if its Realm is missing or not ready, remote client deletion is skipped.
+
+#### Standalone Gateway and IdentityProvider
+
+For resources created independently of Admin, put `tls.configMapRef` directly on `spec`. The source must be in the **Gateway's or IdentityProvider's own namespace**. The following templates share one source in `dev`; replace the certificate, endpoints, and credentials before applying. Include the CAs needed by both admin APIs and their token endpoints. If the resources are in different namespaces, create a source ConfigMap in each namespace.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: standalone-admin-ca
+  namespace: dev
+data:
+  ca.pem: |
+    -----BEGIN CERTIFICATE-----
+    <ADMIN_AND_TOKEN_CA_CERTIFICATE_BASE64>
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Gateway
+metadata:
+  name: standalone-gateway
+  namespace: dev
+  labels:
+    cp.ei.telekom.de/environment: dev
+spec:
+  admin:
+    url: https://gateway-admin.example.com
+    issuerUrl: https://idp.example.com/auth/realms/rover
+    clientId: gateway-admin
+    clientSecret: <your-gateway-admin-client-secret>
+  tls:
+    configMapRef:
+      name: standalone-admin-ca
+      key: ca.pem
+---
+apiVersion: identity.cp.ei.telekom.de/v1
+kind: IdentityProvider
+metadata:
+  name: standalone-idp
+  namespace: dev
+  labels:
+    cp.ei.telekom.de/environment: dev
+spec:
+  adminUrl: https://idp.example.com/auth/admin/realms
+  adminClientId: admin-client
+  adminUserName: admin
+  adminPassword: <your-idp-admin-password>
+  tls:
+    configMapRef:
+      name: standalone-admin-ca
+      key: ca.pem
+```
+
+Standalone resources use the same CA validation but have **no managed copy or durable last-valid fallback**. An invalid, missing, or unreadable source blocks the next affected operation once observed by the cache, even if a client was previously cached. Fix the source and wait for the operation's next reconciliation. Omit `spec.tls` for system-only trust; allow Realm connection snapshots to update before removing an old IDP source needed for deletion. Standalone credentials and backing admin accounts must already be configured; Admin does not provision them for these examples.
+
+For implementation details, see [Outbound TLS Clients](../architecture/outbound-tls-clients.md).
 
 ### Zone Secrets
 
@@ -402,6 +606,15 @@ mesh:
   zoneNames:
     - dataplane2
     - dataplane3
+```
+
+### Event environment name
+
+`spec.overwriteEnvironmentName` overrides the environment name sent to Horizon. If omitted, the Control Plane environment name is used. It must equal the zone's realm (the Environment `spec.realmName`).
+
+```yaml
+spec:
+  overwriteEnvironmentName: default
 ```
 
 ### Overriding identity client defaults

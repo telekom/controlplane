@@ -66,11 +66,13 @@ type RedisConfig struct {
 }
 
 type IdentityProviderAdminConfig struct {
-	// Url is the base URL of the identity provider admin API.
-	// If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
-	// +kubebuilder:validation:Optional
+	// Url is the identity provider admin API endpoint, e.g. "https://iam-admin.example.com/auth/admin/realms".
+	// It is only used to administer the identity provider and to discover realm issuers.
+	// It never determines the public issuer. It may share a host with the public issuer or use a separate admin-only host.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Format=uri
-	Url *string `json:"url,omitempty"`
+	Url string `json:"url"`
 	// ClientId is the client ID to authenticate with the identity provider admin API.
 	ClientId string `json:"clientId"`
 	// UserName is the username to authenticate with the identity provider admin API.
@@ -108,6 +110,12 @@ type IdentityProviderConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name  string                      `json:"name"`
 	Admin IdentityProviderAdminConfig `json:"admin"`
+	// IssuerHostname optionally overrides the public issuer host.
+	// On World zones it sets the frontendUrl "https://<issuerHostname>/auth" on the
+	// zone's public realms. If absent, the controller leaves the realm frontendUrl unset and
+	// uses the issuer the identity provider advertises through OIDC discovery.
+	// It is never derived from admin.url.
+	// +optional
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Format=hostname
 	IssuerHostname string `json:"issuerHostname,omitempty"`
@@ -121,6 +129,10 @@ type IdentityProviderConfig struct {
 	// +listType=set
 	// +kubebuilder:validation:items:Pattern=`^(\*|[A-Za-z][A-Za-z0-9+.-]*://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?)$`
 	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
+	// TLS configures additional CA certificates trusted when connecting to this identity provider.
+	// The referenced ConfigMap must be in the namespace of the Zone.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // GatewayAdminConfig contains the necessary information to connect to the gateway admin API for this zone.
@@ -202,7 +214,8 @@ type Preset struct {
 	// +kubebuilder:validation:Required
 	IdentityProviderRef string `json:"identityProviderRef"`
 	// TokenUrl is the token endpoint for this zone preset
-	// By default it is derived from the identity provider's issuer URL, but can be overridden here if needed.
+	// If empty, the identity provider's tokenUrl is used, otherwise the default realm's resolved issuer URL
+	// followed by /protocol/openid-connect/token.
 	// +kubebuilder:validation:Format=uri
 	// +kubebuilder:validation:Optional
 	TokenUrl string `json:"tokenUrl,omitempty"`
@@ -263,6 +276,10 @@ type GatewayConfig struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]+(-?[a-z0-9]+)*$`
 	Name  string             `json:"name"`
 	Admin GatewayAdminConfig `json:"admin"`
+	// TLS configures additional CA certificates trusted when connecting to this gateway.
+	// The referenced ConfigMap must be in the namespace of the Zone.
+	// +optional
+	TLS *types.TLSConfig `json:"tls,omitempty"`
 }
 
 // ManagedRouteType defines the type of a managed route.
@@ -400,6 +417,29 @@ func (s *ZoneSpec) GetGateway(name string) (*GatewayConfig, error) {
 		}
 	}
 	return nil, fmt.Errorf("gateway %q not found", name)
+}
+
+// CARefs returns the sorted, deduplicated CA ConfigMap references of all gateways
+// and identity providers. The references are local to the namespace of the Zone.
+func (s *ZoneSpec) CARefs() []types.ConfigMapKeyRef {
+	var refs []types.ConfigMapKeyRef
+	for i := range s.Gateways {
+		if s.Gateways[i].TLS != nil {
+			refs = append(refs, s.Gateways[i].TLS.ConfigMapRef)
+		}
+	}
+	for i := range s.IdentityProviders {
+		if s.IdentityProviders[i].TLS != nil {
+			refs = append(refs, s.IdentityProviders[i].TLS.ConfigMapRef)
+		}
+	}
+	slices.SortFunc(refs, func(a, b types.ConfigMapKeyRef) int {
+		if c := strings.Compare(a.Name, b.Name); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Key, b.Key)
+	})
+	return slices.Compact(refs)
 }
 
 func (s *ZoneSpec) GetIdentityProvider() (*IdentityProviderConfig, error) {
