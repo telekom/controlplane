@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/common v0.72.0
 	github.com/stretchr/testify v1.12.1
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/tidwall/gjson v1.19.0
+	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/valyala/fasttemplate v1.2.2
 	go.uber.org/zap v1.28.0
