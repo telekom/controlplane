@@ -116,8 +116,8 @@ func (c *kongClient) removeUpstream(ctx context.Context, route CustomRoute, upst
 }
 
 // locatedUpstream returns the located upstream of a realm route. The desired name defaults
-// to the Kong name of the route. Java routes have no upstream, so no legacy candidates are
-// tried.
+// to the Kong name of the route. The supported legacy naming scheme has no upstream, so no
+// legacy candidates are tried.
 func (c *kongClient) locatedUpstream(ctx context.Context, route CustomRoute, desiredName string, policy discoveryPolicy) (*locatedEntity[kong.CreateUpstreamJSONRequestBody, kong.Upstream], error) {
 	realm, ok := realmOf(route)
 	if !ok {

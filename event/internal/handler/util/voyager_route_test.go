@@ -104,7 +104,7 @@ var _ = Describe("CreateVoyagerRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("voyager--zone-a"))
+		Expect(route.Name).To(Equal("horizon-voyager-zone-a"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels
@@ -242,7 +242,7 @@ var _ = Describe("CreateProxyVoyagerRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("voyager--zone-b"))
+		Expect(route.Name).To(Equal("horizon-voyager-zone-b"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels reference source zone
@@ -348,7 +348,7 @@ var _ = Describe("CreateProxyLocalVoyagerRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Name and namespace reference the source (proxy) zone
-		Expect(route.Name).To(Equal("voyager--zone-a"))
+		Expect(route.Name).To(Equal("horizon-voyager-zone-a"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Labels: own voyager route (not the voyager-proxy mesh type)

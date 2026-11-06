@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Synthetic Kong export of a route written by the Java operator.
+# Synthetic Kong export of a route using the legacy naming scheme.
 service:
   id: 18f135d2-5f55-4203-b018-50c5a38fd547
   name: bond.horizon-events

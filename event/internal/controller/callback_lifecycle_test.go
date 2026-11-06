@@ -209,7 +209,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Expect(consumer.Spec.Gateway).To(Equal(ctypes.ObjectRef{Name: cfg.Spec.Zone.Name + "-gateway", Namespace: namespace}))
 		Expect(consumer.OwnerReferences).To(ContainElement(SatisfyAll(HaveField("UID", cfg.UID), HaveField("Kind", "EventConfig"))))
 		callback := &gatewayv1.Route{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--" + cfg.Spec.Zone.Name, Namespace: namespace}, callback)).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-callback-" + cfg.Spec.Zone.Name, Namespace: namespace}, callback)).To(Succeed())
 		Expect(callback.Spec.Security.DefaultConsumers).To(ContainElement(consumer.Spec.Name))
 		Expect(callback.Spec.Security.DefaultConsumers).NotTo(ContainElement("backend-mesh"))
 		cfg.Spec.Mesh.Client.ClientSecret = "rotated"
@@ -225,7 +225,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "replacement-callback", Namespace: namespace}, replacement)).To(Succeed())
 			Expect(replacement.Spec.Name).To(Equal("replacement-callback"))
 			Expect(errors.IsNotFound(k8sClient.Get(ctx, types.NamespacedName{Name: clientId, Namespace: namespace}, &gatewayv1.Consumer{}))).To(BeTrue())
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--backend", Namespace: namespace}, callback)).To(Succeed())
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-callback-backend", Namespace: namespace}, callback)).To(Succeed())
 			Expect(callback.Spec.Security.DefaultConsumers).To(ContainElement("replacement-callback"))
 			Expect(callback.Spec.Security.DefaultConsumers).NotTo(ContainElement(clientId))
 		}
@@ -361,7 +361,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		ready(&backend.Status.Conditions, backend.Generation)
 		store(backend)
 
-		obsolete := &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "callback--subscriber-clean", Namespace: proxy.Namespace, Labels: labels}, Spec: gatewayv1.RouteSpec{GatewayRef: ref("exposure-clean-gateway"), Type: gatewayv1.RouteTypeProxy, Backend: gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{{Scheme: "https", Hostname: "subscriber-clean.example.com", Port: 443, Path: "/horizon-subscriber-clean/callback/v1"}}}, Hostnames: []string{"exposure-clean.example.com"}, Paths: []string{"/horizon-subscriber-clean/callback/v1"}}}
+		obsolete := &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "horizon-callback-subscriber-clean", Namespace: proxy.Namespace, Labels: labels}, Spec: gatewayv1.RouteSpec{GatewayRef: ref("exposure-clean-gateway"), Type: gatewayv1.RouteTypeProxy, Backend: gatewayv1.Backend{Upstreams: []gatewayv1.Upstream{{Scheme: "https", Hostname: "subscriber-clean.example.com", Port: 443, Path: "/horizon-subscriber-clean/callback/v1"}}}, Hostnames: []string{"exposure-clean.example.com"}, Paths: []string{"/horizon-subscriber-clean/callback/v1"}}}
 		Expect(controllerutil.SetControllerReference(proxy, obsolete, k8sClient.Scheme())).To(Succeed())
 		create(obsolete)
 		foreign := obsolete.DeepCopy()
@@ -385,9 +385,9 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Eventually(func() bool {
 			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(obsolete), &gatewayv1.Route{}))
 		}, 5*time.Second, 100*time.Millisecond).Should(BeTrue())
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--exposure-clean", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-callback-exposure-clean", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(foreign), &gatewayv1.Route{})).To(Succeed())
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "publish", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-events", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
 
 		// Switching to a real backend materializes the outbound callback Route;
 		// switching back removes it without removing the primary.
@@ -403,7 +403,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		reconcile()
 		Expect(proxy.Status.ProxyCallbackRoutes).To(HaveLen(1))
 		forward := &gatewayv1.Route{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--subscriber-clean", Namespace: proxy.Namespace}, forward)).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-callback-subscriber-clean", Namespace: proxy.Namespace}, forward)).To(Succeed())
 		Expect(forward.Spec.Security.TrustedIssuers).To(ConsistOf("https://exposure-clean-issuer"))
 		proxy.Spec.Local = nil
 		proxy.Spec.Proxy = &eventv1.ProxyBackend{TargetZone: ref("backend-clean")}
@@ -415,7 +415,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Eventually(func() bool {
 			return errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(forward), &gatewayv1.Route{}))
 		}, 5*time.Second, 100*time.Millisecond).Should(BeTrue())
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--exposure-clean", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-callback-exposure-clean", Namespace: proxy.Namespace}, &gatewayv1.Route{})).To(Succeed())
 	})
 
 	It("projects backend changes through proxy status into callback provisioning, revocation and restoration", func() {

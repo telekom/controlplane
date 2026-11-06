@@ -112,7 +112,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("publish"))
+		Expect(route.Name).To(Equal("horizon-events"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels
@@ -275,7 +275,7 @@ var _ = Describe("CreatePublishProxyRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Name/namespace come from the source zone (same as primary publish route).
-		Expect(route.Name).To(Equal("publish"))
+		Expect(route.Name).To(Equal("horizon-events"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Proxy-specific label + route type.

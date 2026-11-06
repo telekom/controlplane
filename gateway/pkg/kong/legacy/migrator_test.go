@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// snapshotDir holds synthetic Kong exports of routes written by the Java operator.
+// snapshotDir holds synthetic Kong exports of routes using the legacy naming scheme.
 const snapshotDir = "testdata/java-routes"
 
 type snapshotEntity struct {
@@ -45,8 +45,6 @@ func realmTag(tags []string) string {
 	return tags[i]
 }
 
-var eventLabels = map[string]string{"cp.ei.telekom.de/domain": "event"}
-
 var _ = Describe("Migrator", func() {
 	var migrator legacy.Migrator
 
@@ -56,89 +54,56 @@ var _ = Describe("Migrator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	DescribeTable("finds the Java name of every snapshot",
-		func(file, prefix, name string, labels map[string]string) {
+	DescribeTable("finds the legacy name of every snapshot",
+		func(file, prefix, name string) {
 			s := loadSnapshot(file)
 			Expect(s.Route.Name).To(Equal(s.Service.Name))
 			expected := legacy.Candidate{Name: s.Route.Name, OwnerTag: realmTag(s.Route.Tags)}
 			Expect(realmTag(s.Service.Tags)).To(Equal(expected.OwnerTag))
 
-			candidates := migrator.Candidates(legacy.Route{Name: name, NamePrefix: prefix, Labels: labels})
+			candidates := migrator.Candidates(legacy.Route{Name: name, NamePrefix: prefix})
 			Expect(candidates).To(ContainElement(expected))
 		},
-		Entry("default realm API route", "default-api.yaml", "default", "eni-example-v2", nil),
-		Entry("bond API route", "bond-api.yaml", "bond", "eni-example-v1", nil),
-		Entry("default-ai route", "default-ai.yaml", "default", "ai-gateway--example-mcp-v1", nil),
-		Entry("event publish route", "bond-publish.yaml", "bond", "publish", eventLabels),
-		Entry("event callback route", "bond-callback.yaml", "bond", "callback--alpha", eventLabels),
-		Entry("event sse route", "bond-sse.yaml", "bond", "sse--de-example-orders-v1", eventLabels),
-		Entry("event voyager route", "bond-voyager.yaml", "bond", "voyager--alpha", eventLabels),
+		Entry("default realm API route", "default-api.yaml", "default", "eni-example-v2"),
+		Entry("bond API route", "bond-api.yaml", "bond", "eni-example-v1"),
+		Entry("default-ai route", "default-ai.yaml", "default", "ai-gateway--example-mcp-v1"),
+		Entry("event publish route", "bond-publish.yaml", "bond", "horizon-events"),
+		Entry("event callback route", "bond-callback.yaml", "bond", "horizon-callback-alpha"),
+		Entry("event sse route", "bond-sse.yaml", "bond", "horizon-sse--de-example-orders-v1"),
+		Entry("event voyager route", "bond-voyager.yaml", "bond", "horizon-voyager-alpha"),
 	)
 
 	DescribeTable("returns candidates in realm suffix order",
-		func(prefix, name string, labels map[string]string, expected []legacy.Candidate) {
-			Expect(migrator.Candidates(legacy.Route{Name: name, NamePrefix: prefix, Labels: labels})).To(Equal(expected))
+		func(prefix, name string, expected []legacy.Candidate) {
+			Expect(migrator.Candidates(legacy.Route{Name: name, NamePrefix: prefix})).To(Equal(expected))
 		},
-		Entry("bond publish event", "bond", "publish", eventLabels, []legacy.Candidate{
+		Entry("bond event route", "bond", "horizon-events", []legacy.Candidate{
 			{Name: "bond.horizon-events", OwnerTag: "ei__telekom__de--realm---bond"},
 			{Name: "bond-ai.horizon-events", OwnerTag: "ei__telekom__de--realm---bond-ai"},
 		}),
-		Entry("API route named publish is not an event route", "bond", "publish", map[string]string{"cp.ei.telekom.de/domain": "api"}, []legacy.Candidate{
+		Entry("route named publish", "bond", "publish", []legacy.Candidate{
 			{Name: "bond.publish", OwnerTag: "ei__telekom__de--realm---bond"},
 			{Name: "bond-ai.publish", OwnerTag: "ei__telekom__de--realm---bond-ai"},
 		}),
-		Entry("API route named publish without labels", "bond", "publish", nil, []legacy.Candidate{
-			{Name: "bond.publish", OwnerTag: "ei__telekom__de--realm---bond"},
-			{Name: "bond-ai.publish", OwnerTag: "ei__telekom__de--realm---bond-ai"},
-		}),
-		Entry("default AI route", "default", "ai-gateway--example-mcp-v1", nil, []legacy.Candidate{
+		Entry("default AI route", "default", "ai-gateway--example-mcp-v1", []legacy.Candidate{
 			{Name: "ai-gateway--example-mcp-v1", OwnerTag: "ei__telekom__de--realm---default"},
 			{Name: "default-ai.ai-gateway--example-mcp-v1", OwnerTag: "ei__telekom__de--realm---default-ai"},
 		}),
-		Entry("bond API route", "bond", "eni-example-v1", nil, []legacy.Candidate{
+		Entry("bond API route", "bond", "eni-example-v1", []legacy.Candidate{
 			{Name: "bond.eni-example-v1", OwnerTag: "ei__telekom__de--realm---bond"},
 			{Name: "bond-ai.eni-example-v1", OwnerTag: "ei__telekom__de--realm---bond-ai"},
 		}),
-		Entry("default API route", "default", "eni-example-v2", nil, []legacy.Candidate{
+		Entry("default API route", "default", "eni-example-v2", []legacy.Candidate{
 			{Name: "eni-example-v2", OwnerTag: "ei__telekom__de--realm---default"},
 			{Name: "default-ai.eni-example-v2", OwnerTag: "ei__telekom__de--realm---default-ai"},
 		}),
-		Entry("no name prefix", "", "eni-example-v1", nil, nil),
+		Entry("no name prefix", "", "eni-example-v1", nil),
 	)
-
-	It("does not map an API route named publish to the event route", func() {
-		candidates := migrator.Candidates(legacy.Route{Name: "publish", NamePrefix: "bond"})
-		for _, c := range candidates {
-			Expect(c.Name).NotTo(ContainSubstring("horizon-events"))
-		}
-	})
 
 	It("removes duplicate names", func() {
 		m, err := legacy.NewMigrator(&legacy.Config{DefaultRealm: "default", Separator: ".", RealmSuffixes: []string{"", ""}})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(m.Candidates(legacy.Route{Name: "r", NamePrefix: "bond"})).To(HaveLen(1))
-	})
-
-	DescribeTable("requires a selector label to be present",
-		func(labels map[string]string, expected string) {
-			m, err := legacy.NewMigrator(&legacy.Config{Separator: ".", RealmSuffixes: []string{""}, Names: []legacy.NameRule{
-				{Selector: map[string]string{"tier": ""}, Match: "^r$", Replace: "matched"},
-			}})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(m.Candidates(legacy.Route{Name: "r", NamePrefix: "p", Labels: labels})[0].Name).To(Equal(expected))
-		},
-		Entry("absent", nil, "p.r"),
-		Entry("present and empty", map[string]string{"tier": ""}, "p.matched"),
-		Entry("present and not empty", map[string]string{"tier": "x"}, "p.r"),
-	)
-
-	It("applies the first matching rule only", func() {
-		m, err := legacy.NewMigrator(&legacy.Config{Separator: ".", RealmSuffixes: []string{""}, Names: []legacy.NameRule{
-			{Match: "^a(.*)$", Replace: "first$1"},
-			{Match: "^ab$", Replace: "second"},
-		}})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(m.Candidates(legacy.Route{Name: "ab", NamePrefix: "p"})).To(Equal([]legacy.Candidate{{Name: "p.firstb", OwnerTag: "ei__telekom__de--realm---p"}}))
 	})
 
 	Context("LoadMigrator", func() {
@@ -160,7 +125,7 @@ var _ = Describe("Migrator", func() {
 		})
 
 		It("fails for invalid YAML", func() {
-			_, err := legacy.LoadMigrator(write("names: [unclosed"))
+			_, err := legacy.LoadMigrator(write("realmSuffixes: [unclosed"))
 			Expect(err).To(MatchError(ContainSubstring("parsing legacy naming config")))
 		})
 
@@ -169,14 +134,9 @@ var _ = Describe("Migrator", func() {
 			Expect(err).To(MatchError(ContainSubstring("parsing legacy naming config")))
 		})
 
-		It("fails for an invalid regular expression", func() {
-			_, err := legacy.LoadMigrator(write("names:\n  - match: '^(unclosed$'\n    replace: x\n"))
-			Expect(err).To(MatchError(ContainSubstring("compiling match")))
-		})
-
-		It("fails for an empty match", func() {
-			_, err := legacy.LoadMigrator(write("names:\n  - replace: x\n"))
-			Expect(err).To(MatchError(ContainSubstring("match is empty")))
+		It("fails for name rules", func() {
+			_, err := legacy.LoadMigrator(write("names:\n  - match: '^publish$'\n    replace: horizon-events\n"))
+			Expect(err).To(MatchError(ContainSubstring("parsing legacy naming config")))
 		})
 	})
 })

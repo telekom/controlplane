@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// legacyTagPrefix is the prefix of every tag the Java operator stamped on its entities.
+// legacyTagPrefix is the prefix of every tag the legacy operator stamped on its entities.
 const legacyTagPrefix = "ei__telekom__de--"
 
 // ownership is a predicate over the tags of a Kong entity that proves it is ours.
@@ -65,7 +65,7 @@ func anyTag(tags []string) ownership {
 	return anyOf(predicates...)
 }
 
-// legacyTags returns the tags of the Java operator.
+// legacyTags returns the tags of the legacy operator.
 func legacyTags(tags []string) []string {
 	var kept []string
 	for _, tag := range tags {
