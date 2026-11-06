@@ -63,7 +63,7 @@ var _ = Describe("Preset OIDC status", func() {
 		hc.Zone.Spec.Visibility = adminv1.ZoneVisibilityWorld
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
 		Expect(hc.Zone.Status.Presets).To(HaveEach(And(
-			HaveField("Links.Issuer", "https://issuer.example.com/auth/realms/default"),
+			HaveField("Links.Issuer", defaultRealmIssuer),
 			HaveField("Links.InternalIssuer", "https://irix.example.com/auth/realms/internal"),
 		)))
 	})
@@ -89,12 +89,12 @@ var _ = Describe("Preset OIDC status", func() {
 		Expect(hc.Zone.Status.Presets).To(BeEmpty())
 	})
 
-	It("derives the token URL from the default realm status issuer, not the configured hostname", func() {
+	It("derives the issuer and token URL from the default realm status issuer, not the configured hostname", func() {
 		hc := newContext()
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
 		Expect(hc.Zone.Status.Presets).To(HaveLen(2))
 		Expect(hc.Zone.Status.Presets).To(HaveEach(And(
-			HaveField("Links.Issuer", "https://issuer.example.com/auth/realms/default"),
+			HaveField("Links.Issuer", defaultRealmIssuer),
 			HaveField("Links.TokenUrl", defaultRealmIssuer+"/protocol/openid-connect/token"),
 		)))
 	})
@@ -117,12 +117,34 @@ var _ = Describe("Preset OIDC status", func() {
 		))
 	})
 
-	It("does not require a resolved realm issuer when token URLs are explicit", func() {
+	It("requires a resolved realm issuer for the public issuer link even when token URLs are explicit", func() {
 		hc := newContext()
 		hc.DefaultIdentityRealm.Status.IssuerUrl = ""
 		hc.Zone.Spec.IdentityProviders[0].TokenUrl = "https://idp.example.com/token"
+		expectRetryableWith(populatePresetStatus(context.Background(), hc), `identity realm "default" has no resolved issuer URL`)
+		Expect(hc.Zone.Status.Presets).To(BeEmpty())
+	})
+
+	It("uses the resolved issuers for public links instead of the configured issuer hostname", func() {
+		hc := newContext()
+		hc.Zone.Spec.IdentityProviders[0].IssuerHostname = ""
+		hc.DefaultIdentityRealm.Status.IssuerUrl = "https://public.example.com/realms/default/"
+		hc.TeamApiIdentityRealm = &identityapi.Realm{
+			ObjectMeta: metav1.ObjectMeta{Name: "team"},
+			Status:     identityapi.RealmStatus{IssuerUrl: "https://public.example.com/realms/team"},
+		}
 		Expect(populatePresetStatus(context.Background(), hc)).To(Succeed())
-		Expect(hc.Zone.Status.Presets).To(HaveEach(HaveField("Links.TokenUrl", "https://idp.example.com/token")))
+		Expect(hc.Zone.Status.Presets).To(HaveEach(And(
+			HaveField("Links.Issuer", "https://public.example.com/realms/default"),
+			HaveField("Links.TeamIssuer", "https://public.example.com/realms/team"),
+		)))
+	})
+
+	It("returns a retryable error while the team API realm issuer is unresolved", func() {
+		hc := newContext()
+		hc.TeamApiIdentityRealm = &identityapi.Realm{ObjectMeta: metav1.ObjectMeta{Name: "team"}}
+		expectRetryableWith(populatePresetStatus(context.Background(), hc), `identity realm "team" has no resolved issuer URL`)
+		Expect(hc.Zone.Status.Presets).To(BeEmpty())
 	})
 
 	DescribeTable("normalizes the realm issuer",
@@ -140,7 +162,7 @@ var _ = Describe("Preset OIDC status", func() {
 	It("returns a retryable error when the default realm issuer is unresolved", func() {
 		hc := newContext()
 		hc.DefaultIdentityRealm.Status.IssuerUrl = ""
-		expectRetryableWith(populatePresetStatus(context.Background(), hc), `default identity realm "default" has no resolved issuer URL`)
+		expectRetryableWith(populatePresetStatus(context.Background(), hc), `identity realm "default" has no resolved issuer URL`)
 		Expect(hc.Zone.Status.Presets).To(BeEmpty())
 	})
 

@@ -58,7 +58,7 @@ var _ = Describe("Subscription route readiness", Ordered, func() {
 					Name: "default", Type: adminapi.GatewayTypeAPI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary",
 					Urls: []adminapi.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}},
 				}},
-				IdentityProviders: []adminapi.IdentityProviderConfig{{Name: "primary", IssuerHostname: "idp.example.com"}},
+				IdentityProviders: []adminapi.IdentityProviderConfig{{Name: "primary", IssuerHostname: "idp.example.com", Admin: adminapi.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"}}},
 			},
 		}
 		Expect(k8sClient.Create(ctx, zone)).To(Succeed())

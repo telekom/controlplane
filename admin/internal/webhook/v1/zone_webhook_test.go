@@ -71,7 +71,7 @@ func newValidZone() *adminv1.Zone {
 			IdentityProviders: []adminv1.IdentityProviderConfig{{
 				Name: "primary",
 				Admin: adminv1.IdentityProviderAdminConfig{
-					Url:      &identityAdminUrl,
+					Url:      identityAdminUrl,
 					ClientId: "admin-client",
 					UserName: "admin",
 					Password: "",

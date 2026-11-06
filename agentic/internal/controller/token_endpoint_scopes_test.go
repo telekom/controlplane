@@ -58,7 +58,7 @@ func newScopeFixture() *scopeFixture {
 		ObjectMeta: f.metadata("zone"),
 		Spec: adminv1.ZoneSpec{
 			Visibility:        adminv1.ZoneVisibilityWorld,
-			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com"}},
+			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "identity.example.com", Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"}}},
 			Gateways:          []adminv1.GatewayConfig{{Name: "gateway", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://gateway-admin.example.com"}}},
 			Presets:           presets,
 		},

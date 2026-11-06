@@ -6,7 +6,6 @@ package zone
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"sort"
 
@@ -31,7 +30,7 @@ func populatePresetStatus(_ context.Context, hc *HandlingContext) error {
 		if err != nil {
 			return ctrlerrors.BlockedErrorf("cannot resolve gateway status for preset %q: %s", preset.Name, err)
 		}
-		links, err := presetLinks(hc, preset, idp)
+		links, err := presetLinks(hc, preset)
 		if err != nil {
 			return err
 		}
@@ -55,15 +54,14 @@ func populatePresetStatus(_ context.Context, hc *HandlingContext) error {
 	return nil
 }
 
-func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.IdentityProviderConfig) (adminv1.Links, error) {
+func presetLinks(hc *HandlingContext, preset *adminv1.Preset) (adminv1.Links, error) {
 	if hc.DefaultIdentityRealm == nil {
 		return adminv1.Links{}, ctrlerrors.RetryableErrorf("cannot build links for preset %q: default identity realm is not resolved", preset.Name)
 	}
-	hostname, err := issuerHostname(idp)
+	issuer, err := realmIssuerURL(hc.DefaultIdentityRealm)
 	if err != nil {
-		return adminv1.Links{}, ctrlerrors.BlockedErrorf("cannot resolve issuer hostname for preset %q: %s", preset.Name, err)
+		return adminv1.Links{}, err
 	}
-	issuer := fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.DefaultIdentityRealm.Name)
 	internalIssuer, err := internalIssuerURL(hc)
 	if err != nil {
 		return adminv1.Links{}, err
@@ -79,7 +77,10 @@ func presetLinks(hc *HandlingContext, preset *adminv1.Preset, idp *adminv1.Ident
 	}
 	links := adminv1.Links{Url: baseURL, Issuer: issuer, LmsIssuer: lmsIssuer, InternalIssuer: internalIssuer}
 	if hc.TeamApiIdentityRealm != nil {
-		links.TeamIssuer = fmt.Sprintf("https://%s/auth/realms/%s", hostname, hc.TeamApiIdentityRealm.Name)
+		links.TeamIssuer, err = realmIssuerURL(hc.TeamApiIdentityRealm)
+		if err != nil {
+			return adminv1.Links{}, err
+		}
 	}
 	if cconfig.FeaturePermission.IsEnabled() && hc.Zone.Spec.Permissions != nil {
 		links.PermissionsUrl, err = url.JoinPath(baseURL, hc.Zone.Spec.Permissions.ApiBasePath)
