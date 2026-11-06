@@ -149,6 +149,22 @@ var _ = Describe("Rover pagination", func() {
 			{"poc--eni--hyperion", "rover-local-sub"}, {"poc--eni--hyperion", "zzz-missing"},
 		}))
 	})
+	DescribeTable("populates the zone publish event URL for shallow info requests",
+		func(target string) {
+			res := getAsTeam(target)
+			Expect(res.StatusCode).To(Equal(http.StatusOK))
+			var body api.RoverInfoResponse
+			Expect(json.NewDecoder(res.Body).Decode(&body)).To(Succeed())
+			Expect(body.Applications).NotTo(BeEmpty())
+			for _, app := range body.Applications {
+				Expect(app.StargatePublishEventUrl).To(HaveSuffix("/horizon/events/v1"))
+				Expect(app.StargatePublishEventUrl).To(HavePrefix(app.StargateUrl))
+				Expect(app.Variables).To(ContainElement(api.Data{Name: "tardis.horizon.event.url", Value: app.StargatePublishEventUrl}))
+			}
+		},
+		Entry("single application", "/rovers/eni--hyperion--rover-local-sub/info?shallowInfo=true"),
+		Entry("application list", "/rovers/info?names=rover-local-sub&shallowInfo=true"),
+	)
 	It("accepts 100 names", func() {
 		Expect(getAsTeam("/rovers/info?" + nameQuery(100)).StatusCode).To(Equal(http.StatusOK))
 	})

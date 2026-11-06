@@ -23,8 +23,7 @@ const (
 	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
 	CallbackURLQueryParam = "callback"
 
-	// horizon is the leading path segment shared by all event route paths.
-	// Change it here to rename the prefix across every route.
+	// horizon is the leading path segment for secondary and mesh event routes.
 	horizon = "horizon"
 )
 
@@ -49,7 +48,7 @@ func makePublishRouteName() string {
 
 // makePublishEventsRoutePath returns the main downstream path of the publish route.
 func makePublishEventsRoutePath() string {
-	return horizonPrefix("") + "/events/v1"
+	return eventv1.HorizonPublishEventPathSuffix
 }
 
 // makePublishRoutePath returns the secondary downstream path of the publish route.

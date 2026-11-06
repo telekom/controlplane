@@ -124,28 +124,58 @@ var _ = Describe("ApplicationInfo variables", func() {
 			[]api.Data{{Name: "tardis.horizon.subscription.id.test.events.v1", Value: "subscriber-id"}}),
 	)
 
-	It("includes application, subscription, and event publish variables in the final response", func() {
+	It("includes application, subscription, and exposure-reported event publish variables in the final response", func() {
 		eventStore := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventStore.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&commonStore.ListResponse[*eventv1.EventExposure]{}, nil).Once()
 		eventStore.EXPECT().Get(mock.Anything, "test", "event").Return(&eventv1.EventExposure{
 			Status: eventv1.EventExposureStatus{PublishURL: "https://events.example.com/publish"},
-		}, nil).Once()
+		}, nil).Twice()
 		localStores := *stores
 		localStores.EventExposureStore = eventStore
 		resource := rover.DeepCopy()
 		resource.Status.EventExposures = []types.ObjectRef{{Namespace: "test", Name: "event"}}
 		info, err := MapApplicationInfo(ctx, resource, &localStores)
 		Expect(err).NotTo(HaveOccurred())
+		expectedURL := "https://events.example.com/publish"
+		Expect(info.StargatePublishEventUrl).To(Equal(expectedURL))
 		Expect(info.Variables).To(ContainElements(
 			api.Data{Name: "tardis.iris.client.id", Value: info.IrisClientId},
 			api.Data{Name: "tardis.iris.client.secret", Value: info.SecretInfo.ClientSecret},
 			api.Data{Name: "tardis.stargate.url", Value: info.StargateUrl},
-			api.Data{Name: "tardis.horizon.event.url", Value: "https://events.example.com/publish"},
+			api.Data{Name: "tardis.horizon.event.url", Value: expectedURL},
 			api.Data{Name: "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1", Value: "horizon-sub-456"},
 		))
+		count := 0
 		for _, variable := range info.Variables {
 			Expect(variable.Value).NotTo(BeEmpty())
+			if variable.Name == "tardis.horizon.event.url" {
+				count++
+			}
 		}
+		Expect(count).To(Equal(1))
+	})
+
+	It("publishes the event URL without exposures, subscriptions, readiness, approvals or additional publishers", func() {
+		appStore := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
+		appStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&applicationv1.Application{}, nil).Once()
+		zoneStore := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+		zoneStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&adminv1.Zone{
+			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
+				Name: "default", Type: adminv1.GatewayTypeAPI, Default: true,
+				Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}},
+			}}},
+			Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+		}, nil).Once()
+		resource := &roverv1.Rover{Status: roverv1.RoverStatus{Application: rover.Status.Application}}
+		info, err := MapApplicationInfo(ctx, resource, &store.Stores{
+			ApplicationSecretStore: appStore, ZoneStore: zoneStore,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Exposures).To(BeEmpty())
+		Expect(info.Subscriptions).To(BeEmpty())
+		Expect(info.StargatePublishEventUrl).To(Equal("https://stargate.example.com/horizon/events/v1"))
+		Expect(info.Variables).To(ContainElement(
+			api.Data{Name: "tardis.horizon.event.url", Value: "https://stargate.example.com/horizon/events/v1"}))
 	})
 })

@@ -2693,6 +2693,11 @@ components:
           type: string
         stargatePublishEventUrl:
           type: string
+          description: >-
+            Event publish URL. Uses the publish URL reported by the application's first
+            event exposure that has one; otherwise derived from the zone's default gateway
+            URL joined with `/horizon/events/v1`. Omitted when neither is available. Its
+            presence does not imply publish authorization or readiness.
         observerUrl:
           type: string
         psiid:
