@@ -140,6 +140,9 @@ type RealmConnectionTLS struct {
 
 // RealmStatus defines the observed state of Realm
 type RealmStatus struct {
+	// Leader identifies the Realm that manages this Keycloak realm.
+	// +optional
+	Leader *types.ObjectRef `json:"leader,omitempty"`
 	IssuerUrl     string `json:"issuerUrl"`
 	AdminClientId string `json:"adminClientId"`
 	AdminUserName string `json:"adminUserName"`
@@ -167,6 +170,7 @@ type RealmStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leader.name"
 
 // Realm is the Schema for the realms API
 type Realm struct {
@@ -189,6 +193,11 @@ func (e *Realm) SetCondition(condition metav1.Condition) bool {
 
 func (e *Realm) SupportsGracefulSecretRotation() bool {
 	return e.Spec.SecretRotation != nil
+}
+
+// IsFollower reports whether another Realm manages this Keycloak realm.
+func (e *Realm) IsFollower() bool {
+	return e.Status.Leader != nil && !e.Status.Leader.Equals(e)
 }
 
 // +kubebuilder:object:root=true

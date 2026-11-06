@@ -164,6 +164,8 @@ If the exposure's logical mesh explicitly disallows a callback subscriber zone, 
 
 Every local or proxy EventConfig manages an identity Client **and a gateway Consumer** in its zone. Its effective `spec.mesh.client.clientId` (default **`eventstore`**) aligns that Client's client ID, that Consumer's `spec.name`, and the allow-list (ACL) on **its own** primary callback route and, for local backends only, outbound callback routes. Projecting a backend callback URL does not transfer those identities or ACLs. Kubernetes resource names are normalized; Kong uses the Consumer's `spec.name` as its username and custom ID, matching the callback token's `azp` claim.
 
+The mesh client keeps its configured ID. The admin identity Client of a local backend defaults to the zone's internal realm, which Environments on the same Keycloak share, so its client ID is always `<environment>--<spec.local.admin.client.clientId>`. The resulting EventStore uses that ID, and a proxy EventStore uses the client ID of its target's admin Client. Admin Clients created without the prefix by earlier versions are not renamed by the operator.
+
 The Consumer references the zone gateway and is owned by the EventConfig. Its readiness participates in reconciliation, changes are watched, and ownership controls cleanup. Horizon must use the **real backend EventConfig's callback client ID** with the backend's normal issuer, because that EventConfig owns the advertised first-hop route and ACL. If backend and proxy client IDs differ, the proxy ID cannot authenticate at that entry. The subsequent cross-zone hop uses **`gateway`** with the backend's LMS issuer, including when the subscriber is in the proxy zone itself.
 
 ### Voyager Route
