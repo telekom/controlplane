@@ -96,7 +96,7 @@ var _ = Describe("voyager route status ordering", func() {
 
 		Expect((&EventConfigHandler{}).createVoyagerRoutes(ctx, obj, zones["source"], obj.Spec.Mesh)).To(Succeed())
 
-		Expect(proxyVoyagerRouteNames(obj)).To(Equal([]string{"voyager--a-zone", "voyager--m-zone", "voyager--z-zone"}))
+		Expect(proxyVoyagerRouteNames(obj)).To(Equal([]string{"horizon-voyager-a-zone", "horizon-voyager-m-zone", "horizon-voyager-z-zone"}))
 		Expect(obj.Status.ProxyVoyagerURLs).To(HaveLen(3))
 		Expect(obj.Status.ProxyVoyagerURLs).To(SatisfyAll(HaveKey("a-zone"), HaveKey("m-zone"), HaveKey("z-zone")))
 	})
@@ -122,22 +122,22 @@ var _ = Describe("voyager route status ordering", func() {
 
 		Expect((&EventConfigHandler{}).createProxyVoyagerRoutes(ctx, obj, zones["source"], obj.Spec.Mesh)).To(Succeed())
 
-		Expect(proxyVoyagerRouteNames(obj)).To(Equal([]string{"voyager--a-zone", "voyager--backend", "voyager--m-zone", "voyager--z-zone"}))
+		Expect(proxyVoyagerRouteNames(obj)).To(Equal([]string{"horizon-voyager-a-zone", "horizon-voyager-backend", "horizon-voyager-m-zone", "horizon-voyager-z-zone"}))
 		Expect(obj.Status.ProxyVoyagerURLs).To(HaveLen(4))
 	})
 	It("records Voyager status deterministically regardless of map iteration order", func() {
 		routes := map[string]*gatewayv1.Route{}
 		for _, zone := range []string{"z-zone", "a-zone", "m-zone", "b-zone", "y-zone"} {
-			routes[zone] = &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "voyager--" + zone, Namespace: "default"}}
+			routes[zone] = &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "horizon-voyager-" + zone, Namespace: "default"}}
 		}
 		first := &eventv1.EventConfig{Status: eventv1.EventConfigStatus{
-			ProxyVoyagerRoutes: []ctypes.ObjectRef{{Name: "voyager--stale", Namespace: "default"}},
+			ProxyVoyagerRoutes: []ctypes.ObjectRef{{Name: "horizon-voyager-stale", Namespace: "default"}},
 			ProxyVoyagerURLs:   map[string]string{"stale": "https://stale"},
 		}}
 		setProxyVoyagerStatus(first, routes)
 
 		Expect(proxyVoyagerRouteNames(first)).To(Equal([]string{
-			"voyager--a-zone", "voyager--b-zone", "voyager--m-zone", "voyager--y-zone", "voyager--z-zone",
+			"horizon-voyager-a-zone", "horizon-voyager-b-zone", "horizon-voyager-m-zone", "horizon-voyager-y-zone", "horizon-voyager-z-zone",
 		}))
 		Expect(first.Status.ProxyVoyagerURLs).To(HaveLen(5))
 		Expect(first.Status.ProxyVoyagerURLs).NotTo(HaveKey("stale"))

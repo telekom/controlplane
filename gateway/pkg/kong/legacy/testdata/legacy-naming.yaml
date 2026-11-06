@@ -5,16 +5,3 @@
 defaultRealm: default
 separator: "."
 realmSuffixes: ["", "-ai"]
-names:
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^publish$'
-    replace: 'horizon-events'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^callback--(.+)$'
-    replace: 'horizon-callback-$1'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^voyager--(.+)$'
-    replace: 'horizon-voyager-$1'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^sse--(.+)$'
-    replace: 'horizon-sse--$1'

@@ -12,7 +12,7 @@ import (
 
 // locatedEntity decorates a plain entity of a realm route. Get runs the discovery chain,
 // Write puts an entity that was found by its ID, so that it is renamed in the same write,
-// and creates a new entity under the desired name. The Java tags of a found entity are
+// and creates a new entity under the desired name. The legacy tags of a found entity are
 // kept: they are merged into the desired tags for both the comparison and the write.
 type locatedEntity[Req, Resp any] struct {
 	discovery *discovery[Req, Resp]
@@ -51,7 +51,7 @@ func (e *locatedEntity[Req, Resp]) foundID() string {
 }
 
 // legacyName returns the name the entity was found under if it is a name from before the
-// migration: metadata.name or a Java candidate. Steps 1–3 may find such an entity as well.
+// migration: metadata.name or a legacy candidate. Steps 1–3 may find such an entity as well.
 func (e *locatedEntity[Req, Resp]) legacyName() string {
 	if e.current == nil {
 		return ""
@@ -80,7 +80,7 @@ func (e *locatedEntity[Req, Resp]) Project(current *Resp) (Req, error) {
 	return e.discovery.kind.plain(e.discovery.api, "").Project(current)
 }
 
-// Equal compares the desired body with the Java tags of the found entity merged in.
+// Equal compares the desired body with the legacy tags of the found entity merged in.
 func (e *locatedEntity[Req, Resp]) Equal(desired, current Req) bool {
 	desired = e.withLegacyTags(desired)
 	return equal(e.discovery.kind.plain(e.discovery.api, ""), desired, current)

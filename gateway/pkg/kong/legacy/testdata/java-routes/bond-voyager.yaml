@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Synthetic Kong export of a route written by the Java operator.
+# Synthetic Kong export of a route using the legacy naming scheme.
 service:
   id: 57124242-5051-41cc-917f-9acae01f5057
   name: bond.horizon-voyager-alpha

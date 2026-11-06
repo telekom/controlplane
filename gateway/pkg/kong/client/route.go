@@ -53,7 +53,7 @@ func discoveryFor[Req, Resp any](ctx context.Context, c *kongClient, k kind[Req,
 }
 
 func legacyRoute(realm RealmRoute, route CustomRoute) legacy.Route {
-	return legacy.Route{Name: route.GetName(), NamePrefix: realm.GetNamePrefix(), Labels: realm.GetLabels()}
+	return legacy.Route{Name: route.GetName(), NamePrefix: realm.GetNamePrefix()}
 }
 
 // routeEntities are the route and service entities of one route.

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Synthetic Kong export of a route written by the Java operator.
+# Synthetic Kong export of a route using the legacy naming scheme.
 service:
   id: 6513270e-269e-4d37-b2a7-4de452e6b438
   name: eni-example-v2

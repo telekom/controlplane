@@ -26,19 +26,20 @@ API and AI Routes on the same Gateway share one prefix.
 | D2 | The prefix is configured once per Gateway: optional field `Gateway.spec.namePrefix`, set by the admin operator to `zone.Status.RealmName`. All Routes referencing the Gateway use it; there is no per-Route field. `Route.spec.security.realmName` is **not** used, because it controls the Last-Mile-Security realm. API and AI Routes on the same Gateway share the prefix; agentic names (`ai-gateway--…`) keep them apart. |
 | D3 | Gateway has a `namePrefix` → realm naming and migration for every Route on it. No prefix → Kong names, lookups and tags stay as they are today. The only exception is legacy plugin adoption (D11), which applies to all Routes. |
 | D4 | Every Kong entity named after the route gets the new name: **route, service, upstream** (circuit breaker), and the service host that points to the upstream. Targets have no name. |
-| D5 | Every Route on a Gateway with a prefix is migrated, including identity, zone-health and admin managed routes (no special handling). Only the admin operator changes; the api, agentic and event operators stay as they are. There is no feature flag: everything rolls out at once. |
+| D5 | Every Route on a Gateway with a prefix is migrated, including identity, zone-health and admin managed routes (no special handling). The admin operator sets the prefix; the event operator names its Routes after the legacy-compatible base names (D17); the api and agentic operators stay as they are. There is no feature flag: everything rolls out at once. |
 | D6 | The tags `env--<env>` and `route--<metadata.name>` stay unchanged. A new tag `realm--<namePrefix>` is added. |
 | D7 | Plugins are bound to their route by Kong **route ID**, not by route name. |
 | D8 | Renaming happens in the regular full-body `PUT /{entity}/{id}`, together with all other changes. |
 | D9 | Tags are only ever added on adopted entities. Existing `ei__telekom__de--*` tags are kept and removed in a later cleanup. |
 | D10 | If, during migration, a route is found under one name and a **different** route we own exists under another candidate name → `BlockedError`. This should never happen, and nothing is deleted automatically. |
 | D11 | Legacy plugins are adopted by the slot they occupy on the adopted route (same name, route ID and consumer), not by legacy tags. `LegacyPluginTag` and `legacyPluginTags` are removed. |
-| D12 | Java naming rules live in an optional config file, mounted from a ConfigMap. The code reads it only through a `Migrator` interface. Without the file, no Java names are tried. |
+| D12 | Legacy naming (`defaultRealm`, `separator`, `realmSuffixes`) lives in an optional config file, mounted from a ConfigMap. The code reads it only through a `Migrator` interface. Without the file, no legacy names are tried. |
 | D13 | Names, IDs and the legacy origin are recorded in `Route.status.properties`. |
 | D14 | Out of scope: Kong consumer name collisions, migrating infrastructure routes, and removing legacy tags. |
 | D15 | `Gateway.spec.namePrefix` may change but must not be removed once set (CEL rule): without a prefix the Routes are looked up by `metadata.name` only, so second Kong routes would be created. The admin operator keeps an existing prefix if the realm name is ever empty. |
 | D16 | Delete never blocks: foreign entities and duplicates are skipped, at most one entity per kind is deleted. |
-| D17 | Precondition: the Java operator no longer writes a route once the CP has taken it over. The conflict check (D10) therefore runs only while a rename is pending; a Java route recreated later under its old name would not be detected. Accepted consequence: if a delete fails after removing the first of two duplicates (e.g. on the service delete or the finalizer update), the retry finds the retained duplicate and deletes it too. Duplicates exist only if the Java operator wrote after the takeover, which is excluded. |
+| D17 | Event Routes carry the legacy-compatible base names as `metadata.name`, so the legacy-compatible `baseName` always equals `metadata.name`. The Migrator has no name rules. |
+| D17 | Precondition: the legacy operator no longer writes a route once the CP has taken it over. The conflict check (D10) therefore runs only while a rename is pending; a legacy route recreated later under its old name would not be detected. Accepted consequence: if a delete fails after removing the first of two duplicates (e.g. on the service delete or the finalizer update), the retry finds the retained duplicate and deletes it too. Duplicates exist only if the legacy operator wrote after the takeover, which is excluded. |
 
 ## API change
 
@@ -90,61 +91,44 @@ For circuit breaker routes, the service host is `P--R`, the name of the upstream
 removing an `additionalTags` entry still takes effect. The equality check uses the same merged set, so an adopted
 entity is not rewritten on every reconcile.
 
-## Legacy (Java) naming
+## Legacy-compatible naming
 
-The analysis is based on Kong exports of routes written by the Java operator (realms `default`, `bond`,
+The analysis is based on Kong exports of routes written by the legacy operator (realms `default`, `bond`,
 `default-ai`, and the event routes publish, callback, sse and voyager). These exports are not part of the repository;
 the tests use synthetic fixtures with the same structure under `gateway/pkg/kong/legacy/testdata/java-routes`.
 
-- The Java route and its service have the same name: `<javaRealm>.<baseName>`. In Java realm `default` the name is just `<baseName>`.
-- AI routes live in a Java realm `<realm>-ai`, e.g. `default-ai.ai-gateway--dhrani-bo-radio-mcp-v1`.
-- Java route and service carry `ei__telekom__de--realm---<javaRealm>`. They do not carry their own name as a tag.
-- Java plugins carry `[ei__telekom__de--realm---<javaRealm>, <pluginName>, <javaName>]` and are bound to the
+- The legacy route and its service have the same name: `<legacyRealm>.<baseName>`. In legacy realm `default` the name is just `<baseName>`.
+- AI routes live in a legacy realm `<realm>-ai`, e.g. `default-ai.ai-gateway--dhrani-bo-radio-mcp-v1`.
+- Legacy route and service carry `ei__telekom__de--realm---<legacyRealm>`. They do not carry their own name as a tag.
+- Legacy plugins carry `[ei__telekom__de--realm---<legacyRealm>, <pluginName>, <javaName>]` and are bound to the
   route by ID.
-- Java routes have no circuit-breaker upstream, so upstreams have no Java candidates. Most Java services point to
+- Legacy routes have no circuit-breaker upstream, so upstreams have no legacy candidates. Most legacy services point to
   `localhost:8080/proxy`; the voyager service points to `voyager.qa-horizon` instead.
-- For API and AI routes, `baseName` is the same as the CP `metadata.name`. Event routes use different base names:
+- `baseName` is the same as the CP `metadata.name` (D17). The event domain names its Routes after the legacy-compatible base names:
 
-| CP `metadata.name` | Java `baseName` |
+| Former CP `metadata.name` | CP `metadata.name` = legacy-compatible `baseName` |
 |---|---|
 | `publish` | `horizon-events` |
 | `callback--<zone>` | `horizon-callback-<zone>` |
 | `voyager--<zone>` | `horizon-voyager-<zone>` |
 | `sse--<eventTypeName>` | `horizon-sse--<eventTypeName>` |
 
-The CP `publish` route also has the path `/horizon/publish/v1`, which no Java route has. The normal reconcile adds
+The CP `horizon-events` route also has the path `/horizon/publish/v1`, which no legacy route has. The normal reconcile adds
 that path after adoption.
 
 ### Config file (D12)
 
 The operator flag `--legacy-naming-config=<path>` is optional. The file is mounted from a ConfigMap.
 
-- If the flag is not set, there are no Java candidates.
-- If the flag points to a missing or invalid file (YAML or regex error), the operator fails at startup.
+- If the flag is not set, there are no legacy candidates.
+- If the flag points to a missing or invalid file (YAML error or unknown field), the operator fails at startup.
 
 ```yaml
-# Java operator naming, used only to find legacy Kong entities.
-defaultRealm: default        # Java realm whose names carry no realm prefix
-separator: "."               # javaName = <javaRealm><separator><baseName>
-realmSuffixes: ["", "-ai"]   # Java realms tried for a Route with namePrefix P: P + suffix
-names:                       # first matching rule wins; no match → baseName = metadata.name
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^publish$'
-    replace: 'horizon-events'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^callback--(.+)$'
-    replace: 'horizon-callback-$1'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^voyager--(.+)$'
-    replace: 'horizon-voyager-$1'
-  - selector: { cp.ei.telekom.de/domain: event }
-    match: '^sse--(.+)$'
-    replace: 'horizon-sse--$1'
+# Legacy naming, used only to find legacy Kong entities.
+defaultRealm: default        # Legacy realm whose names carry no realm prefix
+separator: "."               # legacyName = <legacyRealm><separator><baseName>
+realmSuffixes: ["", "-ai"]   # Legacy realms tried for a Route with namePrefix P: P + suffix
 ```
-
-`selector` is matched against the Route's labels: every key must be present with the same value (also for an empty value). It stops an API Route whose `metadata.name` is `publish` from
-mapping to the Java event route `horizon-events`. That event route carries the same realm tag, so the ownership
-check alone would not catch it.
 
 ### Migrator
 
@@ -157,9 +141,8 @@ type Migrator interface {
 }
 
 type Route struct {
-    Name       string            // metadata.name
-    NamePrefix string            // effective prefix, from Gateway.spec.namePrefix
-    Labels     map[string]string // metadata.labels
+    Name       string // metadata.name, also the legacy-compatible base name
+    NamePrefix string // effective prefix, from Gateway.spec.namePrefix
 }
 
 type Candidate struct {
@@ -168,12 +151,12 @@ type Candidate struct {
 }
 ```
 
-- `NewMigrator(*Config)` builds a Migrator from a config. `LoadMigrator(path)` reads the file strictly and validates
-  the regexes; an empty path gives `legacy.None()`, a Migrator without candidates.
-- For each suffix in `realmSuffixes`, `javaRealm = P + suffix`, and the name is `baseName` if `javaRealm ==
-  defaultRealm`, otherwise `javaRealm + separator + baseName`. The Migrator returns all candidates.
+- `NewMigrator(*Config)` builds a Migrator from a config. `LoadMigrator(path)` reads the file strictly (unknown fields
+  fail); an empty path gives `legacy.None()`, a Migrator without candidates.
+- For each suffix in `realmSuffixes`, `legacyRealm = P + suffix`, and the name is `baseName` if `javaRealm ==
+  defaultRealm`, otherwise `legacyRealm + separator + baseName`. The Migrator returns all candidates.
 - `naming.NameScheme` turns them into lookup names: the desired name `P--R`, the pre-migration name `R` and the
-  remaining candidates without duplicates. A candidate named exactly `R` (Java realm `default`) is not tried twice;
+  remaining candidates without duplicates. A candidate named exactly `R` (legacy realm `default`) is not tried twice;
   its owner tag is attached to the `R` step instead (`PreMigrationOwnerTags`).
 - The Migrator is created once in `cmd/main.go` and injected into the Kong client through `kongutil`.
 
@@ -191,9 +174,9 @@ lookup stops at the first step that finds an entity.
    `P=bond`. Entities without CP tags are adopted.
 3. **CP tags** `env--E,route--R`: all pages, filtered to entities of the expected kind. This finds the route after a
    `namePrefix` change (not after a removal, see D15). More than one match → `BlockedError`.
-4. **Pre-migration name** `R`. The route must carry `env--E` **and** `route--R`, or the owner tag of a Java
-   candidate named `R` (Java realm `default`); otherwise `BlockedError`.
-5. **Java candidates** from the `NameScheme`, in order. The route must carry the candidate's `OwnerTag`, or
+4. **Pre-migration name** `R`. The route must carry `env--E` **and** `route--R`, or the owner tag of a legacy
+   candidate named `R` (legacy realm `default`); otherwise `BlockedError`.
+5. **Legacy candidates** from the `NameScheme`, in order. The route must carry the candidate's `OwnerTag`, or
    `env--E` + `route--R`; otherwise `BlockedError`.
 6. **Not found**: create the route as `P--R`.
 
@@ -203,13 +186,13 @@ carries the CP tags, so in practice it is already found at step 3.
 | Kong route | Found by | Owned? |
 |---|---|---|
 | `eni-foo-v1` with `env--bond`, `route--eni-foo-v1` | Route in `bond`, step 3 (or 4) | yes |
-| `eni-foo-v1` with `ei__telekom__de--realm---default` | Route with `P=default`, step 4 (Java `default` owner tag) | yes |
+| `eni-foo-v1` with `ei__telekom__de--realm---default` | Route with `P=default`, step 4 (legacy `default` owner tag) | yes |
 | `eni-foo-v1` with `ei__telekom__de--realm---default` | Route with `P=bond`, step 4 | no → `BlockedError` |
 | `bond.eni-echo-v3` with `ei__telekom__de--realm---bond` | Route with `P=bond`, step 5 | yes |
 | `default-ai.ai-gateway--x` with `ei__telekom__de--realm---default-ai` | Route with `P=default`, step 5 | yes |
 
 **Conflict (D10).** When the found route is about to be renamed (its name is not `P--R`), every **other**
-candidate name is checked as well: `P--R`, `R` and the Java candidates. If one of them holds a different route we
+candidate name is checked as well: `P--R`, `R` and the legacy candidates. If one of them holds a different route we
 own → `BlockedError`. If `P--R` is held by an entity that is **not** ours (e.g. tags of another environment), the
 rename would fail with a Kong `409` → `BlockedError` naming the kind, the taken name, its ID and its `env--`/`route--`
 tags; a delete skips it. This runs for route, service and upstream before any write, and reuses lookups already
@@ -220,18 +203,18 @@ lookups.
 
 1. Stored ID `status.properties["serviceId"]`.
 2. The service the discovered route points to (`route.service.id`).
-3. New name, then CP tags, then pre-migration name `R`, then Java candidates, with the same ownership checks as for
+3. New name, then CP tags, then pre-migration name `R`, then legacy candidates, with the same ownership checks as for
    the route.
 4. Not found: create the service as `P--R`.
 
-**Sharing.** A service found at step 2 or under `R` or a Java name, and not yet named `P--R`, is renamed only if no
+**Sharing.** A service found at step 2 or under `R` or a legacy name, and not yet named `P--R`, is renamed only if no
 other Kong route uses it (`GET /services/{id}/routes`). Otherwise → `BlockedError` naming the other route; a delete
 skips the service. Once the service is called `P--R`, this check is skipped.
 
 ### Upstream (circuit breaker only)
 
 1. Stored ID `status.properties["upstreamId"]`.
-2. New name, then CP tags, then pre-migration name `R` (CP tags only). There are no Java candidates.
+2. New name, then CP tags, then pre-migration name `R` (CP tags only). There are no legacy candidates.
 
 3. Not found: create the upstream as `P--R`.
 
@@ -264,7 +247,7 @@ Delete never blocks, so a Route whose reconcile is blocked can still be removed:
 - An entity that fails the ownership check is not ours: it is skipped (not deleted), logged, and the lookup
   continues with the next step. More than one CP-tag match is skipped the same way.
 - The conflict check (D10) does not block. Only the entity found by the earliest step (stored ID, `P--R`, CP tags,
-  `R`, Java candidates) is deleted; other owned duplicates are logged and left in place. At most one entity per
+  `R`, legacy candidates) is deleted; other owned duplicates are logged and left in place. At most one entity per
   kind is deleted.
 - A shared service (see Service) is skipped.
 - If nothing owned is found, the delete succeeds without deleting anything.
@@ -274,7 +257,7 @@ The reconcile keeps blocking in all of these cases.
 ### Status (D13)
 
 Written to `status.properties`: `routeName` (Kong name, for every Route, also without prefix), `routeId`,
-`serviceId`, `upstreamId`, `targetsId`, and `legacyName` if the route was adopted under `R` or a Java name.
+`serviceId`, `upstreamId`, `targetsId`, and `legacyName` if the route was adopted under `R` or a legacy name.
 `legacyName` is kept on later reconciles.
 
 `Builder.Build` rebuilds the properties instead of resetting them midway:
@@ -318,7 +301,7 @@ new one is set. The api, agentic, event and admin route builders do not change.
 
 Example: one Gateway `aws-standard` in environment `cit2` serves the `api` and `ai` presets. Its prefix is `cit2`:
 
-| Route | Kong name | Java legacy name found |
+| Route | Kong name | Legacy name found |
 |---|---|---|
 | `eni-foo-v1` (api) | `cit2--eni-foo-v1` | `cit2.eni-foo-v1` (realm tag `cit2`) |
 | `ai-gateway--mcp-v1` (agentic) | `cit2--ai-gateway--mcp-v1` | `cit2-ai.ai-gateway--mcp-v1` (realm tag `cit2-ai`) |
@@ -334,7 +317,6 @@ Example: one Gateway `aws-standard` in environment `cit2` serves the `api` and `
   type RealmRoute interface {
       GetNamePrefix() string
       GetKongName() string
-      GetLabels() map[string]string
       GetStoredIds() StoredIds // routeId, serviceId, upstreamId, captured at the start of Build
   }
   ```
@@ -365,7 +347,7 @@ The work is split into layers, each with one job: naming → discovery → write
    - `NameScheme` works out the desired Kong name and the ordered candidate names from the Route and a
      `legacy.Migrator`.
    - Tested with plain tables built from the YAML snapshots.
-2. **Legacy** (`pkg/kong/legacy`): only the knowledge of how the Java operator named entities.
+2. **Legacy** (`pkg/kong/legacy`): only the knowledge of how the legacy operator named entities.
    - The `Migrator` port and its config-file adapter (`LoadMigrator`).
    - No dependency on the Kong client.
 3. **Discovery** (`pkg/kong/client/discovery.go`): a Chain of Responsibility, made of generic `locator[Resp]` steps.
@@ -410,15 +392,15 @@ Migrator. Nothing else changes.
    - Kong client unit tests for every discovery step, every ownership outcome, the conflict check, renaming by ID,
      tag merging, deletion through each step, and slot adoption.
    - A regression test that an empty `namePrefix` leaves names and tags unchanged.
-   - Migrator tests covering every synthetic Java route fixture in `gateway/pkg/kong/legacy/testdata/java-routes`.
+   - Migrator tests covering every synthetic legacy route fixture in `gateway/pkg/kong/legacy/testdata/java-routes`.
    - envtest for the Route controller.
-   - Live test on pr-805 (local operator against the vCluster): pre-migration CP route, Java `default`, `bond`,
+   - Live test on pr-805 (local operator against the vCluster): pre-migration CP route, legacy `default`, `bond`,
      `-ai` and event routes adopted; foreign route and duplicates blocked on reconcile and skipped on delete;
-     circuit breaker enable/disable; delete of an adopted Java route.
-   - Import test on pr-805 with an export of 100 Java routes from a shared QA Kong: 99 CRs
+     circuit breaker enable/disable; delete of an adopted legacy route.
+   - Import test on pr-805 with an export of 100 legacy routes from a shared QA Kong: 99 CRs
      in 5 realms (incl. 34 event routes) adopted in about 40s; all IDs, legacy tags and unmanaged plugins
-     (`rate-limiting-merged`) kept; no duplicates; second reconcile without Kong writes. A Java write-back by ID is
-     healed on the next reconcile; a Java re-create by old name is not detected (accepted, see D17).
+     (`rate-limiting-merged`) kept; no duplicates; second reconcile without Kong writes. A legacy write-back by ID is
+     healed on the next reconcile; a legacy re-create by old name is not detected (accepted, see D17).
 
 **Phase 1b: prefix moves from Route to Gateway**
 
@@ -436,7 +418,7 @@ Done.
 **Phase 2: rollout**
 
 13. Deploy the legacy naming ConfigMap and the `--legacy-naming-config` flag; admin-journey docs for both, and the
-    rollout order (stop the Java operator, deploy the config, roll out admin).
+    rollout order (stop the legacy operator, deploy the config, roll out admin).
 
 ## Out of scope
 

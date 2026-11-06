@@ -95,7 +95,7 @@ The publish route is the front door for sending events. A publishing service sim
 
 When the publisher sits in the same zone as the event backend, the local publish route hands the events straight to the backend. When the publisher sits in a *proxy* zone that runs no backend of its own, the publish route there forwards the events to the target zone, whose own publish route then delivers them to the backend. Either way, the publisher uses the exact same kind of address.
 
-The Route resource is named `publish`; its public paths are **`/horizon/events/v1`** and the alias **`/horizon/publish/v1`**, not `/publish`. Gateway preset base paths may prefix these paths. The proxy forwards to the backend gateway's `/horizon/events/v1` path.
+The Route resource is named `horizon-events`; its public paths are **`/horizon/events/v1`** and the alias **`/horizon/publish/v1`**, not `/publish`. Gateway preset base paths may prefix these paths. The proxy forwards to the backend gateway's `/horizon/events/v1` path. Event Route names (`horizon-events`, `horizon-callback-<zone>`, `horizon-voyager-<zone>`, `horizon-sse--<eventType>`) equal the legacy-compatible Kong base names, so the Gateway can adopt existing entities that use them.
 
 ```mermaid
 sequenceDiagram
@@ -126,10 +126,10 @@ sequenceDiagram
     autonumber
     box dataplane1 — backend zone
         participant H1 as Horizon H1
-        participant G1 as G1<br/>callback--dataplane3<br/>PROXY
+        participant G1 as G1<br/>horizon-callback-dataplane3<br/>PROXY
     end
     box dataplane3 — subscriber zone, even if proxy
-        participant G3 as G3<br/>callback--dataplane3<br/>PRIMARY
+        participant G3 as G3<br/>horizon-callback-dataplane3<br/>PRIMARY
         participant S as Subscriber URL U
     end
     Note over H1,G1: Configured first hop is G1, never exposure gateway G2

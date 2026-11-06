@@ -244,7 +244,7 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 	Expect(json.NewEncoder(w).Encode(body)).To(Succeed())
 }
 
-// kongSnapshot is a synthetic Kong export of a route written by the Java operator.
+// kongSnapshot is a synthetic Kong export of a route using the legacy naming scheme.
 type kongSnapshot struct {
 	Service map[string]any   `json:"service"`
 	Route   map[string]any   `json:"route"`

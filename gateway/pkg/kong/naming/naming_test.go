@@ -16,8 +16,6 @@ type fixedMigrator []legacy.Candidate
 
 func (m fixedMigrator) Candidates(legacy.Route) []legacy.Candidate { return m }
 
-var eventLabels = map[string]string{"cp.ei.telekom.de/domain": "event"}
-
 func snapshotMigrator() legacy.Migrator {
 	m, err := legacy.LoadMigrator("../legacy/testdata/legacy-naming.yaml")
 	Expect(err).NotTo(HaveOccurred())
@@ -39,7 +37,7 @@ var _ = Describe("NameScheme", func() {
 		func(route legacy.Route, expected naming.Names) {
 			Expect(naming.NewNameScheme(snapshotMigrator()).Names(route)).To(Equal(expected))
 		},
-		Entry("default API route: Java name equals metadata.name",
+		Entry("default API route: legacy name equals metadata.name",
 			legacy.Route{Name: "eni-example-v2", NamePrefix: "default"},
 			naming.Names{
 				Desired:               "default--eni-example-v2",
@@ -70,20 +68,20 @@ var _ = Describe("NameScheme", func() {
 				},
 			}),
 		Entry("bond publish event route",
-			legacy.Route{Name: "publish", NamePrefix: "bond", Labels: eventLabels},
+			legacy.Route{Name: "horizon-events", NamePrefix: "bond"},
 			naming.Names{
-				Desired:      "bond--publish",
-				PreMigration: "publish",
+				Desired:      "bond--horizon-events",
+				PreMigration: "horizon-events",
 				Candidates: []legacy.Candidate{
 					{Name: "bond.horizon-events", OwnerTag: "ei__telekom__de--realm---bond"},
 					{Name: "bond-ai.horizon-events", OwnerTag: "ei__telekom__de--realm---bond-ai"},
 				},
 			}),
 		Entry("bond callback event route",
-			legacy.Route{Name: "callback--alpha", NamePrefix: "bond", Labels: eventLabels},
+			legacy.Route{Name: "horizon-callback-alpha", NamePrefix: "bond"},
 			naming.Names{
-				Desired:      "bond--callback--alpha",
-				PreMigration: "callback--alpha",
+				Desired:      "bond--horizon-callback-alpha",
+				PreMigration: "horizon-callback-alpha",
 				Candidates: []legacy.Candidate{
 					{Name: "bond.horizon-callback-alpha", OwnerTag: "ei__telekom__de--realm---bond"},
 					{Name: "bond-ai.horizon-callback-alpha", OwnerTag: "ei__telekom__de--realm---bond-ai"},

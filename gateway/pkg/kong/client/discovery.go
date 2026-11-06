@@ -60,7 +60,7 @@ type discovery[Req, Resp any] struct {
 	names    naming.Names
 	env      string
 	route    string
-	// legacy enables the Java candidates.
+	// legacy enables the legacy candidates.
 	legacy bool
 	// policy decides what happens to foreign, ambiguous, duplicate and shared entities.
 	policy discoveryPolicy
@@ -169,7 +169,7 @@ func (d *discovery[Req, Resp]) policyOrDefault() discoveryPolicy {
 	return d.policy
 }
 
-// byName lists the names in lookup order: new name, pre-migration name, Java candidates.
+// byName lists the names in lookup order: new name, pre-migration name, legacy candidates.
 func (d *discovery[Req, Resp]) byName() []namedOwnership {
 	cp := cpTags(d.env, d.route)
 	preMigration := cp

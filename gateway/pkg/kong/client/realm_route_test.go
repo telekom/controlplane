@@ -191,14 +191,13 @@ var _ = Describe("Realm route", func() {
 			Expect(isBlocked(client.CreateOrReplaceRoute(ctx, route, upstream))).To(BeTrue())
 		})
 
-		DescribeTable("adopts the Java route and service of a snapshot without a rewrite loop",
-			func(file, name, prefix, ownerTag string, labels map[string]string) {
+		DescribeTable("adopts the legacy route and service of a snapshot without a rewrite loop",
+			func(file, name, prefix, ownerTag string) {
 				snapshot := loadSnapshot(file)
 				kongFake.add("services", snapshot.Service)
 				kongFake.add("routes", snapshot.Route)
 				javaName := snapshot.Route["name"]
 				route = newRoute(name, prefix)
-				route.Labels = labels
 				route.Spec.Hostnames = nil
 				route.Spec.Paths = []string{"/new/path"}
 
@@ -218,16 +217,16 @@ var _ = Describe("Realm route", func() {
 				}
 				Expect(tagsOf(kongFake.get("services", "legacy-service-id"))).To(ContainElements(anyTags(ownerTag, "realm--"+prefix)))
 			},
-			Entry("bond API route", "bond-api.yaml", "eni-example-v1", "bond", javaRealmBond, nil),
-			Entry("default API route named like metadata.name", "default-api.yaml", "eni-example-v2", "default", javaRealmDefault, nil),
-			Entry("default-ai route", "default-ai.yaml", "ai-gateway--example-mcp-v1", "default", javaRealmDefaultAI, nil),
-			Entry("event publish route", "bond-publish.yaml", "publish", "bond", javaRealmBond, map[string]string{"cp.ei.telekom.de/domain": "event"}),
-			Entry("event callback route", "bond-callback.yaml", "callback--alpha", "bond", javaRealmBond, map[string]string{"cp.ei.telekom.de/domain": "event"}),
-			Entry("event sse route", "bond-sse.yaml", "sse--de-example-orders-v1", "bond", javaRealmBond, map[string]string{"cp.ei.telekom.de/domain": "event"}),
-			Entry("event voyager route", "bond-voyager.yaml", "voyager--alpha", "bond", javaRealmBond, map[string]string{"cp.ei.telekom.de/domain": "event"}),
+			Entry("bond API route", "bond-api.yaml", "eni-example-v1", "bond", javaRealmBond),
+			Entry("default API route named like metadata.name", "default-api.yaml", "eni-example-v2", "default", javaRealmDefault),
+			Entry("default-ai route", "default-ai.yaml", "ai-gateway--example-mcp-v1", "default", javaRealmDefaultAI),
+			Entry("event publish route", "bond-publish.yaml", "horizon-events", "bond", javaRealmBond),
+			Entry("event callback route", "bond-callback.yaml", "horizon-callback-alpha", "bond", javaRealmBond),
+			Entry("event sse route", "bond-sse.yaml", "horizon-sse--de-example-orders-v1", "bond", javaRealmBond),
+			Entry("event voyager route", "bond-voyager.yaml", "horizon-voyager-alpha", "bond", javaRealmBond),
 		)
 
-		It("does not adopt the Java event route for an API route named publish", func() {
+		It("does not adopt the legacy event route for a route named publish", func() {
 			snapshot := loadSnapshot("bond-publish.yaml")
 			kongFake.add("routes", snapshot.Route)
 			route = newRoute("publish", "bond")
@@ -237,26 +236,26 @@ var _ = Describe("Realm route", func() {
 			Expect(kongFake.get("routes", "legacy-route-id")["name"]).To(Equal("bond.horizon-events"))
 		})
 
-		It("blocks on a Java route of another realm under metadata.name", func() {
+		It("blocks on a legacy route of another realm under metadata.name", func() {
 			kongFake.add("routes", map[string]any{"name": "eni-example-v1", "tags": anyTags(javaRealmDefault)})
 			route = newRoute("eni-example-v1", "bond")
 			Expect(isBlocked(client.CreateOrReplaceRoute(ctx, route, upstream))).To(BeTrue())
 		})
 
-		It("blocks on a Java candidate without the owner tag", func() {
+		It("blocks on a legacy candidate without the owner tag", func() {
 			kongFake.add("routes", map[string]any{"name": "bond.eni-example-v1", "tags": anyTags(javaRealmDefault)})
 			err := client.CreateOrReplaceRoute(ctx, route, upstream)
 			Expect(isBlocked(err)).To(BeTrue())
 			Expect(kongFake.writes()).To(BeEmpty())
 		})
 
-		It("adopts a Java candidate that carries the CP tags", func() {
+		It("adopts a legacy candidate that carries the CP tags", func() {
 			id := kongFake.add("routes", cpEntity("bond.eni-example-v1"))
 			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 			Expect(route.GetRouteId()).To(Equal(id))
 		})
 
-		It("tries no Java candidates without a Migrator", func() {
+		It("tries no legacy candidates without a Migrator", func() {
 			client = clientpkg.NewKongClient(kongFake.api())
 			kongFake.add("routes", map[string]any{"name": "bond.eni-example-v1", "tags": anyTags(javaRealmBond)})
 
@@ -265,7 +264,7 @@ var _ = Describe("Realm route", func() {
 			Expect(kongFake.names("routes")).To(ConsistOf("bond.eni-example-v1", "bond--eni-example-v1"))
 		})
 
-		It("keeps Java tags but drops a removed additional tag", func() {
+		It("keeps legacy tags but drops a removed additional tag", func() {
 			snapshot := loadSnapshot("bond-api.yaml")
 			kongFake.add("services", snapshot.Service)
 			kongFake.add("routes", snapshot.Route)
@@ -366,7 +365,7 @@ var _ = Describe("Realm route", func() {
 				Expect(kongFake.writes()).To(BeEmpty())
 			})
 
-			It("blocks a rename if the pre-migration route and a Java route both exist", func() {
+			It("blocks a rename if the pre-migration route and a legacy route both exist", func() {
 				kongFake.add("routes", cpEntity("eni-example-v1"))
 				kongFake.add("routes", map[string]any{"name": "bond.eni-example-v1", "tags": anyTags(javaRealmBond)})
 
@@ -412,7 +411,7 @@ var _ = Describe("Realm route", func() {
 				Expect(route.GetProperty("serviceId")).To(Equal(serviceID))
 			})
 
-			It("blocks on a foreign service under the Java name", func() {
+			It("blocks on a foreign service under the legacy name", func() {
 				kongFake.add("services", map[string]any{"name": "bond.eni-example-v1", "tags": anyTags("foreign")})
 				Expect(isBlocked(client.CreateOrReplaceRoute(ctx, route, upstream))).To(BeTrue())
 			})
@@ -463,7 +462,7 @@ var _ = Describe("Realm route", func() {
 			expectAllDeleted()
 		})
 
-		It("deletes the Java route and service", func() {
+		It("deletes the legacy route and service", func() {
 			snapshot := loadSnapshot("bond-api.yaml")
 			kongFake.add("services", snapshot.Service)
 			kongFake.add("routes", snapshot.Route)
@@ -573,7 +572,7 @@ var _ = Describe("Realm route", func() {
 			Expect(route.GetUpstreamId()).To(Equal(id))
 		})
 
-		It("does not look up Java candidates for the upstream", func() {
+		It("does not look up legacy candidates for the upstream", func() {
 			Expect(client.CreateOrReplaceUpstream(ctx, route, upstreamBody(), targetBody())).To(Succeed())
 			Expect(kongFake.calls).NotTo(ContainElement("GET /upstreams/bond.eni-example-v1"))
 		})

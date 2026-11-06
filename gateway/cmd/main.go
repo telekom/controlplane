@@ -63,7 +63,7 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&legacyNamingConfig, "legacy-naming-config", "",
-		"Path to the optional legacy (Java operator) naming config used to adopt legacy Kong entities.")
+		"Path to the optional legacy naming config used to adopt legacy Kong entities.")
 	opts := zap.Options{
 		Development: true,
 	}

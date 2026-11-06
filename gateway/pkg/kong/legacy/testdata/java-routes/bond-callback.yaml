@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Synthetic Kong export of a route written by the Java operator.
+# Synthetic Kong export of a route using the legacy naming scheme.
 service:
   id: 3f98e277-4cbd-47ad-9c90-a9587403e430
   name: bond.horizon-callback-alpha

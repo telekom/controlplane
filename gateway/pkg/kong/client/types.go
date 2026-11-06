@@ -51,7 +51,6 @@ type StoredIds = gatewayv1.StoredIds
 type RealmRoute interface {
 	GetNamePrefix() string
 	GetKongName() string
-	GetLabels() map[string]string
 	GetStoredIds() StoredIds
 }
 
