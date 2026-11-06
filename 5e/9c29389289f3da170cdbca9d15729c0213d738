@@ -1,0 +1,107 @@
+gateway/pkg/kong/legacy/migrator.go
+  s_ce9ed7dc1f80ce::t_f8226af620c01d 38
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 6,17,28,40,42,44
+  s_ce9ed7dc1f80ce::t_aaccd696b2d40a 5,29,78,80,84,93
+gateway/pkg/kong/client/ownership.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 12,68
+gateway/pkg/kong/legacy/testdata/java-routes/bond-sse.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+gateway/pkg/kong/legacy/testdata/java-routes/default-api.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+docs/docs/architecture/agentic.mdx
+  s_6b83d9878a89bf::t_81880ff44cae05 127
+gateway/pkg/kong/legacy/testdata/java-routes/bond-publish.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+gateway/pkg/kong/client/upstream.go
+  s_ce9ed7dc1f80ce::t_f8226af620c01d 119-120
+gateway/pkg/kong/legacy/migrator_test.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 21,57
+  s_ce9ed7dc1f80ce::t_a405385d427f97 58,64,67-73,77-78,80,84,88,92,96,100,128,137-139
+gateway/pkg/kong/client/fake_kong_test.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 247
+gateway/pkg/kong/client/located_entity.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 15,54,83
+gateway/config/samples/legacy_naming_configmap.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 12-15
+gateway/pkg/kong/client/realm_route_test.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 194-195,220-226,229,239,245,252,258,267,368,414,465,575
+gateway/pkg/kong/legacy/testdata/java-routes/default-ai.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+docs/docs/architecture/event.mdx
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 98
+  s_ce9ed7dc1f80ce::t_054e939a9713e6 129,132
+gateway/pkg/kong/client/discovery.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 63,172
+docs/design/gateway-realm.md
+  s_ce9ed7dc1f80ce::t_d567c26644407c 157
+  s_ce9ed7dc1f80ce::t_f8226af620c01d 177
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 29,36,41-42,94,96,100-103,105,107,109,116,123-124,127-130,144-145,154-156,159,178-179,189,195,206,210,217,250,260,304,350,395,397,399-400,402-403,421
+gateway/pkg/kong/legacy/testdata/java-routes/bond-callback.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+gateway/pkg/kong/naming/naming_test.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 40
+  s_ce9ed7dc1f80ce::t_026d861aef23fa 71,73-74,81,83-84
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 20,44,68,79-80,87,89-90,96,106,108,110,113,116,118,120,127,129,135,139,152,156,160-162,174-177,182-184,188,193
+gateway/pkg/kong/legacy/testdata/java-routes/bond-api.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+event/internal/handler/util/naming.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 27
+  s_ce9ed7dc1f80ce::t_26f08de7e7962f 26,28,48,63,73,81
+docs/docs/architecture/gateway.mdx
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 164,185,199,253,258,301,304
+gateway/cmd/main.go
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 66
+gateway/pkg/kong/legacy/testdata/java-routes/bond-voyager.yaml
+  s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 5
+event/internal/controller/callback_lifecycle_test.go
+  s_dd40de8603bfe9::t_b78df399df2374 212,228,364,388,390,406,418
+event/internal/handler/eventconfig/callback_routes_test.go
+  s_dd40de8603bfe9::t_eb21c93b4b0ace 84-85
+event/internal/handler/eventconfig/voyager_routes_test.go
+  s_dd40de8603bfe9::t_9e48519a355edc 99,125,131,134,140
+event/internal/handler/util/callback_route_test.go
+  s_dd40de8603bfe9::t_3d153ccfdbcdba 165,303
+event/internal/handler/util/naming_test.go
+  s_dd40de8603bfe9::t_917006bfea0574 44-45,67,72,77,82,138,143,148
+event/internal/handler/util/publish_route_test.go
+  s_dd40de8603bfe9::t_95ee7c1530863f 115,278
+event/internal/handler/util/sse_route_test.go
+  s_dd40de8603bfe9::t_a9dae8d1f73d0d 118,319
+event/internal/handler/util/voyager_route_test.go
+  s_dd40de8603bfe9::t_081758c5fb5fb9 107,245,351
+gateway/pkg/kong/client/route.go
+  s_dd40de8603bfe9::t_1ecf8dd930490d 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5e9c29389289f3da170cdbca9d15729c0213d738",
+  "prompts": {},
+  "sessions": {
+    "s_6b83d9878a89bf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4f93fa29ffeRjLNxh5IhixGwU",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ce9ed7dc1f80ce": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4f8fb97bffe75N1rY7jyl4VVE",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dd40de8603bfe9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e58dbfd88ffexlgfAuNbdxMz02",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
