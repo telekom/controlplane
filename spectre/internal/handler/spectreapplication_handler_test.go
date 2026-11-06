@@ -628,6 +628,43 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(obj.Status.SseUrl).To(Equal("https://gateway.example.com:443" + testCanonicalSSEPath + "/" + testSubscriptionId))
 			})
 
+			It("should keep the percent-encoding of the SSE upstream path", func() {
+				obj := newSpectreApplication("server_sent_event")
+				app := makeReadyApplication()
+				zone := makeReadyZone()
+				ec := makeReadyEventConfig()
+				ec.Spec.Local.ServerSendEventUrl = "https://horizon-sse.internal:443/api/url%20encoded%20path"
+				es := makeEventStore()
+
+				mockGetApplication(app)
+				mockGetZone(zone)
+				mockListEventConfigs([]eventv1.EventConfig{ec})
+				mockGetEventStore(es)
+				mockCreateOrUpdatePublisher()
+				mockCreateOrUpdateSubscriber()
+
+				var capturedRoute *gatewayv1.Route
+				fakeClient.EXPECT().
+					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+					Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+						_ = mutate()
+						capturedRoute = obj.(*gatewayv1.Route)
+					}).
+					Return(controllerutil.OperationResultCreated, nil).Once()
+
+				mockCleanup()
+				fakeClient.EXPECT().AnyChanged().Return(false).Once()
+				fakeClient.EXPECT().AllReady().Return(true).Once()
+				mockExplicitReadinessChecks("server_sent_event")
+
+				err := h.CreateOrUpdate(ctx, obj)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(capturedRoute).ToNot(BeNil())
+				Expect(capturedRoute.Spec.Backend.Upstreams).To(HaveLen(1))
+				Expect(capturedRoute.Spec.Backend.Upstreams[0].Path).To(Equal("/api/url%20encoded%20path"))
+			})
+
 			It("should serve canonical then legacy paths for every preset URL and publish the first visible URL", func() {
 				obj := newSpectreApplication("server_sent_event")
 				app := makeReadyApplication()

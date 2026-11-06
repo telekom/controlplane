@@ -6,7 +6,6 @@ package remoteapisubscription
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -84,12 +83,10 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 			config.BuildLabelKey("type"): "real",
 		}
 
-		u, parseErr := url.Parse(obj.Status.GatewayUrl)
-		if parseErr != nil {
-			return errors.Wrapf(parseErr, "failed to parse gateway url")
+		upstream, upstreamErr := util.AsUpstream(obj.Status.GatewayUrl, 0)
+		if upstreamErr != nil {
+			return errors.Wrapf(upstreamErr, "failed to parse gateway url")
 		}
-
-		port := gatewayapi.GetPortOrDefaultFromScheme(u)
 
 		hostnames, paths := preset.ResolveHostnamesAndPaths(obj.Spec.ApiBasePath)
 
@@ -99,14 +96,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 			Type:           gatewayapi.RouteTypePrimary,
 			Security:       gatewayapi.Security{RealmName: zone.Status.RealmName},
 			Backend: gatewayapi.Backend{
-				Upstreams: []gatewayapi.Upstream{
-					{
-						Scheme:   u.Scheme,
-						Hostname: u.Hostname(),
-						Port:     port,
-						Path:     u.Path,
-					},
-				},
+				Upstreams: []gatewayapi.Upstream{upstream},
 			},
 			Hostnames: hostnames,
 			Paths:     paths,

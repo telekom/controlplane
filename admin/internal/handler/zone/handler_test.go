@@ -242,6 +242,18 @@ var _ = Describe("Zone Handler", func() {
 		Expect(route.Spec.Hostnames).To(Equal([]string{"test-stargate.de"}))
 	})
 
+	It("keeps the percent-encoding of the managed route upstream path", func() {
+		zone.Spec.ManagedRoutes = &adminv1.ManagedRoutesConfig{Routes: []adminv1.ManagedRouteConfig{{Name: "proxy", Path: "/proxy", Url: "https://backend.example.com/api/url%20encoded%20path", Type: adminv1.ManagedRouteTypeProxy}}}
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		route := &gatewayapi.Route{}
+		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--proxy"}, route)).To(Succeed())
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/api/url%20encoded%20path"))
+	})
+
 	It("deduplicates managed route paths and hostnames shared by preset URLs", func() {
 		zone.Spec.Presets[0].Urls = []adminv1.UrlConfig{
 			{Hostname: "irix.example.com", BasePath: "/"},

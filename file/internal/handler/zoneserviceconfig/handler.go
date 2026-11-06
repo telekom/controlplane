@@ -348,7 +348,7 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 			Scheme:   upstreamUrl.Scheme,
 			Hostname: upstreamUrl.Hostname(),
 			Port:     gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
-			Path:     upstreamUrl.Path,
+			Path:     upstreamUrl.EscapedPath(),
 		}
 
 		hostnames, paths := preset.ResolveHostnamesAndPaths(routeConfig.Path)
