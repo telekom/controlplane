@@ -157,8 +157,8 @@ var _ = Describe("Rover pagination", func() {
 			Expect(json.NewDecoder(res.Body).Decode(&body)).To(Succeed())
 			Expect(body.Applications).NotTo(BeEmpty())
 			for _, app := range body.Applications {
-				Expect(app.StargatePublishEventUrl).To(HaveSuffix("/horizon/events/v1"))
-				Expect(app.StargatePublishEventUrl).To(HavePrefix(app.StargateUrl))
+				Expect(app.StargatePublishEventUrl).To(Equal("https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1"))
+				Expect(app.StargateUrl).To(Equal("https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"))
 				Expect(app.Variables).To(ContainElement(api.Data{Name: "tardis.horizon.event.url", Value: app.StargatePublishEventUrl}))
 			}
 		},

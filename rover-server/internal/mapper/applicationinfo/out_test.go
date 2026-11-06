@@ -555,7 +555,10 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				localStores.ApplicationSecretStore = appMock
 
 				zone := &adminv1.Zone{
-					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
+					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+						{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true},
+						{Name: "event", Type: adminv1.GatewayTypeEvent},
+					}},
 					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default", Links: adminv1.Links{
 						Issuer:   "https://idp.example.com/auth/realms/test",
 						TokenUrl: "https://dtc-idp.example.com/auth/realms/test/protocol/openid-connect/token",
@@ -596,6 +599,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				}, Presets: []adminv1.Preset{
 					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "default", Urls: []adminv1.UrlConfig{{Hostname: "default.example.com"}}},
 					{Name: "failover", Type: adminv1.GatewayTypeAPI, GatewayRef: "failover", Urls: []adminv1.UrlConfig{{Hostname: "failover.example.com"}}, Features: []adminv1.Feature{{Name: adminv1.FeatureConsumerFailover, Enabled: true}}},
+					{Name: "event", Type: adminv1.GatewayTypeEvent, GatewayRef: "default", Urls: []adminv1.UrlConfig{{Hostname: "events.example.com", BasePath: "/pub"}}},
 				}},
 				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{
 					{Name: "default", Links: adminv1.Links{TokenUrl: "https://default-idp.example.com/token"}},
@@ -617,20 +621,23 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.StargateUrl).To(Equal("https://failover.example.com"))
-			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://default.example.com/horizon/events/v1"))
+			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://events.example.com/pub/horizon/events/v1"))
 			Expect(appInfo.IrisTokenEndpointUrl).To(Equal("https://failover-idp.example.com/token"))
 		})
 
-		DescribeTable("must derive the publish event URL from the zone's default API gateway URL",
+		DescribeTable("must derive the publish event URL from the zone's Event preset URL",
 			func(urlConfig *adminv1.UrlConfig, expected string) {
 				localStoreCopy := *stores
 				localStores := &localStoreCopy
-				preset := adminv1.Preset{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}
+				eventPreset := adminv1.Preset{Name: "event", Type: adminv1.GatewayTypeEvent}
 				if urlConfig != nil {
-					preset.Urls = []adminv1.UrlConfig{*urlConfig}
+					eventPreset.Urls = []adminv1.UrlConfig{*urlConfig}
 				}
 				zone := &adminv1.Zone{
-					Spec:   adminv1.ZoneSpec{Presets: []adminv1.Preset{preset}},
+					Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+						{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "api.example.com"}}},
+						eventPreset,
+					}},
 					Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 				}
 				zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -640,6 +647,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				appInfo := &api.ApplicationInfo{}
 				Expect(FillApplicationInfo(ctx, rover, appInfo, localStores)).To(Succeed())
 				Expect(appInfo.StargatePublishEventUrl).To(Equal(expected))
+				Expect(appInfo.StargateUrl).To(Equal("https://api.example.com"))
 			},
 			Entry("plain host", &adminv1.UrlConfig{Hostname: "stargate.example.com"},
 				"https://stargate.example.com/horizon/events/v1"),
@@ -649,17 +657,18 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				"https://stargate.example.com/gw/horizon/events/v1"),
 			Entry("custom scheme and port", &adminv1.UrlConfig{Hostname: "stargate.example.com", Scheme: "http", Port: 8443},
 				"http://stargate.example.com:8443/horizon/events/v1"),
+			Entry("hidden-only gateway URL", &adminv1.UrlConfig{Hostname: "stargate.example.com", Hidden: true}, ""),
 			Entry("no gateway URL configured", nil, ""),
 		)
 
-		It("must propagate errors for a malformed gateway URL", func() {
+		It("must propagate errors for a malformed Event gateway URL", func() {
 			localStoreCopy := *stores
 			localStores := &localStoreCopy
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
-					Name: "default", Type: adminv1.GatewayTypeAPI, Default: true,
-					Urls: []adminv1.UrlConfig{{Hostname: "bad host"}},
-				}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "api.example.com"}}},
+					{Name: "event", Type: adminv1.GatewayTypeEvent, Urls: []adminv1.UrlConfig{{Hostname: "bad host"}}},
+				}},
 				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -672,14 +681,36 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(appInfo.StargatePublishEventUrl).To(BeEmpty())
 		})
 
-		It("must prefer the first non-empty event exposure publish URL without computing the zone fallback", func() {
+		It("must return a contextual error instead of an API route when the zone has no Event preset", func() {
 			localStoreCopy := *stores
 			localStores := &localStoreCopy
 			zone := &adminv1.Zone{
 				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
 					Name: "default", Type: adminv1.GatewayTypeAPI, Default: true,
-					Urls: []adminv1.UrlConfig{{Hostname: "bad host"}},
+					Urls: []adminv1.UrlConfig{{Hostname: "api.example.com"}},
 				}}},
+				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
+			Expect(err).To(MatchError(ContainSubstring("failed to select event zone preset for publish event url")))
+			Expect(err).To(MatchError(adminv1.ErrNoMatchingPreset))
+			Expect(appInfo.StargatePublishEventUrl).To(BeEmpty())
+		})
+
+		It("must prefer the first non-empty event exposure publish URL without selecting the Event preset", func() {
+			localStoreCopy := *stores
+			localStores := &localStoreCopy
+			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "api.example.com"}}},
+					{Name: "event-a", Type: adminv1.GatewayTypeEvent, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "bad host"}}},
+					{Name: "event-b", Type: adminv1.GatewayTypeEvent, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "bad host"}}},
+				}},
 				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -709,14 +740,14 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://horizon.example.com/gw/horizon/events/v1"))
 		})
 
-		It("must fall back to the zone URL when no event exposure reports a publish URL", func() {
+		It("must fall back to the zone's Event preset URL when no event exposure reports a publish URL", func() {
 			localStoreCopy := *stores
 			localStores := &localStoreCopy
 			zone := &adminv1.Zone{
-				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{
-					Name: "default", Type: adminv1.GatewayTypeAPI, Default: true,
-					Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}},
-				}}},
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com"}}},
+					{Name: "event", Type: adminv1.GatewayTypeEvent, Urls: []adminv1.UrlConfig{{Hostname: "events.example.com"}}},
+				}},
 				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -734,7 +765,8 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			appInfo := &api.ApplicationInfo{}
 			Expect(FillApplicationInfo(ctx, roverWithExp, appInfo, localStores)).To(Succeed())
-			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://stargate.example.com" + eventv1.HorizonPublishEventPathSuffix))
+			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://events.example.com" + eventv1.HorizonPublishEventPathSuffix))
+			Expect(appInfo.StargateUrl).To(Equal("https://stargate.example.com"))
 		})
 
 		It("must return an error if the input rover is nil", func() {

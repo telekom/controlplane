@@ -128,9 +128,9 @@ func fillApplicationVariables(appInfo *api.ApplicationInfo) {
 	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
 }
 
-// resolvePublishEventURL prefers an exposure's reported URL over the zone fallback.
+// resolvePublishEventURL prefers an exposure's reported URL over the zone's Event preset URL.
 // Exposure lookup failures are recorded as problems by FillExposureInfo.
-func resolvePublishEventURL(ctx context.Context, rover *roverv1.Rover, stores *store.Stores, baseURL string) (string, error) {
+func resolvePublishEventURL(ctx context.Context, rover *roverv1.Rover, stores *store.Stores, zoneSpec *adminv1.ZoneSpec) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	for _, ref := range rover.Status.EventExposures {
 		eventExp, err := stores.EventExposureStore.Get(ctx, ref.Namespace, ref.Name)
@@ -142,10 +142,14 @@ func resolvePublishEventURL(ctx context.Context, rover *roverv1.Rover, stores *s
 			return eventExp.Status.PublishURL, nil
 		}
 	}
-	return buildPublishEventURL(baseURL)
+	preset, err := zoneSpec.SelectPreset(adminv1.GatewayTypeEvent)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to select event zone preset for publish event url")
+	}
+	return buildPublishEventURL(preset.GetDefaultURL())
 }
 
-// buildPublishEventURL joins the zone's API gateway base URL with the Horizon
+// buildPublishEventURL joins the zone's Event gateway base URL with the Horizon
 // publish path. An empty base URL yields an empty result.
 func buildPublishEventURL(baseURL string) (string, error) {
 	if baseURL == "" {
@@ -204,7 +208,7 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	appInfo.IrisIssuerUrl = presetStatus.Links.Issuer
 	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
 	appInfo.StargateUrl = preset.GetDefaultURL()
-	appInfo.StargatePublishEventUrl, err = resolvePublishEventURL(ctx, rover, stores, appInfo.StargateUrl)
+	appInfo.StargatePublishEventUrl, err = resolvePublishEventURL(ctx, rover, stores, &zone.Spec)
 	if err != nil {
 		return err
 	}
