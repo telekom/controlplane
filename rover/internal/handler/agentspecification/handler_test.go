@@ -91,7 +91,7 @@ var _ = Describe("AgentSpecificationHandler", func() {
 					Expect(card.Spec.Category).To(Equal("other"))
 					Expect(card.Spec.Oauth2Scopes).To(Equal([]string{"read", "write"}))
 					Expect(card.Labels).To(HaveKeyWithValue(
-						agenticv1.AgentBasePathLabelKey,
+						agenticv1.BasePathLabelKey,
 						labelutil.NormalizeLabelValue("/agent/assistant/v1"),
 					))
 				}).
