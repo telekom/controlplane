@@ -13,10 +13,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gofiber/fiber/v2"
 
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
@@ -95,7 +100,7 @@ var _ = Describe("Controller routes", func() {
 		app := fiber.New()
 		opts := security.SecurityOpts{Mode: security.ModeMock, DisableGlobalGuard: true}
 		guard := cserver.JWTFamily(opts)(app)
-		NewController(nil, playground).RegisterRoutes(app, guard)
+		NewController(nil, playground, "").RegisterRoutes(app, guard)
 		return app
 	}
 
@@ -120,4 +125,33 @@ var _ = Describe("Controller routes", func() {
 		Entry("over GET", http.MethodGet),
 		Entry("over POST", http.MethodPost),
 	)
+})
+
+var _ = Describe("Controller with an environment path prefix", func() {
+	query := func(path, env string) int {
+		app := fiber.New()
+		guard := cserver.JWTFamily(security.SecurityOpts{Mode: security.ModeMock, DisableGlobalGuard: true})(app)
+		srv := handler.New(resolvers.NewSchema(nil, service.Services{}, nil, ""))
+		srv.AddTransport(transport.POST{})
+		NewController(srv, true, "av").RegisterRoutes(app, guard)
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"query":"{ __typename }"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+mock.NewMockAccessToken(env, "group", "team", []string{"tardis:admin:all"}))
+		resp, err := app.Test(req)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() { Expect(resp.Body.Close()).To(Succeed()) })
+		return resp.StatusCode
+	}
+
+	It("serves callers of its environment under the prefix", func() {
+		Expect(query("/av/graphql/query", "av")).To(Equal(http.StatusOK))
+	})
+
+	It("rejects callers of another environment", func() {
+		Expect(query("/av/graphql/query", "bond")).To(Equal(http.StatusForbidden))
+	})
+
+	It("does not serve the unprefixed route", func() {
+		Expect(query("/graphql/query", "av")).To(Equal(http.StatusNotFound))
+	})
 })

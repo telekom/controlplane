@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
@@ -23,17 +24,35 @@ type ServerConfig struct {
 }
 
 type KubernetesConfig struct {
-	Enabled     bool   `mapstructure:"enabled"`
-	Kubeconfig  string `mapstructure:"kubeconfig"`  // optional, defaults to in-cluster config
-	Environment string `mapstructure:"environment"` // environment scope for the scoped client
+	Enabled    bool   `mapstructure:"enabled"`
+	Kubeconfig string `mapstructure:"kubeconfig"` // optional, defaults to in-cluster config
+	// Environments served by this instance: a list, or a comma-separated string.
+	// More than one requires graphql.perEnvironmentPathPrefix and database.urlTemplate.
+	Environments []string `mapstructure:"environments"`
 }
 
 type DatabaseConfig struct {
 	URL string `mapstructure:"url"`
+	// URLTemplate replaces URL; EnvironmentPlaceholder is replaced by each environment.
+	URLTemplate string `mapstructure:"urlTemplate"`
+}
+
+// EnvironmentPlaceholder marks the environment in database.urlTemplate.
+const EnvironmentPlaceholder = "<env>"
+
+// URLFor returns the database URL of the given environment.
+func (c DatabaseConfig) URLFor(environment string) string {
+	if c.URLTemplate == "" {
+		return c.URL
+	}
+	return strings.ReplaceAll(c.URLTemplate, EnvironmentPlaceholder, environment)
 }
 
 type GraphQLConfig struct {
 	PlaygroundEnabled bool `mapstructure:"playgroundEnabled"`
+	// PerEnvironmentPathPrefix serves every environment of kubernetes.environments
+	// under /<environment>/graphql from the database named after it.
+	PerEnvironmentPathPrefix bool `mapstructure:"perEnvironmentPathPrefix"`
 }
 
 // FileManagerConfig holds the configuration for constructing specification
@@ -89,8 +108,8 @@ func DefaultConfig() *ServerConfig {
 			},
 		},
 		Kubernetes: KubernetesConfig{
-			Enabled:     true,
-			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
+			Enabled:      true,
+			Environments: []string{"poc"},
 		},
 		FileManager: FileManagerConfig{
 			BaseURL: "https://file-manager.controlplane-system.svc.cluster.local/api",
@@ -130,5 +149,31 @@ func GetConfigOrDie(filepath string) *ServerConfig {
 	if err := cfg.FileManager.Validate(); err != nil {
 		panic(fmt.Errorf("validating fileManager config: %w", err))
 	}
+	if err := validateEnvironments(cfg); err != nil {
+		panic(fmt.Errorf("validating environment config: %w", err))
+	}
 	return cfg
+}
+
+func validateEnvironments(cfg *ServerConfig) error {
+	db := cfg.Database
+	several := len(cfg.Kubernetes.Environments) > 1
+	if len(cfg.Kubernetes.Environments) == 0 {
+		return fmt.Errorf("kubernetes.environments must list at least one environment")
+	}
+
+	// url always has a default, so only an overridden url conflicts.
+	if db.URLTemplate != "" && db.URL != DefaultConfig().Database.URL {
+		return fmt.Errorf("database.url and database.urlTemplate are mutually exclusive")
+	}
+	if db.URLTemplate != "" && !strings.Contains(db.URLTemplate, EnvironmentPlaceholder) {
+		return fmt.Errorf("database.urlTemplate must contain %s", EnvironmentPlaceholder)
+	}
+	if several && !cfg.GraphQL.PerEnvironmentPathPrefix {
+		return fmt.Errorf("several environments in kubernetes.environments require graphql.perEnvironmentPathPrefix")
+	}
+	if several && db.URLTemplate == "" {
+		return fmt.Errorf("several environments in kubernetes.environments require database.urlTemplate")
+	}
+	return nil
 }

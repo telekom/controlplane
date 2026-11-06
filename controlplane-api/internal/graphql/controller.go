@@ -7,6 +7,7 @@ package graphql
 import (
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -17,21 +18,25 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
 // Controller is a Fiber controller that wraps a gqlgen handler.
 type Controller struct {
-	srv        *handler.Server
-	playground bool
+	srv         *handler.Server
+	playground  bool
+	environment string
 }
 
-// NewController creates a new GraphQL controller.
-func NewController(srv *handler.Server, enablePlayground bool) *Controller {
+// NewController creates a new GraphQL controller. A non-empty environment serves
+// the routes under /<environment>/graphql, for callers of that environment only.
+func NewController(srv *handler.Server, enablePlayground bool, environment string) *Controller {
 	return &Controller{
-		srv:        srv,
-		playground: enablePlayground,
+		srv:         srv,
+		playground:  enablePlayground,
+		environment: environment,
 	}
 }
 
@@ -40,11 +45,25 @@ func NewController(srv *handler.Server, enablePlayground bool) *Controller {
 // RegisterFunc signature. The playground is registered separately and left
 // unauthenticated (see RegisterPlayground).
 func (c *Controller) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
-	c.RegisterPlayground(router, "/graphql")
+	prefix := "/graphql"
+	if c.environment != "" {
+		prefix = "/" + c.environment + prefix
+		guard = slices.Concat(guard, []fiber.Handler{c.checkEnvironment})
+	}
+	c.RegisterPlayground(router, prefix)
 	gqlHandler := httpHandlerWithUserContext(c.srv)
-	group := router.Group("/graphql")
+	group := router.Group(prefix)
 	group.Add(fiber.MethodPost, "/query", server.Guarded(guard, gqlHandler)...)
 	group.Add(fiber.MethodGet, "/query", server.Guarded(guard, gqlHandler)...)
+}
+
+// checkEnvironment rejects callers whose business context (token env claim, or
+// X-Environment on the internal listener) belongs to another environment.
+func (c *Controller) checkEnvironment(ctx *fiber.Ctx) error {
+	if bCtx, ok := security.FromContext(ctx.UserContext()); !ok || bCtx.Environment != c.environment {
+		return server.ReturnWithError(ctx, problems.Forbidden("Access denied", "Caller does not belong to environment "+c.environment))
+	}
+	return ctx.Next()
 }
 
 // RegisterPlayground registers the GraphQL playground on the given router
