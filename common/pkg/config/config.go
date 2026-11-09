@@ -15,17 +15,17 @@ import (
 const (
 	configKeyRequeueAfterOnError = "requeue-after-on-error"
 	configKeyRequeueAfter        = "requeue-after"
-	configKeyDefaultNamespace    = "default-namespace"
-	configKeyDefaultEnvironment  = "default-environment"
 	configKeyJitterFactor        = "jitter-factor"
 	configKeyMaxBackoff          = "max-backoff"
 	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
 )
 
 const (
-	LabelKeyPrefix  = "cp.ei.telekom.de"
-	FinalizerSuffix = "finalizer"
-	FinalizerName   = LabelKeyPrefix + "/" + FinalizerSuffix
+	LabelKeyPrefix     = "cp.ei.telekom.de"
+	FinalizerSuffix    = "finalizer"
+	FinalizerName      = LabelKeyPrefix + "/" + FinalizerSuffix
+	DefaultNamespace   = "default"
+	DefaultEnvironment = "default"
 )
 
 // exposed configuration variables
@@ -41,9 +41,6 @@ var (
 	MaxBackoff = 5 * time.Minute
 	// MaxConcurrentReconciles is the maximum number of concurrent reconciles.
 	MaxConcurrentReconciles = 10
-
-	DefaultNamespace   = "default"
-	DefaultEnvironment = "default"
 )
 
 func init() {
@@ -56,8 +53,6 @@ func init() {
 func registerDefaults() {
 	viper.SetDefault(configKeyRequeueAfterOnError, RequeueAfterOnError)
 	viper.SetDefault(configKeyRequeueAfter, RequeueAfter)
-	viper.SetDefault(configKeyDefaultNamespace, DefaultNamespace)
-	viper.SetDefault(configKeyDefaultEnvironment, DefaultEnvironment)
 	viper.SetDefault(configKeyJitterFactor, JitterFactor)
 	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
@@ -71,8 +66,6 @@ func registerEnvs() {
 func Parse() {
 	RequeueAfterOnError = viper.GetDuration(configKeyRequeueAfterOnError)
 	RequeueAfter = viper.GetDuration(configKeyRequeueAfter)
-	DefaultNamespace = viper.GetString(configKeyDefaultNamespace)
-	DefaultEnvironment = viper.GetString(configKeyDefaultEnvironment)
 
 	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
 	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
