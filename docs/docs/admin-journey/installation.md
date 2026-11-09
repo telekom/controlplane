@@ -95,26 +95,6 @@ ArgoCD will clone the repository at the specified tag, render the Kustomize over
 
 To upgrade to a new release, update the `targetRevision` in your ArgoCD Application to the new tag (for example `v0.19.0`). ArgoCD will detect the change and sync the updated manifests.
 
-#### Migrating shared base-path labels
-
-When upgrading to a release that unifies API, MCP, and Agent base-path labels, migrate existing labels before restarting the affected operators. The old Rover operator can overwrite migrated labels, while the new agentic operator can fail to find resources that still have legacy labels and may clean up their Routes.
-
-1. Pause automated deployment and stop the Rover, API, and agentic operators from reconciling resources. Keep their CRDs installed.
-2. From the matching release checkout, set `LABEL_KEY_PREFIX` to the prefix configured in the cluster and run the migration in dry-run mode:
-
-   ```bash
-   LABEL_KEY_PREFIX=cp.ei.telekom.de scripts/migrate-agentic-basepath-labels.sh
-   ```
-
-   Review the proposed labels and confirm the current `kubectl` context targets the intended cluster. Then apply the migration:
-
-   ```bash
-   LABEL_KEY_PREFIX=cp.ei.telekom.de scripts/migrate-agentic-basepath-labels.sh --apply
-   ```
-
-   Replace the example prefix if the cluster uses a different value. Agentic resource kinds that are not installed are skipped; discovery failures and errors accessing installed resources stop the script.
-3. Deploy the upgraded Rover, API, and agentic operators, then resume automated deployment. Verify that existing MCP/Agent resources and their Routes are reconciled and retain the shared base-path label.
-
 ## Optional capability components {#optional-capabilities}
 
 Eventing and Permission are not included in the default overlay. Add either component to a [custom downstream overlay](#creating-a-custom-overlay) when needed:
