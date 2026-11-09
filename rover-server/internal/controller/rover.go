@@ -204,7 +204,8 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 
 	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 	if err != nil {
-		return res, problems.InternalServerError("Failed to map resource", err.Error())
+		logr.FromContextOrDiscard(ctx).Error(err, "Failed to map application info", "rover", rover.Name)
+		return res, problems.InternalServerError("Failed to map resource", "Application information could not be mapped")
 	}
 
 	return api.RoverInfoResponse{
@@ -268,7 +269,8 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	for _, rover := range rovers {
 		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 		if err != nil {
-			return res, problems.InternalServerError("Failed to map resource", err.Error())
+			logr.FromContextOrDiscard(ctx).Error(err, "Failed to map application info", "rover", rover.Name)
+			return res, problems.InternalServerError("Failed to map resource", "Application information could not be mapped")
 		}
 		list = append(list, *applicationInfo)
 	}

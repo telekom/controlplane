@@ -92,6 +92,38 @@ var _ = Describe("Rover pagination", func() {
 		_, err := ctrl.GetApplicationsInfo(teamContext(), api.GetApplicationsInfoParams{Names: []string{"broken"}})
 		Expect(err).To(MatchError(context.Canceled))
 	})
+	Describe("application info mapping failures", func() {
+		unprocessedRover := func() *roverv1.Rover {
+			rover := mocks.GetRover(GinkgoT(), mocks.RoverFileName).DeepCopy()
+			rover.Status.Application = nil
+			return rover
+		}
+		expectGenericProblem := func(err error) {
+			var p problems.Problem
+			Expect(errors.As(err, &p)).To(BeTrue())
+			Expect(p.Code()).To(Equal(http.StatusInternalServerError))
+			Expect(p.Error()).NotTo(ContainSubstring("not processed"))
+			Expect(fmt.Sprintf("%+v", p)).NotTo(ContainSubstring("not processed"))
+		}
+
+		It("returns a generic problem for the list path", func() {
+			storeMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+			storeMock.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "unprocessed").Return(unprocessedRover(), nil).Once()
+			ctrl := NewRoverController(stores)
+			ctrl.Store = storeMock
+			_, err := ctrl.GetApplicationsInfo(teamContext(), api.GetApplicationsInfoParams{Names: []string{"unprocessed"}})
+			expectGenericProblem(err)
+		})
+
+		It("returns a generic problem for the single path", func() {
+			storeMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+			storeMock.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "unprocessed").Return(unprocessedRover(), nil).Once()
+			ctrl := NewRoverController(stores)
+			ctrl.SecretStore = storeMock
+			_, err := ctrl.GetApplicationInfo(teamContext(), "eni--hyperion--unprocessed", api.GetApplicationInfoParams{})
+			expectGenericProblem(err)
+		})
+	})
 	DescribeTable("lists one scoped page with the effective limit",
 		func(target string, limit int, cursor, self string) {
 			start := roverCallCount()

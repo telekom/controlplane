@@ -143,6 +143,11 @@ func resolvePublishEventURL(ctx context.Context, rover *roverv1.Rover, stores *s
 		}
 	}
 	preset, err := zoneSpec.SelectPreset(adminv1.GatewayTypeEvent)
+	if errors.Is(err, adminv1.ErrNoMatchingPreset) {
+		// Zones without Event support are valid; the publish URL is simply omitted.
+		log.V(1).Info("Zone has no Event preset, omitting publish event URL")
+		return "", nil
+	}
 	if err != nil {
 		return "", errors.Wrap(err, "failed to select event zone preset for publish event url")
 	}

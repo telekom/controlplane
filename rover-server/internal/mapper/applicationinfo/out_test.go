@@ -681,7 +681,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(appInfo.StargatePublishEventUrl).To(BeEmpty())
 		})
 
-		It("must return a contextual error instead of an API route when the zone has no Event preset", func() {
+		It("must omit the publish event URL when the zone has no Event preset", func() {
 			localStoreCopy := *stores
 			localStores := &localStoreCopy
 			zone := &adminv1.Zone{
@@ -697,9 +697,31 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			appInfo := &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
-			Expect(err).To(MatchError(ContainSubstring("failed to select event zone preset for publish event url")))
-			Expect(err).To(MatchError(adminv1.ErrNoMatchingPreset))
+			Expect(err).NotTo(HaveOccurred())
 			Expect(appInfo.StargatePublishEventUrl).To(BeEmpty())
+			for _, v := range appInfo.Variables {
+				Expect(v.Name).NotTo(Equal("tardis.horizon.event.url"))
+			}
+		})
+
+		It("must propagate ambiguous Event preset errors", func() {
+			localStoreCopy := *stores
+			localStores := &localStoreCopy
+			zone := &adminv1.Zone{
+				Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+					{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "api.example.com"}}},
+					{Name: "event-a", Type: adminv1.GatewayTypeEvent, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "a.example.com"}}},
+					{Name: "event-b", Type: adminv1.GatewayTypeEvent, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "b.example.com"}}},
+				}},
+				Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			err := FillApplicationInfo(ctx, rover, &api.ApplicationInfo{}, localStores)
+			Expect(err).To(MatchError(ContainSubstring("failed to select event zone preset for publish event url")))
+			Expect(err).NotTo(MatchError(adminv1.ErrNoMatchingPreset))
 		})
 
 		It("must prefer the first non-empty event exposure publish URL without selecting the Event preset", func() {
