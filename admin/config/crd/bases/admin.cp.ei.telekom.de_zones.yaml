@@ -183,9 +183,11 @@ spec:
                           type: string
                         url:
                           description: |-
-                            Url is the base URL of the identity provider admin API.
-                            If empty, the operator will attempt to discover the URL based on the provided IdentityProvider Url.
+                            Url is the identity provider admin API endpoint, e.g. "https://iam-admin.example.com/auth/admin/realms".
+                            It is only used to administer the identity provider and to discover realm issuers.
+                            It never determines the public issuer. It may share a host with the public issuer or use a separate admin-only host.
                           format: uri
+                          minLength: 1
                           type: string
                         userName:
                           description: UserName is the username to authenticate with
@@ -194,6 +196,7 @@ spec:
                       required:
                       - clientId
                       - password
+                      - url
                       - userName
                       type: object
                     allowedOrigins:
@@ -207,6 +210,12 @@ spec:
                       type: array
                       x-kubernetes-list-type: set
                     issuerHostname:
+                      description: |-
+                        IssuerHostname optionally overrides the public issuer host.
+                        On World zones it sets the frontendUrl "https://<issuerHostname>/auth" on the
+                        zone's public realms. If absent, the controller leaves the realm frontendUrl unset and
+                        uses the issuer the identity provider advertises through OIDC discovery.
+                        It is never derived from admin.url.
                       format: hostname
                       maxLength: 253
                       type: string

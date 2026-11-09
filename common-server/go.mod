@@ -10,13 +10,13 @@ require github.com/telekom/controlplane/secret-manager v0.0.0
 
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
-	github.com/bytedance/sonic v1.15.2
+	github.com/bytedance/sonic v1.15.5
 	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/gofiber/contrib/jwt v1.1.2
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/onsi/ginkgo/v2 v2.33.1
@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_model v0.6.3
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tidwall/gjson v1.19.0
+	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
@@ -47,7 +47,7 @@ require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
-	github.com/bytedance/sonic/loader v0.5.1 // indirect
+	github.com/bytedance/sonic/loader v0.5.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

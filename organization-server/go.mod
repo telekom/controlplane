@@ -8,11 +8,11 @@ go 1.26.10
 
 require (
 	github.com/Khan/genqlient v0.8.1
-	github.com/bytedance/sonic v1.15.2
+	github.com/bytedance/sonic v1.15.5
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
 	go.uber.org/zap v1.28.0
@@ -99,7 +99,7 @@ require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
-	github.com/bytedance/sonic/loader v0.5.1 // indirect
+	github.com/bytedance/sonic/loader v0.5.3 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect

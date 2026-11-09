@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -152,7 +151,7 @@ var _ = Describe("PermissionSet Controller", func() {
 						Name:     "default",
 						TokenUrl: "https://idp.example.com",
 						Admin: adminv1.IdentityProviderAdminConfig{
-							Url:      ptr.To("https://idp-admin.example.com"),
+							Url:      "https://idp-admin.example.com",
 							UserName: "admin",
 							Password: "password",
 							ClientId: "client-id",

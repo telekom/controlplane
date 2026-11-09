@@ -1530,7 +1530,7 @@ func testZoneSpec(host, basePath string) adminv1.ZoneSpec {
 	return adminv1.ZoneSpec{
 		IdentityProviders: []adminv1.IdentityProviderConfig{{
 			Name:  "default",
-			Admin: adminv1.IdentityProviderAdminConfig{ClientId: "admin", UserName: "admin", Password: "pass"},
+			Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms", ClientId: "admin", UserName: "admin", Password: "pass"},
 		}},
 		Gateways: []adminv1.GatewayConfig{{
 			Name:  "default",

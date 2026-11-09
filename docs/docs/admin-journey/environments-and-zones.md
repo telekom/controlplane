@@ -91,11 +91,13 @@ spec:
         url: https://gateway-admin.example.com
   identityProviders:
     - name: primary
+      # Optional public issuer host override, see "Identity Provider Admin URL and Issuer"
       issuerHostname: idp.example.com
       allowedOrigins:
         - https://app.example.com
       admin:
-        url: https://idp.example.com/auth/admin/realms
+        # Required; may be an admin-only host
+        url: https://idp-admin.example.com/auth/admin/realms
         clientId: admin-client
         userName: admin
         password: <your-idp-admin-password>
@@ -119,10 +121,28 @@ spec:
 
 The Zone manages all attributes (`spec.attributes`) of its Realms (internal realms are excluded). Attributes set directly on these Realm resources are overwritten on the next reconciliation.
 
-- **World zones:** the Realms get exactly one attribute, `frontendUrl`, set to `https://<issuerHostname>/auth`. The hostname is the identity provider's `issuerHostname`, or the host of its `admin.url` if no `issuerHostname` is set. If no hostname can be resolved, `frontendUrl` is set to an empty value, which means no frontend URL is configured.
+- **World zones with `issuerHostname`:** the Realms get exactly one attribute, `frontendUrl`, set to `https://<issuerHostname>/auth`.
+- **World zones without `issuerHostname`:** the Realms have no attributes.
 - **Enterprise zones:** the Realms have no attributes.
 
 See [Realm Attributes](../architecture/identity.mdx#realm-attributes).
+
+### Identity Provider Admin URL and Issuer
+
+`spec.identityProviders[].admin.url` is required. It is the Keycloak admin API endpoint (for example `https://idp-admin.example.com/auth/admin/realms`) and is used only to administer Keycloak and to discover realm issuers. The admin URL is never used to build the public issuer. Its host may be the public Keycloak host or a separate admin-only host.
+
+`spec.identityProviders[].issuerHostname` is optional:
+
+- **Set (World zones):** the zone's public Realms get `frontendUrl: https://<issuerHostname>/auth`, so their issuer is `https://<issuerHostname>/auth/realms/<realm>`. On Enterprise zones `issuerHostname` has no effect.
+- **Not set:** the Admin operator does not set a `frontendUrl`. Each Realm's issuer is the one Keycloak advertises in its OIDC discovery document, as resolved by the Identity operator in the Realm's `status.issuerUrl`.
+
+The preset links `issuer` and `teamIssuer`, the default token URL and the trusted issuers of team API routes all use the resolved `status.issuerUrl` of the corresponding Realm. Until a Realm reports an issuer, the Zone reconciliation is retried; it never falls back to the admin host.
+
+Without `issuerHostname`, the issuer is discovered by requesting `<base>/realms/<realm>/.well-known/openid-configuration`, where `<base>` is `admin.url` up to its first `admin` path segment (for example `https://idp-admin.example.com/auth`). The admin host must therefore serve the OIDC discovery endpoint; if it does not, the Realm stays not ready and reports the discovery error. Configure Keycloak with a fixed, full public hostname (for example `KC_HOSTNAME=https://idp.example.com/auth`) and, for a separate admin host, `KC_HOSTNAME_ADMIN`, so the discovered issuer is the public issuer regardless of which host served the request. Without a fixed `KC_HOSTNAME` (for example with `hostname-strict=false`), Keycloak derives the issuer from the request, and the issuer discovered through the admin host would be the admin host. See the [Keycloak hostname guide](https://www.keycloak.org/server/hostname).
+
+:::note Upgrading
+Previously, World zones without `issuerHostname` got a `frontendUrl` derived from the host of `admin.url`. After the upgrade the Admin operator removes it from the Realm spec, and the Identity operator removes it from Keycloak only if it is listed in the Realm's `status.managedAttributes`. A `frontendUrl` configured directly in Keycloak and never managed by the controller is left unchanged and still determines the issuer. To keep the previous issuer, set `issuerHostname` explicitly to the former admin host.
+:::
 
 ### Traffic Types
 

@@ -62,9 +62,9 @@ spec:
   visibility: Enterprise
   identityProviders:
     - name: primary
-      url: https://my-idp.example.com/
-      issuerHostname: my-idp.example.com
       admin:
+        # Required: Keycloak admin API endpoint, used for administration and issuer discovery only
+        url: https://my-idp.example.com/auth/admin/realms
         clientId: admin-cli
         userName: admin
         password: somePassword

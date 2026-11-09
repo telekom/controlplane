@@ -14,7 +14,7 @@ require (
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/common v0.72.0
 	github.com/stretchr/testify v1.12.1
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/tidwall/gjson v1.19.0
+	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/valyala/fasttemplate v1.2.2
 	go.uber.org/zap v1.28.0
@@ -60,8 +60,8 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
-	github.com/bytedance/sonic v1.15.2 // indirect
-	github.com/bytedance/sonic/loader v0.5.1 // indirect
+	github.com/bytedance/sonic v1.15.5 // indirect
+	github.com/bytedance/sonic/loader v0.5.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chigopher/pathlib v0.19.1 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect

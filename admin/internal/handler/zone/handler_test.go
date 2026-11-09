@@ -11,7 +11,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -272,6 +271,17 @@ var _ = Describe("Zone Handler", func() {
 		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 		markSubResourcesReady(zone)
+		// The team API realm issuer is not resolved yet, so the authenticated route waits for it.
+		err := handler.CreateOrUpdate(newTestContext(zone), zone)
+		var retryable ctrlerrors.RetryableError
+		Expect(errors.As(err, &retryable)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("has no resolved issuer URL")))
+
+		teamIssuer := "https://public.example.com/realms/" + zone.Status.TeamApiIdentityRealm.Name
+		teamRealm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.TeamApiIdentityRealm.K8s(), teamRealm)).To(Succeed())
+		teamRealm.Status.IssuerUrl = teamIssuer
+		Expect(k8sClient.Status().Update(ctx, teamRealm)).To(Succeed())
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
 
 		routes := &gatewayapi.RouteList{}
@@ -285,7 +295,10 @@ var _ = Describe("Zone Handler", func() {
 
 		teamRoute := &gatewayapi.Route{}
 		Expect(k8sClient.Get(ctx, client.ObjectKey{Namespace: zone.Status.Namespace, Name: naming.ForGateway(zone, "standard") + "--team-api"}, teamRoute)).To(Succeed())
-		Expect(teamRoute.Spec.Security.TrustedIssuers).To(ContainElement(ContainSubstring(zone.Status.TeamApiIdentityRealm.Name)))
+		Expect(teamRoute.Spec.Security.TrustedIssuers).To(Equal([]string{teamIssuer}))
+		for _, preset := range zone.Status.Presets {
+			Expect(preset.Links.TeamIssuer).To(Equal(teamIssuer))
+		}
 		Expect(teamRoute.Spec.Security.RealmName).NotTo(Equal(zone.Status.TeamApiIdentityRealm.Name))
 	})
 
@@ -417,20 +430,53 @@ var _ = Describe("Zone Handler", func() {
 		Expect(errors.As(err, &blocked)).To(BeTrue())
 	})
 
-	DescribeTable("resolves the issuer hostname",
-		func(idp adminv1.IdentityProviderConfig, expected string, succeeds bool) {
-			hostname, err := issuerHostname(&idp)
-			if succeeds {
-				Expect(err).NotTo(HaveOccurred())
-				Expect(hostname).To(Equal(expected))
-				return
-			}
-			Expect(err).To(HaveOccurred())
-		},
-		Entry("explicit hostname", adminv1.IdentityProviderConfig{Name: "primary", IssuerHostname: "issuer.example.com"}, "issuer.example.com", true),
-		Entry("admin URL fallback", adminv1.IdentityProviderConfig{Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: ptr.To("https://admin.example.com/auth")}}, "admin.example.com", true),
-		Entry("missing values", adminv1.IdentityProviderConfig{Name: "primary"}, "", false),
-	)
+	It("removes the controller-set frontendUrl once issuerHostname is cleared", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		realm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(HaveKey("frontendUrl"))
+
+		zone.Spec.IdentityProviders[0].IssuerHostname = ""
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), realm)).To(Succeed())
+		Expect(realm.Spec.Attributes).To(BeEmpty())
+	})
+
+	It("never derives the issuer from the admin URL", func() {
+		zone.Spec.IdentityProviders[0].IssuerHostname = ""
+		zone.Spec.IdentityProviders[0].Admin.Url = "https://iam-admin.internal.example.com/auth/admin/realms"
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		idp := &identityapi.IdentityProvider{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityProvider.K8s(), idp)).To(Succeed())
+		Expect(idp.Spec.AdminUrl).To(Equal("https://iam-admin.internal.example.com/auth/admin/realms"))
+
+		for _, ref := range []*ctypes.ObjectRef{zone.Status.IdentityRealm, zone.Status.InternalIdentityRealm} {
+			realm := &identityapi.Realm{}
+			Expect(k8sClient.Get(ctx, ref.K8s(), realm)).To(Succeed())
+			Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
+		}
+
+		markSubResourcesReady(zone)
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+		Expect(zone.Status.Presets).NotTo(BeEmpty())
+		for _, preset := range zone.Status.Presets {
+			Expect(preset.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/" + zone.Status.IdentityRealm.Name))
+		}
+	})
+
+	It("returns a blocked error when the admin URL is missing", func() {
+		zone.Spec.IdentityProviders[0].Admin.Url = ""
+		hc := newTestHandlingContext(newTestContext(zone), zone)
+		err := createIdentityProvider(newTestContext(zone), hc)
+		var blocked ctrlerrors.BlockedError
+		Expect(errors.As(err, &blocked)).To(BeTrue())
+		Expect(err).To(MatchError(ContainSubstring("admin.url")))
+	})
 
 	It("builds the realm frontend URL from the issuer hostname", func() {
 		Expect(realmFrontendURL("iam.example.com")).To(Equal("https://iam.example.com/auth"))

@@ -12,7 +12,7 @@ require (
 	github.com/gkampitakis/go-diff v1.3.2
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/goccy/go-yaml v1.19.2
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
 	github.com/pkg/errors v0.9.1
@@ -95,7 +95,7 @@ require (
 	github.com/telekom/controlplane/common v0.0.0 // indirect
 	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/telekom/controlplane/gateway/api v0.0.0 // indirect
-	github.com/tidwall/gjson v1.19.0 // indirect
+	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

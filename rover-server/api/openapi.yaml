@@ -2641,6 +2641,14 @@ components:
               type: string
               enum:
                 - file
+            serviceUrl:
+              type: string
+              readOnly: true
+              description: Internal SFTP endpoint.
+            serviceExternalUrl:
+              type: string
+              readOnly: true
+              description: External SFTP endpoint.
     ExposureInfo:
       discriminator:
         propertyName: type
@@ -3459,6 +3467,14 @@ components:
               type: string
               enum:
                 - file
+            serviceUrl:
+              type: string
+              readOnly: true
+              description: Internal SFTP endpoint. May be available before approval; its presence does not indicate access is granted.
+            serviceExternalUrl:
+              type: string
+              readOnly: true
+              description: External SFTP endpoint. May be available before approval; its presence does not indicate access is granted.
     SubscriptionInfo:
       readOnly: true
       discriminator:

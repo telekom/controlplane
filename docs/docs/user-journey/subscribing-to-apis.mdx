@@ -73,6 +73,17 @@ roverctl get-info
 
 The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.
 
+For local and cross-zone API subscriptions, the gateway URL is available while
+approval is pending, once the subscription prerequisites and zone configuration
+are valid. Kubernetes exposes it in `status.gatewayUrl`; Rover application info
+includes the existing `tardis.stargate.url.api...` variable. The URL uses the
+consumer zone's selected gateway preset, including consumer failover when
+configured. Cross-environment remote subscriptions are excluded.
+
+A displayed URL is endpoint metadata, not proof of access. New access is
+provisioned only after approval is granted, and the subscription remains not
+ready while approval is pending.
+
 Each application's `variables` array provides resolved connection values using the legacy variable names:
 
 | Variable | Value |

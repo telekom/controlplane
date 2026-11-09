@@ -78,7 +78,8 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 			// The exact same API (case matches)
 			msg := condition.NewWaitingForTakeoverMessage(
 				"Api", condition.ConflictIdentifierBasePath, obj.Spec.BasePath,
-				organizationapi.TeamNameFromNamespace(activeAPI.Namespace), condition.NoApplication)
+				organizationapi.TeamNameFromNamespace(activeAPI.Namespace), condition.NoApplication,
+			)
 			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 			obj.SetCondition(condition.NewBlockedCondition(msg))
 			logger.Info("❌ Api is blocked, another Api with the same BasePath is already active.")

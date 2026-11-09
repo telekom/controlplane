@@ -629,7 +629,6 @@ func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.Appro
 }
 
 // mapFileExposureInfo maps a file domain FileExposure to the API's FileExposureInfo.
-// Only core identifying fields are mapped, matching the pattern of the event exposure info mapper.
 func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 	info := api.FileExposureInfo{
 		FileType:   in.Spec.FileType,
@@ -638,6 +637,8 @@ func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 		Type:       "file",
 		Variant:    api.FileExposureInfoVariantSFTP,
 	}
+	info.ServiceUrl = in.Status.ServiceURL
+	info.ServiceExternalUrl = in.Status.ServiceExternalURL
 
 	if len(in.Spec.Approval.TrustedTeams) > 0 {
 		info.TrustedTeams = make([]api.TrustedTeam, 0, len(in.Spec.Approval.TrustedTeams))
@@ -655,12 +656,13 @@ func mapFileExposureInfo(in *filev1.FileExposure) api.FileExposureInfo {
 }
 
 // mapFileSubscriptionInfo maps a file domain FileSubscription to the API's FileSubscriptionInfo.
-// Only core identifying fields are mapped, matching the pattern of the event subscription info mapper.
 func mapFileSubscriptionInfo(in *filev1.FileSubscription) api.FileSubscriptionInfo {
 	info := api.FileSubscriptionInfo{
 		FileType: in.Spec.FileType,
 		Type:     "file",
 	}
+	info.ServiceUrl = in.Status.ServiceURL
+	info.ServiceExternalUrl = in.Status.ServiceExternalURL
 
 	info.PublicKeys = make([]api.PublicKey, 0, len(in.Spec.SFTP.PublicKeys))
 	for _, key := range in.Spec.SFTP.PublicKeys {

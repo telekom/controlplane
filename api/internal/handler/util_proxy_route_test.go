@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
@@ -60,7 +59,7 @@ func CreateZone(name string) *adminapi.Zone {
 				Name:     "default",
 				TokenUrl: "http://idp.test.local:8080",
 				Admin: adminapi.IdentityProviderAdminConfig{
-					Url: ptr.To("http://idp-admin.test.local:8080"),
+					Url: "http://idp-admin.test.local:8080",
 				},
 			}},
 			Redis: &adminapi.RedisConfig{

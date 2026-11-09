@@ -13,12 +13,6 @@ func ensureSuffix(rawURL string) string {
 	return rawURL
 }
 
-func ForIdentityProviderAdminUrl(baseUrl string) string {
-	adminUrl := ensureSuffix(baseUrl)
-
-	return adminUrl + "auth/admin/realms"
-}
-
 func ForGatewayAdminUrl(baseUrl string) string {
 	adminUrl := ensureSuffix(baseUrl)
 	return adminUrl + "admin-api"
