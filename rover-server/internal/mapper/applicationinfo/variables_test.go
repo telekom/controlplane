@@ -119,7 +119,7 @@ var _ = Describe("ApplicationInfo variables", func() {
 				{Name: "tardis.horizon.subscription.url.test.events.v1", Value: "https://sse.example.com/events"},
 				{Name: "tardis.stargate.url.api.mcp.Weather.v1", Value: "https://failover.example.com/resolved/path"},
 			}),
-		Entry("pending resources have no variables", "", "", "", eventv1.DeliveryTypeServerSentEvent, []api.Data{}),
+		Entry("unavailable endpoints have no variables", "", "", "", eventv1.DeliveryTypeServerSentEvent, []api.Data{}),
 		Entry("callback delivery does not advertise a stale SSE URL", "", "subscriber-id", "https://sse.example.com/stale", eventv1.DeliveryTypeCallback,
 			[]api.Data{{Name: "tardis.horizon.subscription.id.test.events.v1", Value: "subscriber-id"}}),
 	)
