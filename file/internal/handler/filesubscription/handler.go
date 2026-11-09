@@ -66,6 +66,12 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 	if err != nil {
 		return err
 	}
+
+	err = setServiceURLs(ctx, obj, activeExposure)
+	if err != nil {
+		return err
+	}
+
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("ApprovalRequest was denied — not touching child resources")
@@ -105,17 +111,20 @@ func (h *FileSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *filev
 		return nil
 	}
 
-	zoneServiceConfig, err := util.GetZoneServiceConfig(ctx, activeExposure.Spec.Zone)
-	if err != nil {
-		return err
-	}
-
-	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
-	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
 	obj.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned,
 		"FileSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"FileSubscription has been provisioned"))
+	return nil
+}
+
+func setServiceURLs(ctx context.Context, obj *filev1.FileSubscription, activeExposure *filev1.FileExposure) error {
+	zoneServiceConfig, err := util.GetZoneServiceConfig(ctx, activeExposure.Spec.Zone)
+	if err != nil {
+		return err
+	}
+	obj.Status.ServiceURL = zoneServiceConfig.Spec.ServiceURL
+	obj.Status.ServiceExternalURL = zoneServiceConfig.Spec.ServiceExternalURL
 	return nil
 }
 

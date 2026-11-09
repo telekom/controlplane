@@ -40,6 +40,20 @@ Each approval moves through a state machine:
 | **Suspended** | A previously granted approval has been temporarily suspended. |
 | **Expired** | The approval has expired and is no longer valid. |
 
+## Endpoint URLs During Approval
+
+API and file subscriptions can display endpoint URLs while approval is pending.
+For local and cross-zone API subscriptions, `status.gatewayUrl` and the existing
+Rover application-info API URL variable identify the selected gateway endpoint.
+File subscriptions expose `status.serviceUrl` and `status.serviceExternalUrl`;
+Rover application info includes the same optional fields on file subscriptions.
+File endpoints come from the active provider's zone and represent SFTP service
+addresses, such as `sftp.example.com:22`.
+
+These URLs are metadata only. Pending approval does not provision new gateway
+ConsumeRoutes or subscriber SFTP Users, and URL presence does not indicate
+readiness or permission to access the service.
+
 ## Requested and Active Scopes
 
 API, event, and agentic subscriptions distinguish the scopes you request from

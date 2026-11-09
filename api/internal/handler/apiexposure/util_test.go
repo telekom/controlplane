@@ -88,7 +88,8 @@ var _ = Describe("ApiExposureMustNotAlreadyExist", func() {
 		Expect(processingCond).NotTo(BeNil())
 		Expect(readyCond.Message).To(Equal(
 			`Another ApiExposure with base path "/eni/test/v1" already exists and prevents this instance from becoming active. It is owned by team "eni--other-team". ` +
-				condition.MessageWaitingForTakeover))
+				condition.MessageWaitingForTakeover,
+		))
 		Expect(processingCond.Message).To(Equal(readyCond.Message))
 	})
 })
@@ -110,7 +111,8 @@ var _ = DescribeTable("setAlreadyExposedConditions",
 		Expect(processing).NotTo(BeNil())
 		Expect(ready.Message).To(Equal(
 			`Another ApiExposure with base path "/eni/test/v1" already exists and prevents this instance from becoming active. It is owned by ` + expectedOwner + ". " +
-				condition.MessageWaitingForTakeover))
+				condition.MessageWaitingForTakeover,
+		))
 		Expect(processing.Message).To(Equal(ready.Message))
 	},
 	Entry("same team with application label", "prod--eni--team-a",
