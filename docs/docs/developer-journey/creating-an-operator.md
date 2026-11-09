@@ -196,6 +196,8 @@ For more details on how virtual environments work, see the [Architecture Overvie
 
 ## Configuration
 
+The label key prefix `cp.ei.telekom.de` and the finalizer name `cp.ei.telekom.de/finalizer` are compile-time constants. They cannot be overridden through Viper or environment variables; `label-key-prefix` and `LABEL_KEY_PREFIX` are ignored.
+
 The Common library uses [Viper](https://github.com/spf13/viper) for configuration. All settings can be overridden via environment variables:
 
 | Config Key | Environment Variable | Default | Description |

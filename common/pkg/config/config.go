@@ -17,14 +17,15 @@ const (
 	configKeyRequeueAfter        = "requeue-after"
 	configKeyDefaultNamespace    = "default-namespace"
 	configKeyDefaultEnvironment  = "default-environment"
-	configKeyLabelKeyPrefix      = "label-key-prefix"
 	configKeyJitterFactor        = "jitter-factor"
 	configKeyMaxBackoff          = "max-backoff"
 	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
 )
 
 const (
+	LabelKeyPrefix  = "cp.ei.telekom.de"
 	FinalizerSuffix = "finalizer"
+	FinalizerName   = LabelKeyPrefix + "/" + FinalizerSuffix
 )
 
 // exposed configuration variables
@@ -43,8 +44,6 @@ var (
 
 	DefaultNamespace   = "default"
 	DefaultEnvironment = "default"
-	LabelKeyPrefix     = "cp.ei.telekom.de"
-	FinalizerName      = LabelKeyPrefix + "/" + FinalizerSuffix
 )
 
 func init() {
@@ -59,7 +58,6 @@ func registerDefaults() {
 	viper.SetDefault(configKeyRequeueAfter, RequeueAfter)
 	viper.SetDefault(configKeyDefaultNamespace, DefaultNamespace)
 	viper.SetDefault(configKeyDefaultEnvironment, DefaultEnvironment)
-	viper.SetDefault(configKeyLabelKeyPrefix, LabelKeyPrefix)
 	viper.SetDefault(configKeyJitterFactor, JitterFactor)
 	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
@@ -79,9 +77,6 @@ func Parse() {
 	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
 	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
 	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
-	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
-
-	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
 
 	for f := range features {
 		features[f] = viper.GetBool(f.Path())
