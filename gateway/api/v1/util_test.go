@@ -2,32 +2,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package util
+package v1_test
 
 import (
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("AsUpstream", func() {
-	It("maps the URL components and the weight", func() {
-		upstream, err := AsUpstream("https://provider.example.com:8443/api/v1", 40)
+var _ = Describe("ParseUpstream", func() {
+	It("maps the URL components", func() {
+		upstream, err := gatewayv1.ParseUpstream("https://provider.example.com:8443/api/v1")
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(upstream).To(Equal(gatewayapi.Upstream{
+		Expect(upstream).To(Equal(gatewayv1.Upstream{
 			Scheme:   "https",
 			Hostname: "provider.example.com",
 			Port:     8443,
 			Path:     "/api/v1",
-			Weight:   40,
 		}))
+	})
+
+	It("uses the default port of the scheme", func() {
+		upstream, err := gatewayv1.ParseUpstream("http://provider.example.com/api")
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(upstream.Port).To(Equal(int32(80)))
+	})
+
+	It("returns an error for an invalid URL", func() {
+		_, err := gatewayv1.ParseUpstream("http://provider.example.com/%zz")
+
+		Expect(err).To(MatchError(ContainSubstring("failed to parse upstream URL")))
 	})
 
 	DescribeTable("keeps the percent-encoding of the path",
 		func(rawUrl, expectedPath string) {
-			upstream, err := AsUpstream(rawUrl, 0)
+			upstream, err := gatewayv1.ParseUpstream(rawUrl)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(upstream.Path).To(Equal(expectedPath))

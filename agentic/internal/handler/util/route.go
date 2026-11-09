@@ -178,7 +178,7 @@ func CreateAgenticProxyRoute(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build upstream URL for proxy route")
 	}
-	upstream, err := AsUpstream(upstreamUrl, 0)
+	upstream, err := gatewayapi.ParseUpstream(upstreamUrl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create upstream for proxy route")
 	}
@@ -270,29 +270,14 @@ func DeleteRouteIfExists(ctx context.Context, ref *ctypes.ObjectRef) error {
 	return nil
 }
 
-// AsUpstream converts a raw URL to a gateway Upstream struct.
-func AsUpstream(rawUrl string, weight int32) (gatewayapi.Upstream, error) {
-	u, err := url.Parse(rawUrl)
-	if err != nil {
-		return gatewayapi.Upstream{}, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
-	}
-
-	return gatewayapi.Upstream{
-		Scheme:   u.Scheme,
-		Hostname: u.Hostname(),
-		Port:     gatewayapi.GetPortOrDefaultFromScheme(u),
-		Path:     u.EscapedPath(),
-		Weight:   weight,
-	}, nil
-}
-
 func MapUpstreamsToGateway(upstreams []agenticv1.Upstream) ([]gatewayapi.Upstream, error) {
 	mapped := make([]gatewayapi.Upstream, 0, len(upstreams))
 	for _, upstream := range upstreams {
-		gatewayUpstream, err := AsUpstream(upstream.Url, int32(upstream.Weight)) //nolint:gosec // weight is a small positive integer
+		gatewayUpstream, err := gatewayapi.ParseUpstream(upstream.Url)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to map upstream %s", upstream.Url)
 		}
+		gatewayUpstream.Weight = int32(upstream.Weight) //nolint:gosec // weight is a small positive integer
 		mapped = append(mapped, gatewayUpstream)
 	}
 	return mapped, nil

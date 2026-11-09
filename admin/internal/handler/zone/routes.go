@@ -6,7 +6,6 @@ package zone
 
 import (
 	"context"
-	"net/url"
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -135,15 +134,9 @@ func createManagedRoute(ctx context.Context, hc *HandlingContext, routeConfig ad
 		route.Labels[cconfig.DomainLabelKey] = domainName
 		route.Labels[cconfig.OwnerUidLabelKey] = string(hc.Zone.GetUID())
 
-		upstreamUrl, err := url.Parse(routeConfig.Url)
+		upstream, err := gatewayapi.ParseUpstream(routeConfig.Url)
 		if err != nil {
 			return ctrlerrors.BlockedErrorf("cannot parse upstream url of internal route %s: %s", routeConfig.Url, err)
-		}
-		upstream := gatewayapi.Upstream{
-			Scheme:   upstreamUrl.Scheme,
-			Hostname: upstreamUrl.Hostname(),
-			Port:     gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
-			Path:     upstreamUrl.EscapedPath(),
 		}
 
 		hostnames, paths := preset.ResolveHostnamesAndPaths(routeConfig.Path)

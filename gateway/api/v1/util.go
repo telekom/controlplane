@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"fmt"
 	"math"
 	"net/url"
 	"strconv"
@@ -33,4 +34,20 @@ func GetPortOrDefaultFromScheme(url *url.URL) int32 {
 	default:
 		return 80
 	}
+}
+
+// ParseUpstream converts a raw URL into an Upstream.
+// The path keeps its percent-encoding because the gateway forwards it verbatim.
+// The weight is not set.
+func ParseUpstream(rawURL string) (Upstream, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return Upstream{}, fmt.Errorf("failed to parse upstream URL %q: %w", rawURL, err)
+	}
+	return Upstream{
+		Scheme:   u.Scheme,
+		Hostname: u.Hostname(),
+		Port:     GetPortOrDefaultFromScheme(u),
+		Path:     u.EscapedPath(),
+	}, nil
 }

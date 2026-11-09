@@ -288,7 +288,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 		if joinErr != nil {
 			return errors.Wrap(joinErr, "failed to build upstream URL for proxy route")
 		}
-		upstream, upstreamErr := AsUpstream(upstreamUrl, 0)
+		upstream, upstreamErr := gatewayapi.ParseUpstream(upstreamUrl)
 		if upstreamErr != nil {
 			return errors.Wrap(upstreamErr, "failed to create upstream")
 		}
@@ -380,10 +380,11 @@ func configureAsFailoverTarget(_ context.Context, proxyRoute *gatewayapi.Route, 
 
 	failoverTargets := make([]gatewayapi.FailoverTarget, 0, len(options.FailoverUpstreams))
 	for _, rawUpstream := range options.FailoverUpstreams {
-		failoverUpstream, upstreamErr := AsUpstream(rawUpstream.Url, int32(rawUpstream.Weight)) //nolint:gosec // weight is a small positive integer
+		failoverUpstream, upstreamErr := gatewayapi.ParseUpstream(rawUpstream.Url)
 		if upstreamErr != nil {
 			return errors.Wrapf(upstreamErr, "failed to create failover upstream %s", rawUpstream.Url)
 		}
+		failoverUpstream.Weight = int32(rawUpstream.Weight) //nolint:gosec // weight is a small positive integer
 		failoverTargets = append(failoverTargets, gatewayapi.FailoverTarget{Upstream: failoverUpstream})
 	}
 
@@ -426,7 +427,7 @@ func addFailoverFallback(ctx context.Context, proxyRoute *gatewayapi.Route, opti
 			return errors.Wrapf(err, "failed to build failover URL for zone %s", failoverZone.String())
 		}
 
-		failoverUpstream, err := AsUpstream(failoverUrl, 0)
+		failoverUpstream, err := gatewayapi.ParseUpstream(failoverUrl)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create failover upstream for zone %s", failoverZone.String())
 		}
@@ -571,10 +572,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
 		for _, upstream := range apiExposure.Spec.Upstreams {
-			gatewayUpstream, upstreamErr := AsUpstream(upstream.Url, int32(upstream.Weight)) //nolint:gosec // weight is a small positive integer
+			gatewayUpstream, upstreamErr := gatewayapi.ParseUpstream(upstream.Url)
 			if upstreamErr != nil {
 				return errors.Wrapf(upstreamErr, "failed to create upstream for URL %s", upstream.Url)
 			}
+			gatewayUpstream.Weight = int32(upstream.Weight) //nolint:gosec // weight is a small positive integer
 			gatewayUpstreams = append(gatewayUpstreams, gatewayUpstream)
 		}
 

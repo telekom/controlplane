@@ -83,7 +83,7 @@ func (h *RemoteApiSubscriptionHandler) handleConsumerScenario(ctx context.Contex
 			config.BuildLabelKey("type"): "real",
 		}
 
-		upstream, upstreamErr := util.AsUpstream(obj.Status.GatewayUrl, 0)
+		upstream, upstreamErr := gatewayapi.ParseUpstream(obj.Status.GatewayUrl)
 		if upstreamErr != nil {
 			return errors.Wrapf(upstreamErr, "failed to parse gateway url")
 		}

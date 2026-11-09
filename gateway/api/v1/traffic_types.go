@@ -15,6 +15,7 @@ type Upstream struct {
 
 	Port int32 `json:"port"`
 
+	// Path is the percent-encoded upstream path. The gateway forwards it verbatim.
 	Path string `json:"path"`
 }
 

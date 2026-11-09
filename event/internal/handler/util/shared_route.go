@@ -49,20 +49,6 @@ func DeleteRouteIfExists(ctx context.Context, ref *ctypes.ObjectRef) error {
 	return nil
 }
 
-// parseUpstream parses a raw URL string into a gateway Upstream.
-func parseUpstream(rawUrl string) (gatewayapi.Upstream, error) {
-	u, err := url.Parse(rawUrl)
-	if err != nil {
-		return gatewayapi.Upstream{}, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
-	}
-	return gatewayapi.Upstream{
-		Scheme:   u.Scheme,
-		Hostname: u.Hostname(),
-		Port:     gatewayapi.GetPortOrDefaultFromScheme(u),
-		Path:     u.EscapedPath(),
-	}, nil
-}
-
 type Options struct {
 	Owner metav1.Object
 
@@ -198,7 +184,7 @@ func gatewayUpstream(preset *adminv1.Preset, path string) (gatewayapi.Upstream, 
 		}
 		full = joined
 	}
-	return parseUpstream(full)
+	return gatewayapi.ParseUpstream(full)
 }
 
 func gatewayRef(zone *adminv1.Zone) (*ctypes.ObjectRef, error) {
