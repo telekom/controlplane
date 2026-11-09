@@ -6,6 +6,7 @@ package mutator
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -191,13 +192,13 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 	return nil
 }
 
-const rotationUnsupportedMessage = "secret rotation is not supported because the application has no client (spec.needsClient is false)"
+var errRotationUnsupported = stderrors.New("secret rotation is not supported because the application has no client (spec.needsClient is false)")
 
 // newRotationUnsupportedError returns a Forbidden error whose message is marked public.
 func newRotationUnsupportedError(name string) *errors.StatusError {
 	return cperrors.WithPublicMessage(errors.NewForbidden(
 		schema.GroupResource{Group: applicationv1.GroupVersion.Group, Resource: "applications"},
 		name,
-		fmt.Errorf("%s", rotationUnsupportedMessage),
-	), rotationUnsupportedMessage)
+		errRotationUnsupported,
+	), errRotationUnsupported.Error())
 }
