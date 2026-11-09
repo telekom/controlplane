@@ -178,6 +178,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.Status.ApprovalRequest = types.ObjectRefFromObject(approvalBuilder.GetApprovalRequest())
 	apiSub.Status.Approval = types.ObjectRefFromObject(approvalBuilder.GetApproval())
 
+	err = setGatewayURL(ctx, scopedClient, apiSub)
+	if err != nil {
+		return err
+	}
+
 	switch res {
 	case builder.ApprovalResultRequestDenied:
 		logger.Info("🛑 ApprovalRequest was denied. In this case we will not touch child resources")
@@ -219,38 +224,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	apiSub.Status.Route = routeRef
 
-	zone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
-	}
-	var preset *adminapi.Preset
-	if apiSub.HasFailover() {
-		// Only "this zone offers no API failover profile" may fall back to the default preset.
-		// A malformed or ambiguous selection must block: falling back would write standard
-		// endpoints into the status while the rest of the pipeline provisions failover.
-		selected, selErr := zone.Spec.SelectPreset(adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
-		if selErr != nil && !stderrors.Is(selErr, adminapi.ErrNoMatchingPreset) {
-			return errors.Wrapf(selErr, "failed to select failover preset for zone %s", apiSub.Spec.Zone.Name)
-		}
-		preset = selected
-	}
-	if preset == nil {
-		// always fallback to default preset
-		preset, err = zone.Spec.GetDefaultPreset()
-	}
-	if err != nil {
-		return errors.Wrapf(err, "failed to select gateway preset for zone %s", apiSub.Spec.Zone.Name)
-	}
-	presetStatus, statusErr := zone.Status.GetPreset(preset.Name)
-	if statusErr != nil {
-		return errors.Wrapf(statusErr, "failed to get preset status for zone %s", apiSub.Spec.Zone.Name)
-	}
-	apiSub.Status.IdpIssuer = presetStatus.Links.Issuer
-	apiSub.Status.GatewayUrl, err = url.JoinPath(preset.GetDefaultURL(), apiSub.Spec.ApiBasePath)
-	if err != nil {
-		return errors.Wrapf(err, "failed to construct gateway URL for zone %s", apiSub.Spec.Zone.Name)
-	}
-
 	consumeRouteOptions := []util.CreateConsumeRouteOption{}
 
 	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(apiSubApplication.Status.ClientId); ok {
@@ -291,6 +264,39 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 
 	logger.Info("✅ Successfully processed ApiSubscription")
+	return nil
+}
+
+func setGatewayURL(ctx context.Context, scopedClient cclient.JanitorClient, apiSub *apiapi.ApiSubscription) error {
+	zone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
+	}
+	var preset *adminapi.Preset
+	if apiSub.HasFailover() {
+		// Only an absent failover profile may fall back to the default preset.
+		selected, selErr := zone.Spec.SelectPreset(adminapi.GatewayTypeAPI, adminapi.FeatureConsumerFailover)
+		if selErr != nil && !stderrors.Is(selErr, adminapi.ErrNoMatchingPreset) {
+			return errors.Wrapf(selErr, "failed to select failover preset for zone %s", apiSub.Spec.Zone.Name)
+		}
+		preset = selected
+	}
+	if preset == nil {
+		preset, err = zone.Spec.GetDefaultPreset()
+	}
+	if err != nil {
+		return errors.Wrapf(err, "failed to select gateway preset for zone %s", apiSub.Spec.Zone.Name)
+	}
+	presetStatus, err := zone.Status.GetPreset(preset.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get preset status for zone %s", apiSub.Spec.Zone.Name)
+	}
+	gatewayURL, err := url.JoinPath(preset.GetDefaultURL(), apiSub.Spec.ApiBasePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct gateway URL for zone %s", apiSub.Spec.Zone.Name)
+	}
+	apiSub.Status.IdpIssuer = presetStatus.Links.Issuer
+	apiSub.Status.GatewayUrl = gatewayURL
 	return nil
 }
 
