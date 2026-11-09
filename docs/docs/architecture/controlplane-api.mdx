@@ -155,6 +155,16 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 - `zones` — List all available zones (no pagination, visible to all users)
 - `node(id)` / `nodes(ids)` — Relay-compatible node lookups for any entity
 
+### Mutation Errors
+
+Mutations return HTTP 200 and report failures in the `errors` list of the payload. Each entry has a `code`, a `message`, and an optional `field`. The API derives the `code` from the Kubernetes error type and replaces raw Kubernetes messages with generic text. For example, a `Forbidden` response becomes `FORBIDDEN` with the message `operation forbidden by cluster policy`.
+
+A webhook or controller can opt in to showing a specific message. To do so, it adds a status cause of type `cp.ei.telekom.de/PublicMessage` to the error, using `errors.WithPublicMessage` from `common/pkg/errors`. The API then uses that cause's `message` as the mutation error message. The `code` stays the same. The API never forwards the top-level status message or any other cause. If the public message is empty, the API uses the generic text.
+
+:::warning
+Only put text into a public message that is safe to show to end users. Don't include internal host names, resource details, or confidential data.
+:::
+
 ### Subscription Scopes
 
 `ApiSubscription`, `EventSubscription`, and `AgenticSubscription` expose two
