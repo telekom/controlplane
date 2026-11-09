@@ -1,0 +1,22 @@
+docs/docs/architecture/agentic.mdx
+  s_128799f9e46b1d::t_094aca50dd1919 62
+  s_128799f9e46b1d::t_ed575070303819 115-123
+  s_128799f9e46b1d::t_6cac665b41da4d 98-99
+  s_128799f9e46b1d::t_9fd4fba4cb2351 133,135-136,138-139,141-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "376b9932243fee8f8a20d9a504bb52d05feabe5c",
+  "prompts": {},
+  "sessions": {
+    "s_128799f9e46b1d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "824e8122-e41b-4ee2-8945-bdb69d80fc22",
+        "model": "unknown"
+      },
+      "human_author": "Elmar Meuthen <elmar.meuthen@telekom.de>"
+    }
+  }
+}

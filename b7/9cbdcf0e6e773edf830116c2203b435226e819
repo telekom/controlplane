@@ -1,0 +1,61 @@
+pubsub/api/v1/eventstore_types.go
+  s_30278d6700cd95::t_a5369401388c3a 19-21,23
+  s_9dc8eb2d0282ea::t_27078d187134be 18,22
+event/api/v1/eventconfig_types.go
+  s_30278d6700cd95::t_a5369401388c3a 108-112
+pubsub/internal/handler/subscriber/handler_test.go
+  s_9dc8eb2d0282ea::t_27078d187134be 151,182,369
+  s_30278d6700cd95::t_225913b3dd6e7f 145-150,152-181,183-202,363-368,370-393
+pubsub/internal/controller/eventstore_controller_test.go
+  s_30278d6700cd95::t_d1272150c0df5a 82-86,88-89,91,93-94,96,98-99,101
+  s_9dc8eb2d0282ea::t_27078d187134be 87,90,92,95,97,100
+event/internal/controller/eventconfig_controller_test.go
+  s_30278d6700cd95::t_d1272150c0df5a 93-112
+pubsub/config/crd/bases/pubsub.cp.ei.telekom.de_eventstores.yaml
+  s_9dc8eb2d0282ea::t_27078d187134be 61,63
+  s_30278d6700cd95::t_12a42e20d35138 62,64-66
+event/internal/handler/eventconfig/environment_name_test.go
+  s_30278d6700cd95::t_5e57758420bb08 89-95,114-116,122
+  s_30278d6700cd95::t_c96e9fc7dee54c 9,12,18,24,47-77,83-88,96-100,102-110,112-113,117-121
+  s_30278d6700cd95::t_d0dc0c087c1371 78-82
+  s_30278d6700cd95::t_e44a1cec6fc6a7 1-8,10-11,13-17,19-23,25-46,123-184,190-197
+  s_9dc8eb2d0282ea::t_27078d187134be 101,111,185-189
+event/config/crd/bases/event.cp.ei.telekom.de_eventconfigs.yaml
+  s_30278d6700cd95::t_12a42e20d35138 192-196
+pubsub/internal/handler/subscriber/handler.go
+  s_30278d6700cd95::t_a5369401388c3a 43,102,134,137-138
+  s_9dc8eb2d0282ea::t_27078d187134be 135-136
+  s_30278d6700cd95::t_88730e99501170 139-140
+event/internal/handler/eventconfig/handler.go
+  s_30278d6700cd95::t_a5369401388c3a 23,36-42
+  s_9dc8eb2d0282ea::t_27078d187134be 598-602,658-662
+event/internal/handler/eventconfig/handler_test.go
+  s_9dc8eb2d0282ea::t_27078d187134be 583,593
+  s_30278d6700cd95::t_4ef9d0b8f42d35 213
+  s_30278d6700cd95::t_c0351bf8261ba7 34
+  s_30278d6700cd95::t_16d238b4ae1038 162-167,178,212,214,584-592
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b79cbdcf0e6e773edf830116c2203b435226e819",
+  "prompts": {},
+  "sessions": {
+    "s_30278d6700cd95": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f60ee292bffeaUKcsKl7dQGwut",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9dc8eb2d0282ea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f60c4ebd2ffexoI9a0bfx5A6Uy",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

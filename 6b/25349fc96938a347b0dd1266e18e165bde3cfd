@@ -1,0 +1,64 @@
+pubsub/config/crd/bases/pubsub.cp.ei.telekom.de_publishers.yaml
+  s_990b6714fd4fe0::t_42af607c62c8be 76-77
+rover/api/v1/event_identifier_validation_test.go
+  s_990b6714fd4fe0::t_294b8a5e80df42 18
+  s_990b6714fd4fe0::t_4ab3ea55e2b568 68-71
+  s_990b6714fd4fe0::t_c6d093ec95c536 56
+  s_990b6714fd4fe0::t_30102f9db9ac96 1-17,19-55,57-67,72-91
+event/api/v1/eventexposure_types.go
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 53,57
+discovery-server/api/event-openapi.yaml
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 821,823,895,898,990,993
+event/api/v1/eventtype_types.go
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 28,34
+rover-server/api/openapi.yaml
+  s_990b6714fd4fe0::t_148758a4c554a3 3283,3285-3287
+  s_990b6714fd4fe0::t_e2038d2038542d 2247,2961
+docs/docs/user-journey/exposing-events.mdx
+  s_990b6714fd4fe0::t_e2038d2038542d 61,98
+rover/api/v1/rover_types.go
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 368,432
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_990b6714fd4fe0::t_05f55577368969 1043,1606
+pubsub/api/v1/publisher_types.go
+  s_990b6714fd4fe0::t_a9391f9644d739 21
+event/internal/controller/event_identifier_validation_test.go
+  s_990b6714fd4fe0::t_1f2189f72a520f 1-8,10-13,20-22,24-47,53-64,68-72,74-75,77-82,84-100
+  s_990b6714fd4fe0::t_c6d093ec95c536 23
+  s_990b6714fd4fe0::t_093cc101bb2471 48-52
+  s_990b6714fd4fe0::t_27c43e56a1e8ea 9,73,76,83
+  s_990b6714fd4fe0::t_6184fff33f6abd 14-19
+  s_990b6714fd4fe0::t_dbee7fb6fcce90 65-67
+rover/config/crd/bases/rover.cp.ei.telekom.de_eventspecifications.yaml
+  s_990b6714fd4fe0::t_05f55577368969 63-64,67
+event/config/crd/bases/event.cp.ei.telekom.de_eventsubscriptions.yaml
+  s_990b6714fd4fe0::t_05f55577368969 111,114
+event/api/v1/eventsubscription_types.go
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 53,57
+rover/api/v1/eventspecification_types.go
+  s_990b6714fd4fe0::t_38c3bed1c40f7c 25,29
+event/config/crd/bases/event.cp.ei.telekom.de_eventtypes.yaml
+  s_990b6714fd4fe0::t_05f55577368969 77,82
+event/config/crd/bases/event.cp.ei.telekom.de_eventexposures.yaml
+  s_990b6714fd4fe0::t_05f55577368969 94,97
+discovery-server/api/uber-openapi.yaml
+  s_990b6714fd4fe0::t_4a547e34a980b5 2411-2412,2414,2485-2486,2488,2582-2583,2585
+docs/docs/user-journey/subscribing-to-events.mdx
+  s_990b6714fd4fe0::t_e2038d2038542d 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6b25349fc96938a347b0dd1266e18e165bde3cfd",
+  "prompts": {},
+  "sessions": {
+    "s_990b6714fd4fe0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f27f6ea02ffe0Isq9J3y6OHQ9C",
+        "model": "gpt-6-sol"
+      },
+      "human_author": null
+    }
+  }
+}

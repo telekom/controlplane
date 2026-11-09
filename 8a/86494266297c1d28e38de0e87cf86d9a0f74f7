@@ -1,0 +1,49 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8a86494266297c1d28e38de0e87cf86d9a0f74f7",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    },
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_03bcf6b8d8fe12": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0762abd64ffeTx8R78XYfkSY9A",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_58ae69a5d6576a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0768b23c7ffeEu6rvSwk8qs0gS",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dc6faa1b80d8e4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07619949bffet4PIgah4T6cdcf",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": null
+    },
+    "s_e36533b3721d0f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "2802bf4f-172e-4ef8-ad13-36c5ea47e334",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

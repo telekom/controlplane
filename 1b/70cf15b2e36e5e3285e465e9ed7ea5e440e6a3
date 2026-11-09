@@ -1,0 +1,295 @@
+organization-server/internal/client/cpapi_test.go
+  s_b553d87062a40e::t_c39c7793d530bb 5,8-11,15-17,19-26,29-32,34,36,39-46
+  s_b553d87062a40e::t_f77b2b30c0d3cf 13,28,35
+  s_2f15dd85a25ea6::t_7d849a5091a723 47
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,12,14,18,27,33,37-38,48-49
+organization-server/internal/server/teams_test.go
+  s_e272aaa3dc1909::t_82f57d9a78c81d 23-26,155,267
+  s_676f2dc4ce1b6f::t_79e954a1d48f1a 281-291
+  s_b553d87062a40e::t_c39c7793d530bb 53,68,186-193
+  s_e272aaa3dc1909::t_687f048ec71f17 34
+  s_676f2dc4ce1b6f::t_5b472ee6e72238 263,266
+  s_676f2dc4ce1b6f::t_27eeb701981791 65-67,69-77,173,177-185,292
+organization-server/internal/server/testhelpers_test.go
+  s_e73db3c55a4b23::t_7396cb2b9edf65 19,77-79
+  s_676f2dc4ce1b6f::t_45fa0d8c98fd58 100
+  s_676f2dc4ce1b6f::t_27eeb701981791 20-22,83-95,102
+  s_e272aaa3dc1909::t_da1c9db6cdb2d6 32,39-41
+organization-server/internal/client/rover_test.go
+  s_e73db3c55a4b23::t_299db1e4b0b459 152,154-155,166-169,171-175,177-194,197
+  s_de19913a88ad4c::t_3c94c9ff44751d 141
+  s_e73db3c55a4b23::t_8140870cb13cc0 9,13-14,16
+  s_e73db3c55a4b23::t_d20b26e05ef04a 17-18,21-22,56,82,99,114,123,160
+  s_e73db3c55a4b23::t_1e946b37aeded8 153
+  s_e73db3c55a4b23::t_34bd2c122a0f11 156-157
+  s_e73db3c55a4b23::t_3bb0875ae606dd 195-196
+  s_e73db3c55a4b23::t_e17d04ee779b63 198
+  s_0d600cd7e35b12::t_c375734b4b0531 200
+organization-server/internal/config/config_test.go
+  s_e73db3c55a4b23::t_521c0b4da2d4ea 5,13-15,17-19,22-31,34-37,39-46,48-53,57-58,60-62,64,66-69
+  s_e73db3c55a4b23::t_4ee2220ac5be6b 55
+  s_0b1a12e558b711::t_bef670b1c3afd6 11
+  s_e73db3c55a4b23::t_a1d9a759c092a4 54,56
+organization-server/config/certmanager/kustomizeconfig.yaml
+  s_e73db3c55a4b23::t_7e74425b0d9b9c 1-12
+organization-server/cmd/main.go
+  s_e73db3c55a4b23::t_7396cb2b9edf65 14,43-44
+  s_e73db3c55a4b23::t_260d6cb30a62db 9,12,16,22,26-37,47,50-51,82-85,88-91,94-95,98
+  s_e73db3c55a4b23::t_59cab380806b24 40-42
+  s_63d9b9122e9b73::t_567aa3fa41c7fc 52-61,63-64,66-79,86-87
+rover-server/api/openapi.yaml
+  s_5f09e98ae8966b::t_b00b76fefa0689 1698-1701,1708,1713
+rover-server/internal/server/server.go
+  s_7a059221b2c2a6::t_1a73542fbef113 205
+common-server/pkg/server/middleware/security/business_context.go
+  s_4897012d77e79e::t_f59700fa5568eb 247
+organization-server/go.mod
+  s_e73db3c55a4b23::t_627f0c83d680a3 33,43,50-55
+  s_e73db3c55a4b23::t_59cab380806b24 59
+  s_b35f7b2645bab2::t_300f5d8ca5eb44 34-35
+  s_e73db3c55a4b23::t_013414ee5db476 26-28,30-31,36,45,60-61,63,65,67,71,75,126
+organization-server/api/openapi.yaml
+  s_e73db3c55a4b23::t_31f79fcb5dcde2 828-830
+  s_9321c86dd7d462::t_e9abe3024e4dff 69-71,148-150,194,227,273-275,367-369,421,468,518-520,569,610,669-671,718,757-759,805-807,817,825-827
+organization-server/internal/client/rover.go
+  s_e73db3c55a4b23::t_f841664825be8d 15,19-22,24-25,29-30,32-37,39-40,42-43,62-63
+  s_e73db3c55a4b23::t_7396cb2b9edf65 31,38
+  s_e73db3c55a4b23::t_b94953e398cb1f 16
+  s_0d600cd7e35b12::t_c375734b4b0531 72
+organization-server/internal/api/server.gen.go
+  s_e73db3c55a4b23::t_6942851831f5af 476-540
+organization-server/internal/client/token.go
+  s_e73db3c55a4b23::t_b95659f497918a 8-9,11,14-38,40
+rover-server/internal/api/server.gen.go
+  s_5f09e98ae8966b::t_086edb500d08bd 1604-1605,2259
+  s_5f09e98ae8966b::t_20ae2bd0de3e5a 1
+  s_0d600cd7e35b12::t_c375734b4b0531 2257
+organization-server/internal/config/config.go
+  s_0b1a12e558b711::t_bef670b1c3afd6 82,89
+  s_b553d87062a40e::t_8fd1f52c122940 70
+  s_e73db3c55a4b23::t_5901e567cada48 8,10-13,15-17,20,26,31-32,35-36,38-42,44-50,52,55-69,71-81,87-88,95-96
+  s_e73db3c55a4b23::t_4ee2220ac5be6b 93
+  s_e73db3c55a4b23::t_aaded765d946dd 83-86,90-92,94
+  s_e73db3c55a4b23::t_d27dad72f71ce4 18-19,22-25,27-30,37
+docs/docs/admin-journey/controlplane-api.md
+  s_9321c86dd7d462::t_468573155cf699 242-243
+rover-server/internal/controller/resources_test.go
+  s_dbd7a9e3a440e8::t_db844a14ea5adf 22,32-33,41-42
+  s_dbd7a9e3a440e8::t_20d014c902656c 8,14
+  s_b35f7b2645bab2::t_c392a4fef155fc 15,17
+  s_dbd7a9e3a440e8::t_9d04f2cae8c199 9,13,23-31,34-40
+  s_dbd7a9e3a440e8::t_9c6df4bedb9aa4 43-44
+  s_0d600cd7e35b12::t_c375734b4b0531 87-93
+organization-server/internal/server/server.go
+  s_676f2dc4ce1b6f::t_49706ef1d9e4f1 9,11,17,41-66,221-224
+  s_63d9b9122e9b73::t_567aa3fa41c7fc 18-19,77-81,83,95,122,143,161,176,196-200,202,215,225,248,270,289,305,321,341-344,346,395-400
+  s_63d9b9122e9b73::t_943f5905ff15fa 401-403
+organization-server/internal/client/cpapi.go
+  s_63d9b9122e9b73::t_567aa3fa41c7fc 15,46-47,50-52,54-55,57-58
+  s_e73db3c55a4b23::t_4cc4f2747a70aa 14
+  s_e73db3c55a4b23::t_e88f026b522a21 18-25,33,35-36,41-45,48,56
+  s_e73db3c55a4b23::t_7396cb2b9edf65 26,34
+organization-server/internal/server/security_test.go
+  s_63d9b9122e9b73::t_7e5205cdd2ad3d 24-25
+  s_b553d87062a40e::t_c39c7793d530bb 23
+  s_63d9b9122e9b73::t_3d0e74e90c1d2d 1-17,19-22,26-32,34-39
+  s_0b1a12e558b711::t_bef670b1c3afd6 18,33
+organization-server/Makefile
+  s_9321c86dd7d462::t_c3154d93859392 37
+organization-server/config/default/deployment_patch.yaml
+  s_e73db3c55a4b23::t_0f0aeb09fcf3d1 1-37
+organization-server/config/default/kustomization.yaml
+  s_e73db3c55a4b23::t_0f0aeb09fcf3d1 39-44
+  s_e73db3c55a4b23::t_7e74425b0d9b9c 45-81
+  s_e73db3c55a4b23::t_fe0988ed27e9c6 36
+rover-server/internal/controller/suite_controller_test.go
+  s_dbd7a9e3a440e8::t_ec2f08d1180529 44-50
+organization-server/internal/controller/controller.go
+  s_b553d87062a40e::t_31684c1b0364cc 251
+  s_b553d87062a40e::t_8fd1f52c122940 250,252-253
+  s_b553d87062a40e::t_1955aa6df45ef7 10
+  s_e272aaa3dc1909::t_e5b82c4fb1f035 14,272
+organization-server/internal/mapper/mapper_test.go
+  s_e272aaa3dc1909::t_d8e1f439275b23 76,99-103,112,133,147-151,160
+rover-server/Makefile
+  s_5f09e98ae8966b::t_2678166480c84f 15
+  s_5f09e98ae8966b::t_b00b76fefa0689 12-13,16,28
+  s_5f09e98ae8966b::t_cf19b6e1426139 14
+organization-server/pkg/log/log.go
+  s_0b1a12e558b711::t_bef670b1c3afd6 13
+  s_e73db3c55a4b23::t_aee807f9f4a079 5,8-11,16,18-21,23-27,29,32-36,38-41
+  s_2f15dd85a25ea6::t_5920b80c3fd522 28,30-31,37
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,12,14-15,17,22,42
+organization-server/internal/server/error_paths_test.go
+  s_676f2dc4ce1b6f::t_5b472ee6e72238 728
+  s_676f2dc4ce1b6f::t_45fa0d8c98fd58 744
+organization-server/internal/server/security.go
+  s_676f2dc4ce1b6f::t_49706ef1d9e4f1 27-28
+  s_b553d87062a40e::t_39fb784d1e8724 41,53-56,58-60,62-64,66
+  s_63d9b9122e9b73::t_567aa3fa41c7fc 5,8-9,11-13,15-17,19-26,29-30,33-37,39-40,42-49
+  s_676f2dc4ce1b6f::t_5b472ee6e72238 18
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,10,14,31-32,38,50-52,57,61,65,67
+organization-server/config/certmanager/kustomization.yaml
+  s_e73db3c55a4b23::t_7e74425b0d9b9c 10-13
+organization-server/internal/mapper/mapper.go
+  s_e272aaa3dc1909::t_e5b82c4fb1f035 37,55,63,81
+rover-server/internal/controller/resources.go
+  s_dbd7a9e3a440e8::t_48d79603de0e8a 47,84,90-93,95-114,117
+  s_dbd7a9e3a440e8::t_eff458eae21904 85-87
+organization-server/config/certmanager/certificate.yaml
+  s_e73db3c55a4b23::t_7e74425b0d9b9c 1-20
+common-server/pkg/server/middleware/security/business_context_test.go
+  s_4897012d77e79e::t_95f8a5d7bdff0c 5,8-9,11,14-23,26-33
+  s_0d600cd7e35b12::t_c375734b4b0531 1-4,6-7,10,12-13,24-25
+organization-server/internal/server/hubs_test.go
+  s_676f2dc4ce1b6f::t_27eeb701981791 156-177
+organization-server/config/ingress/ingress.yaml
+  s_e73db3c55a4b23::t_7e8b676b646cee 22
+organization-server/config/server/server.yaml
+  s_8edae085b89e2c::t_88af7535eb8717 36-39,47,49,54,56,70-72,77-79,94-95,97
+organization-server/go.sum
+  s_b35f7b2645bab2::t_402922375d88e4 47-52,73-76,86-87,105-106,119-120,188-189,210-211,219-222,225-226,243-244,327-328,333-336,346-347,362-363,379-382,385-386,393-394
+rover-server/go.mod
+  s_b35f7b2645bab2::t_5886c2c7224c10 146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1b70cf15b2e36e5e3285e465e9ed7ea5e440e6a3",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_0b1a12e558b711": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_047a2026bffe9qsIiDGvdJwY0z",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_0d600cd7e35b12": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02ec073ecffeJy377MZ0DSRpSk",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_2f15dd85a25ea6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04784f3f6ffecDCI3UZDxgbK19",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_4897012d77e79e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04859cadaffeG7wcSgT6iQ0Min",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_5f09e98ae8966b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03911649effeSWMdV2Jfp0cFdc",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_63d9b9122e9b73": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0482dda0cffezhl67Fl9MphabH",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_676f2dc4ce1b6f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_048154047ffetmnqbEIY5cDEe1",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_7a059221b2c2a6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0476a2911ffekgqmK44YxKm9eV",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8edae085b89e2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04e213eabffeKnrcqLr4ti2vhl",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9321c86dd7d462": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_047d09791ffevZfdTA8nSz7vbm",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b35f7b2645bab2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038109be1ffeiODFUj045bd9bY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b553d87062a40e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0478410ceffeMIRrDLJrsY9kKP",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_dbd7a9e3a440e8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038eec438ffeWi6VazAn2GPNfj",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de19913a88ad4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383318eaffeVURd2olqN1jAVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e272aaa3dc1909": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_047df001fffeAKcnVkyA41YMeG",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e73db3c55a4b23": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d135096ffeUK0s72mYiY1HFW",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  s_6168b13b24d7e0::t_83a2c57d3bac87 99
+  s_6168b13b24d7e0::t_2f71a0ee4e7197 86-88
+api/internal/handler/util/gateway.go
+  h_052be7cb63ce69 16
+  s_6168b13b24d7e0::t_cab9c9c8c32eff 29
+api/internal/handler/util_real_route_test.go
+  s_6168b13b24d7e0::t_dd9614fe973294 1-46,48-60,62-64
+  h_052be7cb63ce69 47,61
+api/internal/handler/util/gateway_test.go
+  s_6168b13b24d7e0::t_8b6c76a63f6516 1-35,37-46
+  h_052be7cb63ce69 36
+docs/docs/user-journey/exposing-apis.mdx
+  h_052be7cb63ce69 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "5e158fc33e8c86f554d90340a8552c7c6a4b4dfc",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_6168b13b24d7e0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fc5a2a2ffeMAZaAQ04gEapFQ",
+        "model": "github-copilot/claude-opus-5.5-long"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

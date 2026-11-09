@@ -1,0 +1,19 @@
+rover-ctl/pkg/parser/parser_test.go
+  s_b84aa52771f500::t_8fa2d567396fb1 328-343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "340f744fc8ac773fa82fb842e9889b229a06e88a",
+  "prompts": {},
+  "sessions": {
+    "s_b84aa52771f500": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e732e99b9ffeFz2Fn03B0lPXeM",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

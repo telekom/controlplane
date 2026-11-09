@@ -1,0 +1,94 @@
+rover-server/go.mod
+  s_913faee9ef0dc1::t_131b424e88c5e1 39
+rover-server/internal/server/mcpspecification_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+docs/docs/architecture/rover.mdx
+  s_b78ca1a587f4d4::t_ce5e964e5f7bc5 91,93,95-98
+  s_eb5e7c92da7d7d::t_9be8d3a0e68c98 87-88,90,92,94,99
+  s_913faee9ef0dc1::t_b81b5db372b06e 89
+rover-server/internal/server/agentspecification_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+common-server/pkg/server/middleware/security/jwt_test.go
+  s_913faee9ef0dc1::t_0e8cf881f5036c 1-18,20-37,39,41-52,54-67,69-72,74-89,91-109,112-113,115-116,130,133,147,149-151,154-160
+  s_b78ca1a587f4d4::t_ce5e964e5f7bc5 19,53,68,73,90,110-111,114,117-129,131-132,134-146,148,152-153
+  s_b78ca1a587f4d4::t_08393cc74ecc1d 38,40
+discovery-server/internal/mapper/apisubscription/failover_test.go
+  s_eb5e7c92da7d7d::t_bcf882e3ca0875 9,12-13,92-93,95,97-100
+rover-server/internal/server/util.go
+  s_eb5e7c92da7d7d::t_6a2c221c79279c 10-11,17-18,23,25,30
+  s_eb5e7c92da7d7d::t_45cf6356645129 39
+  s_913faee9ef0dc1::t_dacb801832535c 13,20,22,24
+  s_b78ca1a587f4d4::t_ce5e964e5f7bc5 12,19,21
+discovery-server/internal/mapper/apisubscription/out.go
+  s_eb5e7c92da7d7d::t_bcf882e3ca0875 12,99-100
+rover-ctl/pkg/handlers/common/info_many_test.go
+  s_eb5e7c92da7d7d::t_714e04d5c1301c 326
+  s_eb5e7c92da7d7d::t_c3d512feb1c23b 268
+  s_eb5e7c92da7d7d::t_a7ed620b1f8182 10-11,269-277,279,282-283,287,290-296,299-303,308-315,317-319,324-325,327-333
+  s_eb5e7c92da7d7d::t_8a148aab6fa807 304-307
+rover-server/internal/server/apispecification_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+rover-ctl/pkg/handlers/common/error.go
+  s_eb5e7c92da7d7d::t_8a148aab6fa807 75-77,79
+  s_eb5e7c92da7d7d::t_73ad379ac62a2f 73-74,78,80-99
+rover-server/internal/server/changelog_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+rover-server/internal/server/resources_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 53
+rover-server/internal/server/filespecification_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+rover-server/internal/controller/rover.go
+  s_eb5e7c92da7d7d::t_839eb1e6c17cf3 238-239,241
+rover-server/internal/server/roadmap_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+rover-server/internal/server/rover_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 32,34,126,128
+rover-server/internal/server/pagination_test.go
+  s_eb5e7c92da7d7d::t_07b1263ab8e5e7 24
+  s_eb5e7c92da7d7d::t_2e12231e29210d 8,12,19,21,23,45
+  s_eb5e7c92da7d7d::t_673d5a60c5a003 14
+  s_913faee9ef0dc1::t_9680dae9b9a9ac 9-11,13,15,20,53,55-64,75-89,91-96,99-108,111-115,118-119,121-136,138,140-149,158-159,161,167-214
+  s_b78ca1a587f4d4::t_ce5e964e5f7bc5 22,46-52,54,65-74,90,97-98,109-110,116-117,150-157,160,162-166
+  s_b78ca1a587f4d4::t_08393cc74ecc1d 137,139
+common-server/pkg/server/middleware/security/jwt.go
+  s_b78ca1a587f4d4::t_ce5e964e5f7bc5 19-24,106-107
+  s_913faee9ef0dc1::t_ff009cb3aa561b 25-27
+  s_b78ca1a587f4d4::t_dd8e9acf2ecfc4 108-109
+rover-server/internal/server/eventspecification_server.go
+  s_913faee9ef0dc1::t_7b37051d9fb908 27,29
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_eb5e7c92da7d7d::t_4bc6416a8b3915 18
+  s_eb5e7c92da7d7d::t_73ad379ac62a2f 457-459,464-465,468-470,474-479,490,494,497-501,506-514
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "75155d47c7af27a52ac0faf1737b6c5df9d6fb91",
+  "prompts": {},
+  "sessions": {
+    "s_913faee9ef0dc1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f36d325ffe0a3eb9EPhkP6i8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b78ca1a587f4d4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f792edbffeXLfNCNPqhgBbQU",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_eb5e7c92da7d7d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f6425edffeXTugmq75awCgmp",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,119 @@
+gateway/internal/features/kgateway/httproute.go
+  s_792150cd37c571::t_438959c1005db9 39
+  s_792150cd37c571::t_148e9cd37a5bb0 78-80,101
+  s_82d826f99ed7e7::t_6925c62d164a29 8-13,16-18,26,29-30,46,48-61,66-70,72-77,81-84,86-97,99-100,102-103,106-107,109,115,119,121-124,131-140,142
+  s_82d826f99ed7e7::t_04ceecd4f1bede 1-7,14-15,19,47,71,85,98,104-105,108,110-114,116-118,120,125-130,141,143
+  s_792150cd37c571::t_a911c798dee300 20-25,27-28,31-38,40-45
+  s_82d826f99ed7e7::t_c8b4879a902add 62-65
+gateway/cmd/kgwdemo/validate.sh
+  s_792150cd37c571::t_b64a3b0d1278d1 36
+  h_0f030e7424553c 44
+  s_792150cd37c571::t_232c86336fe8ad 1-35,37-43,45-119
+gateway/internal/features/kgateway/suite_test.go
+  s_82d826f99ed7e7::t_6d8566a0282d9a 1-17
+gateway/api/v1/gateway_types.go
+  s_82d826f99ed7e7::t_abc5214c5ebb2f 27-28,32-34
+  s_82d826f99ed7e7::t_3b7bdf25105a9a 37-49,57-60
+  s_82d826f99ed7e7::t_2d074c0b2939db 61
+gateway/internal/features/kgateway/factory.go
+  s_82d826f99ed7e7::t_e23d354f4297fd 1-92
+gateway/cmd/main.go
+  s_82d826f99ed7e7::t_6ff1d9bd798b79 55-57
+  s_82d826f99ed7e7::t_8b70d6651dd763 41
+gateway/cmd/xdsdemo/scripts/validate.sh
+  h_0f030e7424553c 37
+gateway/config/rbac/role.yaml
+  s_792150cd37c571::t_e0afaaa7af7a91 13-25,30-224,260-454,458-461
+  s_792150cd37c571::t_52aa728181daed 455-457
+gateway/go.mod
+  s_82d826f99ed7e7::t_60ab4599fd4a8c 49
+  s_82d826f99ed7e7::t_5a33c6d1cfb596 35,51,79-81,83-89
+  s_82d826f99ed7e7::t_e326f9ce6773da 73,76-78,82,93,165,170
+  s_82d826f99ed7e7::t_469c23078eb54c 30,57,64,68-69,92,97,113,146-147,151-153,156
+gateway/internal/features/kgateway/httproute_test.go
+  s_82d826f99ed7e7::t_d87a68d133beb7 1-41,43-56,58-73,75-81
+  s_792150cd37c571::t_3a57e8dbcefb68 42,57,74
+gateway/config/samples/kgateway/kustomization.yaml
+  s_82d826f99ed7e7::t_19eff2b83ed58a 6-7,9
+  s_82d826f99ed7e7::t_fd8262718603f3 24
+  s_82d826f99ed7e7::t_bcc464f25ca135 1-5,8,10-23,25-27
+gateway/internal/features/kgateway/policy.go
+  s_792150cd37c571::t_930496ba44887c 243-264
+  s_792150cd37c571::t_c8fb25aa1c96b3 10
+  s_792150cd37c571::t_cb3e7826482cbc 15
+  s_792150cd37c571::t_089c67d20fa867 1-9,11-14,16-147,171,219-242,265-279
+  s_792150cd37c571::t_8f2d45a7f77a27 149-155,158,166-167,176-184,186-218
+  s_792150cd37c571::t_eac89a617b6086 148,160-162,165,173
+  s_792150cd37c571::t_432e8f6b739375 156-157,159,163-164,168-170,172,174-175,185
+gateway/internal/features/kgateway/client.go
+  s_82d826f99ed7e7::t_7511e76ab6194e 1-6,11-21,23,27,40,43-44,46-48,50-64,67-77,80,83-85
+  s_82d826f99ed7e7::t_8a7c15647ad1ba 28,39
+  s_82d826f99ed7e7::t_9cb09a2050c827 7-10,22,24-26,29-38,41-42,45,49,65-66,78-79,81-82
+gateway/api/v1/zz_generated.deepcopy.go
+  s_82d826f99ed7e7::t_2765100d2bf3ea 585-589,791-802,805
+  s_82d826f99ed7e7::t_4221463e4e0edd 803-804,806
+gateway/internal/features/kgateway/access_control.go
+  s_792150cd37c571::t_cd342b644475fd 1-86
+gateway/internal/features/kgateway/builder.go
+  s_82d826f99ed7e7::t_7ec0573c77204e 1-32,38-41,49-64,78-131,144-190,192,194-207
+  s_792150cd37c571::t_dba8e4f1341c90 132-143
+  s_82d826f99ed7e7::t_c8a8a09d5b17ea 191,193
+  s_792150cd37c571::t_fcd63d8794e89f 33-37,42-48
+  s_792150cd37c571::t_642ade4da4947d 65-77
+gateway/config/samples/kgateway/gateway.yaml
+  s_82d826f99ed7e7::t_c787a3b4ef4fb0 1-15,19-30
+  s_82d826f99ed7e7::t_92e0ff178b77c3 16-18
+gateway/internal/handler/route/handler.go
+  s_792150cd37c571::t_d0cc3099c38661 178-181,187
+  s_82d826f99ed7e7::t_dca06fd7e07dbe 34-36,45-48,50
+  s_82d826f99ed7e7::t_b2b008a86c139f 183-185
+  s_82d826f99ed7e7::t_e9dbf2def34cfd 51,174-177,186
+  s_82d826f99ed7e7::t_081ee9af11e966 49
+  s_82d826f99ed7e7::t_f4c414e67ac692 23
+  s_82d826f99ed7e7::t_e902572a1d8641 65
+  s_82d826f99ed7e7::t_6719a61502556e 159,182
+  s_82d826f99ed7e7::t_9d78340d3c735e 52-53
+gateway/internal/features/kgateway/access_control_test.go
+  s_792150cd37c571::t_87e58f5eaeac65 61,108,110
+  s_792150cd37c571::t_eb7769feaf158f 1-19,21-60,62-107,109,111-120
+  s_792150cd37c571::t_aff68383727fed 20
+gateway/internal/features/kgateway/factory_test.go
+  s_82d826f99ed7e7::t_1c63d8ee46cd69 1-67
+gateway/cmd/kgwdemo/main.go
+  s_82d826f99ed7e7::t_bfc9d82e9eb786 1-19,21-37,40,42-65,68,71-72,74-120
+  h_0f030e7424553c 20,38-39,41,66-67,69-70,73
+gateway/internal/controller/route_controller.go
+  s_82d826f99ed7e7::t_083fb0c05c2f3b 51
+  s_82d826f99ed7e7::t_b32e20cae0ef0f 49-50,52
+gateway/go.sum
+  s_82d826f99ed7e7::t_fefbe46ce90143 6-7,24-25,31-32,42-49,60-61,77-110,131-134,152-153,166-167,201-202,232-233,255-256,285-286,331-334,371-372,377-378,385-386,398-399,452-453,456-457,462-463,468-469
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e172e0767502999a29e1b0766635dd73cc7d0b0c",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_792150cd37c571": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0715be0b7ffe2EUOw9uIlNe2uf",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_82d826f99ed7e7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071b0b140ffeldkdx1BHrkkYHd",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+notification/internal/controller/notificationtemplate_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 53
+  s_54e0bd8dd0e945::t_842ee14263bf10 9
+notification/internal/controller/notificationchannel_controller.go
+  s_54e0bd8dd0e945::t_842ee14263bf10 9
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 51
+notification/internal/controller/notification_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "da6c4c83f372b0bc58ed9742d95cdf83491b1bfd",
+  "prompts": {},
+  "sessions": {
+    "s_54e0bd8dd0e945": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d87057fffeCAJfZTsvIrhkJs",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

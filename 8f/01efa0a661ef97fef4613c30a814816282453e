@@ -1,0 +1,19 @@
+pubsub/internal/controller/subscriber_controller.go
+  s_90013575f7f69e::t_1b955301a88f1c 51,54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8f01efa0a661ef97fef4613c30a814816282453e",
+  "prompts": {},
+  "sessions": {
+    "s_90013575f7f69e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d931035ffeWq0PpajCAGfSsE",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

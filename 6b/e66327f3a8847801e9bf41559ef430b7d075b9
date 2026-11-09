@@ -1,0 +1,16 @@
+gateway/internal/controller/consumeroute_controller.go
+  h_0f030e7424553c 57
+gateway/internal/controller/route_controller.go
+  h_0f030e7424553c 18,54,77-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6be66327f3a8847801e9bf41559ef430b7d075b9",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

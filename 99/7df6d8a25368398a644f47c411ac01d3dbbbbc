@@ -1,0 +1,22 @@
+gateway/test/devloop/devloop.sh
+  s_3225e9897399e9::t_ffa75b05f13428 13,16,26
+  s_3225e9897399e9::t_da2488ebad6357 32
+gateway/test/devloop/docker-compose.yaml
+  s_3225e9897399e9::t_639ecaaec06521 7-17,21,38,40,58-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "997df6d8a25368398a644f47c411ac01d3dbbbbc",
+  "prompts": {},
+  "sessions": {
+    "s_3225e9897399e9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04dc98365ffepOV5r9ohwFdrbn",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

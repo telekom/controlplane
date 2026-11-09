@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-07-30-envoy-devloop-design.md
+  s_8edae085b89e2c::t_f513b4e778329b 1-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "cc5a8de89394e3f95ec395dc0255eb0fe27626a1",
+  "prompts": {},
+  "sessions": {
+    "s_8edae085b89e2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04e213eabffeKnrcqLr4ti2vhl",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

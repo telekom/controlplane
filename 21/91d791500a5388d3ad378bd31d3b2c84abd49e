@@ -1,0 +1,72 @@
+organization-server/internal/server/suite_test.go
+  s_9318644cfdc2d8::t_4f0fac05721a24 1-4,6-13,15,17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2191d791500a5388d3ad378bd31d3b2c84abd49e",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_1557dcd58182f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077572523ffe57fjuKzcyySU52",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_27267cfe644f41": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0773b5133ffewm9aPNfO6I4In4",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_69281849fd426d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077071c3bffel2kT4YlNeAah9x",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_72482c0ee82cc9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_077161f55ffeJJmaOtsq9DYqyP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9318644cfdc2d8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07722da6affeXdRCUU7kk1BJj7",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c98a9407697a75": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_076dbbc1cffeVUYjZNSGlm7cgb",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e7c717da840680": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07704488effeB2tjqGE2N2J0We",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

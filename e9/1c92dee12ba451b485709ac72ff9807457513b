@@ -1,0 +1,20 @@
+permission/internal/controller/permissionset_controller.go
+  s_54e0bd8dd0e945::t_842ee14263bf10 9
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e91c92dee12ba451b485709ac72ff9807457513b",
+  "prompts": {},
+  "sessions": {
+    "s_54e0bd8dd0e945": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d87057fffeCAJfZTsvIrhkJs",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

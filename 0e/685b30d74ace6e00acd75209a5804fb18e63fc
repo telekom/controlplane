@@ -1,0 +1,80 @@
+common-server/README.md
+  s_995d1c2f7e7069::t_c7113fceee73ee 109,111
+  s_4baf296349970b::t_ff95aeabb93876 107-108,110,112
+common-server/pkg/server/config/suite_test.go
+  s_5a17dcaebb7992::t_5e8257e06ccf96 89
+common-server/pkg/server/resource_test.go
+  s_5a17dcaebb7992::t_5e8257e06ccf96 43,45
+common-server/pkg/server/middleware/security/business_context.go
+  s_68e8323d85b4cf::t_f191a2adef3325 145
+  s_4baf296349970b::t_9fab1850e8b7ac 146
+  s_4baf296349970b::t_cc43135f560cd1 197-198,200-201
+  h_0f030e7424553c 20-21,94,104-107
+  s_995d1c2f7e7069::t_c4f8a6326095c5 103
+  s_2d1355b6819d68::t_1d214ad3469230 188-190,192,195-196,199
+  s_68e8323d85b4cf::t_26b78f4d5a201c 191,193-194
+  s_2d1355b6819d68::t_4bd93b39ca2189 143-144
+common-server/pkg/server/middleware/security/check_access_test.go
+  s_5a17dcaebb7992::t_5e8257e06ccf96 100,108,116,124,132,140,149,157,165,173,181,189,198,206,214,233,241,249,257,314,322,330,338,346,354,363,371,379,387,395,404,412,420,439,447,455,463,523,532,540,548,556,565,573,581,600,608,616,624,632,640,689,697,705,713,721,729,738,746,754,762,770,778,787,795,803,822,830,838,846,903,911,919,927,935,943,952,960,968,976,984,992,1000,1009,1017,1025,1044,1052,1060,1068,1089,1160,1250
+common-server/pkg/server/multiport_test.go
+  s_5a17dcaebb7992::t_5e8257e06ccf96 157
+common-server/pkg/server/middleware/security/business_context_test.go
+  s_68e8323d85b4cf::t_f191a2adef3325 108,111-114,117-120,183-186
+  s_5a17dcaebb7992::t_f8170bd69870de 134-156,158,164-167,187-191
+  s_4baf296349970b::t_88067b44fa39f4 41-59,62-66,70-76,83-84,90,93-95,97-106,109-110,121-122,126-131,168-169,175-176,196-197
+  s_4baf296349970b::t_9decca3efddc2f 8,60-61,67-69,77-82,85-89,91-92,96,107,115-116,123-125,132-133,157,159-163,170-174,177-182,192-195
+  s_5a17dcaebb7992::t_78255357229f6d 9-13,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0e685b30d74ace6e00acd75209a5804fb18e63fc",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_2d1355b6819d68": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec63f9abcffef3i26WtI9zg0Wh",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_4baf296349970b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec658b53dffepFVAfuJxmZLwpR",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_5a17dcaebb7992": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec62fe24fffeSZbwm7AnLOPvp5",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_68e8323d85b4cf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec644f624ffeenvyvjbgFcMcST",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_995d1c2f7e7069": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6593facffeaToMaFts2OUa6v",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

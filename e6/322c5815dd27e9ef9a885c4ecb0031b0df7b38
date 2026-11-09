@@ -1,0 +1,36 @@
+common/pkg/controller/controller.go
+  s_f413b749f51e6e::t_bb3dee0cb7fa6c 63,67,81,105,108,110,123,148,151,153,158,214,219,222,227
+common/pkg/errors/ctrlerrors/suite_test.go
+  s_f413b749f51e6e::t_8e06638ab3d4d8 126-128,147-149
+  s_f413b749f51e6e::t_d8c9dbea259d46 15
+  s_f413b749f51e6e::t_6bf4f4e42e89bd 86,88,108-109,137-139,162-163,178-179,191-192,212,214,228-230,239-240
+common/pkg/errors/ctrlerrors/errors.go
+  s_f413b749f51e6e::t_4606cfec91b966 41-43,85
+  s_f413b749f51e6e::t_1a6674d20105ed 46-47,53,62,64-65,67-68,76,79
+  h_0f030e7424553c 78,80
+  s_f413b749f51e6e::t_6bd473e57edf28 74
+  s_f413b749f51e6e::t_14c35d6a42e4b9 58,84,88
+common/pkg/controller/controller_test.go
+  s_f413b749f51e6e::t_ce3410621cec29 164-165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e6322c5815dd27e9ef9a885c4ecb0031b0df7b38",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_f413b749f51e6e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383fcd77ffe5oKQYcOULlSh15",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

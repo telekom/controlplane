@@ -1,0 +1,19 @@
+agentic/config/manager/manager.yaml
+  s_c0bd2682feb08e::t_ad617451a73343 28-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0cc4fe0b6f6d15f05f8049f0dfcd866de85c49e8",
+  "prompts": {},
+  "sessions": {
+    "s_c0bd2682feb08e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f5fd8d968ffe9FL83YNbDmfNs4",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

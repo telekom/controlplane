@@ -1,0 +1,30 @@
+gateway/pkg/kong/client/plugin_discovery.go
+  s_98524124fdfe91::t_6450c60d263670 21-23,198-200,211,213-216,218-222
+  s_98524124fdfe91::t_6098638077cc03 167
+  s_98524124fdfe91::t_977612037ab5ff 212,217
+  s_98524124fdfe91::t_fc430bf6ae713f 223-224
+gateway/pkg/kong/client/plugin_discovery_test.go
+  s_98524124fdfe91::t_014d3d4d1077fa 49,190,210
+  s_98524124fdfe91::t_703dc34674f89e 28-38
+  s_98524124fdfe91::t_8344cfe0e3392c 24,43-48,71,92,183,199-201,217-219,233,245-246,421-422
+  s_98524124fdfe91::t_6c3d29498b4fc5 25-27,82,112,182,198,216,232,244,505
+gateway/pkg/kong/client/legacy_roundtrip_test.go
+  s_98524124fdfe91::t_eeb6cc6bdae652 25,27,47,74,76
+  s_98524124fdfe91::t_a589d4761ed9ae 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b5d2106436e0fe0be336903fe88edac1d968c933",
+  "prompts": {},
+  "sessions": {
+    "s_98524124fdfe91": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e970fd32affeNTi5ItW2JY4Ykb",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

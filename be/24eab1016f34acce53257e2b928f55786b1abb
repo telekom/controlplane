@@ -1,0 +1,29 @@
+rover-ctl/pkg/parser/parser_test.go
+  s_44d7be305325db::t_e13081a818a5af 8,297-301,303-313,315
+  s_44d7be305325db::t_f29d2b99316836 296,302,314,316-317
+  s_44d7be305325db::t_44f6708d426004 318-319
+rover-ctl/pkg/parser/testdata/mcp-spec-with-anchors.yaml
+  s_44d7be305325db::t_e13081a818a5af 1-20
+rover-ctl/pkg/parser/testdata/openapi-spec-with-anchors.yaml
+  s_44d7be305325db::t_e13081a818a5af 1-32
+rover-ctl/pkg/parser/mcpspec_test.go
+  s_44d7be305325db::t_e13081a818a5af 8,57,59-63,65-75,77
+  s_44d7be305325db::t_f29d2b99316836 58,64,76,78-79
+  s_44d7be305325db::t_753379576fff4b 80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "be24eab1016f34acce53257e2b928f55786b1abb",
+  "prompts": {},
+  "sessions": {
+    "s_44d7be305325db": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f367df34cffeRoZtgpsJgTmGUq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    }
+  }
+}

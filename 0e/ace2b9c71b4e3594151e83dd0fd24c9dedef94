@@ -1,0 +1,27 @@
+docs/docs/user-journey/exposing-events.mdx
+  s_0b6c7405db13bb::t_a6b47e82961dba 129
+rover-server/internal/controller/rover_pagination_test.go
+  s_0b6c7405db13bb::t_83f4aa871fdb1a 95-126
+rover-server/internal/controller/rover.go
+  s_0b6c7405db13bb::t_8122efc9ff643d 207-208,272-273
+rover-server/internal/mapper/applicationinfo/out.go
+  s_0b6c7405db13bb::t_8122efc9ff643d 146-150
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_0b6c7405db13bb::t_83f4aa871fdb1a 684,700,702-724
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0eace2b9c71b4e3594151e83dd0fd24c9dedef94",
+  "prompts": {},
+  "sessions": {
+    "s_0b6c7405db13bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e40106540ffeQLbh6pr5FfsJjP",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+agentic/internal/handler/agenticexposure/handler_test.go
+  h_65f5d22af11f8f 530,617-618,627,705-706,714-718,751
+agentic/internal/handler/util/route.go
+  h_65f5d22af11f8f 76-82,195-200,229,232,234,236,238
+api/internal/controller/remoteapisubscription_controller_test.go
+  h_65f5d22af11f8f 361
+api/internal/handler/apiexposure/handler_test.go
+  h_65f5d22af11f8f 401
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  h_65f5d22af11f8f 82-84,97-100
+api/internal/handler/util/route_util.go
+  h_65f5d22af11f8f 275-277,296-300,558-560,578-582
+api/internal/handler/util_proxy_route_test.go
+  h_65f5d22af11f8f 120,136,141
+common/pkg/config/labels.go
+  h_65f5d22af11f8f 8-10
+common/pkg/config/tags.go
+  h_65f5d22af11f8f 1-13
+docs/docs/architecture/gateway.mdx
+  h_65f5d22af11f8f 103,105-107
+gateway/api/v1/route_types.go
+  h_65f5d22af11f8f 82-84,174-177
+gateway/api/v1/zz_generated.deepcopy.go
+  h_65f5d22af11f8f 884-888
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  h_65f5d22af11f8f 45-50
+gateway/pkg/kong/client/route.go
+  h_65f5d22af11f8f 11,50,61
+gateway/pkg/kong/client/route_test.go
+  h_65f5d22af11f8f 78-81,89,97-101,104-106,108,123-125,128-137
+gateway/pkg/kong/client/types.go
+  h_65f5d22af11f8f 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "435190dc9d524858b26d8337f0820bc2b522f4a6",
+  "prompts": {},
+  "humans": {
+    "h_65f5d22af11f8f": {
+      "author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

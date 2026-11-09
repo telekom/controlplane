@@ -1,0 +1,94 @@
+admin/api/v1/zone_types_test.go
+  s_8db400224f3da6::t_ffee72dc587c63 81-102,115-122,135-137
+  s_c544d9a64e8a49::t_e68d3a6f90b2c6 123-134
+  s_8db400224f3da6::t_b8298a05910efe 103-114
+application/internal/controller/application_controller_test.go
+  s_7a2f8b249b965f::t_1a84be4eeb1957 310-320
+  s_7a2f8b249b965f::t_d3603d95dfaf5c 54,58-63,81-85,107-110,122-126,145,166-170,253,262,329
+application/internal/handler/application/handler_test.go
+  s_c544d9a64e8a49::t_80e6774fd077f5 314
+  s_7a2f8b249b965f::t_4bc2467998b3d5 656-690,696,698-707,710,712-715,718-719,721-723,726,729-735,757-776,788
+  s_c544d9a64e8a49::t_f8010552b87307 205,207-214,225-261,295,316,318,320-324,332-340
+  s_c544d9a64e8a49::t_e68d3a6f90b2c6 296-313,315,317,319,325-331,341-373
+  s_924f6c51e6271b::t_9737ca8935ba04 374,736-755
+  s_924f6c51e6271b::t_961dafd28ca476 375-376
+application/internal/handler/application/handler.go
+  s_8ad24bc576fc3f::t_1a73b7fb710bea 121,155,216,231
+  s_c544d9a64e8a49::t_06d86936b9ecc9 10-12,58-62,64-74,119-120,122-144,179-184
+  s_c544d9a64e8a49::t_8254a531edfbef 63
+  s_7a2f8b249b965f::t_a020cfcb2f90e0 217-226,232-236,444,453-457
+  s_c544d9a64e8a49::t_ef8679a7c27107 29,167-169,171-177
+  s_7a2f8b249b965f::t_5b7abbea3d0350 511-514,516
+  s_7a2f8b249b965f::t_1a84be4eeb1957 515
+admin/internal/webhook/v1/zone_validator.go
+  s_8ad24bc576fc3f::t_1a73b7fb710bea 100
+  s_848484e56d27f7::t_49789c7abb703f 74,77,81,101-110
+  s_848484e56d27f7::t_0177e07332b871 111
+admin/api/v1/zone_types.go
+  s_8db400224f3da6::t_c133097537e2de 10
+  s_c544d9a64e8a49::t_ef8679a7c27107 8,22-23,514
+  s_8db400224f3da6::t_7bc701741f902e 448-457,462,464-465,469,488-490,493,498-513,515-524,526-536,540
+  s_8ad24bc576fc3f::t_1a73b7fb710bea 491-492,525
+  s_8db400224f3da6::t_a5e0a7585cdc47 427,442-446,494
+  s_8db400224f3da6::t_473ff1ace705c4 495-497
+admin/internal/webhook/v1/zone_validator_test.go
+  s_848484e56d27f7::t_1aef02f4eb1e76 135,138-142,147-150,154-165
+  s_848484e56d27f7::t_f49c7c48f9c0e3 115-134,143-146,151-153,166-167
+  s_848484e56d27f7::t_e877fb2a07a4e1 9,136-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a31fa7d4d0d7acdf1ed300a7ab3fdec0399997f6",
+  "prompts": {},
+  "sessions": {
+    "s_7a2f8b249b965f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9d97a107ffe0cKyj5S8yOsX7T",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    },
+    "s_848484e56d27f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9db044ebffesTIwKrTZpIrdVP",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    },
+    "s_8ad24bc576fc3f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9e1278d5ffesrlsGICgseF1XF",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8db400224f3da6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9dbb3643ffe820sYnAc9wc4Kb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    },
+    "s_924f6c51e6271b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9d936053ffeBRVbqz6P07U056",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": null
+    },
+    "s_c544d9a64e8a49": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9da56920ffeYTe1M3fAiQCpFK",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    }
+  }
+}

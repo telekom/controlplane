@@ -1,0 +1,31 @@
+approval/internal/handler/util/notification.go
+  s_3bfd94cdbe6641::t_b328e4fe2a42ca 110-112
+api/internal/handler/apisubscription/handler.go
+  s_3bfd94cdbe6641::t_0f94296b14e68a 118-120
+approval/internal/controller/approval_controller_test.go
+  s_3bfd94cdbe6641::t_9f1572f6b12902 75-78
+event/internal/handler/eventsubscription/handler.go
+  s_3bfd94cdbe6641::t_2721ab9d56eb14 167-170
+agentic/internal/handler/mcpsubscription/handler.go
+  s_3bfd94cdbe6641::t_5581f2ef67942d 127-129
+approval/internal/handler/util/notification_test.go
+  s_3bfd94cdbe6641::t_de72a64b77081b 31-35
+  s_3bfd94cdbe6641::t_ce1a87e4a23ab4 209-210
+  s_3bfd94cdbe6641::t_baa6201f28078a 132-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "85826f71a5f0cd1c6663da3d7ff0237153b3aec2",
+  "prompts": {},
+  "sessions": {
+    "s_3bfd94cdbe6641": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07bbcec02ffeZ3K4ZbsqHf2daL",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

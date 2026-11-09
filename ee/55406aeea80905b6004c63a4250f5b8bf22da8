@@ -1,0 +1,309 @@
+gateway/internal/features/kong/feature/basic_auth_test.go
+  s_20a906234becd1::t_b577fd05845201 1-15,17-27,29-33,35-459
+  s_20a906234becd1::t_3d1d7f98c767fa 28,34
+  s_20a906234becd1::t_717c56d94e142e 16
+gateway/internal/features/kong/feature/load_balancing.go
+  s_20a906234becd1::t_b577fd05845201 1-102
+gateway/internal/handler/route/handler_test.go
+  s_20a906234becd1::t_0b4d4183b5be28 25,40,48,77,85-87,222
+gateway/internal/features/kong/feature/custom_scopes.go
+  s_20a906234becd1::t_b577fd05845201 1-82
+gateway/internal/features/kong/feature/passthrough.go
+  s_20a906234becd1::t_b577fd05845201 1-48
+gateway/internal/features/kong/feature/header_transformation.go
+  s_20a906234becd1::t_b577fd05845201 1-64
+gateway/internal/features/kong/feature/circuit_breaker.go
+  s_20a906234becd1::t_b577fd05845201 1-195
+gateway/internal/features/envoy/builder.go
+  s_637f39fc773d0d::t_75e4c167c7b7c9 10,12
+  s_637f39fc773d0d::t_81bafa5d2bc422 53-60
+  h_0f030e7424553c 1-4,132
+  s_637f39fc773d0d::t_17296dd9cc7374 31-34
+  s_637f39fc773d0d::t_1386294aebbc34 122
+  s_41b762a2b9bdc3::t_399c5ba87ea4e8 11,13-30,35,37-51,61-92,96-121,123-131,133,135-149
+  s_637f39fc773d0d::t_4b05deb1628882 93-95
+  s_41b762a2b9bdc3::t_61d383464068a1 36
+  s_41b762a2b9bdc3::t_9c06019a53d66e 134
+gateway/internal/features/kong/feature/dynamic_upstream_test.go
+  s_20a906234becd1::t_3d1d7f98c767fa 25,31
+  s_20a906234becd1::t_717c56d94e142e 15
+  s_20a906234becd1::t_b577fd05845201 1-14,16-24,26-30,32-220
+gateway/internal/features/kong/suite_test.go
+  s_20a906234becd1::t_9536e4a51dbb2e 1-17
+gateway/internal/features/envoy/feature/access_control.go
+  h_0f030e7424553c 1-8,11,22-23,32,42-48,55,57-64,73-74,82,232
+  s_637f39fc773d0d::t_c61ae94de294f2 9-10,12-21,24-31,33-41,49-54,56,65-72,75-81,83-231
+gateway/internal/features/kong/builder.go
+  h_0f030e7424553c 5,12,16-17,19,45,52,62,66,213,216,255,266,269,296
+gateway/go.mod
+  s_8d95d61ebd8e7a::t_ff92c394fcf89e 61
+  s_8d95d61ebd8e7a::t_58d9a5a2d519fe 29-30,39-40
+  s_8d95d61ebd8e7a::t_5b0c2fa48e42ad 57,62,100
+gateway/internal/controller/route_controller.go
+  s_8d95d61ebd8e7a::t_c9bc2f05318cc1 23
+  s_8d95d61ebd8e7a::t_64f3c507c23a31 52
+  s_8d95d61ebd8e7a::t_d7b496b3f3002a 33-36
+gateway/internal/features/envoy/builder_test.go
+  s_41b762a2b9bdc3::t_c71950ef0cd945 1-10,13-148,152-166,168-175
+  s_41b762a2b9bdc3::t_ef55518b472cab 149-151,167
+  s_41b762a2b9bdc3::t_c396eec7a1cfbe 11-12
+gateway/internal/features/kong/feature/priority_test.go
+  s_20a906234becd1::t_717c56d94e142e 14
+  s_20a906234becd1::t_b577fd05845201 1-13,15-139
+gateway/internal/features/kong/feature/util.go
+  s_20a906234becd1::t_b577fd05845201 1-29
+gateway/internal/handler/route/handler.go
+  h_0f030e7424553c 21,147,150-156,162
+  s_8d95d61ebd8e7a::t_4aa0f5c991f0a3 33-38,43
+  s_8d95d61ebd8e7a::t_617c1b79cb79ff 137,148
+  s_637f39fc773d0d::t_93aacda127b115 22
+  s_637f39fc773d0d::t_2b3b30539ce9c3 149
+  s_20a906234becd1::t_2764fd8ae51cb3 23-24
+gateway/internal/features/envoy/routing.go
+  s_41b762a2b9bdc3::t_c80dd97dfdb800 1-41,43-46,48-59,63-67,75-86,88-180
+  s_637f39fc773d0d::t_330d0a19231b39 60-62,68-74,87
+  s_637f39fc773d0d::t_f8ffa5aa5f9f40 42,47
+gateway/internal/features/kong/feature/iprestriction_test.go
+  s_20a906234becd1::t_717c56d94e142e 15
+  s_20a906234becd1::t_b577fd05845201 1-14,16-24,26-30,32-180
+  s_20a906234becd1::t_3d1d7f98c767fa 25,31
+gateway/tools/mockery.yaml
+  h_0f030e7424553c 8
+  s_20a906234becd1::t_9a89cbc4ae9078 29
+gateway/internal/features/util.go
+  h_0f030e7424553c 5-25
+  s_a6465d68ce301b::t_1437cf023aa1da 1-4
+gateway/internal/features/kong/feature/ratelimit.go
+  s_20a906234becd1::t_b577fd05845201 1-158
+gateway/internal/features/kong/feature/suite_test.go
+  s_20a906234becd1::t_b577fd05845201 1-17
+.opencode/skills/gateway-expert/SKILL.md
+  s_ff715b59fa35d7::t_9c064db19f1794 44-92
+  s_ff715b59fa35d7::t_4d1a0afde89a4c 32
+  s_ff715b59fa35d7::t_3e417624bf0131 123
+  s_ff715b59fa35d7::t_6007383c0ef893 102-103
+  s_ff715b59fa35d7::t_80bf20cb232854 131
+  s_ff715b59fa35d7::t_04d362058fa4f8 29-31
+  s_ff715b59fa35d7::t_5337e8ff0df988 33-35,41-43
+  s_ff715b59fa35d7::t_8966d7a32e7b2e 93-95,99-101
+  s_ff715b59fa35d7::t_d8d4934cf0f387 104-106,120-122
+  s_ff715b59fa35d7::t_e309ca9f550c10 124-126,128-130
+  s_ff715b59fa35d7::t_ffa0f45068f7e2 132-134
+gateway/internal/features/kong/feature/access_control_test.go
+  s_20a906234becd1::t_3d1d7f98c767fa 27,33
+  s_20a906234becd1::t_717c56d94e142e 16
+  s_20a906234becd1::t_b577fd05845201 1-15,17-26,28-32,34-292
+gateway/internal/features/kong/feature/ratelimit_test.go
+  s_20a906234becd1::t_717c56d94e142e 17
+  s_20a906234becd1::t_3d1d7f98c767fa 29,35
+  s_20a906234becd1::t_b577fd05845201 1-16,18-28,30-34,36-550
+gateway/internal/features/kong/feature/load_balancing_test.go
+  s_20a906234becd1::t_717c56d94e142e 16
+  s_20a906234becd1::t_3d1d7f98c767fa 27,33
+  s_20a906234becd1::t_b577fd05845201 1-15,17-26,28-32,34-218
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_gateways.yaml
+  s_b4e15da0e312b8::t_81aac93cc00304 66
+  s_b4e15da0e312b8::t_e528923811a548 65
+  s_b4e15da0e312b8::t_e885af829caa62 67-69
+gateway/internal/features/kong/feature/iprestriction.go
+  s_20a906234becd1::t_b577fd05845201 1-59
+gateway/internal/handler/consumer/handler.go
+  s_f993ae5da250ac::t_63f8de75bc871e 27-36,38,40-42
+  s_f993ae5da250ac::t_bcc3645ceb63bb 37,39
+  s_20a906234becd1::t_7f49ed69551eab 16-17
+  s_f993ae5da250ac::t_37edcbf69c6556 64-68,82
+  s_20a906234becd1::t_41e232e7491518 89
+gateway/internal/features/kong/feature/last_mile_security_test.go
+  s_20a906234becd1::t_717c56d94e142e 17
+  s_20a906234becd1::t_b577fd05845201 1-16,18-27,29-33,35-275
+  s_20a906234becd1::t_3d1d7f98c767fa 28,34
+gateway/internal/features/errors.go
+  h_0f030e7424553c 6-12
+  s_a6465d68ce301b::t_d7f0a094bf89fe 1-5
+gateway/internal/features/envoy/nodehash.go
+  s_8d95d61ebd8e7a::t_569ddbf3c47c9b 1-7,10-54
+  s_8d95d61ebd8e7a::t_1ed38d3147f6f7 8-9
+  s_8d95d61ebd8e7a::t_47c3919aa6b03f 55-60
+gateway/internal/features/kong/feature/circuit_breaker_test.go
+  s_20a906234becd1::t_3d1d7f98c767fa 30,36
+  s_20a906234becd1::t_717c56d94e142e 18
+  s_20a906234becd1::t_b577fd05845201 1-17,19-29,31-35,37-310
+gateway/internal/features/envoy/suite_test.go
+  s_8d95d61ebd8e7a::t_f334d4eeeaa874 1-17
+gateway/internal/features/envoy/xds_test.go
+  s_8d95d61ebd8e7a::t_144382c3c6eb08 12
+  s_8d95d61ebd8e7a::t_ab6807e03c26b5 1-11,13-38,40-52,54-75
+  s_8d95d61ebd8e7a::t_c90dd94d72de7e 39,53
+gateway/internal/features/envoy/README.md
+  s_480b01aa2ebbb1::t_953c600e09c807 132-133
+  s_480b01aa2ebbb1::t_73252a100e8f43 158-159
+  s_480b01aa2ebbb1::t_caa3ac17a80e34 9-11,13-15,17,19,23,25-26,29-32,34,36,38-39,41-51,53-55,59,64-69,71-89,93-131,134-153,155-157,161-164,166-167,169-198,200,202-203,205-207
+  s_8d95d61ebd8e7a::t_9c69f3bb48a5c9 91
+  s_8d95d61ebd8e7a::t_d8ac7ab7b177b9 7-8,12,16,18,20-22,24,27-28,33,35,37,40,52
+  s_8d95d61ebd8e7a::t_fd6f6f309e6bce 56,92,154,160,165,168,199,201,204
+  s_8d95d61ebd8e7a::t_bf1b80a66617ba 57-58,60-63,70,90
+  s_8d95d61ebd8e7a::t_8dde23e1847015 4-6
+gateway/internal/features/kong/feature/claims_test.go
+  s_20a906234becd1::t_3d1d7f98c767fa 25,31
+  s_20a906234becd1::t_717c56d94e142e 15
+  s_20a906234becd1::t_b577fd05845201 1-14,16-24,26-30,32-368
+.opencode/agent/kgateway-expert/kgateway-expert.md
+  h_0f030e7424553c 1,6-34
+gateway/internal/features/kong/feature/external_idp_test.go
+  s_20a906234becd1::t_3d1d7f98c767fa 28,34
+  s_20a906234becd1::t_717c56d94e142e 16
+  s_20a906234becd1::t_b577fd05845201 1-15,17-27,29-33,35-1010
+gateway/internal/features/kong/feature/last_mile_security.go
+  s_20a906234becd1::t_b577fd05845201 1-107
+gateway/internal/features/kong/feature/external_idp.go
+  s_20a906234becd1::t_b577fd05845201 1-211
+gateway/internal/handler/consumer/handler_test.go
+  s_20a906234becd1::t_0b4d4183b5be28 25,40,48,81-83,138
+gateway/internal/features/envoy/access_control_test.go
+  s_637f39fc773d0d::t_2862ff934de423 1-181
+gateway/cmd/main.go
+  s_8d95d61ebd8e7a::t_a0eaa3d8d669f3 52,57
+  s_8d95d61ebd8e7a::t_cbfb0d292660c8 180-181,183-186
+  s_8d95d61ebd8e7a::t_711a4d5f6486a8 145-148,157-159
+  s_8d95d61ebd8e7a::t_def03a47539933 29
+  s_8d95d61ebd8e7a::t_192d50284e8886 182
+gateway/internal/features/interfaces.go
+  s_637f39fc773d0d::t_d4b0ffdeb7bf31 10-11
+  h_0f030e7424553c 69-75,82
+  s_637f39fc773d0d::t_b824777dbc2a8f 76-81
+  s_637f39fc773d0d::t_8a520485c286e7 7-9
+gateway/api/v1/gateway_types.go
+  h_0f030e7424553c 27-31,34-38
+gateway/internal/features/kong/feature/basic_auth.go
+  h_0f030e7424553c 1-113
+gateway/internal/features/kong/feature/header_transformation_test.go
+  s_20a906234becd1::t_717c56d94e142e 15
+  s_20a906234becd1::t_b577fd05845201 1-14,16-24,26-30,32-180
+  s_20a906234becd1::t_3d1d7f98c767fa 25,31
+.opencode/skills/implement-envoy/SKILL.md
+  s_ff715b59fa35d7::t_23d7f68bcb4db3 7-195
+  s_ff715b59fa35d7::t_a3768cb5c5a5f6 4-6
+gateway/internal/features/kong/feature/failover_test.go
+  s_20a906234becd1::t_b577fd05845201 1-16,18-27,29-33,35-468
+  s_20a906234becd1::t_717c56d94e142e 17
+  s_20a906234becd1::t_3d1d7f98c767fa 28,34
+gateway/internal/features/kong/feature/passthrough_test.go
+  s_20a906234becd1::t_b577fd05845201 1-15,17-25,27-31,33-149
+  s_20a906234becd1::t_717c56d94e142e 16
+  s_20a906234becd1::t_3d1d7f98c767fa 26,32
+gateway/internal/features/envoy/server.go
+  s_8d95d61ebd8e7a::t_f9e4da3666ce77 1-8,11,16,18-22,25-27,30,35,38-44,48-56,60,101
+  s_8d95d61ebd8e7a::t_b0f048550fe073 9-10,12-15,17,23-24,28-29,31-34,36-37,45-47,57-59,61-100
+gateway/internal/features/envoy/xds.go
+  s_8d95d61ebd8e7a::t_7eae546240c93b 1,9-12,15,18-22,25-27,32,35,37-40,42-162
+  h_0f030e7424553c 2-8,13-14,16-17,23-24,28-31,33-34,36,41,163
+gateway/internal/features/kong/feature/custom_scopes_test.go
+  s_20a906234becd1::t_717c56d94e142e 15
+  s_20a906234becd1::t_3d1d7f98c767fa 25,31
+  s_20a906234becd1::t_b577fd05845201 1-14,16-24,26-30,32-300
+gateway/internal/features/kong/feature/access_control.go
+  s_20a906234becd1::t_b577fd05845201 1-78
+gateway/internal/features/kong/feature/failover.go
+  s_20a906234becd1::t_b577fd05845201 1-126
+gateway/internal/features/kong/feature/dynamic_upstream.go
+  s_20a906234becd1::t_b577fd05845201 1-80
+gateway/internal/features/kong/builder_test.go
+  h_0f030e7424553c 1-852
+gateway/internal/features/kong/feature/claims.go
+  s_20a906234becd1::t_b577fd05845201 1-97
+gateway/go.sum
+  s_8d95d61ebd8e7a::t_90158bd0ababfd 24-25,40-47,209-210
+gateway/internal/features/mock/mock_Feature.go
+  s_a6465d68ce301b::t_b394c4c318cf88 1,19,23,27-28,32,40,50,56-58,61,63,68,73,79,87,97,103-105,108,110,115,120,126,144,149-150,153,160,165,171,189,194-195,198,205,210,217,220-221
+gateway/internal/features/mock/mock_KongFeatureBuilder.go
+  s_a6465d68ce301b::t_f6f392fe4777e0 1,23-24,28,32-33,37,56-57,62-63,66,73,78,84,94-95,101-102,106,119,124,130,147-148,154-155,158,165,170,176,193-194,200-201,204,211,216,222,226-227,232-234,237,239,244,249,255,274-275,280-281,284,291,296,302,331-332,337-338,341,348,353,359,378-379,384-385,388,395,400,406,425-426,431-432,435,442,447,453,482-483,488-489,492,499,504,510,529-530,535-536,539,546,551,557,576-577,582-583,586,593,598,604,623-624,629-630,633,640,645,651,670-671,677-678,681,688,693,699,718-719,724-725,728,735,740,746,765-766,771-772,775,782,787,793,812-813,818-819,822,829,834,840,844-845,851-852,855,862,867,872,874,877-878
+gateway/pkg/kong/client/mock/mock_KongAdminApi.go
+  s_a6465d68ce301b::t_bdcae9cf820d63 1
+gateway/pkg/kong/client/mock/mock_KongClient.go
+  s_a6465d68ce301b::t_3a3908a5f47540 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ee55406aeea80905b6004c63a4250f5b8bf22da8",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_20a906234becd1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06d111ec7ffeBJWXYLRxuUU9Z5",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_41b762a2b9bdc3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c3a1f29ffe5P6xp7BdZYWap4",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_480b01aa2ebbb1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06bedf866ffeZBJZ0xquv67wnK",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_637f39fc773d0d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c006a7dffe0Ra6gQArZ5nFZ3",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8d95d61ebd8e7a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c9f5466ffe0cUesnXHQPUIxm",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a6465d68ce301b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_080c1fb33ffePDyVn1GTDKrgr7",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b4e15da0e312b8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06cb86ccfffei31M3075dMoQrz",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f993ae5da250ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06be87904ffeBehWKT1C7Oz0rg",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ff715b59fa35d7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_06c10b311ffeepNJVjyPumHYT0",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

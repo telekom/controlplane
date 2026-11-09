@@ -1,0 +1,33 @@
+rover/internal/handler/eventspecification/suite_test.go
+  s_a3abd0207a7935::t_879d12b0a85c8f 1-17
+rover/internal/handler/eventspecification/handler_test.go
+  s_a3abd0207a7935::t_455213ac86445b 1-54
+rover/internal/handler/eventspecification/handler.go
+  s_b69bea8bef9895::t_8e5db2ec2c4063 71
+  s_b69bea8bef9895::t_c1c645c9d96a66 66-67,70,73
+  s_a3abd0207a7935::t_65972100ea1f72 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3481e4a1b546224840eb50da2a06dc58b6892cb0",
+  "prompts": {},
+  "sessions": {
+    "s_a3abd0207a7935": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec099c2d9ffew6482QMpDRP42W",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b69bea8bef9895": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec09165b1ffezqnqsnnO8pnIRx",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+rover-ctl/pkg/commands/base/file.go
+  s_b39fe6fddaa01a::t_14ef3c26a4f776 16-17,33,54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9c81b47f874eec4155d23f5d5cc47f37966d104e",
+  "prompts": {},
+  "sessions": {
+    "s_b39fe6fddaa01a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7355dc79ffeq6znk9ojI07kPW",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

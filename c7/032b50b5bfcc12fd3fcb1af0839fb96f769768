@@ -1,0 +1,47 @@
+common/pkg/controller/statusless_test.go
+  s_776868ed5c1fcc::t_3f9af861abb5b1 32-33,36-44
+  s_776868ed5c1fcc::t_8aecfc809bd0aa 28-30,54-60
+  s_776868ed5c1fcc::t_77315d1c6b6f68 13-15
+  s_776868ed5c1fcc::t_00c5fa4c208762 1-7,11-12,19-27,31,45-47,49-53,61,63-66
+  s_776868ed5c1fcc::t_2da5cb6a265883 34-35
+  s_776868ed5c1fcc::t_b2fa9bb9bdc3bf 8-10
+  s_776868ed5c1fcc::t_3bf4eed3d5198d 16-18,48,62
+common/pkg/controller/controller_test.go
+  s_776868ed5c1fcc::t_79ddf873b96536 10,19,165-176,185,193-194,198
+  s_776868ed5c1fcc::t_58ecfa81577f19 178,180-183,188,196
+  s_776868ed5c1fcc::t_860bd4181765e7 190-191
+  s_776868ed5c1fcc::t_687ea7c275fbd4 186
+  s_776868ed5c1fcc::t_05d0562ea805d3 201-228
+  s_776868ed5c1fcc::t_2706a1accae40b 164,177,179,184,187,189,192,195,197,199-200,229
+  s_776868ed5c1fcc::t_c334526a6d0453 17
+  s_776868ed5c1fcc::t_6336abc9bf0527 16
+  s_776868ed5c1fcc::t_b11734655192b1 230
+"common/pkg/test/deepcopy_test .go"
+  s_776868ed5c1fcc::t_230e14f92c45d5 17,21-24
+  s_776868ed5c1fcc::t_f548ebb14ba628 7-10
+common/pkg/controller/controller.go
+  s_776868ed5c1fcc::t_ab28f7fcca8ab9 11,148
+  s_776868ed5c1fcc::t_762aeb46d70c8a 67,143,157
+  s_776868ed5c1fcc::t_de25496770e0f6 137,140,144-145,147,155-156,158-162
+  s_776868ed5c1fcc::t_0420dbebff0d2f 138-139,141-142
+  s_776868ed5c1fcc::t_88d202940591b3 146
+  s_776868ed5c1fcc::t_d7bfaa9e968daf 151
+  s_776868ed5c1fcc::t_eef95053e6a2d1 9,109,123,149-150,152-154,163
+  s_776868ed5c1fcc::t_9d311a9af24fdc 164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c7032b50b5bfcc12fd3fcb1af0839fb96f769768",
+  "prompts": {},
+  "sessions": {
+    "s_776868ed5c1fcc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03439a832ffedIWSUzsW3LPPZh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

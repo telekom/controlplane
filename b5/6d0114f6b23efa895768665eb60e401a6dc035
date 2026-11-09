@@ -1,0 +1,32 @@
+rover/internal/controller/apispecification_controller.go
+  s_54e0bd8dd0e945::t_842ee14263bf10 9
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 54
+rover/internal/controller/apichangelog_controller.go
+  s_54e0bd8dd0e945::t_842ee14263bf10 10
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 46
+rover/internal/controller/mcpspecification_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 48
+  s_54e0bd8dd0e945::t_842ee14263bf10 10
+rover/internal/controller/roadmap_controller.go
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 49
+  s_54e0bd8dd0e945::t_842ee14263bf10 10
+rover/internal/controller/eventspecification_controller.go
+  s_54e0bd8dd0e945::t_842ee14263bf10 10
+  s_54e0bd8dd0e945::t_4bb230411b2d8b 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b56d0114f6b23efa895768665eb60e401a6dc035",
+  "prompts": {},
+  "sessions": {
+    "s_54e0bd8dd0e945": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d87057fffeCAJfZTsvIrhkJs",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

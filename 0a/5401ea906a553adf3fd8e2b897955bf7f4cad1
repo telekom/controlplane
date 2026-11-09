@@ -1,0 +1,38 @@
+rover-ctl/pkg/parser/agentspec_test.go
+  s_b10032415cd490::t_871d5d15e1cebc 1-105
+rover-ctl/pkg/parser/testdata/agent-spec.yaml
+  s_b10032415cd490::t_871d5d15e1cebc 1-55
+rover-ctl/pkg/parser/custom.go
+  s_b10032415cd490::t_4bd98daff2072e 30-31
+  h_0f030e7424553c 7,29,32,36
+  s_426f1485ea82bf::t_0b739c5d3e2f5d 33-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0a5401ea906a553adf3fd8e2b897955bf7f4cad1",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_426f1485ea82bf": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a46052ea-5d41-4a26-b0eb-2aa6766f0a7c",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b10032415cd490": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f381cbb82ffeAo1eKgoqGlbzgf",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

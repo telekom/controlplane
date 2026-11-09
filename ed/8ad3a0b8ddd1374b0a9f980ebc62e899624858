@@ -1,0 +1,74 @@
+common-server/pkg/problems/suite_test.go
+  s_1c7f61d309d731::t_74ac14901554e2 135,141,143-144,151,153-156,158-162
+  s_1c7f61d309d731::t_46c4eb48d07d75 10,16
+  s_1c7f61d309d731::t_3e861cc39c92f8 145,147-150
+  s_b0c8d90952d656::t_c6586773ed9745 136-140,142,146,152
+common-server/pkg/server/error.go
+  s_0969157c1400c3::t_f88f841d413c78 61,64-73
+  s_0969157c1400c3::t_e638cc2058588c 47
+  s_b0c8d90952d656::t_c6586773ed9745 28
+  s_0969157c1400c3::t_76ccbd954687c1 29,34
+  s_0969157c1400c3::t_b2066edae729a6 74
+common-server/pkg/server/error_test.go
+  s_1c7f61d309d731::t_a1ca1dce300064 13
+  s_1c7f61d309d731::t_1f124049dca5fd 28,113-119,143,151-152,157,160-167,169-170,183,208,217,233
+  s_1c7f61d309d731::t_a0642500d54c5b 180
+  s_1c7f61d309d731::t_5f1fd7b5fef421 9,17-19,23,105-112,120-139,141-142,144-149,173-179,181-182,184-189,194,197,211,213,219,223-228,245,255,259,267,277,281,288
+  s_1c7f61d309d731::t_743d1cde99aff8 150
+  s_0969157c1400c3::t_b9887e0c7a7ff7 26-27
+  s_0969157c1400c3::t_77068a28033304 264
+  s_b0c8d90952d656::t_c6586773ed9745 15,153-156,158-159,168,171-172
+  s_1c7f61d309d731::t_ecd61e5e8f8453 140
+  s_1c7f61d309d731::t_58c80315af75d6 8
+  s_1c7f61d309d731::t_205b36e04cf9c8 10
+  s_1c7f61d309d731::t_1d420136c34a2a 190-193
+  s_1c7f61d309d731::t_a283518eb3fa6c 195-196
+  s_1c7f61d309d731::t_fe8cc028f97803 198-200,205-207
+  s_1c7f61d309d731::t_085ddafdcb8d3f 209-210
+  s_1c7f61d309d731::t_5f0a295800d246 212
+  s_1c7f61d309d731::t_4d5494480df6e1 214-216
+  s_1c7f61d309d731::t_3d88b773d3febb 218
+  s_1c7f61d309d731::t_29be8e5fe936f0 220-222
+  s_1c7f61d309d731::t_3cec90737d93c9 229-232
+  s_1c7f61d309d731::t_7e081488cf921a 234-236,242-244
+  s_1c7f61d309d731::t_ec7489b3f8767e 246-248,252-254
+  s_1c7f61d309d731::t_11d0e8464a3e40 256-258
+  s_1c7f61d309d731::t_2bbce3b09d434b 268-270,274-276
+  s_1c7f61d309d731::t_eabff6c30eecb2 278-280
+  s_1c7f61d309d731::t_97d2e02195a0f7 282-287
+  s_1c7f61d309d731::t_c668f7be0baf02 289
+common-server/pkg/problems/problem.go
+  s_b0c8d90952d656::t_c6586773ed9745 43-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ed8ad3a0b8ddd1374b0a9f980ebc62e899624858",
+  "prompts": {},
+  "sessions": {
+    "s_0969157c1400c3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0add305ffezqWI9tTSuEoEP4",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_1c7f61d309d731": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0dd3787ffeFHZCyveCakyiBR",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    },
+    "s_b0c8d90952d656": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0dd856cffe5FOPgJsOf12U6B",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    }
+  }
+}

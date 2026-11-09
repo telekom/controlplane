@@ -1,0 +1,37 @@
+agentic/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 228-229
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 233
+  s_776868ed5c1fcc::t_a845d8952d1748 9,230-232
+AGENTS.md
+  s_776868ed5c1fcc::t_36cdc911b1d5e5 64
+api/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 295-296,328-329
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 333
+  s_776868ed5c1fcc::t_9af16c9861e180 10
+  s_776868ed5c1fcc::t_dbf64289504852 297-299,330-332
+  s_776868ed5c1fcc::t_07da872214f2b9 300
+event/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 220-221,269,343-344
+  s_776868ed5c1fcc::t_03b3c3684b21ae 222-225
+  s_776868ed5c1fcc::t_dbf64289504852 270-272
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 348
+  s_776868ed5c1fcc::t_5a66306fd82884 10
+  s_776868ed5c1fcc::t_a845d8952d1748 345-347
+  s_776868ed5c1fcc::t_6e37f6b60b6a84 273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ce08ba60b90a5d863f69daddc3e76af7c4f4740f",
+  "prompts": {},
+  "sessions": {
+    "s_776868ed5c1fcc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03439a832ffedIWSUzsW3LPPZh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

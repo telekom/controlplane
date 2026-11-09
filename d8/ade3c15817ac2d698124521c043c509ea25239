@@ -1,0 +1,34 @@
+controlplane-api/schema.graphql
+  s_b8dae3987376a7::t_cc4dd1edda3b71 26-27
+controlplane-api/internal/resolvers/mapper.go
+  s_b8dae3987376a7::t_cc4dd1edda3b71 45
+controlplane-api/internal/resolvers/model/info_types.go
+  s_b8dae3987376a7::t_cc4dd1edda3b71 17
+controlplane-api/internal/resolvers/mapper_internal_test.go
+  s_b8dae3987376a7::t_cc4dd1edda3b71 19-20,29,37,39-40
+  s_b8dae3987376a7::t_a3647353d75645 38
+  s_b8dae3987376a7::t_ac9164fb1e5501 41-42
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_b8dae3987376a7::t_cc4dd1edda3b71 50-54,183-229
+  s_b8dae3987376a7::t_63f3d7d5b053b3 230-231
+controlplane-api/internal/resolvers/root_.generated.go
+  s_b8dae3987376a7::t_2ce22b1c8e88ed 410,2559-2564,12179-12180,13372-13373
+controlplane-api/internal/resolvers/schema.generated.go
+  s_b8dae3987376a7::t_94f0f3ab77f274 1442-1464,5384-5388
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d8ade3c15817ac2d698124521c043c509ea25239",
+  "prompts": {},
+  "sessions": {
+    "s_b8dae3987376a7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0f16a4dffelGmLp1sfiHXnnO",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

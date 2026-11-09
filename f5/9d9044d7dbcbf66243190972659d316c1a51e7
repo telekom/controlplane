@@ -1,0 +1,21 @@
+rover/api/v1/rover_types.go
+  s_d2e0301cdd34e1::t_9983eff505c820 148,152,157
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_d2e0301cdd34e1::t_c04f05bdd812df 1116,1249,1654
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f59d9044d7dbcbf66243190972659d316c1a51e7",
+  "prompts": {},
+  "sessions": {
+    "s_d2e0301cdd34e1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_07c11e9d4ffeqPQHnsXOQjGrXh",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

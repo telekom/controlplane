@@ -1,0 +1,39 @@
+rover-ctl/docs/roverctl_resource.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 54
+rover-ctl/docs/roverctl_get-secret.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 36
+rover-ctl/docs/roverctl_delete.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 51
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 36
+rover-ctl/docs/roverctl.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 31
+rover-ctl/docs/roverctl_reset-secret.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 38
+rover-ctl/docs/roverctl_apply.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 51
+rover-ctl/docs/roverctl_resource_list.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 36
+rover-ctl/docs/roverctl_resource_delete.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 37
+rover-ctl/docs/roverctl_resource_get.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 37
+rover-ctl/docs/roverctl_get-info.md
+  s_d9be0d0a73c9f4::t_304f6ae70f155d 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e4c0cefdc937fc2ce015fd2305f0503361757406",
+  "prompts": {},
+  "sessions": {
+    "s_d9be0d0a73c9f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e739f6ae1ffergpUPBJB3UOUJp",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

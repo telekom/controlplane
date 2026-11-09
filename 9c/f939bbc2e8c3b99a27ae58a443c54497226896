@@ -1,0 +1,52 @@
+common/pkg/client/client.go
+  s_4f2b4a93a1f8a2::t_b823d8e43ac0e9 49-52,137
+  s_4f2b4a93a1f8a2::t_becdb26425c33b 25-27
+  s_4f2b4a93a1f8a2::t_6f34dd3133748e 162,166-176,180-182,185,187,192-196
+  s_4f2b4a93a1f8a2::t_cfff38a2915cd0 197-198
+admin/internal/handler/zone/handler.go
+  s_4f2b4a93a1f8a2::t_241755c8350414 9
+  s_4f2b4a93a1f8a2::t_80b5b0d05f99e1 87,93-94
+  s_4f2b4a93a1f8a2::t_1ca4fb204c389a 119-140,142-143,145
+  s_4f2b4a93a1f8a2::t_d28e95dd8c7673 141,144,146-167
+  s_4f2b4a93a1f8a2::t_806c5af7899893 53,64-67,80-86,88
+docs/docs/admin-journey/environments-and-zones.md
+  s_4f2b4a93a1f8a2::t_c0fd6c29e306c8 62
+  s_4f2b4a93a1f8a2::t_be4dd29a6d7ca9 61
+common/pkg/client/client_test.go
+  s_4f2b4a93a1f8a2::t_b767e5e72cabd7 288,300,304,308-325,337
+docs/docs/architecture/admin.mdx
+  s_4f2b4a93a1f8a2::t_be4dd29a6d7ca9 25,27
+  s_4f2b4a93a1f8a2::t_7c58b362f4ec40 26
+  s_4f2b4a93a1f8a2::t_9004b667951e02 23-24,28
+admin/internal/handler/zone/handler_test.go
+  s_4f2b4a93a1f8a2::t_63fa2223e7cf67 675,719,758,798-799,827-828,845
+  s_4f2b4a93a1f8a2::t_bfc5596ac92acd 651,654,657,667,674,679-700,775
+  s_4f2b4a93a1f8a2::t_4880a4ce1dcc98 652-653,655-656,658-666,668-673,676-678,701-702,714,721-727,743,754,760,763-764,766,770-774,847,850-853
+admin/internal/controller/suite_test.go
+  s_4f2b4a93a1f8a2::t_19946cc6b17889 28
+  s_4f2b4a93a1f8a2::t_23a40ba67c1a5b 149,151-152,155-156,163-164,166-167,169-170
+  s_4f2b4a93a1f8a2::t_c6d0d2862f1545 145-148,150,153-154,157-162,165,168
+  s_4f2b4a93a1f8a2::t_55a945e6b8880e 129-130
+  s_4f2b4a93a1f8a2::t_b4cff3bfa4b4fa 119-128
+  s_4f2b4a93a1f8a2::t_eaf5cb1632e108 27,29-30
+admin/internal/handler/zone/suite_test.go
+  s_4f2b4a93a1f8a2::t_f594a1b7984dd7 29,32
+  s_4f2b4a93a1f8a2::t_d434a8cec249d5 194,198,207-213
+  s_4f2b4a93a1f8a2::t_7ea02f5b53e0b5 195-197,199-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9cf939bbc2e8c3b99a27ae58a443c54497226896",
+  "prompts": {},
+  "sessions": {
+    "s_4f2b4a93a1f8a2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_004931a42ffeniU2np5RJ0KtgZ",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

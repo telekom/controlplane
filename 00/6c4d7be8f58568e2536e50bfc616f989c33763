@@ -1,0 +1,48 @@
+projector/internal/domain/apiexposure/repository_test.go
+  s_e5bfff6bb80a29::t_1ad1290d1ae54d 19
+  s_e5bfff6bb80a29::t_b4dc6a55684709 28,892-893,973-1021
+  s_e5bfff6bb80a29::t_f23619fe0e0a94 891,894-972,1022-1037
+  s_e5bfff6bb80a29::t_846826e735d61f 1038-1039
+projector/internal/domain/agenticexposure/repository.go
+  s_e5bfff6bb80a29::t_130d2016449906 147-152,220-223
+projector/internal/domain/apiexposure/repository.go
+  s_e5bfff6bb80a29::t_ddef58a02b3b57 143-148,274-277
+projector/internal/domain/eventexposure/repository_test.go
+  s_e5bfff6bb80a29::t_94bb7d6f690651 437
+  s_e5bfff6bb80a29::t_b4dc6a55684709 511-559
+  s_e5bfff6bb80a29::t_710e946e88eb5e 18,28,426-436,438-510,560-573
+projector/internal/domain/agenticsubscription/repository_test.go
+  s_e5bfff6bb80a29::t_79bbcc01be0198 25,29,455-487
+  s_e5bfff6bb80a29::t_a4bd54e27965ac 488-490
+projector/internal/domain/eventexposure/repository.go
+  s_e5bfff6bb80a29::t_130d2016449906 102-107,171-174
+projector/internal/domain/apisubscription/repository_test.go
+  s_e5bfff6bb80a29::t_79bbcc01be0198 25,29,728-770
+  s_e5bfff6bb80a29::t_ae2661e424ef67 771-773
+projector/internal/domain/eventsubscription/repository_test.go
+  s_e5bfff6bb80a29::t_fdfba44a92d7e8 498
+  s_e5bfff6bb80a29::t_79bbcc01be0198 25,29,470-497,499-517
+  s_e5bfff6bb80a29::t_7bf157d86a0657 518-520
+projector/internal/domain/agenticexposure/repository_test.go
+  s_e5bfff6bb80a29::t_ab4aefe6ad7c8e 787
+  s_e5bfff6bb80a29::t_94bb7d6f690651 788
+  s_e5bfff6bb80a29::t_710e946e88eb5e 19,28,779-786,789-862,912-924
+  s_e5bfff6bb80a29::t_b4dc6a55684709 863-911,925
+  s_e5bfff6bb80a29::t_1a94f033a7cfad 926-927
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "006c4d7be8f58568e2536e50bfc616f989c33763",
+  "prompts": {},
+  "sessions": {
+    "s_e5bfff6bb80a29": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f04629e12ffeZ5PsAKCh0iHmjU",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+rover-ctl/pkg/parser/parser.go
+  h_0f030e7424553c 9,134,140,143-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "49ae23a91bfa2564f3aa9b0cfb4630106fba5b96",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

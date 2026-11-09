@@ -1,0 +1,20 @@
+gateway/test/devloop/README.md
+  s_3a927fa386840d::t_fcb096066a8424 95-109
+  s_3a927fa386840d::t_609797e9a4c061 146-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4247815992b848ca3b6c097a3e6a4c9a2ba9ac0b",
+  "prompts": {},
+  "sessions": {
+    "s_3a927fa386840d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_048e44afdffenTFIpAkeOC4uTh",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

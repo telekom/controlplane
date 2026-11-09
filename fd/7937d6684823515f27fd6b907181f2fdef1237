@@ -1,0 +1,29 @@
+docs/docs/architecture/agentic.mdx
+  s_e09ac076ea69d6::t_8a92a3a52826a8 7-11
+  s_e09ac076ea69d6::t_c7e3c10156b30c 12
+docs/docs/architecture/sftp.mdx
+  s_e09ac076ea69d6::t_0dc3686cc8a2e2 5-6
+docs/docs/architecture/file.mdx
+  s_e09ac076ea69d6::t_616853b49d72f3 5-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "fd7937d6684823515f27fd6b907181f2fdef1237",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_e09ac076ea69d6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e77ea825fffeiNy6HqV10hYWys",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

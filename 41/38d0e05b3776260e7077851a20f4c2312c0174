@@ -1,0 +1,160 @@
+controlplane-api/internal/resolvers/schema_resolvers_listener_test.go
+  s_fe3418541904e6::t_1a141d4c229d4e 104-106,114-116,150
+  s_a2216194f99d8b::t_8a90de224a0694 120,224-234
+  s_fe3418541904e6::t_759d609b98298e 107-113,129,133,137,141,146,151,213-221
+  s_054e57e2cfee4b::t_3357ee96d0176c 117,153,170,222-223,262
+  s_fe3418541904e6::t_951887097e1858 79-81,88-103,202-204,261
+  s_fe3418541904e6::t_ef28d3c13b6c64 130-132
+  s_fe3418541904e6::t_7f6ad4b071dd8d 134-136
+  s_fe3418541904e6::t_16109a5aabe00e 138-140
+  s_fe3418541904e6::t_4505ed3a366eb3 142-145
+  s_fe3418541904e6::t_7d1f9f46a579e9 147-149
+  s_054e57e2cfee4b::t_b7beb1a3eb2a2a 154
+controlplane-api/ent.graphql
+  s_fe3418541904e6::t_6fd55c2c95ede9 1787-1791
+docs/docs/architecture/controlplane-api.mdx
+  s_fe3418541904e6::t_9f64e07e903e6a 161
+  s_054e57e2cfee4b::t_6120251d5434a9 120,157,159-160
+controlplane-api/ent/application_create.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 22,333-347,676-684,691
+  s_77e614b58a5545::t_c2c25f07884aab 685-690
+controlplane-api/ent/listener.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 68-69,74,79-89,95,106,117,123-133,137,160-161,264-270,284-288,304-307
+  s_77e614b58a5545::t_cd3020d6d9b06d 18,54,60-61,308
+controlplane-api/ent/application_update.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 23,412-426,547-567,1001-1045,1463-1477,1598-1618,2082-2124,2126
+  s_77e614b58a5545::t_050c3c7f4f892a 2125
+controlplane-api/ent/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 84-85,90,98,159-167,173,390-394,593-615
+  s_77e614b58a5545::t_a74e5e212da45f 616
+controlplane-api/ent/schema/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 10,99-100
+controlplane-api/pkg/model/info_types.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 19
+controlplane-api/ent/listener_create.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 137-138,143,186-204,311-313,387-403,451-459,464
+  s_77e614b58a5545::t_34a7e1a6952a77 19,134-136,139-142,144,460-463,465-466
+controlplane-api/ent/approval_query.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 35,141-162,358,398-408,494,498,501,546-551,656-681,684-685,687
+  s_77e614b58a5545::t_2060b2b2cc352d 682-683,686
+controlplane-api/ent/listener/listener.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 316-317
+  s_fe3418541904e6::t_6fd55c2c95ede9 52-53,58-64,86-92,122,235-241,263-269,283-289,311-315
+  s_77e614b58a5545::t_f65c5960484d07 44-45
+controlplane-api/ent/approval.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 68,80-81,84,120-130,150-151,310-316,345-348
+  s_77e614b58a5545::t_88904b962ded2a 349
+controlplane-api/ent/schema/approval.go
+  s_fe3418541904e6::t_9f64e07e903e6a 74-77
+controlplane-api/ent/approval_update.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 1363-1372
+  s_fe3418541904e6::t_6fd55c2c95ede9 342-360,384-389,652-680,1004-1022,1046-1051,1344-1362
+controlplane-api/schema.graphql
+  s_fe3418541904e6::t_9f64e07e903e6a 277,279,315,346,357
+controlplane-api/ent/mutation.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 5570,5573-5574,5579,5584,5590,5594-5595,5601-5603,5609-5611,5618,6160,6234,6299,6371,6412-6413,7371-7409,7854,7864-7866,7886-7889,7896,7908,7918-7920,7934-7935,7953-7955,7973-7975,13882-13883,13890-13891,14423-14461,14579-14617,14991-14994,15004-15006,15017-15020,15033-15036,15049,15072-15075,15085-15087,15098-15099,15106-15107,15118-15120,15130-15132,15141-15143,15153-15155
+  s_77e614b58a5545::t_2fb6adc9ea315f 4380-4382,5566-5569,5571-5572,5575-5578,5580-5583,5585-5589,5591-5593,5596-5600,5604-5608,5612-5617,5619,6139,6158-6159,6203-6208,6219,6232-6233,6266-6271,6278,6297-6298,6322-6323,6369-6370
+controlplane-api/ent/listener_query.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 39,81-102,169-190,405,409,417-427,461-471,568-569,573,577,604-609,628-633,656-687,780-803,805,807
+  s_77e614b58a5545::t_13f5b40f052038 21,35,804,806
+controlplane-api/ent/application_query.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 24,44,53,222-243,464,538-548,645,652,725-731,766-772,969-999,1169-1179,1181
+  s_77e614b58a5545::t_5cb2c444fb3214 1180,1182
+controlplane-api/ent/client.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 1129-1132,1134,1136-1141,1341-1356,2369-2384,2433-2447
+  s_77e614b58a5545::t_fe5c3541f457de 1127-1128,1133,1135,1142,2448
+controlplane-api/ent/approval/approval.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 65-66,90-96,127,341-347,369-373
+  s_77e614b58a5545::t_dcd57807df4f60 374-375
+controlplane-api/internal/testutil/seed.go
+  s_fe3418541904e6::t_951887097e1858 38-44,130,139,146,153-161
+  s_fe3418541904e6::t_759d609b98298e 166
+  s_054e57e2cfee4b::t_9e079adf308930 162
+controlplane-api/ent/gql_where_input.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 2973-2976,3495-3512
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_fe3418541904e6::t_9f64e07e903e6a 374,378-379,386,638-651,671-679,763-775
+  s_fe3418541904e6::t_951887097e1858 271-280
+  s_fe3418541904e6::t_e4c9fa314db82a 375,384
+  s_a2216194f99d8b::t_8a90de224a0694 367-373,376-377
+  s_77e614b58a5545::t_dbdf9b98cc0488 225,776-777
+controlplane-api/ent/approval_create.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 255-273,556-570,572
+  s_77e614b58a5545::t_73e864621fa3a1 571
+controlplane-api/ent/schema/listener.go
+  s_fe3418541904e6::t_9f64e07e903e6a 53,68-70
+  s_054e57e2cfee4b::t_9b0aeb53a286d9 50-52,54
+controlplane-api/internal/interceptor/team_filter_test.go
+  s_fe3418541904e6::t_32396071191b49 99,159
+  s_fe3418541904e6::t_951887097e1858 269,277-296
+  s_054e57e2cfee4b::t_14378ba8cfa772 297-303
+controlplane-api/ent/approval/where.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 805-827
+controlplane-api/ent/migrate/schema.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 677
+  s_fe3418541904e6::t_6fd55c2c95ede9 224,250-255,484,504-509,666
+controlplane-api/ent/listener/where.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 573-575,577-580,584,586-592,663-685
+  s_77e614b58a5545::t_07a20df22d3de8 571-572,576,581-583,585,593
+controlplane-api/ent/application/where.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 1169-1191
+controlplane-api/internal/interceptor/team_filter.go
+  s_fe3418541904e6::t_951887097e1858 70,112-113,128-134,166-167
+  s_054e57e2cfee4b::t_b5cc0c6520021e 68-69,109-111,163-165
+controlplane-api/ent/application/application.go
+  s_054e57e2cfee4b::t_3357ee96d0176c 70-71,118-124,411-424,473-477,479
+  s_77e614b58a5545::t_0283dc1d5ea596 478
+controlplane-api/ent/listener_update.go
+  s_fe3418541904e6::t_6fd55c2c95ede9 175-176,181,224-242,263-268,287-292,378-380,444-472,560-588,786-796,838-856,877-882,901-905,1007,1200-1222
+  s_054e57e2cfee4b::t_3357ee96d0176c 1088-1116,1223-1228
+  s_77e614b58a5545::t_8f91298ee5291b 19,172-174,177-180,182,906,1005-1006
+controlplane-api/internal/resolvers/mapper.go
+  s_fe3418541904e6::t_9f64e07e903e6a 139-140,145,153-155,167-168
+  s_054e57e2cfee4b::t_d265081df4b204 119-122
+controlplane-api/internal/resolvers/ent.generated.go
+  s_77e614b58a5545::t_2c47cd9c2b3b80 93,7542-7573,14916,15896-15909,26760-26797
+controlplane-api/internal/resolvers/root_.generated.go
+  s_77e614b58a5545::t_07b55d5fbb1549 551,586,2815-2820,2957-2962,5925-5929,8723,8725,8761,8792,8803,9876-9877,9922-9923
+controlplane-api/internal/resolvers/schema.generated.go
+  s_77e614b58a5545::t_c1eb4966df93a2 2059-2090,4964-4968
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "4138d0e05b3776260e7077851a20f4c2312c0174",
+  "prompts": {},
+  "sessions": {
+    "s_054e57e2cfee4b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3251e396ffePaEqMqGVAvjuZT",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_77e614b58a5545": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f318b3b8dfferL4IjZwjF4jHWZ",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_a2216194f99d8b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f323a987bffeTA4WIdoca0OavR",
+        "model": "unknown"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    },
+    "s_fe3418541904e6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f329da7c2ffenRhoDZK8hQE7gU",
+        "model": "unknown"
+      },
+      "human_author": null
+    }
+  }
+}

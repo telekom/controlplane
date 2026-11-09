@@ -1,0 +1,19 @@
+event/internal/controller/callback_lifecycle_test.go
+  s_9fea94f5557850::t_5d38baef206605 245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "07eaf04eee1b1be45c23bddc992d1c5d2007fb51",
+  "prompts": {},
+  "sessions": {
+    "s_9fea94f5557850": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f0db98d7affewSMeT3K7P5pW5j",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
