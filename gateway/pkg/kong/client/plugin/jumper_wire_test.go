@@ -35,6 +35,39 @@ var _ = Describe("JumperConfig wire format", func() {
 		return out
 	}
 
+	It("emits removeHeaders as a top-level string list", func() {
+		jc := plugin.NewJumperConfig()
+		jc.RemoveHeaders = []string{"X-Custom-Header", "X-Internal-Token"}
+
+		Expect(marshal(jc)).To(HaveKeyWithValue("removeHeaders", []any{"X-Custom-Header", "X-Internal-Token"}))
+
+		decoded, err := plugin.FromBase64[plugin.JumperConfig](plugin.ToBase64OrDie(jc))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(decoded.RemoveHeaders).To(Equal(jc.RemoveHeaders))
+	})
+
+	It("embeds removeHeaders directly in routing_config entries", func() {
+		jc := plugin.NewJumperConfig()
+		jc.RemoveHeaders = []string{"X-Custom-Header"}
+		configs := plugin.RoutingConfigs{{
+			JumperConfig: jc,
+			RemoteApiUrl: "https://upstream.example.com",
+		}}
+
+		decoded, err := plugin.FromBase64[[]map[string]any](plugin.ToBase64OrDie(configs))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(*decoded).To(HaveLen(1))
+		Expect((*decoded)[0]).To(HaveKeyWithValue("removeHeaders", []any{"X-Custom-Header"}))
+	})
+
+	It("omits removeHeaders when no headers are configured", func() {
+		jc := plugin.NewJumperConfig()
+		Expect(marshal(jc)).ToNot(HaveKey("removeHeaders"))
+
+		jc.RemoveHeaders = []string{}
+		Expect(marshal(jc)).ToNot(HaveKey("removeHeaders"))
+	})
+
 	It("emits listener credentials as a top-level gatewayClient object", func() {
 		jc := plugin.NewJumperConfig()
 		jc.RouteListener = map[plugin.ConsumerId]plugin.RouteListenerEntry{

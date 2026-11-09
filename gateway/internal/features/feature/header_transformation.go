@@ -46,16 +46,11 @@ func (f *HeaderTransformationFeature) Apply(ctx context.Context, builder feature
 	if !ok {
 		return features.ErrNoRoute
 	}
-	RequestTransformerPlugin := builder.RequestTransformerPlugin()
-
-	if route.Spec.Transformation != nil {
-		if len(route.Spec.Transformation.Request.Headers.Remove) > 0 {
-			// For each header in RemoveHeaders, we add it to the RequestTransformerPlugin
-			for _, header := range route.Spec.Transformation.Request.Headers.Remove {
-				RequestTransformerPlugin.Config.Remove.AddHeader(header)
-			}
-		}
+	if route.Spec.Transformation == nil || len(route.Spec.Transformation.Request.Headers.Remove) == 0 {
+		return nil
 	}
+
+	builder.JumperConfig().RemoveHeaders = route.Spec.Transformation.Request.Headers.Remove
 
 	return nil
 }
