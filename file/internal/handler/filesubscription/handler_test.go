@@ -138,6 +138,21 @@ func testZoneServiceConfig() *filev1.ZoneServiceConfig {
 	}
 }
 
+func mockServiceURLs(mockClient *fake.MockJanitorClient) {
+	mockClient.EXPECT().
+		Get(mock.Anything, k8stypes.NamespacedName{Name: testZoneName, Namespace: testNamespace}, mock.AnythingOfType("*v1.Zone")).
+		Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+			out.(*adminv1.Zone).Status.Namespace = testNamespace
+		}).
+		Return(nil).Once()
+	mockClient.EXPECT().
+		List(mock.Anything, mock.AnythingOfType("*v1.ZoneServiceConfigList"), mock.Anything, mock.Anything).
+		Run(func(_ context.Context, out client.ObjectList, _ ...client.ListOption) {
+			out.(*filev1.ZoneServiceConfigList).Items = []filev1.ZoneServiceConfig{*testZoneServiceConfig()}
+		}).
+		Return(nil).Once()
+}
+
 func testApplication(name, team, teamEmail string) *applicationv1.Application {
 	app := &applicationv1.Application{
 		ObjectMeta: metav1.ObjectMeta{
@@ -280,6 +295,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			sub := testSubscription()
 			sub.Spec.Requestor.Kind = "ServiceAccount"
 			ctx, mockClient := newTestContext()
+			mockServiceURLs(mockClient)
 
 			exposure := testFileExposure()
 
@@ -360,6 +376,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 		It("waits for approval when approval is pending (Approval not yet created)", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()
+			mockServiceURLs(mockClient)
 			testScheme := buildScheme()
 
 			exposure := testFileExposure()
@@ -398,11 +415,14 @@ var _ = Describe("FileSubscriptionHandler", func() {
 			Expect(k8smeta.IsStatusConditionFalse(sub.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 			ready := k8smeta.FindStatusCondition(sub.Status.Conditions, condition.ConditionTypeReady)
 			Expect(ready.Reason).To(Equal("ApprovalPending"))
+			Expect(sub.Status.ServiceURL).To(Equal("sftp.internal:22"))
+			Expect(sub.Status.ServiceExternalURL).To(Equal("sftp.external:2222"))
 		})
 
 		It("reports processing when the request is granted but the Approval is not issued yet", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()
+			mockServiceURLs(mockClient)
 			testScheme := buildScheme()
 
 			exposure := testFileExposure()
@@ -540,6 +560,7 @@ var _ = Describe("FileSubscriptionHandler", func() {
 		It("sets NotReady condition and deletes subscriber User when approval is denied", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()
+			mockServiceURLs(mockClient)
 			testScheme := buildScheme()
 
 			exposure := testFileExposure()
@@ -626,16 +647,20 @@ var _ = Describe("FileSubscriptionHandler", func() {
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.User"), mock.Anything).
 				Return(controllerutil.OperationResultNone, nil).Once()
 			mockClient.EXPECT().AllReady().Return(false).Once()
+			mockServiceURLs(mockClient)
 
 			err := handler.CreateOrUpdate(ctx, sub)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionTrue(sub.Status.Conditions, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(sub.Status.ServiceURL).To(Equal("sftp.internal:22"))
+			Expect(sub.Status.ServiceExternalURL).To(Equal("sftp.external:2222"))
 		})
 
 		It("returns error when syncSubscriberUser fails", func() {
 			sub := testSubscription()
 			ctx, mockClient := newTestContext()
+			mockServiceURLs(mockClient)
 			testScheme := buildScheme()
 
 			exposure := testFileExposure()
