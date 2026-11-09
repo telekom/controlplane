@@ -11,6 +11,10 @@ var (
 	BasePathLabelKey    = BuildLabelKey("basepath")
 )
 
+func refreshBasePathLabelKey() {
+	BasePathLabelKey = BuildLabelKey("basepath")
+}
+
 func BuildLabelKey(key string) string {
 	return LabelKeyPrefix + "/" + key
 }
