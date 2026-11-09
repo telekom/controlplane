@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -31,8 +32,7 @@ import (
 )
 
 const (
-	IrisTokenEndpointSuffix       = "/protocol/openid-connect/token"
-	HorizonPublishEventPathSuffix = "horizon/events/v1"
+	IrisTokenEndpointSuffix = "/protocol/openid-connect/token"
 )
 
 // ResourceRefFromObject builds an api.ResourceRef from a non-nil types.Object.
@@ -102,7 +102,6 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	if err := FillListenerInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill listener info")
 	}
-	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
 	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill chevron info")
 	}
@@ -126,6 +125,46 @@ func fillApplicationVariables(appInfo *api.ApplicationInfo) {
 	appendVariable(appInfo, "tardis.iris.url.issuer", appInfo.IrisIssuerUrl)
 	appendVariable(appInfo, "tardis.iris.url.token", appInfo.IrisTokenEndpointUrl)
 	appendVariable(appInfo, "tardis.stargate.url", appInfo.StargateUrl)
+	appendVariable(appInfo, "tardis.horizon.event.url", appInfo.StargatePublishEventUrl)
+}
+
+// resolvePublishEventURL prefers an exposure's reported URL over the zone's Event preset URL.
+// Exposure lookup failures are recorded as problems by FillExposureInfo.
+func resolvePublishEventURL(ctx context.Context, rover *roverv1.Rover, stores *store.Stores, zoneSpec *adminv1.ZoneSpec) (string, error) {
+	log := logr.FromContextOrDiscard(ctx)
+	for _, ref := range rover.Status.EventExposures {
+		eventExp, err := stores.EventExposureStore.Get(ctx, ref.Namespace, ref.Name)
+		if err != nil {
+			log.V(1).Info("Skipping event exposure for publish URL", "eventExposure", ref.Name, "error", err.Error())
+			continue
+		}
+		if eventExp != nil && eventExp.Status.PublishURL != "" {
+			return eventExp.Status.PublishURL, nil
+		}
+	}
+	preset, err := zoneSpec.SelectPreset(adminv1.GatewayTypeEvent)
+	if errors.Is(err, adminv1.ErrNoMatchingPreset) {
+		// Zones without Event support are valid; the publish URL is simply omitted.
+		log.V(1).Info("Zone has no Event preset, omitting publish event URL")
+		return "", nil
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "failed to select event zone preset for publish event url")
+	}
+	return buildPublishEventURL(preset.GetDefaultURL())
+}
+
+// buildPublishEventURL joins the zone's Event gateway base URL with the Horizon
+// publish path. An empty base URL yields an empty result.
+func buildPublishEventURL(baseURL string) (string, error) {
+	if baseURL == "" {
+		return "", nil
+	}
+	publishURL, err := url.JoinPath(baseURL, eventv1.HorizonPublishEventPathSuffix)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to build publish event url from %q", baseURL)
+	}
+	return publishURL, nil
 }
 
 func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
@@ -174,6 +213,10 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 	appInfo.IrisIssuerUrl = presetStatus.Links.Issuer
 	appInfo.StargateIssuerUrl = presetStatus.Links.LmsIssuer
 	appInfo.StargateUrl = preset.GetDefaultURL()
+	appInfo.StargatePublishEventUrl, err = resolvePublishEventURL(ctx, rover, stores, &zone.Spec)
+	if err != nil {
+		return err
+	}
 	appInfo.IrisTokenEndpointUrl = app.Status.TokenUrl
 	if appInfo.IrisTokenEndpointUrl == "" && appInfo.IrisIssuerUrl != "" {
 		appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
@@ -383,11 +426,6 @@ func fillEventExposures(ctx context.Context, rover *roverv1.Rover, appInfo *api.
 
 		if err := condition.EnsureReady(eventExp); err != nil {
 			WriteStatus(eventExp, appInfo, err)
-		}
-
-		// All event exposures in a zone share the same publish URL.
-		if appInfo.StargatePublishEventUrl == "" && eventExp.Status.PublishURL != "" {
-			appInfo.StargatePublishEventUrl = eventExp.Status.PublishURL
 		}
 
 		expInfo := api.ExposureInfo{}

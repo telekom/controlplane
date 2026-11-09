@@ -8,6 +8,9 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
+// HorizonPublishEventPathSuffix is the gateway path for publishing events.
+const HorizonPublishEventPathSuffix = "/horizon/events/v1"
+
 // DeliveryType defines how events are delivered to subscribers.
 // +kubebuilder:validation:Enum=Callback;ServerSentEvent
 type DeliveryType string

@@ -95,7 +95,10 @@ var _ = Describe("MapApplicationInfo status", func() {
 		appStore := childStore(app)
 
 		zone := &adminv1.Zone{
-			Spec:   adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
+			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+				{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true},
+				{Name: "event", Type: adminv1.GatewayTypeEvent},
+			}},
 			Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
 		}
 		zoneStore := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
