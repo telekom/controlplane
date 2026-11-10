@@ -49,7 +49,7 @@ repos:
         entry: python3 .agents/skills/code-auditor/scripts/sync_judges.py --check
         language: system
         pass_filenames: false
-        files: ^(\.agents/(judges\.yaml|skills/code-auditor/persona/README\.md)|\.opencode/agents/.*|\.claude/agents/.*)$
+        files: ^(\.agents/(judges\.yaml|skills/code-auditor/(persona/README\.md|scripts/(sync_judges\.py|auditlib/judges\.py)))|\.opencode/agents/.*|\.claude/agents/.*|\.github/agents/.*)$
         stages:
           - pre-commit
       - id: audit-gate

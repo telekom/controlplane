@@ -1,7 +1,7 @@
 ---
 description: Answers one code-auditor work unit against one rule, using only the frozen context in the prompt (careful judge)
 mode: subagent
-model: anthropic/claude-opus-5-5#medium
+model: github-copilot/gpt-6.1-sol#medium
 permissions:
   - action: "*"
     resource: "*"

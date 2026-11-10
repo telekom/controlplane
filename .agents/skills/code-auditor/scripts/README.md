@@ -110,6 +110,26 @@ The pin and the harness are two places holding one fact. A subagent whose
 definition carries no model silently inherits the session's model, so the
 check is what stops a receipt from naming a judge that never ran.
 
+A harness only gets a judge it can run under the pinned name:
+
+| Harness | Location | Generated for |
+|---|---|---|
+| OpenCode | `.opencode/agents/audit-judge-<tier>.md` | every pin, `model: provider/model#effort` |
+| Claude Code | `.claude/agents/audit-judge-<tier>.md` | `anthropic/*` pins |
+| VS Code GitHub Copilot | `.github/agents/audit-judge-<tier>.agent.md` | `github-copilot/*` pins, `model: <model>`, `reasoning-effort: <effort>` |
+
+VS Code applies `reasoning-effort` only in the Copilot harness. The Local
+harness uses the agent's `model` for a subagent, unless the main agent passes
+its own model to `runSubagent`; `reasoning-effort` is documented for Copilot only, so a judge run
+there may not match the effort in its pin. A harness without a definition for
+the pinned tier has no judge: switch harness or tier rather than letting the
+session model answer.
+
+A generated definition no pin produces any more, such as a Claude judge after
+its pin moved to another provider, is removed on write and reported by
+`--check`. Files without the generated marker are never touched. Tests:
+`python3 -m unittest discover -s .agents/skills/code-auditor/scripts/tests`.
+
 `AUDIT_JUDGE=<tier>` selects another declared tier for one run. There is no
 environment variable for a raw model id: a pin a shell can rewrite is not a
 pin. `AUDIT_GATE=off` bypasses the gate.

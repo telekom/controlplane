@@ -1,7 +1,7 @@
 ---
 description: Answers one code-auditor work unit against one rule, using only the frozen context in the prompt (fast judge)
 mode: subagent
-model: anthropic/claude-haiku-5-5#low
+model: github-copilot/gpt-6-luna#low
 permissions:
   - action: "*"
     resource: "*"

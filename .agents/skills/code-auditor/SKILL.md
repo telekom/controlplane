@@ -42,7 +42,8 @@ do not treat it as a pass.
 one or two candidates of a single rule, so their shared context is sent once.
 Start one subagent per work unit, in parallel, each with:
 
-- the judge agent named by the report: `audit-judge-<judge>`
+- the judge agent named by the report: `audit-judge-<judge>`. If this harness
+  has no such agent, stop and tell the user; never fall back to another model.
 - its `unit_id`
 
 The persona and the pinned model live in those agent definitions, generated

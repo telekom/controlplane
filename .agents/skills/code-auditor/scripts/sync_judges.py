@@ -14,6 +14,20 @@ a receipt can name Haiku while Opus did the work, and nothing errors.
 So the agent files are generated, never written by hand, and ``--check``
 refuses a commit where they have drifted from the pin.
 
+A harness only gets a definition for a pin it can run under that exact name:
+
+- OpenCode: every pin, as ``provider/model#effort``.
+- Claude Code: ``anthropic/*`` pins only.
+- VS Code GitHub Copilot (``.github/agents/*.agent.md``): ``github-copilot/*``
+  pins only, with ``model`` set to the Copilot model id and ``reasoning-effort``
+  to the effort. VS Code applies ``reasoning-effort`` in the Copilot harness;
+  the Local harness honours ``model`` for subagents; effort is documented for
+  Copilot only.
+
+A generated definition that no pin produces any more is stale. Writing removes
+it, ``--check`` reports it; files without the generated marker are never
+touched.
+
 Usage::
 
     sync_judges.py              # write the agent definitions
@@ -62,12 +76,7 @@ def _opencode(judge: Judge, body: str) -> str:
 
 
 def _claude(judge: Judge, body: str) -> str:
-    provider, _, model = judge.model.partition("/")
-    if provider != "anthropic":
-        raise JudgeError(
-            f"judge '{judge.tier}' is pinned to {judge.model}, which Claude Code "
-            f"cannot run; it accepts Anthropic model ids only"
-        )
+    _, _, model = judge.model.partition("/")
     effort = f"effort: {judge.effort}\n" if judge.effort else ""
     return (
         "---\n"
@@ -82,12 +91,57 @@ def _claude(judge: Judge, body: str) -> str:
     )
 
 
+def _copilot(judge: Judge, body: str) -> str:
+    _, _, model = judge.model.partition("/")
+    effort = f"reasoning-effort: {judge.effort}\n" if judge.effort else ""
+    return (
+        "---\n"
+        f"name: audit-judge-{judge.tier}\n"
+        f"description: {DESCRIPTION} ({judge.tier} judge)\n"
+        "target: github-copilot\n"
+        f"model: {model}\n"
+        f"{effort}"
+        "tools: ['execute']\n"
+        "user-invocable: false\n"
+        "---\n"
+        f"\n{GENERATED}\n\n{body}\n"
+    )
+
+
+def provider(judge: Judge) -> str:
+    return judge.model.partition("/")[0]
+
+
 def targets(root: Path, judge: Judge, body: str) -> dict[Path, str]:
-    name = f"audit-judge-{judge.tier}.md"
-    return {
-        root / ".opencode" / "agents" / name: _opencode(judge, body),
-        root / ".claude" / "agents" / name: _claude(judge, body),
-    }
+    name = f"audit-judge-{judge.tier}"
+    wanted = {root / ".opencode" / "agents" / f"{name}.md": _opencode(judge, body)}
+    if provider(judge) == "anthropic":
+        wanted[root / ".claude" / "agents" / f"{name}.md"] = _claude(judge, body)
+    if provider(judge) == "github-copilot":
+        wanted[root / ".github" / "agents" / f"{name}.agent.md"] = _copilot(
+            judge, body
+        )
+    return wanted
+
+
+#: Where generated judges live, as (directory, glob) under the repo root.
+OWNED = (
+    (Path(".opencode") / "agents", "audit-judge-*.md"),
+    (Path(".claude") / "agents", "audit-judge-*.md"),
+    (Path(".github") / "agents", "audit-judge-*.agent.md"),
+)
+
+
+def orphans(root: Path, wanted: dict[Path, str]) -> list[Path]:
+    """Generated definitions that no current pin produces."""
+    found: list[Path] = []
+    for directory, pattern in OWNED:
+        for path in sorted((root / directory).glob(pattern)):
+            if path in wanted or not path.is_file():
+                continue
+            if GENERATED in path.read_text(encoding="utf-8"):
+                found.append(path)
+    return found
 
 
 def persona_body() -> str:
@@ -101,15 +155,16 @@ def persona_body() -> str:
     return body
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--check", action="store_true", help="verify instead of writing"
     )
+    parser.add_argument("--root", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("paths", nargs="*", help="ignored; accepted for pre-commit")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    root = changeset.repo_root()
+    root = args.root or changeset.repo_root()
     try:
         judges = load_judges(root)
         body = persona_body()
@@ -125,9 +180,10 @@ def main() -> int:
         for path, content in wanted.items()
         if not path.is_file() or path.read_text(encoding="utf-8") != content
     ]
+    removed = orphans(root, wanted)
 
     if args.check:
-        if stale:
+        if stale or removed:
             print(
                 "sync-judges: the harness judges no longer match "
                 f"{judges.default!r} and the other pins in .agents/judges.yaml:",
@@ -135,6 +191,8 @@ def main() -> int:
             )
             for path in stale:
                 print(f"  - {path.relative_to(root)}", file=sys.stderr)
+            for path in removed:
+                print(f"  - {path.relative_to(root)} (stale)", file=sys.stderr)
             print(
                 "Run: python3 .agents/skills/code-auditor/scripts/sync_judges.py",
                 file=sys.stderr,
@@ -147,10 +205,12 @@ def main() -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(wanted[path], encoding="utf-8")
         print(f"sync-judges: wrote {path.relative_to(root)}")
-    if not stale:
+    for path in removed:
+        path.unlink()
+        print(f"sync-judges: removed {path.relative_to(root)}")
+    if not stale and not removed:
         print(f"sync-judges: {len(wanted)} agent definition(s) already current.")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
