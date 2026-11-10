@@ -73,8 +73,8 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 
 	list := &agenticv1.McpServerList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       server.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: server.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(server.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}

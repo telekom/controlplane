@@ -48,7 +48,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		agenticSubscription.Labels = map[string]string{
-			agenticv1.AgenticBasePathLabelKey:   labelutil.NormalizeLabelValue(sub.BasePath),
+			agenticv1.BasePathLabelKey:          labelutil.NormalizeLabelValue(sub.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeLabelValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeLabelValue(owner.Name),
 		}

@@ -152,7 +152,7 @@ var _ = Describe("HandleExposure", func() {
 		err := agentic.HandleExposure(ctx, fakeClient, owner, exposure)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(capturedExposure.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
+		Expect(capturedExposure.Labels).To(HaveKeyWithValue(agenticv1.BasePathLabelKey, "mcp-weather-v1"))
 		Expect(capturedExposure.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone1"))
 		Expect(capturedExposure.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-app"))
 	})
@@ -472,7 +472,7 @@ var _ = Describe("HandleSubscription", func() {
 		err := agentic.HandleSubscription(ctx, fakeClient, owner, subscription)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(capturedSub.Labels).To(HaveKeyWithValue(agenticv1.AgenticBasePathLabelKey, "mcp-weather-v1"))
+		Expect(capturedSub.Labels).To(HaveKeyWithValue(agenticv1.BasePathLabelKey, "mcp-weather-v1"))
 		Expect(capturedSub.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone1"))
 		Expect(capturedSub.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-app"))
 	})

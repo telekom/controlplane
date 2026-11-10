@@ -33,7 +33,7 @@ func newAgentCard(name, basePath string, uid types.UID, creationTime time.Time) 
 			UID:               uid,
 			CreationTimestamp: metav1.NewTime(creationTime),
 			Labels: map[string]string{
-				agenticv1.AgentBasePathLabelKey: basePath,
+				agenticv1.BasePathLabelKey: basePath,
 			},
 		},
 		Spec: agenticv1.AgentCardSpec{

@@ -28,6 +28,7 @@ import (
 const (
 	GatewayConsumerName       = gatewayapi.GatewayConsumerName
 	ExposureVariantTagDefault = "variant--default"
+	LabelValueDomain          = "api"
 )
 
 const labelTrue = "true"
@@ -273,9 +274,10 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef, upstreamZoneRef ty
 
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(downstreamZone.GetName()),
-			config.BuildLabelKey("type"): "proxy",
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("domain"): LabelValueDomain,
+			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(downstreamZone.GetName()),
+			config.BuildLabelKey("type"):   "proxy",
 		}
 		if options.OwnerUID != "" {
 			proxyRoute.Labels[config.OwnerUidLabelKey] = options.OwnerUID
@@ -520,7 +522,8 @@ func CleanupStaleRoutes(ctx context.Context, apiBasePath string) (int, error) {
 	// Cleanup deletes only routes for this basepath not touched this cycle.
 	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
 		client.MatchingLabels{
-			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiBasePath),
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("domain"): LabelValueDomain,
 		},
 	})
 	if err != nil {
@@ -557,9 +560,10 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
-			config.BuildLabelKey("type"): "real",
+			apiapi.BasePathLabelKey:        labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
+			config.BuildLabelKey("domain"): LabelValueDomain,
+			config.BuildLabelKey("zone"):   labelutil.NormalizeLabelValue(zone.Name),
+			config.BuildLabelKey("type"):   "real",
 		}
 		if apiExposure.GetUID() != "" {
 			route.Labels[config.OwnerUidLabelKey] = string(apiExposure.GetUID())
