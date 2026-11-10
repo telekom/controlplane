@@ -134,7 +134,7 @@ stringData:
   url: postgres://user:password@your-db-host:5432/controlplane?sslmode=require
 ```
 
-The database (`/controlplane` above) must exist. To let the Projector create it on startup, set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap. The database user then needs the `CREATEDB` permission and a database with the user's name.
+By default, the database (`/controlplane` above) must already exist. To let the Projector create it on startup instead, set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap. The database user then needs the `CREATEDB` permission and a database with the user's name.
 
 For development or testing, you can include the `database` component instead, which deploys an in-cluster PostgreSQL and creates the Secret automatically:
 
@@ -364,13 +364,18 @@ replacements:
 Keep in mind:
 
 - Use this overlay for every environment, including the first. Otherwise Services, metrics, and certificates mix environments.
-- Provide the [API configuration](#controlplane-api-configuration) once per environment. The suffix renames the ConfigMap to `controlplane-api-config-<environment>`. One file works for all, because `KUBERNETES_ENVIRONMENT` overrides `kubernetes.environment`:
+- Provide the [API configuration](#controlplane-api-configuration) once per environment. The suffix renames the ConfigMap to `controlplane-api-config-<environment>`. Add one entry per environment; all can use the same file, because `KUBERNETES_ENVIRONMENT` overrides `kubernetes.environment`:
 
   ```yaml title="kustomization.yaml (parent of environments/)"
   resources:
     - environments
 
   configMapGenerator:
+    - name: controlplane-api-config-dev
+      namespace: controlplane-system
+      behavior: replace
+      files:
+        - config.yaml=controlplane-api.yaml
     - name: controlplane-api-config-qa
       namespace: controlplane-system
       behavior: replace
