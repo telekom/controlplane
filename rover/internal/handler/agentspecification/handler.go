@@ -44,7 +44,7 @@ func (h *AgentSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *ro
 		}
 
 		agentCard.Labels = map[string]string{
-			agenticv1.AgentBasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
+			agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
 		}
 
 		agentCard.Spec = agenticv1.AgentCardSpec{

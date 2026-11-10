@@ -80,8 +80,8 @@ func newScopeFixture() *scopeFixture {
 
 func (f *scopeFixture) metadata(name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{Name: name, Namespace: f.namespace, Labels: map[string]string{
-		config.EnvironmentLabelKey:        f.namespace,
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(f.basePath),
+		config.EnvironmentLabelKey: f.namespace,
+		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(f.basePath),
 	}}
 }
 
@@ -107,8 +107,6 @@ func (f *scopeFixture) server(kind string, scopes []string) {
 		card := &agenticv1.AgentCard{ObjectMeta: f.metadata("server"), Spec: agenticv1.AgentCardSpec{
 			BasePath: f.basePath, Name: "Scope test agent", Version: "1.0.0", Oauth2Scopes: scopes,
 		}}
-		delete(card.Labels, agenticv1.AgenticBasePathLabelKey)
-		card.Labels[agenticv1.AgentBasePathLabelKey] = labelutil.NormalizeLabelValue(f.basePath)
 		Expect(k8sClient.Create(ctx, card)).To(Succeed())
 		card.Status.Active = true
 		setFixtureReady(card)

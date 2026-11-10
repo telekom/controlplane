@@ -6,6 +6,8 @@ package v1
 
 import "github.com/telekom/controlplane/common/pkg/config"
 
+var BasePathLabelKey = config.BasePathLabelKey
+
 // AgenticVariant defines the agentic exposure variant.
 // +kubebuilder:validation:Enum=MCP;TELECONTEXTMCP;AGENT
 type AgenticVariant string
@@ -68,9 +70,3 @@ type Approval struct {
 	// +kubebuilder:validation:MaxItems=10
 	TrustedTeams []string `json:"trustedTeams,omitempty"`
 }
-
-// Label keys used for agentic domain resources.
-var (
-	AgenticBasePathLabelKey = config.BuildLabelKey("mcpbasepath")
-	AgentBasePathLabelKey   = config.BuildLabelKey("agentbasepath")
-)

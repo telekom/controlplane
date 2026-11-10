@@ -1,3 +1,16 @@
+# [0.46.0](https://github.com/telekom/controlplane/compare/v0.45.1...v0.46.0) (2026-11-09)
+
+
+### Bug Fixes
+
+* **file:** add admin url for identity provider ([#845](https://github.com/telekom/controlplane/issues/845)) ([4a04b5a](https://github.com/telekom/controlplane/commit/4a04b5a69109d5e58c8a32877e0dbff0994f9134))
+
+
+### Features
+
+* **admin:** separate identity admin endpoint from public issuer ([#835](https://github.com/telekom/controlplane/issues/835)) ([b3a866d](https://github.com/telekom/controlplane/commit/b3a866d270699476a5c237fcfdb5d593cc18fe0e))
+* **subscriptions:** expose endpoint URLs while approval is pending ([#828](https://github.com/telekom/controlplane/issues/828)) ([a1f51b6](https://github.com/telekom/controlplane/commit/a1f51b6478cefda0001963779de385473ad3ee23))
+
 ## [0.45.1](https://github.com/telekom/controlplane/compare/v0.45.0...v0.45.1) (2026-11-04)
 
 

@@ -89,7 +89,7 @@ var _ = Describe("McpSpecificationHandler", func() {
 					Expect(server.Spec.Category).To(Equal("other"))
 					Expect(server.Spec.Oauth2Scopes).To(Equal([]string{"read", "write"}))
 					Expect(server.Labels).To(HaveKeyWithValue(
-						agenticv1.AgenticBasePathLabelKey,
+						agenticv1.BasePathLabelKey,
 						labelutil.NormalizeLabelValue("/mcp/weather/v1"),
 					))
 				}).

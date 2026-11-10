@@ -6,11 +6,13 @@ package mutator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	admissionv1 "k8s.io/api/admission/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,6 +22,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
+	cperrors "github.com/telekom/controlplane/common/pkg/errors"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
@@ -61,6 +64,7 @@ func TestMutateSecret(t *testing.T) {
 		expectedError         bool
 		expectedForbidden     bool
 		expectedMessage       string
+		expectedPublic        string
 		expectedNewSecret     bool
 		expectedRotatedSecret string
 	}{
@@ -234,6 +238,7 @@ func TestMutateSecret(t *testing.T) {
 			expectedError:     true,
 			expectedForbidden: true,
 			expectedMessage:   "spec.needsClient is false",
+			expectedPublic:    "secret rotation is not supported because the application has no client (spec.needsClient is false)",
 		},
 		{
 			name: "Custom secret value is passed through",
@@ -384,12 +389,23 @@ func TestMutateSecret(t *testing.T) {
 				Expect(err).To(HaveOccurred())
 				if tt.expectedForbidden {
 					Expect(err.Error()).To(ContainSubstring("forbidden"))
+					Expect(apierrors.IsForbidden(err)).To(BeTrue())
 				}
 				if tt.expectedMessage != "" {
 					Expect(err.Error()).To(ContainSubstring(tt.expectedMessage))
 				}
 			} else {
 				Expect(err).NotTo(HaveOccurred())
+			}
+			if tt.expectedForbidden {
+				Expect(apierrors.HasStatusCause(err, cperrors.CauseTypePublicMessage)).To(Equal(tt.expectedPublic != ""))
+			}
+			if tt.expectedPublic != "" {
+				var statusErr *apierrors.StatusError
+				Expect(errors.As(err, &statusErr)).To(BeTrue())
+				msg, ok := cperrors.PublicMessage(statusErr)
+				Expect(ok).To(BeTrue())
+				Expect(msg).To(Equal(tt.expectedPublic))
 			}
 			if tt.expectedNewSecret {
 				Expect(tt.app.Spec.Secret).NotTo(Equal(previousSecret))

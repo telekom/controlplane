@@ -44,7 +44,7 @@ func (h *McpSpecificationHandler) CreateOrUpdate(ctx context.Context, spec *rove
 		}
 
 		mcpServer.Labels = map[string]string{
-			agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
+			agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(spec.Spec.BasePath),
 		}
 
 		mcpServer.Spec = agenticv1.McpServerSpec{

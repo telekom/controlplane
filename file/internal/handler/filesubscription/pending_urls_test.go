@@ -86,7 +86,10 @@ var _ = Describe("Pending file subscription endpoints", Ordered, func() {
 			Gateways: []adminv1.GatewayConfig{{
 				Name: "gateway", Admin: adminv1.GatewayAdminConfig{IdentityProviderRef: "primary", Url: "https://gateway.example.com"},
 			}},
-			IdentityProviders: []adminv1.IdentityProviderConfig{{Name: "primary", IssuerHostname: "idp.example.com"}},
+			IdentityProviders: []adminv1.IdentityProviderConfig{{
+				Name: "primary", Admin: adminv1.IdentityProviderAdminConfig{Url: "https://identity-admin.example.com/auth/admin/realms"},
+				IssuerHostname: "idp.example.com",
+			}},
 			Presets: []adminv1.Preset{{
 				Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, GatewayRef: "gateway", IdentityProviderRef: "primary",
 				Urls: []adminv1.UrlConfig{{Hostname: "gateway.example.com", Scheme: "https", Port: 443, BasePath: "/"}},

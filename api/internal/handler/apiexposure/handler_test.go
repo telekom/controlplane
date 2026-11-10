@@ -483,6 +483,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				// Proxy route (created first)
 				proxy := routes[0]
 				Expect(proxy.Labels).To(HaveKeyWithValue("cp.ei.telekom.de/type", "proxy"))
+				Expect(proxy.Labels).To(HaveKeyWithValue(config.BuildLabelKey("domain"), util.LabelValueDomain))
 				// Proxy route is owner-stamped (informational: records the provisioning owner)
 				Expect(proxy.Labels).To(HaveKeyWithValue("cp.ei.telekom.de/owner.uid", "exp-uid"))
 				Expect(proxy.Namespace).To(Equal("ns-b"))
@@ -495,6 +496,7 @@ var _ = Describe("ApiExposureHandler", func() {
 				// Real route (created second)
 				real := routes[1]
 				Expect(real.Labels).To(HaveKeyWithValue("cp.ei.telekom.de/type", "real"))
+				Expect(real.Labels).To(HaveKeyWithValue(config.BuildLabelKey("domain"), util.LabelValueDomain))
 				// Real route is owner-stamped as well
 				Expect(real.Labels).To(HaveKeyWithValue("cp.ei.telekom.de/owner.uid", "exp-uid"))
 				Expect(real.Namespace).To(Equal("ns-a"))
@@ -749,12 +751,13 @@ var _ = Describe("ApiExposureHandler", func() {
 				// The real route was created before the cleanup sweep ran.
 				Expect(events).To(Equal([]string{"create:ns-a", "cleanup"}))
 
-				// The sweep selects by basepath only (no type filter), so it can also
-				// delete orphaned real routes.
+				// The sweep selects by basepath and domain, so it only deletes API routes,
+				// including orphaned real routes.
 				Expect(cleanupOpts).To(HaveLen(1))
 				matchingLabels, ok := cleanupOpts[0].(client.MatchingLabels)
 				Expect(ok).To(BeTrue())
 				Expect(matchingLabels).To(HaveKey(apiapi.BasePathLabelKey))
+				Expect(matchingLabels).To(HaveKeyWithValue(config.BuildLabelKey("domain"), util.LabelValueDomain))
 				Expect(matchingLabels).ToNot(HaveKey("cp.ei.telekom.de/type"))
 
 				// Status now points at the new route in ns-a
@@ -779,8 +782,8 @@ var _ = Describe("ApiMustExist route cleanup", func() {
 	})
 
 	// When the corresponding Api is not registered/active, ApiMustExist cleans up all
-	// routes for this basepath (proxy, real, and failover) across namespaces via the same
-	// basepath-scoped sweep (CleanupStaleRoutes) the reconcile path uses.
+	// API routes for this basepath (proxy, real, and failover) across namespaces via the same
+	// domain- and basepath-scoped sweep (CleanupStaleRoutes) the reconcile path uses.
 	It("cleans up all routes by basepath when the Api is missing", func() {
 		obj := newApiExposure(ctypes.ObjectRef{Name: "zone-a", Namespace: "ns-a"})
 
@@ -804,12 +807,13 @@ var _ = Describe("ApiMustExist route cleanup", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(api).To(BeNil())
 
-		// Cleanup must be basepath-scoped (matching the reconcile-time stale sweep) and must
-		// NOT filter by type or owner.uid, so it removes proxy, real, and failover routes.
+		// Cleanup must be scoped by API domain and basepath, but not by type or owner.uid,
+		// so it removes proxy, real, and failover routes without touching agentic routes.
 		Expect(cleanupOpts).To(HaveLen(1))
 		matchingLabels, ok := cleanupOpts[0].(client.MatchingLabels)
 		Expect(ok).To(BeTrue())
 		Expect(matchingLabels).To(HaveKey(apiapi.BasePathLabelKey))
+		Expect(matchingLabels).To(HaveKeyWithValue(config.BuildLabelKey("domain"), util.LabelValueDomain))
 		Expect(matchingLabels).ToNot(HaveKey("cp.ei.telekom.de/type"))
 		Expect(matchingLabels).ToNot(HaveKey("cp.ei.telekom.de/owner.uid"))
 	})

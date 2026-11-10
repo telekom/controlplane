@@ -6,6 +6,10 @@ package util
 
 import (
 	"testing"
+
+	"github.com/onsi/gomega"
+
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 func TestNamingConstants(t *testing.T) {
@@ -47,6 +51,7 @@ func TestNamingMakePublishRouteName(t *testing.T) {
 }
 
 func TestNamingMakePublishRoutePath(t *testing.T) {
+	gomega.NewWithT(t).Expect(makePublishEventsRoutePath()).To(gomega.Equal(eventv1.HorizonPublishEventPathSuffix))
 	if got := makePublishEventsRoutePath(); got != "/horizon/events/v1" {
 		t.Errorf("makePublishEventsRoutePath() = %q, want %q", got, "/horizon/events/v1")
 	}

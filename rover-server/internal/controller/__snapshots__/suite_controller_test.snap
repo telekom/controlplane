@@ -241,6 +241,7 @@
     "clientSecret": "abcdefghijklmnop"
    },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
@@ -277,6 +278,10 @@
     {
      "name": "tardis.stargate.url",
      "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.event.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1"
     },
     {
      "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",
@@ -356,6 +361,7 @@
     "clientSecret": "abcdefghijklmnop"
    },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
@@ -392,6 +398,10 @@
     {
      "name": "tardis.stargate.url",
      "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.event.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1"
     },
     {
      "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",
@@ -457,6 +467,7 @@
     "clientSecret": "abcdefghijklmnop"
    },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
@@ -493,6 +504,10 @@
     {
      "name": "tardis.stargate.url",
      "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"
+    },
+    {
+     "name": "tardis.horizon.event.url",
+     "value": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1"
     },
     {
      "name": "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1",

@@ -302,6 +302,8 @@ spec:
 
 You can remove specific HTTP headers from incoming requests before they are forwarded to your backend service. This is useful for stripping headers that should not be passed through the gateway.
 
+Header removal is performed by Gateway Jumper using its `removeHeaders` configuration, rather than by Kong's request transformer plugin.
+
 **Applies to:** API Exposure
 
 ```yaml

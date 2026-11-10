@@ -19,13 +19,9 @@ var _ = Describe("Config Env Tests", func() {
 	var (
 		origRequeueAfterOnError     time.Duration
 		origRequeueAfter            time.Duration
-		origDefaultNamespace        string
-		origDefaultEnvironment      string
-		origLabelKeyPrefix          string
 		origJitterFactor            float64
 		origMaxBackoff              time.Duration
 		origMaxConcurrentReconciles int
-		origFinalizerName           string
 
 		oldEnv map[string]string
 	)
@@ -34,13 +30,9 @@ var _ = Describe("Config Env Tests", func() {
 		// Store original values
 		origRequeueAfterOnError = RequeueAfterOnError
 		origRequeueAfter = RequeueAfter
-		origDefaultNamespace = DefaultNamespace
-		origDefaultEnvironment = DefaultEnvironment
-		origLabelKeyPrefix = LabelKeyPrefix
 		origJitterFactor = JitterFactor
 		origMaxBackoff = MaxBackoff
 		origMaxConcurrentReconciles = MaxConcurrentReconciles
-		origFinalizerName = FinalizerName
 
 		// Reset viper for each test
 		viper.Reset()
@@ -52,13 +44,9 @@ var _ = Describe("Config Env Tests", func() {
 		// Restore original values
 		RequeueAfterOnError = origRequeueAfterOnError
 		RequeueAfter = origRequeueAfter
-		DefaultNamespace = origDefaultNamespace
-		DefaultEnvironment = origDefaultEnvironment
-		LabelKeyPrefix = origLabelKeyPrefix
 		JitterFactor = origJitterFactor
 		MaxBackoff = origMaxBackoff
 		MaxConcurrentReconciles = origMaxConcurrentReconciles
-		FinalizerName = origFinalizerName
 		viper.Reset()
 	})
 
@@ -107,13 +95,9 @@ var _ = Describe("Config Env Tests", func() {
 			// Verify all values match defaults
 			Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
 			Expect(RequeueAfter).To(Equal(origRequeueAfter))
-			Expect(DefaultNamespace).To(Equal(origDefaultNamespace))
-			Expect(DefaultEnvironment).To(Equal(origDefaultEnvironment))
-			Expect(LabelKeyPrefix).To(Equal(origLabelKeyPrefix))
 			Expect(JitterFactor).To(Equal(origJitterFactor))
 			Expect(MaxBackoff).To(Equal(origMaxBackoff))
 			Expect(MaxConcurrentReconciles).To(Equal(origMaxConcurrentReconciles))
-			Expect(FinalizerName).To(Equal(origFinalizerName))
 		})
 
 		It("should load values from environment variables", func() {
@@ -121,9 +105,6 @@ var _ = Describe("Config Env Tests", func() {
 			envVars := map[string]string{
 				"REQUEUE_AFTER_ON_ERROR":    "4s",
 				"REQUEUE_AFTER":             "25m",
-				"DEFAULT_NAMESPACE":         "test-namespace-from-env",
-				"DEFAULT_ENVIRONMENT":       "test-env-from-env",
-				"LABEL_KEY_PREFIX":          "test.prefix.from.env",
 				"JITTER_FACTOR":             "0.6",
 				"MAX_BACKOFF":               "4m",
 				"MAX_CONCURRENT_RECONCILES": "7",
@@ -135,27 +116,54 @@ var _ = Describe("Config Env Tests", func() {
 			// Verify environment variable values were applied
 			Expect(RequeueAfterOnError).To(Equal(4 * time.Second))
 			Expect(RequeueAfter).To(Equal(25 * time.Minute))
-			Expect(DefaultNamespace).To(Equal("test-namespace-from-env"))
-			Expect(DefaultEnvironment).To(Equal("test-env-from-env"))
-			Expect(LabelKeyPrefix).To(Equal("test.prefix.from.env"))
 			Expect(JitterFactor).To(Equal(0.6))
 			Expect(MaxBackoff).To(Equal(4 * time.Minute))
 			Expect(MaxConcurrentReconciles).To(Equal(7))
 
-			// Verify derived values
-			Expect(FinalizerName).To(Equal("test.prefix.from.env/finalizer"))
 			cleanUpEnv(envVars)
+		})
+
+		It("should ignore label prefix overrides from environment variables and Viper", func() {
+			envVars := map[string]string{
+				"LABEL_KEY_PREFIX": "test.prefix.from.env",
+			}
+			DeferCleanup(func() { cleanUpEnv(envVars) })
+
+			initEnv(envVars)
+			Expect(BuildLabelKey("environment")).To(Equal("cp.ei.telekom.de/environment"))
+			Expect(FinalizerName).To(Equal("cp.ei.telekom.de/finalizer"))
+
+			viper.Set("label-key-prefix", "test.prefix.from.viper")
+			Parse()
+			Expect(BuildLabelKey("environment")).To(Equal("cp.ei.telekom.de/environment"))
+			Expect(FinalizerName).To(Equal("cp.ei.telekom.de/finalizer"))
+		})
+
+		It("should ignore namespace and environment overrides from environment variables and Viper", func() {
+			envVars := map[string]string{
+				"DEFAULT_NAMESPACE":   "test-namespace-from-env",
+				"DEFAULT_ENVIRONMENT": "test-env-from-env",
+			}
+			DeferCleanup(func() { cleanUpEnv(envVars) })
+
+			initEnv(envVars)
+			Expect(DefaultNamespace).To(Equal("default"))
+			Expect(DefaultEnvironment).To(Equal("default"))
+
+			viper.Set("default-namespace", "test-namespace-from-viper")
+			viper.Set("default-environment", "test-env-from-viper")
+			Parse()
+			Expect(DefaultNamespace).To(Equal("default"))
+			Expect(DefaultEnvironment).To(Equal("default"))
 		})
 
 		It("should override default values with environment variables", func() {
 			// Set default values different from environment variables
 			RequeueAfterOnError = 10 * time.Second
-			DefaultNamespace = "original-namespace"
 
 			// Set up environment variables
 			envVars := map[string]string{
 				"REQUEUE_AFTER_ON_ERROR": "6s",
-				"DEFAULT_NAMESPACE":      "override-namespace-from-env",
 			}
 
 			// Initialize with environment variables
@@ -163,15 +171,11 @@ var _ = Describe("Config Env Tests", func() {
 
 			// Verify environment variable values override default values
 			Expect(RequeueAfterOnError).To(Equal(6 * time.Second))
-			Expect(DefaultNamespace).To(Equal("override-namespace-from-env"))
 
 			// Verify other defaults remain unchanged
-			Expect(DefaultEnvironment).To(Equal(origDefaultEnvironment))
-			Expect(LabelKeyPrefix).To(Equal(origLabelKeyPrefix))
 			Expect(JitterFactor).To(Equal(origJitterFactor))
 			Expect(MaxBackoff).To(Equal(origMaxBackoff))
 			Expect(MaxConcurrentReconciles).To(Equal(origMaxConcurrentReconciles))
-			Expect(FinalizerName).To(Equal(LabelKeyPrefix + "/" + FinalizerSuffix))
 			cleanUpEnv(envVars)
 		})
 	})

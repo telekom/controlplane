@@ -19,6 +19,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cc "github.com/telekom/controlplane/common/pkg/client"
+	cperrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/emailutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
@@ -745,7 +746,17 @@ func forbiddenError(msg string) model.MutationError {
 // an appropriate error code based on the error type.
 // It unwraps wrapped errors (e.g. from pkg/errors) to find the underlying
 // StatusError for proper classification.
+// A message marked with cperrors.CauseTypePublicMessage replaces the generic
+// message; nothing else from the error is exposed.
 func k8sToMutationError(err error) model.MutationError {
+	result := classifyK8sError(err)
+	if msg, ok := cperrors.PublicMessage(unwrapStatusError(err)); ok {
+		result.Message = msg
+	}
+	return result
+}
+
+func classifyK8sError(err error) model.MutationError {
 	if err == nil {
 		return model.MutationError{}
 	}
