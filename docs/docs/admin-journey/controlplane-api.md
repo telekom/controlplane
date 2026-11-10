@@ -254,6 +254,8 @@ When the `tardis:*` value (e.g. `tardis:admin:all`) is modeled as a Keycloak **c
 
 Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases for the corresponding `tardis:group:*` scopes.
 
+The Organization API's `POST /hubs/{hub}/teams` endpoint requires write access and accepts group or admin scopes. For compatibility, `tardis:hub:all` is accepted as the legacy alias of `tardis:group:all`; team scopes cannot create teams.
+
 #### Example JWT payload
 
 ```json

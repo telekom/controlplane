@@ -41,7 +41,7 @@ func (s *Server) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
 	router.Add(fiber.MethodDelete, "/hubs/:hub", cserver.Guarded(guard, s.DeleteHub)...)
 	router.Add(fiber.MethodGet, "/hubs/:hub/status", cserver.Guarded(guard, s.GetHubStatus)...)
 
-	router.Add(fiber.MethodPost, "/hubs/:hub/teams", append(cserver.Guarded(guard, adminCreateOnly), s.CreateTeam)...)
+	router.Add(fiber.MethodPost, "/hubs/:hub/teams", append(cserver.Guarded(guard, groupOrAdminCreateOnly), s.CreateTeam)...)
 	router.Add(fiber.MethodGet, "/hubs/:hub/teams", cserver.Guarded(guard, s.ListTeams)...)
 	router.Add(fiber.MethodGet, "/hubs/:hub/teams/:team", cserver.Guarded(guard, s.GetTeam)...)
 	router.Add(fiber.MethodPut, "/hubs/:hub/teams/:team", cserver.Guarded(guard, s.UpdateTeam)...)
@@ -56,6 +56,17 @@ func adminCreateOnly(c *fiber.Ctx) error {
 	bCtx, ok := security.FromContext(c.UserContext())
 	if !ok || bCtx.ClientType != security.ClientTypeAdmin || !bCtx.AccessType.IsWrite() {
 		p := problems.Forbidden("Forbidden", "Admin write access required")
+		return c.Status(p.Code()).JSON(p, "application/problem+json")
+	}
+	return c.Next()
+}
+
+func groupOrAdminCreateOnly(c *fiber.Ctx) error {
+	bCtx, ok := security.FromContext(c.UserContext())
+	if !ok ||
+		(bCtx.ClientType != security.ClientTypeGroup && bCtx.ClientType != security.ClientTypeAdmin) ||
+		!bCtx.AccessType.IsWrite() {
+		p := problems.Forbidden("Forbidden", "Group or admin write access required")
 		return c.Status(p.Code()).JSON(p, "application/problem+json")
 	}
 	return c.Next()

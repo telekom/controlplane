@@ -319,16 +319,19 @@ var _ = Describe("Team Handlers", func() {
 			Entry("allows team all scope", "tardis:team:all", http.StatusAccepted),
 		)
 
-		DescribeTable("team creation requires admin:all",
-			func(scope string) {
+		DescribeTable("team creation requires group or admin write access",
+			func(scope string, expectedStatus int) {
 				body := `{"name":"newteam","email":"new@telekom.de","members":[]}`
 				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
 				resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{scope}))
-				expectStatus(resp, err, http.StatusForbidden)
+				expectStatus(resp, err, expectedStatus)
 			},
-			Entry("team client", "tardis:team:all"),
-			Entry("group client", "tardis:group:all"),
-			Entry("read-only admin client", "tardis:admin:read"),
+			Entry("admin client", "tardis:admin:all", http.StatusAccepted),
+			Entry("group client", "tardis:group:all", http.StatusAccepted),
+			Entry("legacy hub client", "tardis:hub:all", http.StatusAccepted),
+			Entry("team client", "tardis:team:all", http.StatusForbidden),
+			Entry("read-only admin client", "tardis:admin:read", http.StatusForbidden),
+			Entry("read-only group client", "tardis:group:read", http.StatusForbidden),
 		)
 
 		It("should reject cross-team access for non-admin tokens", func() {

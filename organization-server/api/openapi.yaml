@@ -320,6 +320,8 @@ paths:
       security:
         - OAuth2:
             - tardis:admin:all
+            - tardis:hub:all
+            - tardis:group:all
   /hubs/{hubName}/teams/{teamName}:
     get:
       tags:
@@ -429,9 +431,9 @@ paths:
         Delete Team - all Team resources need to be deleted before a Team can be deleted.
         You can use the /hubs/{hubName}/teams/{teamName}/resources endpoint to see the names
         of the Rover resources registered with this team.
-        
-        
-        **WARNING !!!** - this operation cannot be reversed. Please use this endpoint only if you are 
+
+
+        **WARNING !!!** - this operation cannot be reversed. Please use this endpoint only if you are
         absolutely sure this team can be deleted.
       operationId: deleteTeam
       parameters:
@@ -616,7 +618,7 @@ paths:
         - Resources
       summary: Find all Resources that belong to this Team
       description: >-
-        Find all Resources that belong to the specified Team in the specified Hub. The response includes references to 
+        Find all Resources that belong to the specified Team in the specified Hub. The response includes references to
         Rovers, ApiSpecifications, EventSpecifications and FileSpecifications. This is useful as an
         overview of what resources this Team has registered in the system. To get more details about
         individual resources, please use the Rover API.
