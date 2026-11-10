@@ -115,6 +115,12 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticExposure
 		}
 	}
 
+	var lmsIssuer *string
+	if obj.Status.LmsIssuer != "" {
+		issuer := obj.Status.LmsIssuer
+		lmsIssuer = &issuer
+	}
+
 	return &AgenticExposureData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -133,6 +139,7 @@ func (t *Translator) Translate(_ context.Context, obj *agenticv1.AgenticExposure
 		Security:       security,
 		Traffic:        traffic,
 		Transformation: transformation,
+		LmsIssuer:      lmsIssuer,
 	}, nil
 }
 

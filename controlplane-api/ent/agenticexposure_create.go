@@ -216,6 +216,20 @@ func (_c *AgenticExposureCreate) SetNillableTransformation(v *model.AgenticTrans
 	return _c
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_c *AgenticExposureCreate) SetLmsIssuer(v string) *AgenticExposureCreate {
+	_c.mutation.SetLmsIssuer(v)
+	return _c
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_c *AgenticExposureCreate) SetNillableLmsIssuer(v *string) *AgenticExposureCreate {
+	if v != nil {
+		_c.SetLmsIssuer(*v)
+	}
+	return _c
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_c *AgenticExposureCreate) SetOwnerID(id int) *AgenticExposureCreate {
 	_c.mutation.SetOwnerID(id)
@@ -494,6 +508,10 @@ func (_c *AgenticExposureCreate) createSpec() (*AgenticExposure, *sqlgraph.Creat
 	if value, ok := _c.mutation.Transformation(); ok {
 		_spec.SetField(agenticexposure.FieldTransformation, field.TypeJSON, value)
 		_node.Transformation = value
+	}
+	if value, ok := _c.mutation.LmsIssuer(); ok {
+		_spec.SetField(agenticexposure.FieldLmsIssuer, field.TypeString, value)
+		_node.LmsIssuer = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -824,6 +842,24 @@ func (u *AgenticExposureUpsert) ClearTransformation() *AgenticExposureUpsert {
 	return u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *AgenticExposureUpsert) SetLmsIssuer(v string) *AgenticExposureUpsert {
+	u.Set(agenticexposure.FieldLmsIssuer, v)
+	return u
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *AgenticExposureUpsert) UpdateLmsIssuer() *AgenticExposureUpsert {
+	u.SetExcluded(agenticexposure.FieldLmsIssuer)
+	return u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *AgenticExposureUpsert) ClearLmsIssuer() *AgenticExposureUpsert {
+	u.SetNull(agenticexposure.FieldLmsIssuer)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1111,6 +1147,27 @@ func (u *AgenticExposureUpsertOne) UpdateTransformation() *AgenticExposureUpsert
 func (u *AgenticExposureUpsertOne) ClearTransformation() *AgenticExposureUpsertOne {
 	return u.Update(func(s *AgenticExposureUpsert) {
 		s.ClearTransformation()
+	})
+}
+
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *AgenticExposureUpsertOne) SetLmsIssuer(v string) *AgenticExposureUpsertOne {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.SetLmsIssuer(v)
+	})
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *AgenticExposureUpsertOne) UpdateLmsIssuer() *AgenticExposureUpsertOne {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.UpdateLmsIssuer()
+	})
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *AgenticExposureUpsertOne) ClearLmsIssuer() *AgenticExposureUpsertOne {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.ClearLmsIssuer()
 	})
 }
 
@@ -1567,6 +1624,27 @@ func (u *AgenticExposureUpsertBulk) UpdateTransformation() *AgenticExposureUpser
 func (u *AgenticExposureUpsertBulk) ClearTransformation() *AgenticExposureUpsertBulk {
 	return u.Update(func(s *AgenticExposureUpsert) {
 		s.ClearTransformation()
+	})
+}
+
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *AgenticExposureUpsertBulk) SetLmsIssuer(v string) *AgenticExposureUpsertBulk {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.SetLmsIssuer(v)
+	})
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *AgenticExposureUpsertBulk) UpdateLmsIssuer() *AgenticExposureUpsertBulk {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.UpdateLmsIssuer()
+	})
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *AgenticExposureUpsertBulk) ClearLmsIssuer() *AgenticExposureUpsertBulk {
+	return u.Update(func(s *AgenticExposureUpsert) {
+		s.ClearLmsIssuer()
 	})
 }
 

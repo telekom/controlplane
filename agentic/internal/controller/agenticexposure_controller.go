@@ -72,7 +72,7 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&agenticv1.AgenticSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticSubscriptionToAgenticExposure),

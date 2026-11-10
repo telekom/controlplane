@@ -510,6 +510,7 @@ var _ = Describe("ApiExposureHandler", func() {
 
 				// Status
 				Expect(obj.Status.Route).ToNot(BeNil())
+				Expect(obj.Status.LmsIssuer).To(Equal("https://lms.zone-a.example.com"))
 				Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 				readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
@@ -610,6 +611,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				// Status
 				Expect(obj.Status.ProxyRoutes).To(HaveLen(2))
 				Expect(obj.Status.Route).ToNot(BeNil())
+				// Only the primary (exposure) zone's LMS issuer is exposed
+				Expect(obj.Status.LmsIssuer).To(Equal("https://lms.zone-a.example.com"))
 			})
 		})
 
@@ -693,6 +696,65 @@ var _ = Describe("ApiExposureHandler", func() {
 				Expect(obj.Status.ProxyRoutes).To(HaveLen(1))
 				Expect(obj.Status.FailoverRoutes).ToNot(BeEmpty())
 				Expect(obj.Status.Route).ToNot(BeNil())
+				Expect(obj.Status.FailoverLmsIssuers).To(Equal([]apiapi.FailoverLmsIssuer{
+					{Zone: "zone-f", Url: "https://lms.zone-f.example.com"},
+				}))
+			})
+		})
+
+		// Scenario: Provider failover to multiple zones, one without an LMS issuer.
+		//
+		// Exposure in zone-a with provider failover to zone-f and zone-c (no LMS issuer), no subscribers.
+		// Expects: FailoverLmsIssuers only lists zone-f.
+		Context("provider failover: lists LMS issuers of failover zones", func() {
+			It("lists failover zones in spec order and skips zones without an LMS issuer", func() {
+				obj := newApiExposure(zoneARef)
+				obj.Spec.Traffic = apiapi.Traffic{
+					Failover: &apiapi.ProviderFailover{
+						Zones: []ctypes.ObjectRef{zoneCRef, zoneFRef},
+					},
+				}
+				obj.Status.FailoverLmsIssuers = []apiapi.FailoverLmsIssuer{{Zone: "stale", Url: "https://stale"}}
+
+				mockListApis([]apiapi.Api{makeReadyApi()})
+				mockListApiExposures([]apiapi.ApiExposure{*obj})
+				mockGetApplication()
+				mockGetTeamNotFound()
+				mockListSubscriptions([]apiapi.ApiSubscription{})
+
+				zoneCNoLms := makeReadyZone("zone-c", "ns-c", realmC, "https://idp.zone-c.example.com", "")
+				mockGetZone(zoneARef.K8s(), zoneA(), 4)
+				mockGetZone(zoneCRef.K8s(), zoneCNoLms, 2)
+				mockGetZone(zoneFRef.K8s(), zoneF(), 2)
+
+				var routes []*gatewayapi.Route
+				capturedRoutes(&routes, 3) // 2 secondary + real
+				mockCleanup()
+
+				Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+
+				Expect(obj.Status.FailoverLmsIssuers).To(Equal([]apiapi.FailoverLmsIssuer{
+					{Zone: "zone-f", Url: "https://lms.zone-f.example.com"},
+				}))
+			})
+		})
+
+		// Scenario: Api is missing, so the exposure is not provisioned.
+		Context("inactive exposure: clears LMS issuers", func() {
+			It("clears LmsIssuer and FailoverLmsIssuers", func() {
+				obj := newApiExposure(zoneARef)
+				obj.Status.LmsIssuer = "https://stale"
+				obj.Status.FailoverLmsIssuers = []apiapi.FailoverLmsIssuer{{Zone: "zone-f", Url: "https://stale"}}
+
+				mockListApis([]apiapi.Api{})
+				fakeClient.EXPECT().
+					Cleanup(ctx, mock.AnythingOfType("*v1.RouteList"), mock.Anything).
+					Return(0, nil).Once()
+
+				Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+
+				Expect(obj.Status.LmsIssuer).To(BeEmpty())
+				Expect(obj.Status.FailoverLmsIssuers).To(BeNil())
 			})
 		})
 
@@ -710,6 +772,7 @@ var _ = Describe("ApiExposureHandler", func() {
 					Name:      util.MakeRouteName(basePath),
 					Namespace: "ns-b",
 				}
+				obj.Status.FailoverLmsIssuers = []apiapi.FailoverLmsIssuer{{Zone: "zone-f", Url: "https://stale"}}
 
 				// --- Preamble ---
 				mockListApis([]apiapi.Api{makeReadyApi()})
@@ -763,6 +826,8 @@ var _ = Describe("ApiExposureHandler", func() {
 				// Status now points at the new route in ns-a
 				Expect(obj.Status.Route).ToNot(BeNil())
 				Expect(obj.Status.Route.Namespace).To(Equal("ns-a"))
+				// Without failover, stale failover LMS issuers are cleared
+				Expect(obj.Status.FailoverLmsIssuers).To(BeNil())
 			})
 		})
 	})

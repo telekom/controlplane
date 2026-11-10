@@ -252,6 +252,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
+				g.Expect(apiExposure.Status.LmsIssuer).To(Equal(fmt.Sprintf("http://lms-issuer.%s.de:8080/auth/realms/test", zoneName)))
 
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
@@ -318,6 +319,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
+				g.Expect(secondApiExposure.Status.LmsIssuer).To(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -331,6 +333,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApiExposure.Status.Active).To(BeTrue())
+				g.Expect(secondApiExposure.Status.LmsIssuer).ToNot(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 

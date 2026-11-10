@@ -52,6 +52,10 @@ const (
 	FieldApprovalConfig = "approval_config"
 	// FieldAPIVersion holds the string denoting the api_version field in the database.
 	FieldAPIVersion = "api_version"
+	// FieldLmsIssuer holds the string denoting the lms_issuer field in the database.
+	FieldLmsIssuer = "lms_issuer"
+	// FieldFailoverLmsIssuers holds the string denoting the failover_lms_issuers field in the database.
+	FieldFailoverLmsIssuers = "failover_lms_issuers"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeAPI holds the string denoting the api edge name in mutations.
@@ -101,6 +105,8 @@ var Columns = []string{
 	FieldTraffic,
 	FieldApprovalConfig,
 	FieldAPIVersion,
+	FieldLmsIssuer,
+	FieldFailoverLmsIssuers,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_exposures"
@@ -261,6 +267,11 @@ func ByActive(opts ...sql.OrderTermOption) OrderOption {
 // ByAPIVersion orders the results by the api_version field.
 func ByAPIVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAPIVersion, opts...).ToFunc()
+}
+
+// ByLmsIssuer orders the results by the lms_issuer field.
+func ByLmsIssuer(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLmsIssuer, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

@@ -135,9 +135,11 @@ func (r *Repository) Upsert(ctx context.Context, data *AgenticExposureData) erro
 		create.SetNillableAgentCardID(agentCardID)
 	}
 
+	create.SetNillableLmsIssuer(data.LmsIssuer)
 	exposureID, upsertErr := create.
 		OnConflictColumns(agenticexposure.FieldBasePath, agenticexposure.OwnerColumn).
 		UpdateNewValues().
+		Update(clearRemoved(data)).
 		ID(ctx)
 	if upsertErr != nil {
 		return fmt.Errorf("upsert agentic_exposure %q (app %q, team %q): %w",
@@ -226,4 +228,14 @@ func (r *Repository) Delete(ctx context.Context, key AgenticExposureKey) error {
 		r.cache.Del(et, lk)
 	}
 	return nil
+}
+
+// clearRemoved clears the optional fields that were removed from the resource.
+// UpdateNewValues only updates the fields that are set on create.
+func clearRemoved(data *AgenticExposureData) func(*ent.AgenticExposureUpsert) {
+	return func(u *ent.AgenticExposureUpsert) {
+		if data.LmsIssuer == nil {
+			u.ClearLmsIssuer()
+		}
+	}
 }

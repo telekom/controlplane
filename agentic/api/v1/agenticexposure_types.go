@@ -72,6 +72,11 @@ type AgenticExposureStatus struct {
 	// ProxyRoutes references proxy gateway Route CRs for cross-zone MCP delivery.
 	// +optional
 	ProxyRoutes []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
+
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens that the exposure zone's
+	// AI gateway sends to the upstream. Empty until the primary route is provisioned.
+	// +optional
+	LmsIssuer string `json:"lmsIssuer,omitempty"`
 }
 
 // +kubebuilder:object:root=true

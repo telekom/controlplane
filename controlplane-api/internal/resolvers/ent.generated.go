@@ -2861,6 +2861,29 @@ func (ec *executionContext) fieldContext_AgenticExposure_transformation(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AgenticExposure_lmsIssuer(ctx context.Context, field graphql.CollectedField, obj *ent.AgenticExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AgenticExposure_lmsIssuer(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LmsIssuer, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AgenticExposure_lmsIssuer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AgenticExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _AgenticExposure_owner(ctx context.Context, field graphql.CollectedField, obj *ent.AgenticExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4648,6 +4671,61 @@ func (ec *executionContext) _ApiExposure_apiVersion(ctx context.Context, field g
 }
 func (ec *executionContext) fieldContext_ApiExposure_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ApiExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ApiExposure_lmsIssuer(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiExposure_lmsIssuer(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LmsIssuer, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiExposure_lmsIssuer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ApiExposure", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ApiExposure_failoverLmsIssuers(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ApiExposure_failoverLmsIssuers(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FailoverLmsIssuers, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []model1.FailoverLmsIssuer) graphql.Marshaler {
+			return ec.marshalOFailoverLmsIssuer2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐFailoverLmsIssuerᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ApiExposure_failoverLmsIssuers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FailoverLmsIssuer(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _ApiExposure_owner(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
@@ -15763,7 +15841,7 @@ func (ec *executionContext) unmarshalInputAgenticExposureWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "variant", "variantNEQ", "variantIn", "variantNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "hasOwner", "hasOwnerWith", "hasMcpServer", "hasMcpServerWith", "hasAgentCard", "hasAgentCardWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "variant", "variantNEQ", "variantIn", "variantNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "lmsIssuer", "lmsIssuerNEQ", "lmsIssuerIn", "lmsIssuerNotIn", "lmsIssuerGT", "lmsIssuerGTE", "lmsIssuerLT", "lmsIssuerLTE", "lmsIssuerContains", "lmsIssuerHasPrefix", "lmsIssuerHasSuffix", "lmsIssuerIsNil", "lmsIssuerNotNil", "lmsIssuerEqualFold", "lmsIssuerContainsFold", "hasOwner", "hasOwnerWith", "hasMcpServer", "hasMcpServerWith", "hasAgentCard", "hasAgentCardWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16477,6 +16555,111 @@ func (ec *executionContext) unmarshalInputAgenticExposureWhereInput(ctx context.
 				return it, err
 			}
 			it.ActiveNotNil = data
+		case "lmsIssuer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuer"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuer = data
+		case "lmsIssuerNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNEQ = data
+		case "lmsIssuerIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerIn = data
+		case "lmsIssuerNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNotIn = data
+		case "lmsIssuerGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerGT = data
+		case "lmsIssuerGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerGTE = data
+		case "lmsIssuerLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerLT = data
+		case "lmsIssuerLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerLTE = data
+		case "lmsIssuerContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerContains = data
+		case "lmsIssuerHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerHasPrefix = data
+		case "lmsIssuerHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerHasSuffix = data
+		case "lmsIssuerIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerIsNil = data
+		case "lmsIssuerNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNotNil = data
+		case "lmsIssuerEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerEqualFold = data
+		case "lmsIssuerContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -17529,7 +17712,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasAPI", "hasAPIWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "lmsIssuer", "lmsIssuerNEQ", "lmsIssuerIn", "lmsIssuerNotIn", "lmsIssuerGT", "lmsIssuerGTE", "lmsIssuerLT", "lmsIssuerLTE", "lmsIssuerContains", "lmsIssuerHasPrefix", "lmsIssuerHasSuffix", "lmsIssuerIsNil", "lmsIssuerNotNil", "lmsIssuerEqualFold", "lmsIssuerContainsFold", "hasOwner", "hasOwnerWith", "hasAPI", "hasAPIWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18320,6 +18503,111 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.APIVersionContainsFold = data
+		case "lmsIssuer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuer"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuer = data
+		case "lmsIssuerNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNEQ = data
+		case "lmsIssuerIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerIn = data
+		case "lmsIssuerNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNotIn = data
+		case "lmsIssuerGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerGT = data
+		case "lmsIssuerGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerGTE = data
+		case "lmsIssuerLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerLT = data
+		case "lmsIssuerLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerLTE = data
+		case "lmsIssuerContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerContains = data
+		case "lmsIssuerHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerHasPrefix = data
+		case "lmsIssuerHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerHasSuffix = data
+		case "lmsIssuerIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerIsNil = data
+		case "lmsIssuerNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerNotNil = data
+		case "lmsIssuerEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerEqualFold = data
+		case "lmsIssuerContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lmsIssuerContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LmsIssuerContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -34836,6 +35124,11 @@ func (ec *executionContext) _AgenticExposure(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "lmsIssuer":
+			out.Values[i] = ec._AgenticExposure_lmsIssuer(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "owner":
 			field := field
 
@@ -35866,6 +36159,16 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			}
 		case "apiVersion":
 			out.Values[i] = ec._ApiExposure_apiVersion(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "lmsIssuer":
+			out.Values[i] = ec._ApiExposure_lmsIssuer(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "failoverLmsIssuers":
+			out.Values[i] = ec._ApiExposure_failoverLmsIssuers(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
