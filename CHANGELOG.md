@@ -1,3 +1,19 @@
+# [0.47.0](https://github.com/telekom/controlplane/compare/v0.46.0...v0.47.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* **controlplane-api,application:** propagate explicitly public webhook errors ([#848](https://github.com/telekom/controlplane/issues/848)) ([92c3cd3](https://github.com/telekom/controlplane/commit/92c3cd3e20d69bd7a32933944ad5197a4172d801))
+* **gateway:** delegate header removal to Jumper ([#849](https://github.com/telekom/controlplane/issues/849)) ([990e7ab](https://github.com/telekom/controlplane/commit/990e7ab844aa2ac8a046aa65a8a6b7ec7888c44f))
+* **rover-server:** provide event publish URL without exposures ([#836](https://github.com/telekom/controlplane/issues/836)) ([b1cc845](https://github.com/telekom/controlplane/commit/b1cc845dbb865952acb94eff7ac6e8d06822ec5c))
+
+
+### Features
+
+* **api,agentic:** shared basepath label ([#827](https://github.com/telekom/controlplane/issues/827)) ([1731ce1](https://github.com/telekom/controlplane/commit/1731ce12ecd27393896c518c1f39552a3dc7e4ec))
+* **common:** LabelKeyPrefix and derived FinalizerName are compile-time constants in common/pkg/config/config.go ([#847](https://github.com/telekom/controlplane/issues/847)) ([b53a2d9](https://github.com/telekom/controlplane/commit/b53a2d9cd068982d51d649a54bc547cfeb74beaf))
+* **controlplane-api, projector:** add environment filter to handle multiple environments in same cluster ([#815](https://github.com/telekom/controlplane/issues/815)) ([a920aa3](https://github.com/telekom/controlplane/commit/a920aa3bc49cc5b06d1cd4d588f21aa9702b1013))
+
 # [0.46.0](https://github.com/telekom/controlplane/compare/v0.45.1...v0.46.0) (2026-11-09)
 
 
