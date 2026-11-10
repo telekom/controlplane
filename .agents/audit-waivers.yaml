@@ -1,0 +1,6 @@
+# Accepted audit findings, keyed by the item id the audit prints.
+#
+#   <item_id>: <reason> (<who>, <when>)
+#
+# Waivers expire by construction: the item id contains the snippet, so changing
+# the code retires the waiver automatically. Only a human adds a line here.

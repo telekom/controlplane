@@ -44,7 +44,13 @@ if [ -n "$CHANGED_FILES" ]; then
   fi
 fi
 
-# --- 2. Validate commit messages (conventional commits) ---
+# --- 2. Audit gate over the whole branch range ---
+if ! python3 .agents/skills/code-auditor/scripts/audit_gate.py --mode range --fail-on HIGH; then
+  echo "Audit gate failed. Push blocked." >&2
+  exit 2
+fi
+
+# --- 3. Validate commit messages (conventional commits) ---
 if [ -n "$MERGE_BASE" ]; then
   COMMITS=$(git log "$MERGE_BASE..HEAD" --format="%s" 2>/dev/null || true)
 else

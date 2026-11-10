@@ -26,3 +26,37 @@ repos:
       - id: gitleaks
         stages:
           - pre-commit
+  - repo: local
+    hooks:
+      - id: validate-rules
+        name: validate agent rules
+        entry: python3 .agents/skills/code-auditor/scripts/validate_rules.py
+        language: system
+        pass_filenames: false
+        files: ^\.agents/(rules/.*\.md|audit-waivers\.yaml)$
+        stages:
+          - pre-commit
+      - id: selftest-rules-static
+        name: rule selftest (no model)
+        entry: python3 .agents/skills/code-auditor/scripts/selftest_rules.py --static
+        language: system
+        pass_filenames: false
+        files: ^\.agents/rules/.*\.md$
+        stages:
+          - pre-commit
+      - id: sync-judges
+        name: judges match the harness agents
+        entry: python3 .agents/skills/code-auditor/scripts/sync_judges.py --check
+        language: system
+        pass_filenames: false
+        files: ^(\.agents/(judges\.yaml|skills/code-auditor/persona/README\.md)|\.opencode/agents/.*|\.claude/agents/.*)$
+        stages:
+          - pre-commit
+      - id: audit-gate
+        name: audit gate
+        entry: python3 .agents/skills/code-auditor/scripts/audit_gate.py --mode staged --fail-on CRITICAL
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages:
+          - pre-commit

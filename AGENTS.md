@@ -84,6 +84,14 @@ User-facing documentation lives in `docs/docs/` (Docusaurus). After any change t
 
 Update docs in the same PR as the code change.
 
+## Auditing
+
+Before committing a finished feature, run the `code-auditor` skill. It checks the change against the ruleset in `.agents/rules` and writes receipts for the audited content.
+
+The pre-commit gate blocks on `CRITICAL` findings and on files that changed after the last audit; pre-push blocks on `HIGH`. Neither runs a model — they only verify receipts, so they cost about as much as `gitleaks`. See `.agents/ARCHITECTURE.md`.
+
+New rules are added with the `rule-writer` skill, and only on user request.
+
 ## Conventions
 
 - Commit messages: Conventional Commits `<type>(<scope>): <description>`.
