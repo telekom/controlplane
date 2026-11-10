@@ -22,6 +22,12 @@ type Config struct {
 	// Env: DATABASE_URL
 	DatabaseURL string `mapstructure:"database_url" validate:"required"`
 
+	// CreateDatabase creates the database in DatabaseURL if missing, using the
+	// database host default name.
+	// When false (the default), the operations team must create the database in advance.
+	// Env: DB_CREATE
+	CreateDatabase bool `mapstructure:"db_create"`
+
 	// MaxOpenConns is the maximum number of open connections to the database.
 	// Env: DB_MAX_OPEN_CONNS
 	MaxOpenConns int `mapstructure:"db_max_open_conns" validate:"required,gt=0"`
@@ -136,6 +142,18 @@ type Config struct {
 	// Env: LEADER_ELECTION_ID
 	LeaderElectionID string `mapstructure:"leader_election_id" validate:"required"`
 
+	// -- Environment Filter --
+	// EnvironmentFilter is the value of CRDs environment label (cp.ei.telekom.de/environment) that filters CRs by environment.
+	// If set,
+	//   - only CRs with this environment label value will be projected in SQL
+	//   - different environment label values will be ignored by the configured projector instance
+	//   - as the intend is to have multiple projectors running, each watching a specific environment,
+	//     the environment will be used as a suffix for the leader election ID.
+	// If Empty,
+	//   - all CRs will be projected regardless of their environment label. This can also be used for clusters which only have one environment.
+	// Env: ENVIRONMENT_FILTER
+	EnvironmentFilter string `mapstructure:"environment_filter" validate:"omitempty,lowercase"`
+
 	// v is the viper instance used for dynamic lookups (e.g. per-module
 	// concurrency overrides). Not exported; not part of the serialised config.
 	v *viper.Viper
@@ -181,6 +199,7 @@ func Load() (*Config, error) {
 func setDefaults(v *viper.Viper) {
 	// Database
 	v.SetDefault("database_url", "postgres://localhost:5432/controlplane?sslmode=disable")
+	v.SetDefault("db_create", false)
 	v.SetDefault("db_max_open_conns", 100)
 	v.SetDefault("db_max_idle_conns", 30)
 	v.SetDefault("db_conn_max_lifetime", "5m")
@@ -217,4 +236,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("health_probe_bind_address", ":8081")
 	v.SetDefault("leader_election", false)
 	v.SetDefault("leader_election_id", "projector.cp.ei.telekom.de")
+
+	// Environment
+	v.SetDefault("environment_filter", "")
 }
