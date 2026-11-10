@@ -82,6 +82,8 @@ type FileSpecificationStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // FileSpecification is the Schema for the filespecifications API.
 // It defines a file type's metadata and creates the corresponding file-domain

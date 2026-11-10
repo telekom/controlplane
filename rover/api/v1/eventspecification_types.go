@@ -66,6 +66,8 @@ type EventSpecificationStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // EventSpecification is the Schema for the eventspecifications API.
 // It defines an event type's metadata and creates the corresponding EventType

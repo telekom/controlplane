@@ -88,6 +88,7 @@ type ApprovalRequestStatus struct {
 // ApprovalRequest is the Schema for the approvalrequests API
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".spec.state",description="The state of the approval"
 // +kubebuilder:printcolumn:name="Strategy",type="string",JSONPath=".spec.strategy",description="The strategy used to approve the request"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApprovalRequest struct {
 	metav1.TypeMeta   `json:",inline"`
