@@ -134,7 +134,7 @@ stringData:
   url: postgres://user:password@your-db-host:5432/controlplane?sslmode=require
 ```
 
-The database is the path of the URL (`/controlplane` above). With `DB_CREATE: "false"` (the default), the operations team must create the database in advance. Set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap to let the Projector create it on startup, which needs the `CREATEDB` role attribute and an existing database named after the login user.
+The database (`/controlplane` above) must exist. To let the Projector create it on startup, set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap. The database user then needs the `CREATEDB` permission and a database with the user's name.
 
 For development or testing, you can include the `database` component instead, which deploys an in-cluster PostgreSQL and creates the Secret automatically:
 
@@ -270,109 +270,17 @@ Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases fo
 
 ## Running multiple environments in one cluster
 
-By default, one ControlPlane API and one Projector serve every environment from a single database. To keep environments isolated, deploy **one ControlPlane API and Projector pair per environment**, each with its own database. Deployments without the settings below keep the single-environment behavior.
+By default, one ControlPlane API and one Projector serve all environments from one database. To isolate environments, deploy one pair per environment, each with its own database:
 
-### How the isolation works
-
-| Component | Setting | Effect |
+| Setting | Component | Purpose |
 |---|---|---|
-| Projector | `ENVIRONMENT_FILTER=<environment>` | Watches only resources labeled `cp.ei.telekom.de/environment=<environment>`, and appends `-<environment>` to its leader election ID, so the instances do not compete for one lease. |
-| Projector | `DATABASE_URL` | Writes into the environment's own database. With `DB_CREATE: "true"` it creates that database on startup (see [Database](#database)). |
-| ControlPlane API | `DATABASE_URL` | Reads from the same database as the environment's Projector. |
-| ControlPlane API | `KUBERNETES_ENVIRONMENT` | Overrides `kubernetes.environment` in the configuration file. Mutations write to this environment. |
-| ControlPlane API | Service and Ingress | Each instance gets its own Service and external hostname. The GraphQL paths stay unchanged. |
+| `ENVIRONMENT_FILTER` | Projector | Projects only resources of this environment. |
+| `DATABASE_URL` | Both | The environment's database. |
+| `KUBERNETES_ENVIRONMENT` | ControlPlane API | The environment that mutations write to. |
 
-### Recommended Kustomize layout
+### Example
 
-Use one base and one small overlay per environment:
-
-```text
-environments/
-├── kustomization.yaml   # resources: [dev, qa]
-├── base/                # imports both components and sets the shared settings
-├── dev/                 # name suffix, environment label, hostname
-└── qa/
-```
-
-The base imports the `config/default` folder of **both** components and derives every environment-specific value from one label. Each overlay sets `app.kubernetes.io/instance` to its environment name, and both containers read it through the Kubernetes downward API:
-
-```yaml title="environments/base/kustomization.yaml"
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - https://github.com/telekom/controlplane//controlplane-api/config/default/?ref=<version>
-  - https://github.com/telekom/controlplane//projector/config/default/?ref=<version>
-
-patches:
-  - target:
-      kind: Deployment
-      name: controlplane-api
-    patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: controlplane-api
-      spec:
-        template:
-          spec:
-            containers:
-              - name: manager
-                env:
-                  - name: KUBERNETES_ENVIRONMENT
-                    value: $(CP_ENVIRONMENT)
-  - target:
-      kind: Deployment
-      name: projector-controller-manager
-    patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: projector-controller-manager
-      spec:
-        template:
-          spec:
-            containers:
-              - name: manager
-                env:
-                  - name: ENVIRONMENT_FILTER
-                    value: $(CP_ENVIRONMENT)
-                  - name: LEADER_ELECTION
-                    value: "true"
-  # Applies to both Deployments. The name is required but ignored, because target selects.
-  - target:
-      kind: Deployment
-    patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: not-important
-      spec:
-        template:
-          spec:
-            containers:
-              - name: manager
-                env:
-                  - name: CP_ENVIRONMENT
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.labels['app.kubernetes.io/instance']
-                  - name: DB_USER
-                    valueFrom:
-                      secretKeyRef:
-                        name: controlplane-db
-                        key: username
-                  - name: DB_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: controlplane-db
-                        key: password
-                  - name: DATABASE_URL
-                    value: postgres://$(DB_USER):$(DB_PASSWORD)@<db-host>:5432/$(CP_ENVIRONMENT)
-                    valueFrom: null
-```
-
-Each overlay only sets the name suffix, the label, and the hostname:
+Create a `controlplane-db-<environment>` Secret with a `url` key and one overlay per environment. Only the environment name (`qa`) changes between overlays:
 
 ```yaml title="environments/qa/kustomization.yaml"
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -381,18 +289,43 @@ kind: Kustomization
 nameSuffix: -qa
 
 resources:
-  - ../base
+  - https://github.com/telekom/controlplane//controlplane-api/config/default/?ref=<version>
+  - https://github.com/telekom/controlplane//projector/config/default/?ref=<version>
 
-# Also the environment name: the base derives all environment settings from it.
 labels:
   - includeSelectors: true
     pairs:
       app.kubernetes.io/instance: qa
+    fields:
+      - path: spec/selector/matchLabels
+        create: true
+        kind: ServiceMonitor
+        group: monitoring.coreos.com
 
+# env/0 is DATABASE_URL in both Deployments.
 patches:
   - target:
+      kind: Deployment
+      name: projector-controller-manager
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: controlplane-db-qa
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value: { name: ENVIRONMENT_FILTER, value: qa }
+  - target:
+      kind: Deployment
+      name: controlplane-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: controlplane-db-qa
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value: { name: KUBERNETES_ENVIRONMENT, value: qa }
+  - target:
       kind: Ingress
-      name: controlplane-api-ingress
     patch: |-
       - op: replace
         path: /spec/rules/0/host
@@ -428,29 +361,27 @@ replacements:
           - spec.template.spec.volumes.[name=cert-volume].secret.secretName
 ```
 
-Keep these rules in mind:
+Keep in mind:
 
-- **Import `config/default` per environment.** Each environment then gets its own ServiceAccount, RBAC bindings, and metrics Service. Do not import the components once and add extra Deployments next to them: the shared metrics Service would select the pods of every environment.
-- **Treat every environment the same way**, including the first. Use `nameSuffix` and the `instance` label with `includeSelectors: true` in every overlay, so each Service only selects its own pods.
-- **Keep the certificate replacements** in each overlay. Without them, all Certificates write to the same Secret and carry the wrong DNS names.
-- **Check the order of environment variables.** Kubernetes only expands `$(VAR)` from variables defined earlier in the list. Strategic-merge patches can insert new entries before existing ones, which is why the shared patch above comes last. Inspect the rendered output with `kubectl kustomize`: if a reference stays unexpanded, all Projectors would use a database literally named `$(CP_ENVIRONMENT)`.
-- **Mount the same API configuration file in every instance** and let `KUBERNETES_ENVIRONMENT` set the environment, instead of keeping one copy of the file per environment.
+- Use this overlay for every environment, including the first. Otherwise Services, metrics, and certificates mix environments.
+- Provide the [API configuration](#controlplane-api-configuration) once per environment. The suffix renames the ConfigMap to `controlplane-api-config-<environment>`. One file works for all, because `KUBERNETES_ENVIRONMENT` overrides `kubernetes.environment`:
 
-:::tip Separate database credentials
-The example reuses one database role for all environments, which is fine for test environments. In production, give each environment its own database role and Secret: replace the shared `DATABASE_URL` patch with one `secretKeyRef` per overlay.
-:::
+  ```yaml title="kustomization.yaml (parent of environments/)"
+  resources:
+    - environments
 
-### Internal callers
+  configMapGenerator:
+    - name: controlplane-api-config-qa
+      namespace: controlplane-system
+      behavior: replace
+      files:
+        - config.yaml=controlplane-api.yaml
+  ```
+- Point in-cluster callers, such as the organization server (`CPAPI_ENDPOINT`), to their environment's Service, for example `https://controlplane-api-qa.controlplane-system.svc.cluster.local:9443/graphql/query`.
+- Set the token's `env` claim to the instance's environment (see [Keycloak integration](#keycloak-integration)). The zone realms that the Control Plane creates, including `rover`, do not add it (see [Token Claims](./environments-and-zones.md#token-claims)).
 
-Components that call the ControlPlane API inside the cluster, such as the organization server (`CPAPI_ENDPOINT`), talk to exactly one environment. Point them at that environment's Service, for example `https://controlplane-api-qa.controlplane-system.svc.cluster.local:9443/graphql/query`.
-
-### Tokens and access
-
-The token requirements from [Keycloak integration](#keycloak-integration) still apply to every instance. Set the `env` claim to the instance's environment. The realms that the Control Plane creates for each zone, including the internal `rover` realm, do not add these claims (see [Token Claims](./environments-and-zones.md#token-claims)), so configure them in those realms as well.
-
-:::warning 
-Environment isolation is not enforced on tokens yet.
-The ControlPlane API does not compare the token's `env` claim with its own environment yet, so separate hostnames are **not** an authorization boundary. 
+:::warning
+The ControlPlane API does not check the token's `env` claim yet. Separate hostnames are **not** an authorization boundary.
 :::
 
 
@@ -494,7 +425,7 @@ For local development with `mode: mock`, any JWT with valid claims works — the
 | Playground queries return 401 | Missing or invalid Authorization header | Add `{ "Authorization": "Bearer <token>" }` in the Playground Headers tab. With `mode: mock`, any JWT with valid claims works. |
 | 403 `Missing field 'env'` | The token has no `env` claim | Add a hardcoded `env` claim to the client's realm. See [Keycloak integration](#keycloak-integration). |
 | 403 `No valid scope found` | The token's `scope` claim has no `tardis:<team\|group\|admin>:<read\|obfuscated\|all>` value | Add the client scope with **Include in token scope** enabled, and assign it as Default or request it in the token request. |
-| A Projector instance projects nothing | `ENVIRONMENT_FILTER` does not match the resources' `cp.ei.telekom.de/environment` label | Check the label on the custom resources and the value of `ENVIRONMENT_FILTER`. Resources without the label are ignored when a filter is set. |
+| A Projector projects nothing | `ENVIRONMENT_FILTER` does not match the `cp.ei.telekom.de/environment` label | Fix the filter or the label. With a filter set, unlabeled resources are ignored. |
 
 ## Next steps
 
