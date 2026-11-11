@@ -1,11 +1,11 @@
 ---
 name: code-auditor
-description: Use me when you have finished implemented a feature to audit the current working-tree code diffs against rules for this repository.
+description: Use when auditing local or staged changes, reviewing a branch or pull request, or checking a finished feature against this repository's rules.
 ---
 
 # Code Auditor Skill
 
-Audit the current change against `.agents/rules` before it is committed.
+Audit the selected change against `.agents/rules`.
 
 Scripts do all the deciding they can. You only answer the questions a script
 cannot, and every answer you give is machine-verified before it counts.
@@ -28,14 +28,52 @@ of `.agents/.audit/`. See "Shared configuration" in `scripts/README.md`.
 
 ## Workflow
 
+### 0. Select the scope
+
+Use the scope already specified by the user's prompt. Otherwise ask with the
+question tool before running any audit script:
+
+- **Local changes**: all uncommitted changes against `HEAD`, including
+  untracked files; use current working-tree content (`--mode local`).
+- **Staged changes**: exactly the index against `HEAD`, excluding unstaged
+  edits and untracked files (`--mode staged`).
+- **Branch / PR review**: committed changes from the target branch's merge
+  base to the reviewed tip, excluding all local edits (`--mode range`).
+
+"Audit", "review my changes", or "feature finished" alone do not select a
+scope. A clean working tree does not imply a branch review: ask rather than
+silently switching scopes. If no answer is available, stop before generating
+or replacing audit state.
+
+For a PR, read its target branch and head commit from PR metadata (for example
+`gh pr view <PR> --json baseRefName,headRefOid`), fetch the needed refs, and
+verify that the repository contains that head. Pass the target ref with
+`--base` and the head commit with `--revision`. Do not assume the target is
+`main`. For a branch review without a specified target, use the repository's
+default branch; ask if it cannot be resolved.
+
+Include branch changes **and** local edits only when explicitly requested
+(`--mode worktree --base <target>`). This combined scope is not a fallback.
+
+Before running, announce the selected scope, comparison base/target and tip,
+and whether local edits and untracked files are included. Keep that selection
+for every regeneration after fixes; change it only on user direction.
+
 ### 1. Generate the report
 
+Run the command for the selected scope:
+
 ```bash
-python3 .agents/skills/code-auditor/scripts/create_audit_report.py
+python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode local
+python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode staged
+python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode range --base origin/<target> --revision <head-commit>
 ```
 
-For a partially staged commit, use `--mode staged`. Detectors and evidence
-validation use that frozen index snapshot, including package context.
+Run only the selected command, not all three. The CLI requires an explicit
+mode and prints the resolved comparison. Check that the recorded `mode`,
+`base` and `comparison` in the report match the announced scope.
+Detectors and evidence validation use the chosen frozen snapshot, including
+package context.
 Regenerating the report resets its verdict file; reusable judgments come
 from the separate cache.
 

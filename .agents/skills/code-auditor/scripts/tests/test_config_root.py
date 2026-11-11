@@ -141,6 +141,8 @@ class SharedConfigTest(unittest.TestCase):
         self._tmp.cleanup()
 
     def create(self, *args: str, env: dict | None = None):
+        if "--mode" not in args:
+            args = ("--mode", "worktree", *args)
         return run("create_audit_report.py", self.sub, "--quiet", *args, env=env)
 
     def report(self) -> dict:
@@ -461,7 +463,7 @@ class SharedConfigTest(unittest.TestCase):
 
     def test_process_accepts_a_contextless_report_in_local_mode(self) -> None:
         local = self.workspace / ".agents" / ".audit"
-        created = run("create_audit_report.py", self.workspace, "--quiet")
+        created = run("create_audit_report.py", self.workspace, "--mode", "local", "--quiet")
         self.assertEqual(created.returncode, 0, created.stderr)
         self.strip_context(local / "report.json")
         result = run("process_audit_report.py", self.workspace)

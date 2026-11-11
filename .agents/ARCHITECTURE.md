@@ -99,10 +99,16 @@ require re-auditing after an otherwise unrelated file changes. Changing or
 removing the selected judge pin also invalidates the last audit.
 
 Detectors run in an isolated complete snapshot: the index for staged audits,
-committed blobs for the push gate, and frozen working-tree files for session
-audits. Evidence is verified against the recorded blobs, not later edits.
-The branch comparison base comes from the default target branch, never from
-the feature branch's tracking ref.
+committed blobs for branch/PR reviews and the push gate, and frozen
+working-tree files for local audits. Evidence is verified against the
+recorded blobs, not later edits. Session audits require an explicit scope:
+local changes against `HEAD`, the index against `HEAD`, committed changes
+against the target merge base, or explicitly combined branch and local
+changes. The skill asks when the prompt does not specify a scope.
+Branch/PR reports resolve the merge base with the specified target, or the
+default branch when unspecified, never the feature branch's tracking ref.
+PR targets come from PR metadata. Report `comparison` records the selected
+target and resolved endpoints.
 
 This single decision buys four properties at once:
 

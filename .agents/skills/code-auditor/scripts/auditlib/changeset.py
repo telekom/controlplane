@@ -4,11 +4,15 @@
 
 """Deterministic resolution of *what* is being audited.
 
-Three modes exist and they must never be conflated:
+Four explicit modes exist and they must never be conflated:
+
+``local``
+    uncommitted changes against HEAD, including staged edits and untracked
+    files, using their current working-tree content.
 
 ``worktree``
-    everything that differs from the merge base, staged or not. This is what
-    the agent audits at the end of a feature.
+    explicitly combined branch and local changes against the merge base,
+    using current working-tree content.
 
 ``staged``
     only the content in the git index. This is what the commit gate checks
@@ -63,8 +67,19 @@ def repo_root(start: Path | None = None) -> Path:
     return Path(result.stdout.strip())
 
 
-def merge_base(root: Path, revision: str = "HEAD") -> str:
+def commit(root: Path, revision: str) -> str:
+    """Resolve and pin a commit ref before snapshotting or comparing it."""
+    return git(
+        root, "rev-parse", "--verify", "--end-of-options", f"{revision}^{{commit}}"
+    ).strip()
+
+
+def merge_base(
+    root: Path, revision: str = "HEAD", target: str | None = None,
+) -> str:
     """Resolve the base commit the change should be measured against."""
+    if target is not None:
+        return git(root, "merge-base", commit(root, target), commit(root, revision)).strip()
     head = git(root, "symbolic-ref", "refs/remotes/origin/HEAD", check=False).strip()
     targets = [head] if head else ["origin/main", "origin/master", "main", "master"]
     for target in targets:
@@ -128,8 +143,12 @@ def collect(
     """Return the changed files for the requested mode, sorted by path."""
     if mode == "staged":
         diff_args = ["diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff"]
-    elif mode == "worktree":
-        base = base or merge_base(root, revision)
+        if base is not None:
+            diff_args.append(base)
+    elif mode in ("local", "worktree"):
+        base = base or (
+            commit(root, "HEAD") if mode == "local" else merge_base(root, revision)
+        )
         diff_args = ["diff", "--unified=0", "--no-color", "--no-ext-diff", base]
     elif mode == "range":
         base = base or merge_base(root, revision)
@@ -143,7 +162,7 @@ def collect(
     added = _added_lines(diff)
     touched = _added_lines(diff, include_deletions=True)
 
-    if mode == "worktree":
+    if mode in ("local", "worktree"):
         # Untracked files are part of the change too; a brand new controller
         # must not escape the audit just because it was never added.
         untracked = git(root, "ls-files", "--others", "--exclude-standard").split("\n")

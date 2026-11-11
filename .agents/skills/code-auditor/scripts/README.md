@@ -66,10 +66,28 @@ that location. Creating a new plan resets its verdict file.
 
 ## Snapshot and receipt contract
 
-The session audit compares against the default branch's merge base, including
-already-pushed feature commits. `--mode staged` exports the complete index;
-the push gate's `--mode range` exports committed `HEAD`, ignoring local edits.
-`--base` and `--revision` select explicit committed endpoints for the gate.
+Report generation requires an explicit `--mode`. The skill asks for a scope
+when the prompt does not specify one:
+
+| Mode | Comparison | Snapshot |
+| --- | --- | --- |
+| `local` | `HEAD` to current files | Working tree, including untracked files |
+| `staged` | `HEAD` to index | Complete index, excluding unstaged edits |
+| `range` | Target merge base to reviewed tip | Committed tip, excluding local edits |
+| `worktree` | Target merge base to current files | Explicitly combined branch and local changes |
+
+For report generation, `--base TARGET` selects the target branch for `range`
+or `worktree`, and `--revision REF` selects the committed tip for `range`
+(default `HEAD`). The comparison starts at their **merge base**, not the
+target's tip. Without `--base`, the repository's default target is used,
+never the feature branch's tracking ref. For a PR, obtain the actual target
+and head commit from PR metadata and pass both explicitly.
+Local/staged modes reject `--base` and `--revision`; worktree rejects
+`--revision`. Reports record resolved endpoints under `comparison` and `base`.
+
+The push gate's `--mode range` exports committed content, ignoring local edits.
+Unlike report generation, the gate's `--base` is an exact comparison commit;
+its `--revision` is the committed tip.
 Detector tools run inside these isolated trees with package context intact.
 Evidence is verified against the recorded blobs in Git's object store.
 
@@ -123,7 +141,7 @@ must get the same value.
 
 ```bash
 cd controlplane
-python3 ../.agents/skills/code-auditor/scripts/create_audit_report.py --config-root ..
+python3 ../.agents/skills/code-auditor/scripts/create_audit_report.py --mode local --config-root ..
 python3 ../.agents/skills/code-auditor/scripts/show_work_unit.py '<unit_id>' --config-root ..
 python3 ../.agents/skills/code-auditor/scripts/process_audit_report.py --config-root .. --fail-on HIGH
 ```
@@ -159,8 +177,11 @@ git root is its own config root and state stays in `.agents/.audit/`.
 # validate the ruleset
 python3 validate_rules.py
 
-# what would be audited, without judging anything
-python3 create_audit_report.py --mode worktree
+# uncommitted changes, without judging anything
+python3 create_audit_report.py --mode local
+
+# committed branch/PR changes only
+python3 create_audit_report.py --mode range --base origin/main --revision HEAD
 
 # check the gate without committing
 python3 audit_gate.py --mode staged

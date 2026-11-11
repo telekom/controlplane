@@ -12,7 +12,9 @@ units. A model is only ever asked about items that survive all of that.
 
 Usage::
 
-    create_audit_report.py [--mode worktree|staged] [--out PATH] [--config-root DIR]
+    create_audit_report.py --mode local|staged|range|worktree
+                           [--base TARGET] [--revision REF]
+                           [--out PATH] [--config-root DIR]
 """
 
 from __future__ import annotations
@@ -58,19 +60,45 @@ def _rule_prompt(rule: rulelib.Rule) -> dict:
 
 
 def build(
-    context: AuditContext, mode: str, input_tree: Path | None = None,
+    context: AuditContext, mode: str, *,
+    base: str | None = None, revision: str = "HEAD", announce: bool = False,
 ) -> dict:
-    if input_tree is None:
-        with changeset.snapshot(context.repo_root, mode) as tree:
-            return build(context, mode, tree)
+    root = context.repo_root
+    tip = changeset.commit(root, revision)
+    comparison_base = (
+        changeset.commit(root, "HEAD") if mode in ("local", "staged")
+        else changeset.merge_base(root, tip, target=base)
+    )
+    comparison = {
+        "target": base,
+        "base": comparison_base,
+        "revision": tip if mode == "range" else (
+            "INDEX" if mode == "staged" else "WORKTREE"
+        ),
+    }
+    if announce:
+        target = f" (target {base})" if base else ""
+        print(
+            f"Scope: {mode}{target}; "
+            f"{comparison_base} -> {comparison['revision']}",
+            flush=True,
+        )
+    with changeset.snapshot(root, mode, tip) as tree:
+        return _build(context, mode, tree, comparison, tip)
+
+
+def _build(
+    context: AuditContext, mode: str, input_tree: Path,
+    comparison: dict, revision: str,
+) -> dict:
     root = context.repo_root
     judge = judgelib.load(context.config_root).resolve()
     model = judge.pin
     rules = rulelib.load_index(
         context.config_root, context.audit_dir / "rules.index.json"
     )
-    base = changeset.merge_base(root) if mode == "worktree" else "INDEX"
-    files = changeset.collect(root, mode=mode, base=None if mode == "staged" else base)
+    base = comparison["base"]
+    files = changeset.collect(root, mode=mode, base=base, revision=revision)
     files = changeset.freeze(root, input_tree, files)
 
     contents = {
@@ -259,6 +287,7 @@ def build(
     ) | {
         "judge": judge.complexity,
         "context": context.describe(),
+        "comparison": comparison,
         "tree_hash": changeset.tree_hash(input_tree),
         "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.complexity > 0},
     }
@@ -266,15 +295,30 @@ def build(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("worktree", "staged"), default="worktree")
+    parser.add_argument(
+        "--mode", choices=("local", "staged", "range", "worktree"), required=True,
+        help=(
+            "local: uncommitted edits vs HEAD; staged: index vs HEAD; "
+            "range: committed branch/PR changes; worktree: branch changes plus local edits"
+        ),
+    )
+    parser.add_argument("--base", help="target branch/ref for range or worktree (uses merge base)")
+    parser.add_argument("--revision", help="committed tip to review in range mode (default: HEAD)")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--quiet", action="store_true")
     add_argument(parser)
     args = parser.parse_args()
+    if args.base is not None and args.mode not in ("range", "worktree"):
+        parser.error("--base is only valid with --mode range or worktree")
+    if args.revision is not None and args.mode != "range":
+        parser.error("--revision is only valid with --mode range")
 
     try:
         context = resolve(args.config_root)
-        document = build(context, args.mode)
+        document = build(
+            context, args.mode, base=args.base, revision=args.revision or "HEAD",
+            announce=not args.quiet,
+        )
     except ConfigError as exc:
         print(f"Cannot audit: {exc}", file=sys.stderr)
         return 2

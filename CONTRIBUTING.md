@@ -72,8 +72,10 @@ To get started with `pre-commit`, follow these steps:
 This installs pre-commit, commit-msg and pre-push hooks. Re-run it in existing
 checkouts to install the new pre-push gate. The audit gate is independent of
 the agent harness and ignores unstaged fixes when checking committed content.
-Run the `code-auditor` skill before committing or pushing; for partial staging
-generate a staged audit. Model-backed cold CI auditing is planned, not enforced.
+Run the `code-auditor` skill before committing or pushing and specify local,
+staged, or branch/PR scope; it asks when the scope is unclear. For partial
+staging generate a staged audit; before pushing review the committed branch
+against its target. Model-backed cold CI auditing is planned, not enforced.
 
 You may also manually run it with the following command:
 
