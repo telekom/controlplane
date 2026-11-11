@@ -70,6 +70,8 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticExposure),
 			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
+		// Watch Zones with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
+		// because the LMS issuer comes from Zone status, which does not bump metadata.generation.
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticExposure),
 			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),

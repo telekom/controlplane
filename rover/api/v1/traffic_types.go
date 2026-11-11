@@ -63,6 +63,7 @@ type ProviderFailover struct {
 	// Zones is a list of zone names to use for failover if the primary zone is unavailable
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
+	// +listType=set
 	Zones []string `json:"zones,omitempty"`
 }
 
