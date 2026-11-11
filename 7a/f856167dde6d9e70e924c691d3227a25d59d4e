@@ -1,0 +1,19 @@
+organization-server/config/server/server.yaml
+  s_0f0a648dbc41b7::t_8b6f748af4d8f6 28-29,63-64,66-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7af856167dde6d9e70e924c691d3227a25d59d4e",
+  "prompts": {},
+  "sessions": {
+    "s_0f0a648dbc41b7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02dd3b91affew3Bj1P7wf8Dk96",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

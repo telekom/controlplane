@@ -1,0 +1,58 @@
+controlplane-api/cmd/main.go
+  s_d0b129f8b1d70b::t_019c57cb7d229d 210
+  s_d0b129f8b1d70b::t_23cab0025b6be7 23,104-105,209
+controlplane-api/schema.graphql
+  s_d0b129f8b1d70b::t_68ba27bea715fc 360-370,379-384
+  s_d0b129f8b1d70b::t_c4174955d6f21c 385-386
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_d0b129f8b1d70b::t_e8fd28471b9108 13,28
+  s_d0b129f8b1d70b::t_caeb9866c27da3 561-583
+  s_d0b129f8b1d70b::t_526a24befd7291 559-560
+  s_d0b129f8b1d70b::t_3cd0bba1f47dc9 584-585
+controlplane-api/go.mod
+  s_d0b129f8b1d70b::t_0ad6a8465a99a4 14,39,44,57,96-97,100,106,164
+controlplane-api/internal/resolvers/schema_resolvers_apispecification_test.go
+  s_d0b129f8b1d70b::t_821a5c16c6456b 1-191
+docs/docs/architecture/controlplane-api.mdx
+  s_d0b129f8b1d70b::t_333515f4601598 138-143
+controlplane-api/README.md
+  s_d0b129f8b1d70b::t_333515f4601598 65
+controlplane-api/internal/resolvers/resolver.go
+  s_d0b129f8b1d70b::t_b00f315641da00 20,29
+  s_d0b129f8b1d70b::t_cb1282140f7735 80-82
+  s_d0b129f8b1d70b::t_6c12ac1abf6b52 103-106
+  s_d0b129f8b1d70b::t_3799486928255c 30,73-79,83-102,107-119
+  s_d0b129f8b1d70b::t_521c293563f287 8-10,12,15
+  s_d0b129f8b1d70b::t_afb17cebd8a0f5 32-39,44-45,51-54,58,60
+  s_d0b129f8b1d70b::t_33c2e7b676a4cb 31
+controlplane-api/cmd/config/config.go
+  s_d0b129f8b1d70b::t_bebb64e84ac159 38-41,44
+.github/ci/module-graph.json
+  s_d0b129f8b1d70b::t_1e3e9d40ca3b82 72
+controlplane-api/go.sum
+  s_d0b129f8b1d70b::t_7081fe472ebce6 11-12,41-42,157-160,173-174,197-198
+controlplane-api/internal/resolvers/ent.generated.go
+  s_d0b129f8b1d70b::t_df62f96e53dd03 94,391-404,8052-8095,25227-25248
+controlplane-api/internal/resolvers/model/models.generated.go
+  s_d0b129f8b1d70b::t_9f347b2f61a5dd 26-33
+controlplane-api/internal/resolvers/root_.generated.go
+  s_d0b129f8b1d70b::t_e0a9f965e18f35 151-155,619,1153-1165,3071-3081,8284-8294,8303-8310,8495-8504
+controlplane-api/internal/resolvers/schema.generated.go
+  s_d0b129f8b1d70b::t_d103cd4cbc8870 397-442,3241-3283,5614-5635,5709-5715
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "ab57cc8337dd92462e16bc5692da891b04bf4ec8",
+  "prompts": {},
+  "sessions": {
+    "s_d0b129f8b1d70b": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a2747f22-fb68-4020-868a-ba0758ff7dd2",
+        "model": "unknown"
+      },
+      "human_author": "Elmar Meuthen <elmar.meuthen@telekom.de>"
+    }
+  }
+}

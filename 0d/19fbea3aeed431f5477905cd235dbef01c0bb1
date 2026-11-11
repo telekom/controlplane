@@ -1,0 +1,35 @@
+event/internal/handler/eventconfig/handler.go
+  s_02b465ad8dd613::t_d979c6dc3aaddb 611,708-715,722-724
+event/internal/handler/eventconfig/voyager_routes_test.go
+  s_6f7f9fd094bc68::t_8bd056f9eb2001 24,127-156
+  s_02b465ad8dd613::t_434421aa7a6b33 1-23,25-126,157-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0d19fbea3aeed431f5477905cd235dbef01c0bb1",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_02b465ad8dd613": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee9598f0fffe4Io7ZvRnzWt191",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_6f7f9fd094bc68": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee94c5cb6ffeEkUNeUKRk8Uzol",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+common/pkg/client/client_test.go
+  s_ebc26bde2d8362::t_88fea5f5205492 12,14,269-271,315-372
+  s_ebc26bde2d8362::t_9c3bbd15e78308 280,285-287
+docs/docs/architecture/agentic.mdx
+  s_ebc26bde2d8362::t_52a95a862da65d 72-77
+docs/docs/developer-journey/creating-an-operator.md
+  s_ebc26bde2d8362::t_c3f5db510191df 82-94
+common/pkg/client/client.go
+  s_ebc26bde2d8362::t_88fea5f5205492 28-30,147,154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3059a2c3329d9ab76b946547b943c15669b829f4",
+  "prompts": {},
+  "sessions": {
+    "s_ebc26bde2d8362": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2d365b4fffemnDZJrPjPDWYpe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

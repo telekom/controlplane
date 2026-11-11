@@ -1,0 +1,35 @@
+gateway/test/devloop/verify/mesh.sh
+  s_92af86e6e350bb::t_b0f6b8b44591f0 13-25
+  s_92af86e6e350bb::t_59f345fa5f55fc 1-12,26-37
+gateway/test/devloop/verify/xds.sh
+  s_92af86e6e350bb::t_45a334f3f6d365 16,21-35
+gateway/test/devloop/verify/routing.sh
+  s_92af86e6e350bb::t_69d774d8e52756 1-32
+gateway/test/devloop/devloop.sh
+  s_92af86e6e350bb::t_6cb5fab65568d7 191-198
+  s_92af86e6e350bb::t_3b88d799559096 208
+  s_92af86e6e350bb::t_1a2bfc9786297d 218
+gateway/test/devloop/verify/lib.sh
+  s_92af86e6e350bb::t_3800fc66d4d28a 34-36,38-47
+  s_92af86e6e350bb::t_3cde82be959530 37
+gateway/Makefile
+  s_92af86e6e350bb::t_d1ffc396fc4316 148-151
+gateway/test/devloop/samples/mesh/zone-a-mesh.yaml
+  s_92af86e6e350bb::t_baafdc82588b30 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a86dbdd9fa0ad6ca9abccda0010ba588852374c7",
+  "prompts": {},
+  "sessions": {
+    "s_92af86e6e350bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d141470ffe7IBPCB5E1yqmDz",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

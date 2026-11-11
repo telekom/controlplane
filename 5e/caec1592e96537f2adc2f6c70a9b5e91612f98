@@ -1,0 +1,20 @@
+controlplane-api/internal/resolvers/schema_resolvers_test.go
+  s_4f2213152a375f::t_f8508ca3e120d4 11
+  s_4f2213152a375f::t_64836c7455424e 345-351
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5ecaec1592e96537f2adc2f6c70a9b5e91612f98",
+  "prompts": {},
+  "sessions": {
+    "s_4f2213152a375f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3bdea2aaffecD2HcDlL60SzZ5",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    }
+  }
+}

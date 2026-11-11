@@ -1,0 +1,36 @@
+gateway/pkg/kong/api/openapi.yaml
+  s_fda51250ea8291::t_d2331854a1f298 1888-1905,1907,1973-1990,1992
+gateway/pkg/kong/client/plugin.go
+  s_fda51250ea8291::t_8e0d5383beefa1 389
+gateway/pkg/kong/api/client.gen.go
+  s_fda51250ea8291::t_d2331854a1f298 14067,14099,20420,20460
+gateway/pkg/kong/client/plugin_response_test.go
+  s_8300307e72a800::t_3dd360c80710ea 82-120
+  s_8300307e72a800::t_3f1cc2680e8072 29,48,73,75-81,128
+  s_8300307e72a800::t_798f6b58d70026 1-28,30-47,49-72,74,167
+  s_fda51250ea8291::t_044ed4d6b06e4d 121-127,129-166,168-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5f4323867eaf8218b86cce5ff561759c91348a1c",
+  "prompts": {},
+  "sessions": {
+    "s_8300307e72a800": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9dec9beeffeX1lZUAunExnqqS",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fda51250ea8291": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e9de5c7a5ffeQv8q4vlVoUCoil",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

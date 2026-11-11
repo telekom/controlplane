@@ -1,0 +1,25 @@
+api/internal/handler/util/getters.go
+  s_5167c06198edd7::t_741eeca3580e66 8,299,332
+event/internal/handler/util/getters.go
+  s_5167c06198edd7::t_741eeca3580e66 8,272,347
+common/pkg/test/deepcopy.go
+  s_5167c06198edd7::t_c95c43ceb3282b 20-23,26
+common/pkg/controller/statusless_test.go
+  s_5167c06198edd7::t_13321054ad921b 67-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9d72e10e4345f74157e28179271879a901ac15e9",
+  "prompts": {},
+  "sessions": {
+    "s_5167c06198edd7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_024f06e96ffebJYRZN9lEJZYdq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

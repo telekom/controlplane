@@ -1,0 +1,37 @@
+controlplane-api/internal/resolvers/mapper.go
+  s_91566c1a8a63c2::t_e5ece78813a028 43-47
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_91566c1a8a63c2::t_aaf77094f0a02f 9,23,29,42-53,83,106-166
+  s_91566c1a8a63c2::t_387c06b834a3b9 167
+controlplane-api/schema.graphql
+  s_91566c1a8a63c2::t_e5ece78813a028 26
+controlplane-api/internal/resolvers/mapper_internal_test.go
+  s_91566c1a8a63c2::t_e5ece78813a028 10,18-19,28
+controlplane-api/internal/resolvers/model/info_types.go
+  s_91566c1a8a63c2::t_e5ece78813a028 13,15-19
+controlplane-api/internal/resolvers/root_.generated.go
+  s_91566c1a8a63c2::t_a206b0c1934dd8 396-400,2347-2352,10281,11402-11403
+controlplane-api/internal/resolvers/schema.generated.go
+  s_91566c1a8a63c2::t_3487686bf442db 1434-1465,4880-4884
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "65237c301ebc5cf46ec1bb2eba30e9a8e4a4f3e1",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_91566c1a8a63c2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3d3021c5ffeao3mB81usYq0MV",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

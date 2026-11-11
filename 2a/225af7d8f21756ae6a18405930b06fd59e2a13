@@ -1,0 +1,46 @@
+rover-ctl/pkg/parser/apispec.go
+  s_ae436dfb9d9be4::t_6b04a7637ace0e 14,62,88-90,92
+docs/docs/developer-journey/local-development.md
+  s_ae436dfb9d9be4::t_1f046d4fb04de2 39
+  s_1ebca29755d19f::t_3fa27c7525ccac 38
+common/pkg/util/openapiutil/openapiutil_suite_test.go
+  s_ae436dfb9d9be4::t_cdd8e00fc573c6 1-17
+common/pkg/util/openapiutil/server_url.go
+  s_ae436dfb9d9be4::t_cdd8e00fc573c6 1-65
+common/pkg/util/openapiutil/server_url_test.go
+  s_ae436dfb9d9be4::t_cdd8e00fc573c6 1-7,10-61
+  s_ae436dfb9d9be4::t_e5d9bb5d36ce23 8-9
+rover-ctl/pkg/parser/apispec_test.go
+  s_ae436dfb9d9be4::t_6b04a7637ace0e 53-57
+rover-server/internal/mapper/apispecification/in/parse.go
+  s_ae436dfb9d9be4::t_6b04a7637ace0e 20,75
+rover-ctl/go.mod
+  s_ae436dfb9d9be4::t_6b04a7637ace0e 21,75
+  s_ae436dfb9d9be4::t_6fbf5162af5eae 76
+rover-ctl/go.sum
+  s_ae436dfb9d9be4::t_04e5565fd76b39 158-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2a225af7d8f21756ae6a18405930b06fd59e2a13",
+  "prompts": {},
+  "sessions": {
+    "s_1ebca29755d19f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee07c3bceffeXGIVKMlfYqL7DQ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ae436dfb9d9be4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee071f115ffeNDc91KRKY7zk9g",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

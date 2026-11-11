@@ -1,0 +1,47 @@
+organization-server/internal/client/rover_test.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 24-30,127-128,130-131,140-144
+organization-server/internal/client/token.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 8,10-12,16-17,19,23-24,26-30,32,38,40,42
+organization-server/internal/client/token_test.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 15,20,28,32-33,37,44-46,53,59-60,64-66,68-69
+rover-server/internal/api/server.gen.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 2411-2414
+controlplane-api/internal/service/resource_checker.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 11,20,22,26,49-50,67-68,89
+rover-server/internal/controller/resources.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 48-51,54,91-99,102-107,110
+controlplane-api/internal/service/services_k8s.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 249,271-274,282-285
+organization-server/internal/handler/error_paths_test.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 52,286,596
+organization-server/go.mod
+  s_0d600cd7e35b12::t_d2278106e7cf3b 44
+organization-server/internal/handler/teams.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 52,92,130,181,236,258,297,321
+organization-server/internal/handler/helpers.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 9,12,132-148
+rover-server/internal/controller/resources_test.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 17,24,31,37-38,41-48,51-52
+organization-server/internal/handler/hubs.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 38,62,98,150,192
+organization-server/internal/client/rover.go
+  s_0d600cd7e35b12::t_d2278106e7cf3b 52,54,61-63
+rover-server/api/openapi.yaml
+  s_0d600cd7e35b12::t_d2278106e7cf3b 1700-1701,1706-1717
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5d1da6bd57bbdad71b3028809dace11f9394c6a1",
+  "prompts": {},
+  "sessions": {
+    "s_0d600cd7e35b12": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_02ec073ecffeJy377MZ0DSRpSk",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

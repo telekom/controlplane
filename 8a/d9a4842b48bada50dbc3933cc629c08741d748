@@ -1,0 +1,45 @@
+gateway/internal/handler/consumer/handler_test.go
+  s_4387aa84f1a7d5::t_8f3f7e8a2f1ce7 221
+  s_4387aa84f1a7d5::t_3c7dabfc046161 191-198
+identity/internal/controller/identityprovider_controller_test.go
+  s_4387aa84f1a7d5::t_3c7dabfc046161 87-93
+  s_4387aa84f1a7d5::t_ab695d04109988 16
+identity/internal/controller/realm_controller_test.go
+  s_4387aa84f1a7d5::t_ab695d04109988 17
+  s_4387aa84f1a7d5::t_3c7dabfc046161 117-123
+gateway/internal/controller/gateway_controller.go
+  s_4387aa84f1a7d5::t_fc1b5885070488 65,73
+gateway/internal/handler/consumer/handler.go
+  s_4387aa84f1a7d5::t_4e67ff8151f34d 61
+.pre-commit-config.yaml
+  s_4387aa84f1a7d5::t_49d063631f3059 21-22,26-28
+identity/internal/controller/identityprovider_controller.go
+  s_4387aa84f1a7d5::t_fc1b5885070488 62
+gateway/internal/handler/gateway/util.go
+  s_4387aa84f1a7d5::t_4e67ff8151f34d 27,43
+identity/internal/controller/realm_controller.go
+  s_4387aa84f1a7d5::t_fc1b5885070488 77
+gateway/internal/controller/controller_test.go
+  s_4387aa84f1a7d5::t_3c7dabfc046161 199-210
+gateway/internal/handler/gateway/handler_test.go
+  s_4387aa84f1a7d5::t_8f3f7e8a2f1ce7 15-16,55-78
+  s_4387aa84f1a7d5::t_4848f01454bace 79-80
+gateway/internal/handler/route/handler_test.go
+  s_4387aa84f1a7d5::t_3c7dabfc046161 313-320
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8ad9a4842b48bada50dbc3933cc629c08741d748",
+  "prompts": {},
+  "sessions": {
+    "s_4387aa84f1a7d5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032e677ffffeKCCgyMTFLdSYTS",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+api/internal/handler/apisubscription/readiness_test.go
+  s_ebc26bde2d8362::t_64c3697ef8b023 57
+  s_ebc26bde2d8362::t_c4a75ffbbb1c81 65
+  s_ebc26bde2d8362::t_242a7c853a71f6 1-10,17-22,26-45,63-64,66-89
+  s_ebc26bde2d8362::t_2a5fe62654f96a 46-54,58-62
+  s_ebc26bde2d8362::t_c3f5db510191df 11-16,23-25,55-56
+api/internal/handler/apisubscription/handler.go
+  s_ebc26bde2d8362::t_242a7c853a71f6 406,425,441
+docs/docs/architecture/api.mdx
+  s_ebc26bde2d8362::t_c3f5db510191df 42-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "888be7e49b3bf5b0fbc786708077e740e88ae30a",
+  "prompts": {},
+  "sessions": {
+    "s_ebc26bde2d8362": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2d365b4fffemnDZJrPjPDWYpe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

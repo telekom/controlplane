@@ -1,0 +1,50 @@
+.gitleaksignore
+  s_f8c77a672618d1::t_932306aeb79101 6-7
+organization-server/internal/controller/controller.go
+  s_f8c77a672618d1::t_054f7246e0e1b2 213
+organization-server/api/openapi.yaml
+  s_f8c77a672618d1::t_89407e601f4468 1089
+  s_f8c77a672618d1::t_054f7246e0e1b2 1189-1190,1192-1193,1203-1218
+organization-server/internal/api/server.gen.go
+  s_42f78029556460::t_63bcb3c8d739dd 332-341
+  s_694d596ade8508::t_9c03d304c5d9f2 505-578
+controlplane-api/internal/service/services_k8s.go
+  s_f8c77a672618d1::t_89407e601f4468 76,126,128,324
+controlplane-api/internal/service/team_members_envtest_test.go
+  s_f8c77a672618d1::t_6a8a5662be82bd 183
+  s_f8c77a672618d1::t_89407e601f4468 93
+organization-server/internal/server/team_metadata_upsert_test.go
+  s_f8c77a672618d1::t_6a8a5662be82bd 196-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6d275daaf7b170974b719dd4e7cd80aed2a26384",
+  "prompts": {},
+  "sessions": {
+    "s_42f78029556460": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ea7c1562affenn4hmIRR5UOScD",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_694d596ade8508": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ea7aef177ffe2ICbkkLDjh0GlW",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f8c77a672618d1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eababafccffe6BRC1lPFVnm5Qk",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

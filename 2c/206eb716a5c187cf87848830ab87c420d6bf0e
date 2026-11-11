@@ -1,0 +1,395 @@
+common-server/pkg/client/tlsclient/build_test.go
+  s_ce1df49de17513::t_2afc60e46b19fa 206,249-251,259,271,293,305
+  s_ce1df49de17513::t_7a0706cec437cb 1-205,207-248,252-258,260-270,272-292,294-304,306-314
+gateway/internal/handler/consumer/handler_test.go
+  s_06f08dd936c24c::t_eae37223d83b06 194
+  s_06f08dd936c24c::t_32cf6336133408 42,44,47
+  s_06f08dd936c24c::t_747d24fd1fe825 127-129,133
+  s_c02e962e2670bc::t_ca96d042b21659 80-81,147-148,186-187,213-214,229-230
+docs/docs/architecture/outbound-tls-clients.md
+  s_e9e961fa940746::t_4d0b1f7fc14b02 30-33
+  s_e9e961fa940746::t_d01c50d57be237 1-29,34-39,41-89
+  s_6f1cb21b66765b::t_8167f329473286 40
+admin/api/v1/zz_generated.deepcopy.go
+  s_2eccf19b0b07d9::t_49260518d59639 163-166,245-248,601-603
+tools/snapshotter/go.mod
+  s_06f08dd936c24c::t_4aeb5f621c99aa 16-17,38,45,66,69-70,97,108,111,115
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_gateways.yaml
+  s_2eccf19b0b07d9::t_79cb3408d18ea3 81-108
+identity/pkg/keycloak/factory_test.go
+  s_06f08dd936c24c::t_178cf58ad61db4 217
+  s_06f08dd936c24c::t_231ab30c9fc186 29
+  s_06f08dd936c24c::t_d4bcde0afd826f 41-43
+  s_47035526aa153d::t_041db25d59edad 18
+  s_06f08dd936c24c::t_fa71c1f6e443a4 1-17,19-28,30-40,44-216,218-315,361-558,574,603-604
+  s_47035526aa153d::t_21deb02f5cc87d 559-573,575-602
+  s_6f1cb21b66765b::t_8167f329473286 316-360
+tools/snapshotter/pkg/config/config_test.go
+  s_06f08dd936c24c::t_ebde72b50934cc 36,41
+  s_06f08dd936c24c::t_9eb610dfce8f54 1-35,37-40,42-55
+identity/config/rbac/role.yaml
+  s_06f08dd936c24c::t_8b08b97b21b9e2 13-17
+  s_47035526aa153d::t_274c0d56c2d727 10-12
+admin/internal/handler/zone/cabundle.go
+  s_2eccf19b0b07d9::t_5543b96890730b 95-96
+  s_2eccf19b0b07d9::t_cc3c12d935d730 1-94,97-237
+admin/internal/handler/zone/identity.go
+  s_2eccf19b0b07d9::t_99a051d16c7936 63
+common/pkg/types/tls.go
+  s_ce1df49de17513::t_91c7ba1b60fe8c 1-56
+gateway/api/v1/zz_generated.deepcopy.go
+  s_2eccf19b0b07d9::t_79cb3408d18ea3 590-593
+gateway/pkg/kongutil/suite_test.go
+  s_06f08dd936c24c::t_911e1704730208 1-155
+gateway/api/v1/gateway_types.go
+  s_2eccf19b0b07d9::t_95c78e538c5a2a 33-37
+admin/internal/handler/zone/handler.go
+  s_2eccf19b0b07d9::t_db09b3b376d635 85
+  s_2eccf19b0b07d9::t_a6e039dcf0ed39 15
+  s_37451ea516dd7f::t_62188e2aace91c 44-46,50-52,54,58,62,68-69
+admin/internal/handler/zone/gateway.go
+  s_2eccf19b0b07d9::t_35059c80f161ed 85
+admin/config/rbac/role.yaml
+  s_2eccf19b0b07d9::t_49260518d59639 13,23-29
+gateway/pkg/kongutil/client_factory.go
+  s_06f08dd936c24c::t_88dd68d83d9af3 9,13,15-19,21,63,65-66,69-80,89-93,95-97,99,101-106,108-113,115-121,123-131,152-159,161-162,165-166,168,172-179,181-182,184-188,190-191,193-197,204,206,208-209,211
+  s_06f08dd936c24c::t_f90aec26b41669 145,147
+  s_06f08dd936c24c::t_984ba037b9e7b2 132,134,136-142,144,146,160,167,169
+  s_6f1cb21b66765b::t_efddd0baa16de5 12,14,133,135,170,189,207,210
+  s_fd3ca74e33584e::t_f33e53e89243e6 83-86,94,98,148-150,198,200,202
+  s_105efffe5c95b8::t_8e47609211f513 87
+identity/internal/handler/realm/suite_test.go
+  s_06f08dd936c24c::t_cdf29cbe858d85 8-9,14-16,19-21
+  s_06f08dd936c24c::t_e6550fc5131063 22-23
+admin/internal/handler/zone/oidc_test.go
+  s_2eccf19b0b07d9::t_8a5e37c2168a39 9
+  s_2eccf19b0b07d9::t_4c6e55198b099c 381-403
+  s_6f1cb21b66765b::t_10ea225c943570 154,157,160,164-166,170,172-173,176-177,185-187,195-198
+admin/internal/controller/zone_cabundle.go
+  s_2eccf19b0b07d9::t_b93522a8286e55 1-57
+gateway/internal/controller/consumer_controller.go
+  s_06f08dd936c24c::t_d4d9a251649b9c 23
+  s_06f08dd936c24c::t_baa07efaca4691 31-32,38,49-51,53
+  s_c02e962e2670bc::t_97a0629fc324fc 9
+gateway/internal/handler/route/handler_test.go
+  s_06f08dd936c24c::t_5f4c961db65618 344
+  s_06f08dd936c24c::t_1777ae260c4b05 138-140,152
+  s_06f08dd936c24c::t_d1d0c2c60b930a 42,44,47
+  s_06f08dd936c24c::t_4d4dd862302ed4 316
+  s_c02e962e2670bc::t_e0e116e7661eb2 84-85,231-232,308-309,335-336,352-353
+gateway/config/rbac/role.yaml
+  s_06f08dd936c24c::t_86ff122d10c259 13-17
+  s_1bf86e9a19cd19::t_1876e6a07219e1 10-12
+admin/internal/handler/zone/handlingContext.go
+  s_2eccf19b0b07d9::t_a2a7abe2108883 128
+  s_2eccf19b0b07d9::t_08d01aa3e2af57 41-48
+  s_711cb9fa7873b6::t_12b389c231d10c 64
+tools/snapshotter/README.md
+  s_e9e961fa940746::t_d01c50d57be237 81-82,108,115-135,349
+identity/internal/controller/suite_test.go
+  s_06f08dd936c24c::t_4228786b26595b 129-132
+  s_06f08dd936c24c::t_6f64ec03168299 168-178,181-183
+  s_6f1cb21b66765b::t_47b2d273fbed15 179-180
+identity/config/crd/bases/identity.cp.ei.telekom.de_realms.yaml
+  s_2eccf19b0b07d9::t_79cb3408d18ea3 242-300
+identity/pkg/keycloak/token_error.go
+  s_06f08dd936c24c::t_4e9eb8e426b9ad 1-19,21-32
+  s_06f08dd936c24c::t_92e4b26c8ac1ff 20
+gateway/Makefile
+  s_06f08dd936c24c::t_851e6c6705b684 66,68
+identity/internal/handler/client/suite_test.go
+  s_06f08dd936c24c::t_dd3c5893ab18ae 8-9,14-16,19-21
+  s_06f08dd936c24c::t_66271155b7163a 22-23
+identity/internal/handler/realm/connection_test.go
+  s_06f08dd936c24c::t_8a9f2637246343 1-15,17-56,58-75,78-128,130-176
+  s_06f08dd936c24c::t_9f39d86fbd1e84 16
+  s_06f08dd936c24c::t_d3430f551107fe 57
+  s_6f1cb21b66765b::t_31d3a47da1d2eb 76-77,129
+admin/internal/webhook/v1/zone_validator.go
+  s_2eccf19b0b07d9::t_862d27456451e4 352,354-367
+  s_2eccf19b0b07d9::t_92025622a4058a 156,162
+  s_2eccf19b0b07d9::t_194ec15311a9b0 24
+  s_2eccf19b0b07d9::t_4d6fc53781cca6 353
+docs/docs/architecture/gateway.mdx
+  s_e9e961fa940746::t_d01c50d57be237 13-20
+common-server/pkg/client/tlsclient/factory.go
+  s_ce1df49de17513::t_90eb4f1d719321 1-255
+identity/api/v1/identityprovider_types.go
+  s_2eccf19b0b07d9::t_6f8a8aae6886d1 19-23
+gateway/cmd/main.go
+  s_06f08dd936c24c::t_3731907ff1bfc4 29
+  s_06f08dd936c24c::t_985f69bb2a0038 143-152,161-163,176-178
+identity/pkg/keycloak/factory.go
+  s_06f08dd936c24c::t_730e2cf2fe5607 9-10,14,18-19,24-33,35-38,52-55,58-59,62-64,66-69,72-73,75-81,83-89,93-97,100-107,109-120,122-124,127-130,132-138,140,142,144-145,149,151-167,170,172,174-175,177-183,185-196,198-204,206-207,209-215,217
+  s_06f08dd936c24c::t_a8e7df0446a015 218
+  s_47035526aa153d::t_480209d9f7c160 41,43,45-49
+  s_6f1cb21b66765b::t_77aec000ac0636 71,184,216
+  s_6f1cb21b66765b::t_efddd0baa16de5 98
+  s_6f1cb21b66765b::t_deb869ff83e1b0 147-148
+gateway/pkg/kongutil/client_factory_test.go
+  s_06f08dd936c24c::t_65765cad47e096 24
+  s_06f08dd936c24c::t_cbd4350dcda6ef 1-23,28-36,39-83,85-133,135-148,150-159,161-164,186-300,302-311,313-323
+  s_06f08dd936c24c::t_280ea6cd7fd4ac 25-27,84
+  s_06f08dd936c24c::t_5340147ccd5a9a 301,312
+  s_6f1cb21b66765b::t_1c20dcb40973c6 37-38,134,149,160,171,180
+  s_6f1cb21b66765b::t_efddd0baa16de5 184-185
+  s_6f1cb21b66765b::t_77aec000ac0636 165-170,172-179,182-183
+tools/snapshotter/pkg/source/kong_test.go
+  s_06f08dd936c24c::t_84fb59522ff70d 1-95
+identity/pkg/keycloak/token_error_test.go
+  s_06f08dd936c24c::t_69d8566c231306 1-11,14-36
+  s_06f08dd936c24c::t_d4bcde0afd826f 12-13
+common/pkg/cabundle/resolver_test.go
+  s_ce1df49de17513::t_57932af6ee772a 16-21
+  s_ce1df49de17513::t_1452c5cba22c5b 1-15,22-131
+identity/config/crd/bases/identity.cp.ei.telekom.de_identityproviders.yaml
+  s_2eccf19b0b07d9::t_79cb3408d18ea3 53-80
+docs/docs/architecture/admin.mdx
+  s_e9e961fa940746::t_d01c50d57be237 54-61
+admin/internal/handler/zone/links.go
+  s_2eccf19b0b07d9::t_3e145acecaba99 83-84,86-90
+  s_6f1cb21b66765b::t_47b2d273fbed15 61,82,85
+admin/internal/webhook/v1/zone_validator_test.go
+  s_2eccf19b0b07d9::t_ed31dd133c40f4 101-115
+  s_2eccf19b0b07d9::t_d0f4100432265a 17
+identity/internal/handler/realm/handler.go
+  s_06f08dd936c24c::t_c4344feb89c20d 141,145,154-164
+  s_06f08dd936c24c::t_58b966ca03fed6 17
+  s_06f08dd936c24c::t_5bec05fce5cf73 73,77
+  s_06f08dd936c24c::t_07e21ddc9eb036 165
+  s_6f1cb21b66765b::t_efddd0baa16de5 58
+admin/internal/handler/zone/rover_test.go
+  s_2eccf19b0b07d9::t_6ab6694e85e702 167
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_2eccf19b0b07d9::t_49260518d59639 132-160,269-297
+common/pkg/cabundle/cabundle_test.go
+  s_ce1df49de17513::t_acc6ea45e6d6be 1-13,16-120
+  s_ce1df49de17513::t_57932af6ee772a 14-15
+common-server/pkg/client/tlsclient/build.go
+  s_ce1df49de17513::t_2ee9c75f8fa865 1-12,14-22,24-27,29-36,43-51,53-137,139-174
+  s_ce1df49de17513::t_47903a50551a58 13,28,52
+  s_6f1cb21b66765b::t_deb869ff83e1b0 23,37-38,40-42,138
+  s_6f1cb21b66765b::t_77aec000ac0636 39
+admin/internal/handler/zone/oidc.go
+  s_2eccf19b0b07d9::t_76efd442677a3c 16-18
+  s_2eccf19b0b07d9::t_eb09b4cc32f414 31-71
+  s_6f1cb21b66765b::t_47b2d273fbed15 73
+identity/api/v1/zz_generated.deepcopy.go
+  s_2eccf19b0b07d9::t_79cb3408d18ea3 149,206-209,271-307,389-393
+gateway/internal/controller/route_controller.go
+  s_06f08dd936c24c::t_78a342cfb05ddf 33-34,40,51-53,55
+  s_06f08dd936c24c::t_3410ef6655cb82 25
+  s_c02e962e2670bc::t_f67685f5c01ca8 9
+common-server/pkg/client/tlsclient/password_source.go
+  s_ce1df49de17513::t_f86a8eee0fcf78 1-71
+identity/internal/handler/client/handler.go
+  s_06f08dd936c24c::t_4396f9d96b3d60 244,248
+  s_06f08dd936c24c::t_384e4c2de21f5a 65,69
+admin/internal/controller/zone_cabundle_test.go
+  s_2eccf19b0b07d9::t_40169127ebf2db 123,150
+  s_2eccf19b0b07d9::t_77f68de84c0757 1-81,85,87-122,124-149,151-192
+  s_2eccf19b0b07d9::t_a24a2215eb6f24 82-84,86
+identity/api/v1/realm_types.go
+  s_2eccf19b0b07d9::t_7909c78266f79e 156-159
+  s_2eccf19b0b07d9::t_816ef3cd1311ce 120-140
+gateway/internal/handler/route/handler.go
+  s_06f08dd936c24c::t_aa0bb8509821f3 31-34,39,43
+  s_06f08dd936c24c::t_5f0b3b63a111ad 121,125
+  s_06f08dd936c24c::t_b46ddb77e7d297 135-137,140,143,146,148
+  s_06f08dd936c24c::t_75905771ff4e33 167
+tools/snapshotter/pkg/source/kong.go
+  s_06f08dd936c24c::t_3b08d34cdcff15 31,43-44,46,51,58-62
+  s_06f08dd936c24c::t_f0da3bf40b8190 63-64
+common/pkg/cabundle/suite_test.go
+  s_ce1df49de17513::t_c4cc225b7924b5 1-88
+common/pkg/types/tls_test.go
+  s_ce1df49de17513::t_cb587f8585c56c 1-31
+admin/internal/handler/zone/suite_test.go
+  s_2eccf19b0b07d9::t_aa55f7a95161b2 193
+  s_2eccf19b0b07d9::t_7f268625352ff0 309
+common-server/pkg/client/tlsclient/suite_test.go
+  s_ce1df49de17513::t_2afc60e46b19fa 125,157
+  s_ce1df49de17513::t_4d185b1efa5f5a 1-124,126-136,141-156,158-201
+  s_ce1df49de17513::t_a600fe6bb1f07b 137-140
+admin/internal/controller/zone_controller.go
+  s_2eccf19b0b07d9::t_fd50c9956c5504 72-76,84-86
+  s_2eccf19b0b07d9::t_9638377e447317 50
+  s_2eccf19b0b07d9::t_b599c5e4b841de 9
+common-server/pkg/client/tlsclient/pool.go
+  s_ce1df49de17513::t_e646ede3d13b47 1-50
+admin/api/v1/zone_types.go
+  s_2eccf19b0b07d9::t_ff07f984537ba4 124-127,270-273,413-433
+  s_2eccf19b0b07d9::t_60e3239b2d75f7 434-435
+tools/snapshotter/pkg/config/config.go
+  s_06f08dd936c24c::t_d3ac0140d50ded 16-27
+common/pkg/cabundle/cabundle.go
+  s_ce1df49de17513::t_a6947597fa256d 1-144
+common-server/pkg/client/tlsclient/factory_test.go
+  s_ce1df49de17513::t_47903a50551a58 200,206,255-256,285
+  s_ce1df49de17513::t_134ece00f4ed93 1-199,201-205,207-254,257-284,286-317
+admin/internal/handler/zone/cabundle_test.go
+  s_2eccf19b0b07d9::t_98532e1d4438ed 127,130,135
+  s_2eccf19b0b07d9::t_543f9e8ba3b8cf 32-34
+  s_2eccf19b0b07d9::t_06c8efbba503d3 229-231,233,235,239
+  s_2eccf19b0b07d9::t_ebc542d5d4f07c 1-31,35-126,128-129,131-134,136-141,148-156,161-228,232,234,236-238,240-351
+  s_2eccf19b0b07d9::t_3f3b7368919c9f 142-147,157-160
+common-server/go.mod
+  s_ce1df49de17513::t_b0224e780ee943 33
+identity/cmd/main.go
+  s_06f08dd936c24c::t_bbcadbd691d4f5 143-152,161-163,169-171
+  s_06f08dd936c24c::t_41e0caac5a9b97 25
+docs/docs/admin-journey/environments-and-zones.md
+  s_e9e961fa940746::t_4d0b1f7fc14b02 255-256,297
+  s_e9e961fa940746::t_d01c50d57be237 213-254,257-296,298-396
+common/pkg/cabundle/resolver.go
+  s_ce1df49de17513::t_490ae2bfd59bec 1-13,16-50,52,54-102
+  s_ce1df49de17513::t_57932af6ee772a 14-15,51,53
+gateway/internal/controller/suite_test.go
+  s_06f08dd936c24c::t_4fb3f5292d1f95 107-108,111-113
+  s_06f08dd936c24c::t_6a665bcb354cde 130-133,138-141
+  s_c02e962e2670bc::t_970d7bf7208ad6 114
+identity/internal/controller/client_controller.go
+  s_06f08dd936c24c::t_576af56fe4ec4f 10
+  s_06f08dd936c24c::t_8067f3367ac834 42,54-55,57-58
+common-server/pkg/client/tlsclient/spec.go
+  s_ce1df49de17513::t_a6c7b2a7c4eaa7 1-166
+identity/internal/handler/client/connection_test.go
+  s_06f08dd936c24c::t_367c786a22fe37 1-12,14-47,49-87
+  s_06f08dd936c24c::t_17735a43a18465 13
+  s_06f08dd936c24c::t_df8f013153a487 48
+gateway/internal/handler/consumer/handler.go
+  s_06f08dd936c24c::t_20f9b878e1f454 24-27,30,34
+  s_06f08dd936c24c::t_31278b1a0355cc 52,56,66-68,71,74,77,79,85
+docs/docs/architecture/identity.mdx
+  s_e9e961fa940746::t_d01c50d57be237 64-73
+identity/internal/controller/realm_controller.go
+  s_06f08dd936c24c::t_27e4e46bda31d9 10
+  s_06f08dd936c24c::t_bdb8fe83421b79 42,54-55,57-58
+tools/snapshotter/go.sum
+  s_1bf86e9a19cd19::t_67f303e7815b4f 32-33,36-37,40-41,103-104,118-119,126-127
+identity/pkg/keycloak/factory_tls_test.go
+  s_6f1cb21b66765b::t_10ea225c943570 14-16,25,31,55-68,71,73-75,79,84-85
+identity/internal/handler/realm/handler_test.go
+  s_6f1cb21b66765b::t_8167f329473286 508-509
+  s_6f1cb21b66765b::t_efddd0baa16de5 101,116,145,166,190,213-214,245-246,286-287,347-348,391-392,441-442,479-480,650-651,672,695-696,727-728
+docs/docs/admin-journey/installation.md
+  s_6f1cb21b66765b::t_77aec000ac0636 140,142,144
+identity/internal/handler/client/handler_test.go
+  s_6f1cb21b66765b::t_efddd0baa16de5 127-128,140,154,173,202,232,251-252,277-278,307-308,359-360,395-396,446-447,491-492,531-532,573-574,613-614,642-643,683-684,745-746,798-799,832-833,881-882,936-937,976-977,1027-1028,1069-1070,1105-1106,1135,1155,1167-1168,1189-1190,1210-1211
+identity/internal/controller/realm_controller_test.go
+  s_6f1cb21b66765b::t_1c20dcb40973c6 138,149-150
+identity/go.mod
+  s_d55a7caedc7982::t_957435bacbbcf7 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2c206eb716a5c187cf87848830ab87c420d6bf0e",
+  "prompts": {},
+  "sessions": {
+    "s_06f08dd936c24c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb3f03deffewILniCjW6U0DLm",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_105efffe5c95b8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec0c8986effeZAZ8TYtWXMOCYA",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_1bf86e9a19cd19": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb1a0dd7ffeJse8AKukcob507",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_2eccf19b0b07d9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb553602ffexBQMoDXAIywK3D",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_37451ea516dd7f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb5115e6ffefeE3MoilelJ9nq",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_47035526aa153d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eca64395effex5LPaduf5p1Xch",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_6f1cb21b66765b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec59f91f1ffeNwwJ7c0lOwHDDG",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_711cb9fa7873b6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb6d2f90ffevbay7M54Tb5T9Z",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c02e962e2670bc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb4b54ecffe7v4fy59dDEEbeA",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ce1df49de17513": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb67c942ffeQ68cKG1f6Ifd27",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d55a7caedc7982": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e87764f14ffeciE5khag4syugz",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_e9e961fa940746": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecb23b97affevK6NfWg7hJDcQC",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fd3ca74e33584e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec0c80f27ffePwA7y4Hux3IWL0",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

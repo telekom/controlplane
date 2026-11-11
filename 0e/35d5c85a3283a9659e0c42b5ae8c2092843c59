@@ -1,0 +1,30 @@
+controlplane-api/cmd/config/config.go
+  s_23b7ea359876dc::t_b8ceae21a01d79 49,97,99
+controlplane-api/internal/service/resource_checker.go
+  s_23b7ea359876dc::t_b8ceae21a01d79 16,42,47-51
+controlplane-api/cmd/config/config_test.go
+  s_23b7ea359876dc::t_b8ceae21a01d79 46-51
+controlplane-api/internal/service/resource_checker_test.go
+  s_23b7ea359876dc::t_b8ceae21a01d79 9,13-14,107-119
+  s_23b7ea359876dc::t_5a2653a8d2789c 120-125
+controlplane-api/cmd/main.go
+  s_23b7ea359876dc::t_b8ceae21a01d79 84
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_23b7ea359876dc::t_d8f3eadd3a9004 559-563,568-575,580-585
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0e35d5c85a3283a9659e0c42b5ae8c2092843c59",
+  "prompts": {},
+  "sessions": {
+    "s_23b7ea359876dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_032f338f4ffeTZul63E5vmZo2l",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

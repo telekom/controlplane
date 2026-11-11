@@ -1,0 +1,36 @@
+rover-ctl/pkg/handlers/common/info_many_test.go
+  s_9633c790700eb4::t_96a6892ce9352e 285-297
+  s_567f4e3cd22442::t_f8bfabfffdf6b0 13,151,153,161,165-173,181-182,184-189,191-197,203-207,209-210,212-225,227-228,230,235-236,242-243,268,271-272,275-276
+  s_9633c790700eb4::t_0a7a6f8b8156e3 134-135,152,154-160,163,174-180,183,198-202,208,211,226,229,231-234,237-241,244-267,269-270,273-274,277-284
+  s_567f4e3cd22442::t_b5f812d0a579e1 162,164,190
+  s_9633c790700eb4::t_363bd869b26a93 298
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_9633c790700eb4::t_38233a06039fef 17,272-276,279,288-290,455-463
+  s_9633c790700eb4::t_cbee7c0acfd392 260,277-278,444,466-469,474-477,479-493,495-496
+  s_567f4e3cd22442::t_979a7a1e297fbc 478
+  s_9633c790700eb4::t_62baae6c8533d0 464-465
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "088ffcdd809edf13a3bfdc49d6a712e9c1bf76ee",
+  "prompts": {},
+  "sessions": {
+    "s_567f4e3cd22442": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7ce863b7ffelma4GF0VmnnJpx",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9633c790700eb4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7ce536f1ffe4DAnN1VQ7QlqPt",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,104 @@
+projector/internal/domain/team/repository_test.go
+  s_98b1ef27187235::t_8799afba63472e 66,68-73,78-79
+  s_ff32cf77976daf::t_915a9da820e322 271-293
+  s_ff32cf77976daf::t_3cc70f2ba2c9b5 67,74-77
+  s_de83353cddf490::t_3d8caec47aaae6 80
+common/pkg/util/emailutil/emailutil_test.go
+  s_98b1ef27187235::t_b3d787c52bdc9d 61
+  s_ff32cf77976daf::t_d86199742f4330 1-60,62-64
+controlplane-api/internal/service/services_k8s.go
+  s_98b1ef27187235::t_b3d787c52bdc9d 184
+  s_ff32cf77976daf::t_2da035c008939b 21,181
+controlplane-api/internal/database/member_test.go
+  s_98b1ef27187235::t_9c6fcfbc020ed0 24,41-45,48-49,53,59,65,68-69,74,103-104,107,111
+  s_ff32cf77976daf::t_d86199742f4330 61-63,66,70,91-92,105-106,108-110
+  s_de83353cddf490::t_3d8caec47aaae6 1-23,25-40,46-47,50-52,54-58,60,64,67,71-73,75-90,93-102,112
+controlplane-api/internal/service/team_members_envtest_test.go
+  s_ff32cf77976daf::t_d86199742f4330 57-58,72
+  s_de83353cddf490::t_fb899214b4febc 1-56,59-71,73-78,97
+  s_ff32cf77976daf::t_0bcc1244e94179 79-96
+common/pkg/util/emailutil/emailutil.go
+  s_ff32cf77976daf::t_2da035c008939b 1-54
+controlplane-api/internal/graphql/controller_test.go
+  s_ff32cf77976daf::t_3cc70f2ba2c9b5 8,20,31,37,54-75,79-91
+  s_ff32cf77976daf::t_915a9da820e322 38-53
+  s_ff32cf77976daf::t_55760a7af92585 76-78
+  s_ff32cf77976daf::t_da2df731eb3584 92
+docs/docs/admin-journey/organizations-and-teams.md
+  s_ff32cf77976daf::t_55760a7af92585 52,56,59-60
+  s_de83353cddf490::t_fb899214b4febc 55,57
+  s_98b1ef27187235::t_9c6fcfbc020ed0 54,58
+  s_f4e486033ededf::t_de7923d37a36bb 50-51,53,61
+controlplane-api/internal/graphql/controller.go
+  s_ff32cf77976daf::t_2da035c008939b 18,20,73-77,117
+controlplane-api/internal/graphql/viewer_middleware.go
+  s_ff32cf77976daf::t_2da035c008939b 12,84
+organization/internal/webhook/v1/team_webhook_test.go
+  s_ff32cf77976daf::t_0bcc1244e94179 22,413,423-431
+  s_815b092b99a0d1::t_c8a3b0b5beb08c 128-132,136,263-269,290-310
+  s_ff32cf77976daf::t_4836d5e801e11a 8,14,191-205,364-395,399-404,412,414-422,432-440
+  s_ff32cf77976daf::t_915a9da820e322 396-398,405-411
+  s_815b092b99a0d1::t_5d6b873eefaac6 311
+  s_ff32cf77976daf::t_afeb732fd14218 441-442
+controlplane-api/internal/graphql/viewer_middleware_test.go
+  s_ff32cf77976daf::t_d86199742f4330 20,172,175,178,199,218,228,230-232
+  s_f4e486033ededf::t_e0a41230e54059 9-11,13-14,16-17,34-54
+  s_f4e486033ededf::t_df05b2739aaca3 173-174,176-177,179-184,190,194-198,202-217,219-227,229,233
+  s_f4e486033ededf::t_7478d8f7404d8a 234
+organization/internal/webhook/v1/team_webhook.go
+  s_815b092b99a0d1::t_c8a3b0b5beb08c 74
+  s_ff32cf77976daf::t_2da035c008939b 11-12,19,75-76,109-111,125-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b4dd4a115719a8d87cd1b37b532681d919410462",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_815b092b99a0d1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f37ab4c02ffeIZC5KIXUqcODwa",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_98b1ef27187235": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3732100cffefSsyL8LnJdwK8p",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de83353cddf490": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3b70ee60ffe8LRMozexrGtgoz",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f4e486033ededf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f3ba47d2dffeV5WAVwgNBdxkLp",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ff32cf77976daf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f377bb876ffetkrnxo3urjGy9n",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

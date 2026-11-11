@@ -1,0 +1,43 @@
+admin/internal/handler/zone/identity_routes.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 18
+agentic/internal/handler/util/getters_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 41-42
+event/internal/handler/eventconfig/handler.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 24
+admin/internal/handler/zone/routes.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 20
+event/internal/handler/util/metadata_naming_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 12-13
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 74
+discovery-server/internal/mapper/label_normalization_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 13-16
+application/internal/handler/application/handler.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 31
+agentic/internal/handler/util/naming.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 21
+application/internal/controller/resource_metadata_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 10-12
+api/internal/handler/util/route_util_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 10-11
+agentic/internal/handler/util/naming_test.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 12-13
+discovery-server/internal/mapper/util.go
+  s_a8ec62ec525771::t_12c4e44c4e2b18 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1f032d4e0ee286bb3d0c7be3c549aed6d74ce1f3",
+  "prompts": {},
+  "sessions": {
+    "s_a8ec62ec525771": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2d74c8c4ffe7VjAKZM9Z5aGXJ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

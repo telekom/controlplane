@@ -1,0 +1,59 @@
+approval/internal/controller/approvalrequest_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+pubsub/internal/controller/eventstore_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+permission/internal/controller/permissionset_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+api/internal/controller/remoteapisubscription_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+notification/internal/controller/notificationchannel_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+approval/internal/controller/approvalexpiration_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+organization/internal/controller/group_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+api/internal/controller/apicategory_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+rover/internal/controller/roadmap_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+admin/internal/controller/remoteorganization_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+approval/internal/controller/approval_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+admin/internal/controller/environment_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+identity/internal/controller/identityprovider_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+rover/internal/controller/apichangelog_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+event/internal/controller/eventtype_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+gateway/internal/controller/consumer_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 15
+notification/internal/controller/notificationtemplate_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+rover/internal/controller/eventspecification_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+rover/internal/controller/mcpspecification_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 14
+rover/internal/controller/apispecification_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 13
+gateway/internal/controller/gateway_controller.go
+  s_2ef5d0c6579f9f::t_31c616f3fc39b0 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "75049e1b9dd5bcbc2a38b74a3dc18501508490c4",
+  "prompts": {},
+  "sessions": {
+    "s_2ef5d0c6579f9f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d144aacffe35hkD6XjIrGDFa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

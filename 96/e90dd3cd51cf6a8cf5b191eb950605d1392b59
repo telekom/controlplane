@@ -1,0 +1,37 @@
+api/internal/controller/apisubscription_controller_failover_test.go
+  s_ebc26bde2d8362::t_e7565c79d65285 221
+api/internal/controller/apisubscription_controller.go
+  s_ebc26bde2d8362::t_6d7aa9a43af24b 71
+  s_ebc26bde2d8362::t_e7565c79d65285 87,191
+api/internal/controller/remoteapisubscription_controller_test.go
+  s_ebc26bde2d8362::t_2b61ffd8180802 270
+api/internal/handler/apisubscription/handler.go
+  s_ebc26bde2d8362::t_2dc0ae0717431d 272-276
+api/internal/controller/apisubscription_controller_test.go
+  s_ebc26bde2d8362::t_935ec70097bf70 100-104,106-112
+  s_ebc26bde2d8362::t_41f44d5f6a347a 658
+  s_ebc26bde2d8362::t_9c3bbd15e78308 337-338,643-646
+  s_ebc26bde2d8362::t_6d7aa9a43af24b 105,152-168,324-334,339-365,402,538
+  s_ebc26bde2d8362::t_c3f5db510191df 335-336
+  s_ebc26bde2d8362::t_e7565c79d65285 636-638,647-657
+docs/docs/architecture/api.mdx
+  s_ebc26bde2d8362::t_2dc0ae0717431d 48-56
+api/internal/handler/apisubscription/remote/handler.go
+  s_ebc26bde2d8362::t_6d7aa9a43af24b 204-208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "96e90dd3cd51cf6a8cf5b191eb950605d1392b59",
+  "prompts": {},
+  "sessions": {
+    "s_ebc26bde2d8362": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f2d365b4fffemnDZJrPjPDWYpe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+rover-ctl/pkg/handlers/common/base_handler_test.go
+  s_dd6bd4091247bb::t_809f8e7a9945e2 163-164,449-450
+rover-ctl/pkg/handlers/v0/rover_test.go
+  s_dd6bd4091247bb::t_809f8e7a9945e2 699-700
+rover-ctl/pkg/handlers/common/request_safety_test.go
+  s_dd6bd4091247bb::t_b2669ee512b5ff 281-282,284,293-326,332-335
+docs/docs/user-journey/onboarding.md
+  s_dd6bd4091247bb::t_8c73ec1f2bc0dd 88-90
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_dd6bd4091247bb::t_b2669ee512b5ff 463-465,470-471,473-474,483
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d41d1454c4cc61bd7e72c8f3e6a377f41871b1bd",
+  "prompts": {},
+  "sessions": {
+    "s_dd6bd4091247bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed0e0bc5affe5wfAGi4DeIYBlq",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

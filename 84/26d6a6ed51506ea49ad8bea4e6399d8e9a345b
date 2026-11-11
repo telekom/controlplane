@@ -1,0 +1,21 @@
+rover-ctl/pkg/parser/mcpspec_test.go
+  s_44d7be305325db::t_62d9ad5ee68817 78-79
+rover-ctl/pkg/parser/parser_test.go
+  s_44d7be305325db::t_62d9ad5ee68817 316-317
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8426d6a6ed51506ea49ad8bea4e6399d8e9a345b",
+  "prompts": {},
+  "sessions": {
+    "s_44d7be305325db": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f367df34cffeRoZtgpsJgTmGUq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "luis.pflamminger@telekom.de <luis.pflamminger@telekom.de>"
+    }
+  }
+}

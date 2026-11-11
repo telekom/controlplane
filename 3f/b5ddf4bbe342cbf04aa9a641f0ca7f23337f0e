@@ -1,0 +1,21 @@
+docs/docs/architecture/controlplane-api.mdx
+  s_d4c693b5a31d81::t_c7d590cd92c74a 160,162-164
+application/internal/webhook/v1/mutator/mutate.go
+  s_d4c693b5a31d81::t_c7d590cd92c74a 9,195,202-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3fb5ddf4bbe342cbf04aa9a641f0ca7f23337f0e",
+  "prompts": {},
+  "sessions": {
+    "s_d4c693b5a31d81": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "4f23a7c4-cefa-403b-979a-fa8a4b8812f6",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

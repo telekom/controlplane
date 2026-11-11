@@ -1,0 +1,21 @@
+organization/internal/webhook/v1/team_webhook.go
+  s_04185b64c0b7f4::t_d7131d739e8d5f 16,51-54
+organization/internal/webhook/v1/team_webhook_test.go
+  s_04185b64c0b7f4::t_74d09847734ded 116-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "91bccb2bd0b72e36bcf46390d46bf73bc4ce53bc",
+  "prompts": {},
+  "sessions": {
+    "s_04185b64c0b7f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_00ef3c4efffe0bVON534A5aIcD",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

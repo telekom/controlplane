@@ -1,0 +1,197 @@
+.pre-commit-config.yaml
+  s_776868ed5c1fcc::t_1cbe158db4bbf4 21-22
+agentic/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 228-229
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 233
+  s_776868ed5c1fcc::t_a845d8952d1748 9,230-232
+AGENTS.md
+  s_776868ed5c1fcc::t_36cdc911b1d5e5 64
+api/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 295-296,328-329
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 333
+  s_776868ed5c1fcc::t_9af16c9861e180 10
+  s_776868ed5c1fcc::t_dbf64289504852 297-299,330-332
+  s_776868ed5c1fcc::t_07da872214f2b9 300
+event/internal/handler/util/getters.go
+  s_776868ed5c1fcc::t_2a0be7141cfa2f 220-221,269,343-344
+  s_776868ed5c1fcc::t_03b3c3684b21ae 222-225
+  s_776868ed5c1fcc::t_dbf64289504852 270-272
+  s_776868ed5c1fcc::t_b21d2a4bf304ce 348
+  s_776868ed5c1fcc::t_5a66306fd82884 10
+  s_776868ed5c1fcc::t_a845d8952d1748 345-347
+  s_776868ed5c1fcc::t_6e37f6b60b6a84 273
+common/pkg/controller/statusless_test.go
+  s_776868ed5c1fcc::t_3f9af861abb5b1 32-33,36-44
+  s_776868ed5c1fcc::t_8aecfc809bd0aa 28-30,54-60
+  s_776868ed5c1fcc::t_77315d1c6b6f68 13-15
+  s_776868ed5c1fcc::t_00c5fa4c208762 1-7,11-12,19-27,31,45-47,49-53,61,63-66
+  s_776868ed5c1fcc::t_2da5cb6a265883 34-35
+  s_776868ed5c1fcc::t_b2fa9bb9bdc3bf 8-10
+  s_776868ed5c1fcc::t_3bf4eed3d5198d 16-18,48,62
+common/pkg/controller/controller_test.go
+  s_776868ed5c1fcc::t_79ddf873b96536 11,21,167-178,187,195-196,201
+  s_776868ed5c1fcc::t_58ecfa81577f19 180,182-185,190,199
+  s_776868ed5c1fcc::t_860bd4181765e7 192-193
+  s_776868ed5c1fcc::t_687ea7c275fbd4 188
+  s_776868ed5c1fcc::t_05d0562ea805d3 205-223,225-227,229-234
+  s_776868ed5c1fcc::t_2706a1accae40b 166,179,181,186,189,191,194,198,200,203-204,235
+  s_776868ed5c1fcc::t_c334526a6d0453 19
+  s_776868ed5c1fcc::t_6336abc9bf0527 18
+  s_776868ed5c1fcc::t_b11734655192b1 236
+  s_65183020391e2c::t_ad2517d5d4ad8e 251-252,258-259
+  s_65183020391e2c::t_b4c9d2f6bbb94a 239-241,255
+  s_65183020391e2c::t_4f313360e38fd3 9,14,197,202,224,228,237-238,242-250,253-254,256-257,260
+  s_65183020391e2c::t_9091fe5a630e80 261-262
+"common/pkg/test/deepcopy_test .go"
+  s_776868ed5c1fcc::t_230e14f92c45d5 17,21-24
+  s_776868ed5c1fcc::t_f548ebb14ba628 7-10
+common/pkg/controller/controller.go
+  s_776868ed5c1fcc::t_ab28f7fcca8ab9 12,167
+  s_776868ed5c1fcc::t_762aeb46d70c8a 86,162,183
+  s_776868ed5c1fcc::t_de25496770e0f6 156,159,163-164,166,181-182,184-188
+  s_776868ed5c1fcc::t_0420dbebff0d2f 157-158,160-161
+  s_776868ed5c1fcc::t_88d202940591b3 165
+  s_776868ed5c1fcc::t_d7bfaa9e968daf 171
+  s_776868ed5c1fcc::t_eef95053e6a2d1 9,128,142,169-170,179-180,189
+  s_776868ed5c1fcc::t_9d311a9af24fdc 190
+  s_65183020391e2c::t_08275c6e1b03aa 11,22,34-50,168,172-178
+gateway/internal/controller/gateway_controller.go
+  s_ed9ebc24640ee6::t_c9dc66b1890ac7 18,51
+  s_ed9ebc24640ee6::t_e37a403327cc94 53-55,62-68
+  s_ed9ebc24640ee6::t_1c23510681117a 15,19,50,69-77
+  h_0f030e7424553c 52
+gateway/internal/controller/controller_test.go
+  s_ed9ebc24640ee6::t_b78b909a14ae92 208,239-253,273-280
+  s_0018ced65c0b21::t_2dbc2fabf4ee5c 9,198-207,209-238,254-272,281-284,286
+  s_ed9ebc24640ee6::t_c4bd7e53a878d4 285
+  s_de19913a88ad4c::t_a4e74e4d515bf6 287
+gateway/internal/controller/index.go
+  s_0018ced65c0b21::t_e23e431e4534d8 57
+  h_0f030e7424553c 69-80
+  s_2238febd05f50d::t_8fcf0a7cadf352 19,58-68
+gateway/internal/handler/route/handler.go
+  h_0f030e7424553c 26-27,116-118
+  s_ed9ebc24640ee6::t_0a5cd16bebb9fe 115
+gateway/internal/handler/gateway/handler_test.go
+  s_ed9ebc24640ee6::t_1366d16ba3081d 44
+  s_ed9ebc24640ee6::t_1c23510681117a 12-14,43,49
+identity/internal/handler/realm/handler_test.go
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 93
+gateway/internal/handler/gateway/handler.go
+  h_0f030e7424553c 42-51
+  s_2238febd05f50d::t_8fcf0a7cadf352 9,11,13,15,17,31-41
+gateway/internal/handler/consumer/handler.go
+  h_0f030e7424553c 19-20,47-50
+identity/internal/handler/realm/handler.go
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 12,15,19,113-121
+  s_de19913a88ad4c::t_644059ee4ff0cc 122
+identity/internal/controller/realm_controller.go
+  h_0f030e7424553c 67
+  s_ed9ebc24640ee6::t_fd1b4795f9f9cf 65-66,75-80
+  s_de19913a88ad4c::t_15c5787174a402 81-82
+identity/internal/controller/realm_controller_test.go
+  s_ed9ebc24640ee6::t_6a2d651b5abaa8 9
+  s_ed9ebc24640ee6::t_b78b909a14ae92 82
+  s_ed9ebc24640ee6::t_8a50e0c00e7f42 18,78-81,83-99,103-112
+  s_ed9ebc24640ee6::t_7e43c2e1dc259a 100-102
+  s_de19913a88ad4c::t_b16f7f8bd0b5ca 113-115
+identity/test/utils/mocks.go
+  s_80e8f80eb4b4ac::t_844693aecfccf9 53
+identity/internal/controller/identityprovider_controller_test.go
+  s_80e8f80eb4b4ac::t_746a9e29b4eb06 56-57
+  s_a1f524d2406e16::t_9be0a2e67ec0b2 9,18,53-55,58-82
+  s_de19913a88ad4c::t_5bcb8949f96dd8 83-85
+identity/internal/controller/identityprovider_controller.go
+  s_a1f524d2406e16::t_7cd58cac043216 13,16-17,50-52,59-65
+  s_b35f7b2645bab2::t_0bedc2ec2f9a4d 66
+identity/internal/handler/identityprovider/handler.go
+  s_a1f524d2406e16::t_7cd58cac043216 11,14,16,18,46-55
+common/go.mod
+  s_65183020391e2c::t_140677d33ccf5c 13
+  s_65183020391e2c::t_3110e7bd176a7c 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "259e8113b5d57425599a1b8e44bef9156958d176",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_0018ced65c0b21": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0387c7740ffeL665QXre6I8tVZ",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_2238febd05f50d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0386a9565ffeA6iQmRJYwGITjh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_65183020391e2c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_029e74b54ffeqTrctNGWIghE3k",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_776868ed5c1fcc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03439a832ffedIWSUzsW3LPPZh",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_80e8f80eb4b4ac": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_037d55a79ffehV2aJOQU3a8tOl",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_a1f524d2406e16": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03803051effe8j4HXDteDKuCSe",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b35f7b2645bab2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038109be1ffeiODFUj045bd9bY",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_de19913a88ad4c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0383318eaffeVURd2olqN1jAVC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_ed9ebc24640ee6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_038524064ffe1ZutAFlv7ANpPq",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

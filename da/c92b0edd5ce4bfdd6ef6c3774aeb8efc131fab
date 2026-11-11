@@ -1,0 +1,60 @@
+rover-server/internal/mapper/rover/in/exposure.go
+  s_200fcffa229bdd::t_49471a83ebb934 108-109,123-124
+rover-server/internal/mapper/rover/in/rover.go
+  s_200fcffa229bdd::t_315b0c1900f9c1 174-175
+rover-server/internal/mapper/rover/in/fuzzy_match_test.go
+  s_200fcffa229bdd::t_315b0c1900f9c1 73-75,77-82,84-86
+rover-server/internal/mapper/rover/out/exposure.go
+  h_0f030e7424553c 20-21
+rover-server/internal/api/server.gen.go
+  h_0f030e7424553c 149-153,159,161,163,165-167,281-282,288,290,840,847,2221-2375
+rover-server/internal/mapper/rover/in/fuzzy_match.go
+  s_200fcffa229bdd::t_315b0c1900f9c1 54,56,58
+rover-server/internal/mapper/rover/in/rover_test.go
+  s_200fcffa229bdd::t_315b0c1900f9c1 147,164
+rover-server/internal/mapper/rover/out/rover_test.go
+  h_0f030e7424553c 75,90
+rover-server/api/openapi.yaml
+  s_200fcffa229bdd::t_95f0516857bf80 2179-2185
+  s_200fcffa229bdd::t_eec181f075328d 2167,2824
+rover-server/internal/mapper/rover/in/exposure_test.go
+  s_200fcffa229bdd::t_e50f4b90046cd2 33-34
+  s_200fcffa229bdd::t_ddd1f5fada6848 290-293,328-331
+rover-server/internal/mapper/rover/out/rover.go
+  h_0f030e7424553c 61-62
+rover-server/internal/controller/rover_test.go
+  s_200fcffa229bdd::t_433b068c039719 16,19,183-207,209-212
+  s_200fcffa229bdd::t_ddd1f5fada6848 182,208
+  s_200fcffa229bdd::t_315b0c1900f9c1 261,274
+rover-server/internal/controller/__snapshots__/suite_controller_test.snap
+  s_77c43aa522a4cd::t_b6b132948bde5c 1476-1508
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dac92b0edd5ce4bfdd6ef6c3774aeb8efc131fab",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_200fcffa229bdd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_03941f0bbffeZpwMiN0Po8XaNU",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_77c43aa522a4cd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0390d67c2ffeCeycJ9xAfNS2Nk",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

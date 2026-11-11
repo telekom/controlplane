@@ -1,0 +1,73 @@
+gateway/internal/handler/route/handler.go
+  s_805eeb84c6946f::t_ed840eeede91d9 160
+gateway/internal/features/envoy/custom_scopes_test.go
+  s_805eeb84c6946f::t_84372de5b1034f 1-10,12,16-21,23,26-35,37-45,60-65,71-73,78-175
+  s_805eeb84c6946f::t_6665008b633ccf 13-15,24-25
+  s_805eeb84c6946f::t_e6b5f79c3e39ef 36
+  s_805eeb84c6946f::t_015e8ba055d37e 46-59,66-70,74-77
+  s_805eeb84c6946f::t_af3de97e4b4925 11,22
+  s_805eeb84c6946f::t_8448913a4ac431 176-226
+gateway/cmd/xdsdemo/README.md
+  s_805eeb84c6946f::t_7d43522466a257 64-70,75-78
+  s_805eeb84c6946f::t_56921c92189822 79
+gateway/cmd/lms-issuer/main.go
+  s_805eeb84c6946f::t_792104fb6ea6e6 64,76-84
+  s_805eeb84c6946f::t_d92ccc81086026 94
+  s_805eeb84c6946f::t_6cd607b97069b8 116-135
+  s_805eeb84c6946f::t_c9e1c1f952bba2 17
+.opencode/agent/kgateway-expert/kgateway-expert.md
+  h_0f030e7424553c 12
+  s_fe82ac30ae04f1::t_d7931652a7e185 1-11,13-32
+gateway/internal/features/envoy/last_mile_security.go
+  s_805eeb84c6946f::t_6d8c04ab2cfa05 17
+  s_805eeb84c6946f::t_9d847604f86c91 160-175,179-195,199
+gateway/cmd/xdsdemo/docker-compose.yaml
+  h_0f030e7424553c 23
+gateway/internal/features/envoy/custom_scopes.go
+  s_805eeb84c6946f::t_d9846f131d20a0 1-72,80-98
+  s_805eeb84c6946f::t_b320e5c2e7f94c 73-79
+gateway/internal/features/envoy/builder.go
+  s_805eeb84c6946f::t_dc1e3b71d238a8 253-255
+  s_805eeb84c6946f::t_0720c9674e46b2 81-83
+  s_805eeb84c6946f::t_14b5ba854a32dc 94-103
+  s_805eeb84c6946f::t_fb343317919910 183-187
+  s_805eeb84c6946f::t_f8ce591f897d0a 55-60
+gateway/internal/features/envoy/last_mile_security_test.go
+  s_805eeb84c6946f::t_4b71269ef5c1bb 76,82
+gateway/cmd/lms-issuer/main_test.go
+  s_805eeb84c6946f::t_c0e40faab758f9 96-117
+gateway/cmd/xdsdemo/main.go
+  s_805eeb84c6946f::t_260df7d179c45c 48-49
+  s_805eeb84c6946f::t_562baa368ae4e2 67,74-82,86-87
+  s_805eeb84c6946f::t_76c67c8e90757a 147-165,168-174
+  h_0f030e7424553c 166-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a4d0c3b14d8257bbcb5675917ed23a83ef418a1c",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_805eeb84c6946f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071efe57dffehA0yCaJHfYCB3S",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fe82ac30ae04f1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_071f76405ffe6LPMymrh1Oe1vV",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+agentic/internal/handler/agenticexposure/handler.go
+  s_93e8d181b477fd::t_97b476619e2433 32
+application/internal/controller/application_controller_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 53-54,76-77,120-121,143-144
+admin/internal/handler/zone/handler_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 12-15
+api/internal/controller/suite_test.go
+  s_93e8d181b477fd::t_97b476619e2433 58-63,175,178,232
+admin/internal/webhook/v1/zone_validator_test.go
+  s_93e8d181b477fd::t_ca566dcc3a336b 14
+  s_93e8d181b477fd::t_b2351734a36f09 15
+admin/go.mod
+  s_93e8d181b477fd::t_58ea0a1335248c 35
+application/internal/handler/application/notification_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 113-123
+admin/internal/handler/zone/oidc_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 15-16,21-23
+api/internal/handler/apiexposure/types.go
+  s_93e8d181b477fd::t_4bf49d76599d4b 15,17,21-23,39,41,71-72,76,92-93,95
+api/internal/handler/util_proxy_route_test.go
+  s_93e8d181b477fd::t_ca566dcc3a336b 37-38,58-59
+organization/internal/webhook/v1/mutator/mutate_test.go
+  s_93e8d181b477fd::t_ca566dcc3a336b 26-27
+admin/internal/webhook/v1/zone_webhook.go
+  s_93e8d181b477fd::t_97b476619e2433 96,196
+organization/internal/webhook/v1/team_webhook_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 53-54,67-68
+application/internal/handler/application/handler.go
+  s_93e8d181b477fd::t_97b476619e2433 418-419
+admin/internal/handler/zone/oidc.go
+  s_93e8d181b477fd::t_97b476619e2433 10,25,30,38
+admin/internal/webhook/v1/zone_validator.go
+  s_93e8d181b477fd::t_50a48a4711552b 20-21
+  s_93e8d181b477fd::t_97b476619e2433 55,229-233
+organization/internal/team_webhook_reconciler_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 97-98,111-112
+permission/internal/controller/permissionset_controller_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 151-152,161-162
+organization/internal/controller/team_controller_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 89-90,105-106,594-595,610-611
+api/internal/controller/apiexposure_controller_test.go
+  s_93e8d181b477fd::t_c9aa94c320fec7 42-43,64-65
+organization-server/go.mod
+  s_93e8d181b477fd::t_238c64fbc64763 51,105-106
+admin/internal/handler/zone/links.go
+  s_93e8d181b477fd::t_ac0d10848e2f6b 47
+  s_93e8d181b477fd::t_adfa46287cf46a 21,23,49-54
+  s_93e8d181b477fd::t_97b476619e2433 22
+organization-server/go.sum
+  s_93e8d181b477fd::t_954d0ebf43b46f 44-45,167-170,208-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "163e6fa822f307647e7e3933e81fa5a5da0e0998",
+  "prompts": {},
+  "sessions": {
+    "s_93e8d181b477fd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0158e8f6bffeIuFMzMzsAWsX1p",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

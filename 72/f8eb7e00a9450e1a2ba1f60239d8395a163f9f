@@ -1,0 +1,52 @@
+rover-ctl/docs/roverctl_resource.md
+  s_1342c5a443525b::t_a670ead6d2dd98 54
+  s_5d109f52173309::t_f4ed3420ed1f68 9-15,18
+rover-ctl/pkg/commands/resource/cmd.go
+  s_5d109f52173309::t_f0636937dac16d 41-42,45-51,54
+rover-ctl/Makefile
+  s_1342c5a443525b::t_d577e45136297a 34-37
+rover-ctl/docs/roverctl.md
+  s_5d109f52173309::t_d435408edb809e 31
+rover-ctl/docs/roverctl_apply.md
+  s_5d109f52173309::t_6977110e4c0b37 35
+rover-ctl/docs/roverctl_delete.md
+  s_5d109f52173309::t_b7f5723b1e538b 35
+rover-ctl/docs/roverctl_get-info.md
+  s_5d109f52173309::t_8a9c6a89dfccec 39
+rover-ctl/docs/roverctl_get-secret.md
+  s_5d109f52173309::t_f01d146b30942b 36
+rover-ctl/docs/roverctl_reset-secret.md
+  s_5d109f52173309::t_a1394fa61b94d1 38
+rover-ctl/docs/roverctl_resource_delete.md
+  s_5d109f52173309::t_d5c08d61ceac75 37
+rover-ctl/docs/roverctl_resource_get.md
+  s_5d109f52173309::t_614d7f2fac0bf4 37
+rover-ctl/docs/roverctl_resource_list.md
+  s_5d109f52173309::t_71bb5ffe1cfcd8 36
+rover-ctl/docs/roverctl_rotate-secret.md
+  s_5d109f52173309::t_90549524cc9048 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "72f8eb7e00a9450e1a2ba1f60239d8395a163f9f",
+  "prompts": {},
+  "sessions": {
+    "s_1342c5a443525b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6c675aeffeHhvvVc6fLxlEoK",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_5d109f52173309": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec6b4f612ffeTO1BxjUzNhTMuJ",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

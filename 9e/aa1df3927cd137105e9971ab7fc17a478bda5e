@@ -1,0 +1,32 @@
+common-server/pkg/server/middleware/security/business_context.go
+  h_0f030e7424553c 270,272
+discovery-server/internal/config/config.go
+  h_0f030e7424553c 60
+discovery-server/internal/controller/suite_controller_test.go
+  h_0f030e7424553c 144
+common-server/pkg/server/middleware/security/business_context_test.go
+  s_36557bb536e4c8::t_640b297ab68b42 30
+rover/internal/controller/rover_controller_test.go
+  h_0f030e7424553c 380,410
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9eaa1df3927cd137105e9971ab7fc17a478bda5e",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_36557bb536e4c8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec57e4c70ffekBtPz7zmLHmN3I",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

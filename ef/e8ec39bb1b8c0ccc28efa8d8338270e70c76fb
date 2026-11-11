@@ -1,0 +1,21 @@
+controlplane-api/ent/mutation.go
+  s_eda337cdb55c4a::t_364398b07ee2eb 5445
+controlplane-api/ent/migrate/schema.go
+  s_eda337cdb55c4a::t_364398b07ee2eb 182,188,197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "efe8ec39bb1b8c0ccc28efa8d8338270e70c76fb",
+  "prompts": {},
+  "sessions": {
+    "s_eda337cdb55c4a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa9498926ffeWyxt31r2Dvmpxa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

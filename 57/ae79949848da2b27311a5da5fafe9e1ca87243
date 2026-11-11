@@ -1,0 +1,33 @@
+gateway/test/devloop/devloop.sh
+  s_c3669dbffcf265::t_ac261433e9f199 75-76,80-98
+  s_c3669dbffcf265::t_9a07256d43f788 111,118
+  s_c3669dbffcf265::t_8fd674fecf6b17 99
+gateway/Makefile
+  s_c3669dbffcf265::t_4ecee61ea39e87 136-139
+gateway/test/devloop/samples/base/zone-b.yaml
+  s_c3669dbffcf265::t_f98a4cded708b6 36-37
+  s_c3669dbffcf265::t_de39c23d692c42 1-35,38-49
+gateway/test/devloop/samples/base/zone-a.yaml
+  s_c3669dbffcf265::t_b1c5c5e5c0d875 1-36,39-50
+  s_c3669dbffcf265::t_f98a4cded708b6 37-38
+gateway/test/devloop/verify/crs.sh
+  s_c3669dbffcf265::t_34b8a1488369ee 1-5,7-13,18-26
+  s_c3669dbffcf265::t_b59806fa9cb434 6
+  s_c3669dbffcf265::t_3adcb34953eaa5 14-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "57ae79949848da2b27311a5da5fafe9e1ca87243",
+  "prompts": {},
+  "sessions": {
+    "s_c3669dbffcf265": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04da9675effeLk67exU7kkxW5d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,139 @@
+event/api/v1/eventconfig_types.go
+  s_b7ff5adbd122f2::t_ca858aedd89f4a 168-169,174-175
+docs/docs/user-journey/exposing-events.mdx
+  s_59100d5756d825::t_bf7605d8e0642a 107,115
+  s_59100d5756d825::t_e0ae7a65f61d1a 116
+docs/docs/user-journey/subscribing-to-events.mdx
+  s_59100d5756d825::t_1e9e0ff61eec5a 71
+  s_59100d5756d825::t_bf7605d8e0642a 70
+event/internal/handler/util/callback_route_test.go
+  s_18dad4043de1e2::t_dc7f4601dc0359 203-212,323-331
+  s_18dad4043de1e2::t_cd1f20c4568607 332
+event/internal/handler/eventconfig/handler.go
+  s_18dad4043de1e2::t_66280e6bedd652 240-242,306-308,320-324
+  s_b7ff5adbd122f2::t_9078fabfe9df9a 383-384,390-411,414,417,447-448,450-451,460,463,465-468
+  s_1f6eb1aae5f113::t_b87c89f03d49a3 8,10,415-416
+  s_b7ff5adbd122f2::t_728410ecce77dd 449
+  s_bd918a13360a74::t_720465e9f0f968 420-422,459,461-462,470,478-479
+  s_18dad4043de1e2::t_eb0ce3f41bdec0 99-101,118,157,160,237-239,303-305,309-319,325-340,378,428
+  s_18dad4043de1e2::t_8ff7df181975d8 98
+event/cmd/main.go
+  s_9775f13c967174::t_6342a09f84ca6a 174-175
+  s_9775f13c967174::t_805c750152d44e 173
+event/internal/controller/callback_lifecycle_test.go
+  s_18dad4043de1e2::t_5a25d3fadc6333 115,128,140-141,144,188,366
+  s_18dad4043de1e2::t_78d9d304c98503 160-161
+  s_18dad4043de1e2::t_507fab4b46b271 101,142,170,178-187,189
+  s_b7ff5adbd122f2::t_dcbf99e1c29816 313-314
+  s_b7ff5adbd122f2::t_524b7bed6826e6 325
+  s_18dad4043de1e2::t_2eb143e4fed020 210-220
+  s_18dad4043de1e2::t_eb59a1d907a38b 239
+  s_18dad4043de1e2::t_1229b7cc405c28 143,172-173,175,177,190-192,194,199-200,202,204-206,208-209,221-223,275
+  s_18dad4043de1e2::t_9cffb52f271844 227-231,235
+  s_b7ff5adbd122f2::t_9de5ef30714edb 311-312,315
+  s_18dad4043de1e2::t_8ff7df181975d8 195-197,203
+  s_b7ff5adbd122f2::t_7fab3f2a6803fe 319,322,334
+  s_b7ff5adbd122f2::t_81f144447a49eb 284-295,316-317
+  s_18dad4043de1e2::t_1be4f6b9eaf180 12,145-159,162-169,171,174,176,193,198,201,207
+  s_18dad4043de1e2::t_9f0fc005392bed 122
+  s_18dad4043de1e2::t_5d6e5136d3e9cb 232-234
+  s_b7ff5adbd122f2::t_ce691e307033d3 279,282-283,296-298,303-304,308,332
+  s_b7ff5adbd122f2::t_ab497e33fd036b 335-362
+  s_18dad4043de1e2::t_380eb9a7402161 21,224-226,236-238,240-274
+  s_b7ff5adbd122f2::t_b607174a893534 277-278,280-281,299-302,305-307,309-310,318,320-321,323-324,326-331,333,363-364
+docs/docs/admin-journey/environments-and-zones.md
+  s_59100d5756d825::t_8d023b028c18a5 232,309,331
+event/internal/handler/util/shared_route.go
+  s_18dad4043de1e2::t_eb0ce3f41bdec0 74-75,105-109,113-115
+  s_18dad4043de1e2::t_1812f11e0affe7 116-117
+event/internal/index/index.go
+  h_0f030e7424553c 125-130
+event/internal/controller/eventconfig_controller.go
+  s_18dad4043de1e2::t_eb0ce3f41bdec0 49,64
+event/internal/handler/util/callback_route.go
+  s_18dad4043de1e2::t_eb0ce3f41bdec0 37-40,43
+event/internal/handler/eventtype/handler.go
+  s_1f6eb1aae5f113::t_b87c89f03d49a3 9,43
+  s_1f6eb1aae5f113::t_14d832fc6b04df 44
+docs/docs/architecture/event.mdx
+  s_59100d5756d825::t_ef561b7b8afd50 31,129,132
+  s_59100d5756d825::t_43fb4d77bc7926 143
+  s_59100d5756d825::t_4ef923ac0fd554 136-137,167
+  s_b7ff5adbd122f2::t_ca858aedd89f4a 49,157,165
+  s_59100d5756d825::t_1e9e0ff61eec5a 40,42,44-45,47,51-86,88-90,98-99,101-105,107-109,111-115,122,124-128,130-131,133-135,138-141,145,147-151,153,155,159-164,166,193,196-200,202-204,206-213,216-217,224
+  s_59100d5756d825::t_1fdeb92df333f2 87
+event/internal/handler/eventconfig/handler_test.go
+  s_18dad4043de1e2::t_3aca4d4279b434 428-440,454-465
+  s_18dad4043de1e2::t_3d6a86c52bcc91 441-453
+  s_18dad4043de1e2::t_5e4f6d1e1559a2 219-227,310,419,474,492,517,542-543
+event/internal/handler/eventconfig/callback_routes_test.go
+  s_18dad4043de1e2::t_eeea27323ad6cf 206,277
+  s_b7ff5adbd122f2::t_be14e5383a3da6 84,92,103,117-125,195-196,208-209,213,279-281
+  s_b7ff5adbd122f2::t_728410ecce77dd 186-189,204
+  s_1f6eb1aae5f113::t_7cbb1f75136f11 33-79
+event/config/crd/bases/event.cp.ei.telekom.de_eventconfigs.yaml
+  s_1f6eb1aae5f113::t_d6a9788167554a 400-402,428-429
+event/config/rbac/role.yaml
+  s_1f6eb1aae5f113::t_7858b98ebe1b50 97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "98665606500f1722e038255aceef4c95a32306ed",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_18dad4043de1e2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f140ac66effe5Y5IHJarrK27Wi",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_1f6eb1aae5f113": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f137acbbfffe3rr4tqYe5jBYQy",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_59100d5756d825": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f13db296dffemPH1R1VPGKOk9y",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9775f13c967174": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f13f68bf8ffeicjltnTAmRQk7G",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_b7ff5adbd122f2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f13870e6cffeykfirIbWZ6nx5d",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_bd918a13360a74": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f13feb4d4ffeKygBw5h5yhfmR4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

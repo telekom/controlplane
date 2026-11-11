@@ -1,0 +1,31 @@
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_fbff8bc2b4910e::t_91442e15347ea9 317-349
+  s_50179dc8519778::t_0cbc91df82e11a 350-359,364-389
+  s_50179dc8519778::t_404405494d67a9 360-363
+rover-server/internal/mapper/applicationinfo/out.go
+  s_fbff8bc2b4910e::t_188bd69babd887 149-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bd463f0684d3a6865656c03719a5d4b597911c8e",
+  "prompts": {},
+  "sessions": {
+    "s_50179dc8519778": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9f142315ffeQ9ieOVKIf3p1r2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fbff8bc2b4910e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f9f2a7c5effeXEhFF8EH0ZCssC",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

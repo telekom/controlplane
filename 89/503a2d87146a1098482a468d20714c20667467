@@ -1,0 +1,29 @@
+gateway/test/devloop/verify/operator.sh
+  s_eeee28390d9842::t_6583a6769ee61a 1-5,7-18
+  s_eeee28390d9842::t_cacc89fd58f0c6 6
+gateway/test/devloop/docker-compose.yaml
+  s_eeee28390d9842::t_5d1c51dd770d61 68-95
+gateway/test/devloop/devloop.sh
+  s_eeee28390d9842::t_b9b43a42a671c7 96,123-129,131
+  s_eeee28390d9842::t_0246a345da8fcc 143,151
+  s_eeee28390d9842::t_4487ce7835a2e2 54-70,72
+  s_eeee28390d9842::t_3fb8268a7c2fb0 85,97-99
+gateway/Makefile
+  s_eeee28390d9842::t_979cb875eeea40 140-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "89503a2d87146a1098482a468d20714c20667467",
+  "prompts": {},
+  "sessions": {
+    "s_eeee28390d9842": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d9ab72bffen3KdICuXLRDzPw",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

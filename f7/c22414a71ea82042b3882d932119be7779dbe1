@@ -1,0 +1,31 @@
+docs/docs/architecture/agentic.mdx
+  s_560d08c3786821::t_4671bd0078d9d0 123
+  s_560d08c3786821::t_831fed79098fa3 96-97
+agentic/internal/handler/util/route.go
+  s_560d08c3786821::t_7086c3be3e8c4b 145-148
+  s_560d08c3786821::t_68bcf02de1b837 212
+  s_560d08c3786821::t_1b5d9667bc2a67 10
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_560d08c3786821::t_017c838defccc1 859
+  s_560d08c3786821::t_bfede2f810136e 697
+  s_560d08c3786821::t_627b1babb8ebae 780-782
+  s_560d08c3786821::t_0f58b1a0b63136 958,960
+agentic/internal/handler/util/naming.go
+  s_560d08c3786821::t_4afd1401fa2796 13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f7c22414a71ea82042b3882d932119be7779dbe1",
+  "prompts": {},
+  "sessions": {
+    "s_560d08c3786821": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "1139d031-0237-4132-a323-34175523f1da",
+        "model": "unknown"
+      },
+      "human_author": "Elmar Meuthen <elmar.meuthen@telekom.de>"
+    }
+  }
+}

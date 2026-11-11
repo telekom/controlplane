@@ -1,0 +1,19 @@
+admin/go.mod
+  s_f865b58d46e9dc::t_6eb904acfc7897 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "13cefd2d8b610e2b5796b5c7a5c9b63c4541affc",
+  "prompts": {},
+  "sessions": {
+    "s_f865b58d46e9dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83ad65f8ffeqvFVideVL0PecQ",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

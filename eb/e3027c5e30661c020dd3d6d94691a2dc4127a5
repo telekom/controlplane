@@ -1,0 +1,50 @@
+admin/config/crd/bases/admin.cp.ei.telekom.de_zones.yaml
+  s_2d1abadc2b190d::t_bd268d23f96239 409-410
+admin/internal/handler/zone/handler.go
+  s_2d1abadc2b190d::t_66b669d05e173e 59
+docs/docs/admin-journey/installation.md
+  s_2d1abadc2b190d::t_168e9ab0003d91 142
+admin/internal/handler/zone/oidc_test.go
+  s_2d1abadc2b190d::t_148d32c308e012 24,88,143,151,165
+  s_2d1abadc2b190d::t_377486ced8d650 22,25-29,33,49-53,62,73,86,92-99,102-104,106,109-117,120-125,128-134,136-137,140-142,144,147-150,159-162,168-171,174-175,177-182,184-185,188-192,194-200
+  s_2d1abadc2b190d::t_168e9ab0003d91 153-156,163-164,166,172-173
+  s_2d1abadc2b190d::t_89116aa9898177 167
+admin/internal/handler/zone/handlingContext.go
+  s_2d1abadc2b190d::t_66b669d05e173e 61
+docs/docs/admin-journey/environments-and-zones.md
+  s_2d1abadc2b190d::t_168e9ab0003d91 73
+  s_2d1abadc2b190d::t_510a2ea16e4e5f 219
+admin/internal/handler/zone/oidc.go
+  s_2d1abadc2b190d::t_25e42ab4678128 12,15-16,18-22,24-26,28-30,32,35,38,41
+  s_2d1abadc2b190d::t_168e9ab0003d91 37,40
+admin/internal/handler/zone/links.go
+  s_2d1abadc2b190d::t_168e9ab0003d91 59-60
+  s_2d1abadc2b190d::t_acc0f545db3209 34,58,64,69,78,87,93
+  s_2d1abadc2b190d::t_66b669d05e173e 18,42-45
+admin/api/v1/zone_types.go
+  s_2d1abadc2b190d::t_510a2ea16e4e5f 209-210
+admin/config/samples/admin_v1_zone.yaml
+  s_2d1abadc2b190d::t_510a2ea16e4e5f 28
+docs/docs/architecture/admin.mdx
+  s_2d1abadc2b190d::t_510a2ea16e4e5f 56
+docs/docs/architecture/outbound-tls-clients.md
+  s_2d1abadc2b190d::t_510a2ea16e4e5f 60
+admin/internal/handler/zone/suite_test.go
+  s_2d1abadc2b190d::t_66b669d05e173e 309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ebe3027c5e30661c020dd3d6d94691a2dc4127a5",
+  "prompts": {},
+  "sessions": {
+    "s_2d1abadc2b190d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e5f214b2fffebfPl09guS1UbwQ",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

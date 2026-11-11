@@ -1,0 +1,40 @@
+common-server/pkg/client/tlsclient/spec.go
+  s_982d2f06bcdbd9::t_0d6553fbc6104e 45-47
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 48
+common-server/pkg/client/tlsclient/build_test.go
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 112
+docs/docs/architecture/outbound-tls-clients.md
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 39-40
+common-server/pkg/client/tlsclient/build.go
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 140,173,175
+identity/pkg/keycloak/factory_test.go
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 544
+gateway/pkg/kongutil/client_factory.go
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 76
+identity/pkg/keycloak/factory.go
+  s_d8d0a67d32d48c::t_8f9838b7ab8a8c 25-29,110-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b4c9182dd4eb745e68e937f7b41f243740296e15",
+  "prompts": {},
+  "sessions": {
+    "s_982d2f06bcdbd9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83b7b00bffebTgkeIKUDrHofo",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_d8d0a67d32d48c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83b15a6fffeiA6TCsrUm9cask",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

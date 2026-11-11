@@ -1,0 +1,25 @@
+api/internal/controller/apisubscription_controller.go
+  s_41aa99c21c99f7::t_2790e74134a3d5 69-72,75,79,83,87,91
+api/internal/controller/apiexposure_controller.go
+  s_41aa99c21c99f7::t_2790e74134a3d5 64,68,75,79,83
+api/internal/controller/api_controller.go
+  s_41aa99c21c99f7::t_20018353b34938 54
+api/internal/controller/remoteapisubscription_controller.go
+  s_41aa99c21c99f7::t_2790e74134a3d5 60-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "54d84cea0c9226794b628a56a78b0afdd6a8c8ff",
+  "prompts": {},
+  "sessions": {
+    "s_41aa99c21c99f7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04d4d8522ffeCALLPhLENLA1v4",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

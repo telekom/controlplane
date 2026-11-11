@@ -1,0 +1,22 @@
+docs/superpowers/plans/2026-07-30-controller-source-event-metrics.md
+  s_092cf52a35c0f4::t_21652b77edeae5 235-236
+  s_092cf52a35c0f4::t_e9a47bc7bf1e4d 165-167
+  s_092cf52a35c0f4::t_f7803bb49d4c47 1-60,62-164,168-234,237-676
+  s_092cf52a35c0f4::t_26a6842ecf9518 61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a6fceadcb8fa089070f5e0760a9285af0e0af916",
+  "prompts": {},
+  "sessions": {
+    "s_092cf52a35c0f4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_04ddb0e4cffeZjBr8B90eXQJNP",
+        "model": "claude-opus-4.8"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

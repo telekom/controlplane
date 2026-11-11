@@ -1,0 +1,70 @@
+rover-ctl/pkg/commands/base/file_test.go
+  s_6c203aaf367fef::t_730ee404ae36c6 152-153
+  s_044d5130c3d344::t_9d3e2d91ac0d80 166-168,171,174-178,181-186,190
+  s_044d5130c3d344::t_25854d85ad3bea 141-149,154-161,163-165,169-170,172-173,179-180,187-189,191-197,199-204,206-207,209-211,213-219
+  s_6c203aaf367fef::t_e6e0b484b03316 150-151
+  s_044d5130c3d344::t_970c302f3358f1 198
+  s_6c203aaf367fef::t_b4f2ae4699d3b1 13,15
+  s_044d5130c3d344::t_684f8923c3cef3 30-31,212
+  s_6c203aaf367fef::t_40ede234099909 162
+  s_044d5130c3d344::t_fd5ea3817ba37e 205,208
+rover-ctl/pkg/commands/base/file.go
+  s_044d5130c3d344::t_25854d85ad3bea 8-9,54,56,64,66,69-72
+  s_044d5130c3d344::t_2b6d83293e2f98 53
+  s_6c203aaf367fef::t_ad42a8a3d47674 65,68
+  s_044d5130c3d344::t_862c35f05261d1 67
+  s_6c203aaf367fef::t_1bcd90235bdcc2 11
+  s_044d5130c3d344::t_a56e873b7555bf 73
+rover-ctl/pkg/parser/apispec.go
+  s_8e23ac8bf0b9d8::t_9baae035d2397b 83,85
+rover-ctl/pkg/config/config_test.go
+  s_6c203aaf367fef::t_815b2a97601834 1-17,20-27,29-37,42,44-51
+  s_6c203aaf367fef::t_69e28d6976ef3b 28
+  s_6c203aaf367fef::t_a9945ffe19738d 18-19
+  s_6c203aaf367fef::t_c0226d8184b423 38-41,43
+rover-ctl/pkg/parser/apispec_test.go
+  s_8e23ac8bf0b9d8::t_b409db0962cafe 1-52
+docs/docs/user-journey/onboarding.md
+  s_6c203aaf367fef::t_3c47a20b74fcde 66
+  s_6c203aaf367fef::t_6c0c484342535b 64
+  s_044d5130c3d344::t_b716e06c402092 65,67-70
+rover-ctl/pkg/config/config_internal_test.go
+  s_6c203aaf367fef::t_f84dc9078c1441 1-19
+rover-ctl/pkg/config/config.go
+  s_6c203aaf367fef::t_629d6e55548fac 17-19
+  s_6c203aaf367fef::t_49166b63faad79 34,42,44
+  s_6c203aaf367fef::t_9b40154f151c58 8
+  s_6c203aaf367fef::t_ed55f5437f8e37 32-33,35-41,43,45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "59cc17ab345cc062538b1f58ea05adb5b3762ec7",
+  "prompts": {},
+  "sessions": {
+    "s_044d5130c3d344": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eeaf5a1e6ffeVOfVZDEMCXFEU6",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_6c203aaf367fef": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eead14270ffeWFQRJniDdydV6S",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8e23ac8bf0b9d8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eeac6e28dffe69NrggG9vXQtHN",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
