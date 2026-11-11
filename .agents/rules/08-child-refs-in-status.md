@@ -2,7 +2,7 @@
 id: 08-child-refs-in-status
 description: Every sub-resource a handler creates must be referenced in its parent's status.
 severity: HIGH
-tier: 1
+complexity: 1
 scope: file
 applies_to:
   - "**/internal/handler/**/*.go"

@@ -41,7 +41,7 @@ class JudgeError(ValueError):
 
 @dataclass(frozen=True)
 class Judge:
-    tier: str
+    complexity: str
     model: str
     effort: str
 
@@ -53,22 +53,26 @@ class Judge:
 @dataclass(frozen=True)
 class Judges:
     default: str
-    by_tier: dict[str, Judge]
+    by_complexity: dict[str, Judge]
 
     @property
-    def tiers(self) -> tuple[str, ...]:
-        return tuple(sorted(self.by_tier))
+    def complexities(self) -> tuple[str, ...]:
+        return tuple(sorted(self.by_complexity))
 
-    def get(self, tier: str) -> Judge:
-        judge = self.by_tier.get(tier)
+    def get(self, complexity: str) -> Judge:
+        judge = self.by_complexity.get(complexity)
         if judge is None:
-            known = ", ".join(self.tiers) or "none"
-            raise JudgeError(f"unknown judge tier '{tier}'; known tiers: {known}")
+            known = ", ".join(self.complexities) or "none"
+            raise JudgeError(
+                f"unknown judge complexity '{complexity}'; known complexities: {known}"
+            )
         return judge
 
-    def resolve(self, tier: str | None = None) -> Judge:
-        """The judge to use, honouring the AUDIT_JUDGE tier override."""
-        return self.get(tier or os.environ.get("AUDIT_JUDGE", "").strip() or self.default)
+    def resolve(self, complexity: str | None = None) -> Judge:
+        """The judge to use, honouring the AUDIT_JUDGE complexity override."""
+        return self.get(
+            complexity or os.environ.get("AUDIT_JUDGE", "").strip() or self.default
+        )
 
 
 def judges_path(repo_root: Path) -> Path:
@@ -89,22 +93,24 @@ def load(repo_root: Path) -> Judges:
     if not default:
         raise JudgeError(f"{JUDGES_FILENAME}: missing 'default'")
 
-    by_tier: dict[str, Judge] = {}
-    for tier, value in raw.items():
+    by_complexity: dict[str, Judge] = {}
+    for complexity, value in raw.items():
         match = PIN_PATTERN.match(str(value).strip())
         if match is None:
             raise JudgeError(
-                f"{JUDGES_FILENAME}: judge '{tier}' is not a pin of the form "
+                f"{JUDGES_FILENAME}: judge '{complexity}' is not a pin of the form "
                 f"'provider/model#effort': {value!r}"
             )
-        by_tier[tier] = Judge(tier=tier, model=match.group(1), effort=match.group(2) or "")
-
-    if not by_tier:
-        raise JudgeError(f"{JUDGES_FILENAME}: no judges declared")
-    if default not in by_tier:
-        raise JudgeError(
-            f"{JUDGES_FILENAME}: default '{default}' is not one of "
-            f"{', '.join(sorted(by_tier))}"
+        by_complexity[complexity] = Judge(
+            complexity=complexity, model=match.group(1), effort=match.group(2) or ""
         )
 
-    return Judges(default=default, by_tier=by_tier)
+    if not by_complexity:
+        raise JudgeError(f"{JUDGES_FILENAME}: no judges declared")
+    if default not in by_complexity:
+        raise JudgeError(
+            f"{JUDGES_FILENAME}: default '{default}' is not one of "
+            f"{', '.join(sorted(by_complexity))}"
+        )
+
+    return Judges(default=default, by_complexity=by_complexity)

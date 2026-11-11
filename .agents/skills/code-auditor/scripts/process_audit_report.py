@@ -17,6 +17,7 @@ Only then are receipts and cache entries written.
 Usage::
 
     process_audit_report.py [--report PATH] [--verdicts PATH] [--fail-on LEVEL]
+                            [--config-root DIR]
 """
 
 from __future__ import annotations
@@ -28,12 +29,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from auditlib import SCHEMA_VERSION, VERDICTS, changeset  # noqa: E402
+from auditlib import SCHEMA_VERSION, VERDICTS  # noqa: E402
+from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.report import SEVERITY_RANK, worst  # noqa: E402
 from auditlib.store import (  # noqa: E402
     ReceiptStore,
     VerdictCache,
-    audit_dir,
     receipt_key,
     verdict_key,
 )
@@ -199,11 +200,11 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
     return items
 
 
-def persist(root: Path, report: dict, items: list[dict]) -> None:
+def persist(directory: Path, report: dict, items: list[dict]) -> None:
     model = report.get("model", "unknown")
     hashes = {r["id"]: r["content_hash"] for r in report["rules"]}
-    cache = VerdictCache(root)
-    receipts = ReceiptStore(root)
+    cache = VerdictCache(directory)
+    receipts = ReceiptStore(directory)
 
     for item in items:
         if item["source"] == "agent":
@@ -247,6 +248,30 @@ def persist(root: Path, report: dict, items: list[dict]) -> None:
     receipts.save()
 
 
+def context_mismatch(report: dict, context: AuditContext) -> str | None:
+    """Explain why the report belongs to another repository or config root.
+
+    Receipts and cache entries are only valid for the rules and the files the
+    report was built from; settling it elsewhere would vouch for neither.
+    Reports written before the context was recorded are accepted only without
+    a shared config root; with one, a contextless report cannot be traced to
+    this repository.
+    """
+    recorded = report.get("context")
+    if recorded is None and context.shared:
+        return (
+            f"the report records no context, but this run resolves to "
+            f"{context.describe()}; re-run create_audit_report.py with the same "
+            "--config-root"
+        )
+    if recorded is None or recorded == context.describe():
+        return None
+    return (
+        f"the report was created for {recorded}, but this run resolves to "
+        f"{context.describe()}; pass the same --config-root as create_audit_report.py"
+    )
+
+
 def summarise(items: list[dict], fail_on: str) -> tuple[list[dict], list[dict], str]:
     threshold = SEVERITY_RANK[fail_on]
     hits = [
@@ -255,8 +280,11 @@ def summarise(items: list[dict], fail_on: str) -> tuple[list[dict], list[dict], 
         if i["verdict"] in ("FAIL", "UNCLEAR")
         and SEVERITY_RANK[i["severity"]] >= threshold
     ]
-    order = (
-        lambda i: (-SEVERITY_RANK[i["severity"]], i["rule_id"], i["file"], i["line"])
+    order = lambda i: (
+        -SEVERITY_RANK[i["severity"]],
+        i["rule_id"],
+        i["file"],
+        i["line"],
     )
     findings = sorted((i for i in hits if i.get("in_scope", True)), key=order)
     advisory = sorted((i for i in hits if not i.get("in_scope", True)), key=order)
@@ -268,20 +296,34 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, default=None)
     parser.add_argument("--verdicts", type=Path, default=None)
-    parser.add_argument("--fail-on", choices=("LOW", "HIGH", "CRITICAL"), default="HIGH")
+    parser.add_argument(
+        "--fail-on", choices=("LOW", "HIGH", "CRITICAL"), default="HIGH"
+    )
     parser.add_argument("--json", action="store_true")
+    add_argument(parser)
     args = parser.parse_args()
 
-    root = changeset.repo_root()
-    report_path = args.report or (audit_dir(root) / "report.json")
-    verdicts_path = args.verdicts or (audit_dir(root) / "verdicts.json")
+    try:
+        context = resolve(args.config_root)
+    except ConfigError as exc:
+        print(f"Cannot settle the audit: {exc}", file=sys.stderr)
+        return 2
+    root = context.repo_root
+    report_path = args.report or (context.audit_dir / "report.json")
+    verdicts_path = args.verdicts or (context.audit_dir / "verdicts.json")
 
     if not report_path.is_file():
-        print(f"No audit report at {report_path}. Run create_audit_report.py first.",
-              file=sys.stderr)
+        print(
+            f"No audit report at {report_path}. Run create_audit_report.py first.",
+            file=sys.stderr,
+        )
         return 2
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
+    mismatch = context_mismatch(report, context)
+    if mismatch:
+        print(f"Audit rejected: {mismatch}", file=sys.stderr)
+        return 2
     verdicts = (
         json.loads(verdicts_path.read_text(encoding="utf-8"))
         if verdicts_path.is_file()
@@ -294,7 +336,7 @@ def main() -> int:
         print(f"Audit rejected: {exc}", file=sys.stderr)
         return 2
 
-    persist(root, report, items)
+    persist(context.audit_dir, report, items)
     report["items"] = items
     report["settled"] = True
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -318,6 +360,7 @@ def main() -> int:
     if report.get("errors"):
         for error in report["errors"]:
             print(f"  ERROR {error}")
+
     def render(entries: list[dict]) -> None:
         for entry in entries:
             evidence = entry["evidence"] or {}

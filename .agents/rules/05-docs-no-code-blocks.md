@@ -2,7 +2,7 @@
 id: 05-docs-no-code-blocks
 description: Journey docs must illustrate with diagrams, never with code blocks.
 severity: HIGH
-tier: 0
+complexity: 0
 scope: line
 applies_to:
   - "docs/docs/user-journey/**/*.md"

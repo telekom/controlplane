@@ -18,6 +18,14 @@ cannot, and every answer you give is machine-verified before it counts.
 - Never add a waiver yourself. Only a human waives a finding.
 - Never fix code during the audit. Audit first, report, then fix.
 
+## Auditing a submodule
+
+When the change lives in a submodule whose rules sit in the enclosing
+workspace, run every script below from the submodule and pass
+`--config-root <workspace>` to each of them, including `show_work_unit.py`.
+State then lives in `<workspace>/.agents/.audit/repos/<submodule>/` instead
+of `.agents/.audit/`. See "Shared configuration" in `scripts/README.md`.
+
 ## Workflow
 
 ### 1. Generate the report

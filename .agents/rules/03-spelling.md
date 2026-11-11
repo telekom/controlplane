@@ -2,7 +2,7 @@
 id: 03-spelling
 description: Changed files must be free of misspellings.
 severity: LOW
-tier: 0
+complexity: 0
 scope: line
 applies_to:
   - "**/*.go"

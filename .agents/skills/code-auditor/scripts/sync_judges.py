@@ -16,7 +16,9 @@ refuses a commit where they have drifted from the pin.
 
 A harness only gets a definition for a pin it can run under that exact name:
 
-- OpenCode: every pin, as ``provider/model#effort``.
+- OpenCode: every pin, with ``model`` set to ``provider/model`` and
+  ``variant`` to the effort. The Markdown agent loader (verified on 1.18.30)
+  reads them as separate fields; ``#effort`` in ``model`` is not a variant.
 - Claude Code: ``anthropic/*`` pins only.
 - VS Code GitHub Copilot (``.github/agents/*.agent.md``): ``github-copilot/*``
   pins only, with ``model`` set to the Copilot model id and ``reasoning-effort``
@@ -58,11 +60,13 @@ DESCRIPTION = (
 
 
 def _opencode(judge: Judge, body: str) -> str:
+    variant = f"variant: {judge.effort}\n" if judge.effort else ""
     return (
         "---\n"
-        f"description: {DESCRIPTION} ({judge.tier} judge)\n"
+        f"description: {DESCRIPTION} ({judge.complexity} judge)\n"
         "mode: subagent\n"
-        f"model: {judge.pin}\n"
+        f"model: {judge.model}\n"
+        f"{variant}"
         "permissions:\n"
         '  - action: "*"\n'
         '    resource: "*"\n'
@@ -80,8 +84,8 @@ def _claude(judge: Judge, body: str) -> str:
     effort = f"effort: {judge.effort}\n" if judge.effort else ""
     return (
         "---\n"
-        f"name: audit-judge-{judge.tier}\n"
-        f"description: {DESCRIPTION} ({judge.tier} judge)\n"
+        f"name: audit-judge-{judge.complexity}\n"
+        f"description: {DESCRIPTION} ({judge.complexity} judge)\n"
         f"model: {model}\n"
         f"{effort}"
         "tools: Bash\n"
@@ -96,8 +100,8 @@ def _copilot(judge: Judge, body: str) -> str:
     effort = f"reasoning-effort: {judge.effort}\n" if judge.effort else ""
     return (
         "---\n"
-        f"name: audit-judge-{judge.tier}\n"
-        f"description: {DESCRIPTION} ({judge.tier} judge)\n"
+        f"name: audit-judge-{judge.complexity}\n"
+        f"description: {DESCRIPTION} ({judge.complexity} judge)\n"
         "target: github-copilot\n"
         f"model: {model}\n"
         f"{effort}"
@@ -113,14 +117,12 @@ def provider(judge: Judge) -> str:
 
 
 def targets(root: Path, judge: Judge, body: str) -> dict[Path, str]:
-    name = f"audit-judge-{judge.tier}"
+    name = f"audit-judge-{judge.complexity}"
     wanted = {root / ".opencode" / "agents" / f"{name}.md": _opencode(judge, body)}
     if provider(judge) == "anthropic":
         wanted[root / ".claude" / "agents" / f"{name}.md"] = _claude(judge, body)
     if provider(judge) == "github-copilot":
-        wanted[root / ".github" / "agents" / f"{name}.agent.md"] = _copilot(
-            judge, body
-        )
+        wanted[root / ".github" / "agents" / f"{name}.agent.md"] = _copilot(judge, body)
     return wanted
 
 
@@ -169,8 +171,8 @@ def main(argv: list[str] | None = None) -> int:
         judges = load_judges(root)
         body = persona_body()
         wanted: dict[Path, str] = {}
-        for tier in judges.tiers:
-            wanted |= targets(root, judges.get(tier), body)
+        for complexity in judges.complexities:
+            wanted |= targets(root, judges.get(complexity), body)
     except JudgeError as exc:
         print(f"sync-judges: {exc}", file=sys.stderr)
         return 2
@@ -211,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     if not stale and not removed:
         print(f"sync-judges: {len(wanted)} agent definition(s) already current.")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

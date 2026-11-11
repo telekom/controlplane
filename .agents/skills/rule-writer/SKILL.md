@@ -19,21 +19,21 @@ exist or is covered by an existing rule. Follow the contract in
    this repository that violates it. A rule written without a real example is
    a rule nobody can calibrate.
 
-## Pick the lowest tier that works
+## Pick the lowest complexity that works
 
 This is the only decision that really matters. Work down the list and stop at
 the first one that applies:
 
-1. **Can a tool decide it?** (`codespell`, `golangci-lint`, a grep) → tier 0,
+1. **Can a tool decide it?** (`codespell`, `golangci-lint`, a grep) → complexity 0,
    no model, no cost, perfectly repeatable.
-2. **Can a pattern find the candidates, even loosely?** → tier 1. The pattern
+2. **Can a pattern find the candidates, even loosely?** → complexity 1. The pattern
    does not have to be precise; it only has to be a superset. The model
    handles precision.
-3. **Neither?** → tier 2, and narrow `applies_to` as hard as you can.
+3. **Neither?** → complexity 2, and narrow `applies_to` as hard as you can.
 
-Before accepting tier 2, try once more to split the rule. Most "subjective"
+Before accepting complexity 2, try once more to split the rule. Most "subjective"
 rules are one genuinely subjective criterion bolted onto three mechanical
-ones — and the mechanical ones belong in their own tier 0 rule. That is why
+ones — and the mechanical ones belong in their own complexity 0 rule. That is why
 `04-over-technical-docs` and `05-docs-no-code-blocks` are two files.
 
 ## Writing the checks
@@ -117,5 +117,5 @@ measures whether the rule generalises rather than whether the agent can
 pattern-match. Accuracy below 100% means the rule is wrong, not the model —
 look at the rule's prose and its allowed examples before blaming the agent.
 
-Then tell the user the new rule's id, tier, severity, cost and selftest
+Then tell the user the new rule's id, complexity, severity, cost and selftest
 result, and let them decide whether to keep it.

@@ -46,7 +46,7 @@ class Candidate:
 
 
 class ToolUnavailable(RuntimeError):
-    """A tier 0 detector needs a binary that is not installed."""
+    """A complexity 0 detector needs a binary that is not installed."""
 
 
 def render_context(
@@ -120,6 +120,18 @@ def _tool_candidates(
     argv = shlex.split(rule.detector.command)
     if not argv:
         raise ToolUnavailable(f"{rule.id}: empty detector command")
+    # Config-owned scripts and data follow the rules; input paths and cwd
+    # still belong to the repository being audited.
+    for index, argument in enumerate(argv):
+        option, separator, value = argument.partition("=")
+        path = value if separator else argument
+        if path.startswith(".agents/"):
+            target = rule.path.resolve().parent.parent / path.removeprefix(".agents/")
+            if not target.exists():
+                raise ToolUnavailable(
+                    f"{rule.id}: detector path '{target}' does not exist"
+                )
+            argv[index] = f"{option}={target}" if separator else str(target)
     if shutil.which(argv[0]) is None:
         raise ToolUnavailable(
             f"{rule.id}: detector tool '{argv[0]}' is not installed"

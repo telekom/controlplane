@@ -88,7 +88,7 @@ def build_fixtures(root: Path, rules: list[rulelib.Rule]) -> tuple[list[Fixture]
     fixtures, skipped = [], []
     for rule in rules:
         if not rule.checks:
-            skipped.append(f"{rule.id}: tier 0, decided by the detector - nothing to judge")
+            skipped.append(f"{rule.id}: complexity 0, decided by the detector - nothing to judge")
             continue
         for kind in ("violation", "allowed"):
             for index, example in enumerate(rule.examples.get(kind, ())):
@@ -229,7 +229,7 @@ def plan(root: Path, rules: list[rulelib.Rule], samples: int) -> dict:
             {
                 "id": r.id,
                 "severity": r.severity,
-                "tier": r.tier,
+                "complexity": r.complexity,
                 "report_scope": r.report_scope,
                 "content_hash": r.content_hash,
                 "files_in_scope": 0,
@@ -309,7 +309,7 @@ def static(root: Path, rules: list[rulelib.Rule]) -> tuple[list[dict], list[str]
         )
 
         # Density predicts the cost of one change; exposure predicts the cost
-        # of touching everything the rule applies to. A tier 2 rule is always
+        # of touching everything the rule applies to. A complexity 2 rule is always
         # dense by construction, so only exposure says anything about it.
         exposure = (
             round(questions_per_100 / 100 * len(scoped))
@@ -328,13 +328,13 @@ def static(root: Path, rules: list[rulelib.Rule]) -> tuple[list[dict], list[str]
                 f"touched; tighten the detector, narrow applies_to, or split the checks"
             )
         if (
-            rule.tier == 1
+            rule.complexity == 1
             and questions_per_100 is not None
             and questions_per_100 > 150
         ):
             problems.append(
                 f"{rule.id}: {questions_per_100:.0f} questions per 100 files - the "
-                f"detector is not selective enough for a tier 1 rule"
+                f"detector is not selective enough for a complexity 1 rule"
             )
 
         untested, unreachable = [], []
@@ -366,7 +366,7 @@ def static(root: Path, rules: list[rulelib.Rule]) -> tuple[list[dict], list[str]
         rows.append(
             {
                 "id": rule.id,
-                "tier": rule.tier,
+                "complexity": rule.complexity,
                 "checks": len(rule.checks),
                 "files": len(scoped),
                 "sampled": len(sample),
@@ -492,13 +492,13 @@ def main() -> int:
                 return "n/a" if value is None else f"{value}"
 
             print(
-                f"{'rule':26} {'tier':>4} {'checks':>6} {'files':>6} "
+                f"{'rule':34} {'complexity':>10} {'checks':>6} {'files':>6} "
                 f"{'cand/100':>9} {'quest/100':>10} {'exposure':>9} "
                 f"{'fixtures':>9} {'sourced':>8}"
             )
             for row in rows:
                 print(
-                    f"{row['id']:26} {row['tier']:>4} {row['checks']:>6} "
+                    f"{row['id']:34} {row['complexity']:>10} {row['checks']:>6} "
                     f"{row['files']:>6} {cell(row['candidates_per_100']):>9} "
                     f"{cell(row['questions_per_100']):>10} "
                     f"{cell(row['exposure']):>9} "

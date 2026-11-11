@@ -28,7 +28,7 @@ from . import judges
 from .yamlish import YamlishError, parse as parse_yamlish
 
 AUDIT_DIRNAME = ".audit"
-WAIVERS_FILENAME = "audit-waivers.yaml"
+WAIVERS_FILENAME = "auditignore"
 
 
 def audit_dir(repo_root: Path) -> Path:
@@ -41,27 +41,28 @@ def model_id(repo_root: Path) -> str:
     Resolved from the pinned judges, never from the session or the
     environment: the model asking for the audit is not the model answering it,
     and a pin that a shell can rewrite is not a pin. Use AUDIT_JUDGE to pick a
-    different declared tier.
+    different declared complexity.
     """
     return judges.load(repo_root).resolve().pin
 
 
-def write_state(repo_root: Path, model: str, rules_index_hash: str) -> None:
+def write_state(directory: Path, model: str, rules_index_hash: str) -> None:
+    """Record the last audit in ``directory``, the audit's state directory."""
     _save(
-        audit_dir(repo_root) / "state.json",
+        directory / "state.json",
         {"model": model, "rules_index_hash": rules_index_hash},
     )
 
 
-def audited_model(repo_root: Path) -> str:
+def audited_model(directory: Path, config_root: Path) -> str:
     """The judge of the most recent audit.
 
     The commit gate reads this instead of the environment: a git hook has no
     AUDIT_MODEL set, and keying receipts off whatever the shell happens to
     export would make the gate pass or fail for the wrong reasons.
     """
-    state = _load(audit_dir(repo_root) / "state.json")
-    return str(state.get("model") or model_id(repo_root))
+    state = _load(directory / "state.json")
+    return str(state.get("model") or model_id(config_root))
 
 
 def verdict_key(rule_content_hash: str, normalized_anchor: str, model: str) -> str:
@@ -98,8 +99,8 @@ def _save(path: Path, data: dict) -> None:
 
 
 class VerdictCache:
-    def __init__(self, repo_root: Path):
-        self._path = audit_dir(repo_root) / "verdicts.cache.json"
+    def __init__(self, directory: Path):
+        self._path = directory / "verdicts.cache.json"
         self._data = _load(self._path)
 
     def get(self, key: str) -> dict | None:
@@ -121,8 +122,8 @@ class VerdictCache:
 class ReceiptStore:
     """Per (file blob, rule) proof that an audit covered exactly this content."""
 
-    def __init__(self, repo_root: Path):
-        self._path = audit_dir(repo_root) / "receipts.json"
+    def __init__(self, directory: Path):
+        self._path = directory / "receipts.json"
         self._data = _load(self._path)
 
     def get(self, key: str) -> dict | None:
@@ -155,8 +156,8 @@ class Waivers:
     item id contains the snippet, so changing the code retires the waiver.
     """
 
-    def __init__(self, repo_root: Path):
-        self.path = repo_root / ".agents" / WAIVERS_FILENAME
+    def __init__(self, config_root: Path):
+        self.path = config_root / ".agents" / WAIVERS_FILENAME
         self._data: dict[str, Waiver] = {}
         self.errors: list[str] = []
         if self.path.is_file():

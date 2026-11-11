@@ -27,7 +27,7 @@ check. Severity sets two caps, on candidates and on resulting questions.
 
 `auditlib/` holds the shared pieces: `yamlish` (frontmatter subset),
 `rules` (parse and index), `provenance` (example sources), `changeset`
-(git scope), `detect` (candidates), `report` (schema, item ids, batching) and
+(git scope), `context` (config root and state location), `detect` (candidates), `report` (schema, item ids, batching) and
 `store` (cache, receipts, waivers).
 
 Two things are re-anchored against real files, and both reject rather than
@@ -72,7 +72,42 @@ deleting it only costs re-judging.
 | `rules.index.json` | compiled rule index, keyed on the rules directory |
 | `state.json` | model and rule index hash of the last audit |
 
-`.agents/audit-waivers.yaml` is the one piece of state that *is* committed.
+`.agents/auditignore` is the one piece of state that *is* committed. Despite
+its extensionless name, it is YAML: each finding's item id maps to a reason,
+not a file pattern. Quote reasons that contain YAML punctuation.
+
+## Shared configuration
+
+A submodule can be audited with the rules of the workspace that contains it.
+Run from the submodule and pass the workspace as config root, either with
+`--config-root DIR` or `AUDIT_CONFIG_ROOT=DIR`; the option wins over the
+variable. `create_audit_report.py`, `show_work_unit.py`,
+`process_audit_report.py` and `audit_gate.py` all accept it, and all four
+must get the same value.
+
+```bash
+cd controlplane
+python3 ../.agents/skills/code-auditor/scripts/create_audit_report.py --config-root ..
+python3 ../.agents/skills/code-auditor/scripts/show_work_unit.py '<unit_id>' --config-root ..
+python3 ../.agents/skills/code-auditor/scripts/process_audit_report.py --config-root .. --fail-on HIGH
+```
+
+| Comes from | What |
+| --- | --- |
+| audited git root | changeset, file contents, detector working directory, paths in `applies_to` |
+| config root | `.agents/rules`, `.agents/judges.yaml`, `.agents/auditignore`, detector scripts and data under `.agents/` |
+| `<config root>/.agents/.audit/repos/<repo path>/` | every file listed under State |
+
+Detector command arguments beginning with `.agents/` (including option values
+such as `--ignore-words=.agents/codespell-ignore.txt`) resolve against the config
+root. Other relative arguments and input file paths resolve against the audited
+repository.
+
+The config root must be the audited git root or one of its ancestors and must
+hold `.agents/rules` and `.agents/judges.yaml`; anything else exits 2 before a
+file is written. The report records both roots, and `process_audit_report.py`
+rejects a report created for another pair. Without a config root the audited
+git root is its own config root and state stays in `.agents/.audit/`.
 
 ## Exit codes
 
@@ -97,7 +132,7 @@ python3 audit_gate.py --mode staged
 
 ## Judges
 
-`.agents/judges.yaml` pins the judges by tier, as `provider/model#effort`. The
+`.agents/judges.yaml` pins the judges by complexity, as `provider/model#effort`. The
 resolved pin is part of every cache and receipt key, so a receipt names the
 model that actually answered rather than the one that asked.
 
@@ -114,15 +149,21 @@ A harness only gets a judge it can run under the pinned name:
 
 | Harness | Location | Generated for |
 |---|---|---|
-| OpenCode | `.opencode/agents/audit-judge-<tier>.md` | every pin, `model: provider/model#effort` |
-| Claude Code | `.claude/agents/audit-judge-<tier>.md` | `anthropic/*` pins |
-| VS Code GitHub Copilot | `.github/agents/audit-judge-<tier>.agent.md` | `github-copilot/*` pins, `model: <model>`, `reasoning-effort: <effort>` |
+| OpenCode | `.opencode/agents/audit-judge-<complexity>.md` | every pin, `model: provider/model`, `variant: <effort>` |
+| Claude Code | `.claude/agents/audit-judge-<complexity>.md` | `anthropic/*` pins |
+| VS Code GitHub Copilot | `.github/agents/audit-judge-<complexity>.agent.md` | `github-copilot/*` pins, `model: <model>`, `reasoning-effort: <effort>` |
+
+The `#effort` suffix belongs to the pin only: it keeps receipts and cache keys
+distinct per effort. Harnesses get model and effort as separate fields. The
+OpenCode Markdown agent loader (verified on 1.18.30) reads `variant`
+separately and does not parse `#effort` inside `model`. Restart OpenCode after
+regenerating, since a running session keeps the agent definitions it loaded.
 
 VS Code applies `reasoning-effort` only in the Copilot harness. The Local
 harness uses the agent's `model` for a subagent, unless the main agent passes
 its own model to `runSubagent`; `reasoning-effort` is documented for Copilot only, so a judge run
 there may not match the effort in its pin. A harness without a definition for
-the pinned tier has no judge: switch harness or tier rather than letting the
+the pinned complexity has no judge: switch harness or complexity rather than letting the
 session model answer.
 
 A generated definition no pin produces any more, such as a Claude judge after
@@ -130,6 +171,6 @@ its pin moved to another provider, is removed on write and reported by
 `--check`. Files without the generated marker are never touched. Tests:
 `python3 -m unittest discover -s .agents/skills/code-auditor/scripts/tests`.
 
-`AUDIT_JUDGE=<tier>` selects another declared tier for one run. There is no
+`AUDIT_JUDGE=<complexity>` selects another declared complexity for one run. There is no
 environment variable for a raw model id: a pin a shell can rewrite is not a
 pin. `AUDIT_GATE=off` bypasses the gate.

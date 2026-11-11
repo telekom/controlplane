@@ -2,7 +2,7 @@
 id: 01-prefer-slices-sort
 description: Prefer the generic slices package over the legacy sort package.
 severity: CRITICAL
-tier: 0
+complexity: 0
 scope: line
 applies_to:
   - "**/*.go"

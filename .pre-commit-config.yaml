@@ -33,7 +33,7 @@ repos:
         entry: python3 .agents/skills/code-auditor/scripts/validate_rules.py
         language: system
         pass_filenames: false
-        files: ^\.agents/(rules/.*\.md|audit-waivers\.yaml)$
+        files: ^\.agents/(rules/.*\.md|auditignore)$
         stages:
           - pre-commit
       - id: selftest-rules-static

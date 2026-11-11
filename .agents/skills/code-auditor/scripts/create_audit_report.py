@@ -6,13 +6,13 @@
 """Generate the audit report for the current change.
 
 This script does all of the deterministic work: resolve the changeset, filter
-rules by glob, run detectors, settle tier 0 rules outright, reuse cached
+rules by glob, run detectors, settle complexity 0 rules outright, reuse cached
 verdicts, cluster identical snippets and batch whatever is left into work
 units. A model is only ever asked about items that survive all of that.
 
 Usage::
 
-    create_audit_report.py [--mode worktree|staged] [--out PATH]
+    create_audit_report.py [--mode worktree|staged] [--out PATH] [--config-root DIR]
 """
 
 from __future__ import annotations
@@ -26,11 +26,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from auditlib import changeset, detect, report as reportlib, rules as rulelib  # noqa: E402
 from auditlib import judges as judgelib  # noqa: E402
+from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.store import (  # noqa: E402
     VerdictCache,
     Waivers,
-    audit_dir,
     verdict_key,
     write_state,
 )
@@ -56,10 +56,13 @@ def _rule_prompt(rule: rulelib.Rule) -> dict:
     }
 
 
-def build(root: Path, mode: str) -> dict:
-    judge = judgelib.load(root).resolve()
+def build(context: AuditContext, mode: str) -> dict:
+    root = context.repo_root
+    judge = judgelib.load(context.config_root).resolve()
     model = judge.pin
-    rules = rulelib.load_index(root, audit_dir(root) / "rules.index.json")
+    rules = rulelib.load_index(
+        context.config_root, context.audit_dir / "rules.index.json"
+    )
     base = changeset.merge_base(root) if mode == "worktree" else "INDEX"
     files = changeset.collect(root, mode=mode, base=None if mode == "staged" else base)
 
@@ -67,8 +70,8 @@ def build(root: Path, mode: str) -> dict:
         f.path: changeset.read_blob(root, f, staged=(mode == "staged")) for f in files
     }
 
-    cache = VerdictCache(root)
-    waivers = Waivers(root)
+    cache = VerdictCache(context.audit_dir)
+    waivers = Waivers(context.config_root)
 
     items: list[reportlib.Item] = []
     rules_summary: list[dict] = []
@@ -82,7 +85,7 @@ def build(root: Path, mode: str) -> dict:
                 {
                     "id": rule.id,
                     "severity": rule.severity,
-                    "tier": rule.tier,
+                    "complexity": rule.complexity,
                     "report_scope": rule.report_scope,
                     "content_hash": rule.content_hash,
                     "files_in_scope": 0,
@@ -101,7 +104,7 @@ def build(root: Path, mode: str) -> dict:
                 {
                     "id": rule.id,
                     "severity": rule.severity,
-                    "tier": rule.tier,
+                    "complexity": rule.complexity,
                     "report_scope": rule.report_scope,
                     "content_hash": rule.content_hash,
                     "files_in_scope": len(scoped),
@@ -117,7 +120,7 @@ def build(root: Path, mode: str) -> dict:
                 {
                     "id": rule.id,
                     "severity": rule.severity,
-                    "tier": rule.tier,
+                    "complexity": rule.complexity,
                     "report_scope": rule.report_scope,
                     "content_hash": rule.content_hash,
                     "files_in_scope": len(scoped),
@@ -208,12 +211,12 @@ def build(root: Path, mode: str) -> dict:
             {
                 "id": rule.id,
                 "severity": rule.severity,
-                "tier": rule.tier,
+                "complexity": rule.complexity,
                 "report_scope": rule.report_scope,
                 "content_hash": rule.content_hash,
                 "files_in_scope": len(scoped),
                 "candidates": len(candidates),
-                "outcome": "PENDING" if rule.tier > 0 else "FAIL",
+                "outcome": "PENDING" if rule.complexity > 0 else "FAIL",
                 "reason": "",
             }
         )
@@ -240,8 +243,9 @@ def build(root: Path, mode: str) -> dict:
         units=units,
         errors=errors,
     ) | {
-        "judge": judge.tier,
-        "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.tier > 0},
+        "judge": judge.complexity,
+        "context": context.describe(),
+        "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.complexity > 0},
     }
 
 
@@ -250,11 +254,15 @@ def main() -> int:
     parser.add_argument("--mode", choices=("worktree", "staged"), default="worktree")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--quiet", action="store_true")
+    add_argument(parser)
     args = parser.parse_args()
 
-    root = changeset.repo_root()
     try:
-        document = build(root, args.mode)
+        context = resolve(args.config_root)
+        document = build(context, args.mode)
+    except ConfigError as exc:
+        print(f"Cannot audit: {exc}", file=sys.stderr)
+        return 2
     except rulelib.RuleError as exc:
         print(f"Cannot audit: the rule corpus is invalid.\n{exc}", file=sys.stderr)
         return 2
@@ -262,10 +270,10 @@ def main() -> int:
         print(f"Cannot audit: no judge to run on.\n{exc}", file=sys.stderr)
         return 2
 
-    out = args.out or (audit_dir(root) / "report.json")
+    out = args.out or (context.audit_dir / "report.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    write_state(root, document["model"], document["rules_index_hash"])
+    write_state(context.audit_dir, document["model"], document["rules_index_hash"])
 
     verdicts_path = out.parent / "verdicts.json"
     if not verdicts_path.exists():

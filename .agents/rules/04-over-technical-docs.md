@@ -2,7 +2,7 @@
 id: 04-over-technical-docs
 description: User-facing journey docs must stay readable for non-engineers.
 severity: HIGH
-tier: 2
+complexity: 2
 scope: file
 report_scope: changed
 applies_to:

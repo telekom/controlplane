@@ -2,7 +2,7 @@
 id: 06-rover-child-labels
 description: Sub-resources created from a Rover must carry zone, application and their domain identity label.
 severity: HIGH
-tier: 1
+complexity: 1
 scope: file
 applies_to:
   - "rover/internal/handler/**/*.go"

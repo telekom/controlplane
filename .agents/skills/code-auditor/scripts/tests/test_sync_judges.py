@@ -22,7 +22,7 @@ BODY = "# Persona"
 
 
 def judges_yaml(**pins: str) -> str:
-    lines = ["default: fast"] + [f"{tier}: {pin}" for tier, pin in pins.items()]
+    lines = ["default: fast"] + [f"{complexity}: {pin}" for complexity, pin in pins.items()]
     return "\n".join(lines) + "\n"
 
 
@@ -78,11 +78,19 @@ class TargetsTest(unittest.TestCase):
         )
         self.assertNotIn("reasoning-effort", text)
 
-    def test_opencode_keeps_full_pin(self) -> None:
-        judge = Judge("fast", "github-copilot/gpt-6-luna", "low")
-        self.assertIn(
-            "model: github-copilot/gpt-6-luna#low\n", sync_judges._opencode(judge, BODY)
+    def test_opencode_splits_pin_into_model_and_variant(self) -> None:
+        judge = Judge("careful", "github-copilot/gpt-6.1-sol", "medium")
+        text = sync_judges._opencode(judge, BODY)
+        self.assertIn("model: github-copilot/gpt-6.1-sol\nvariant: medium\n", text)
+        self.assertNotIn("#", text.split("---")[1])
+        self.assertEqual(judge.pin, "github-copilot/gpt-6.1-sol#medium")
+
+    def test_opencode_omits_variant_without_effort(self) -> None:
+        text = sync_judges._opencode(
+            Judge("fast", "github-copilot/gpt-6-luna", ""), BODY
         )
+        self.assertIn("model: github-copilot/gpt-6-luna\n", text)
+        self.assertNotIn("variant", text)
 
 
 class MainTest(unittest.TestCase):
@@ -139,7 +147,7 @@ class MainTest(unittest.TestCase):
         self.assertFalse(claude.exists())
         self.assertEqual(self.run_sync("--check")[0], 0)
 
-    def test_removed_tier_is_stale(self) -> None:
+    def test_removed_complexity_is_stale(self) -> None:
         self.run_sync()
         self.write_pins(fast="github-copilot/gpt-6-luna#low")
         code, err = self.run_sync("--check")

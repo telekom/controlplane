@@ -2,7 +2,7 @@
 id: 07-normalize-label-values
 description: A label value taken from a Kubernetes object name must go through NormalizeLabelValue.
 severity: LOW
-tier: 0
+complexity: 0
 scope: line
 applies_to:
   - "**/*.go"

@@ -12,20 +12,20 @@ can, and declare what is left.** A rule a script can decide is free, instant
 and perfectly repeatable. A rule a model has to judge costs tokens and varies
 between runs. Decompose until the model's share is small.
 
-## Tiers
+## Complexities
 
-| Tier | Who decides | Required sections |
+| Complexity | Who decides | Required sections |
 | --- | --- | --- |
 | 0 | the detector alone, no model involved | `## Detect` |
 | 1 | a detector finds candidates, a model judges each one | `## Detect`, `## Checks`, `## Examples` |
 | 2 | no detector is possible, a model judges every changed file | `## Checks`, `## Examples` |
 
-Tier 2 is a last resort. Before reaching for it, ask whether a regex over the
+Complexity 2 is a last resort. Before reaching for it, ask whether a regex over the
 changed lines could at least narrow the files.
 
-Tiers are not permanent. `01-prefer-slices-sort` started at tier 1 because the
+Complexities are not permanent. `01-prefer-slices-sort` started at complexity 1 because the
 legacy `sort` package looked like it had genuine exceptions; the selftest
-showed that every call in this repository converts, so it dropped to tier 0 and
+showed that every call in this repository converts, so it dropped to complexity 0 and
 now costs nothing. Run the selftest before assuming a rule needs judgement.
 
 ## Frontmatter
@@ -35,10 +35,10 @@ now costs nothing. Run the selftest before assuming a rule needs judgement.
 | `id` | yes | `NN-kebab-case`, must equal the filename without `.md` |
 | `description` | yes | one short sentence, max 25 words |
 | `severity` | yes | `LOW`, `HIGH` or `CRITICAL` |
-| `tier` | yes | `0`, `1` or `2` |
+| `complexity` | yes | `0`, `1` or `2` |
 | `scope` | no | candidate granularity: `line`, `file` (default) or `changeset` |
 | `report_scope` | no | which lines may be reported: `changed` (default) or `file` |
-| `applies_to` | yes | list of globs; `**/*` is rejected for tier 1 and 2 |
+| `applies_to` | yes | list of globs; `**/*` is rejected for complexity 1 and 2 |
 | `exclude` | no | list of globs, applied after `applies_to` |
 | `context_lines` | no | lines of frozen context around a candidate, default 20 |
 
@@ -188,7 +188,7 @@ Two further checks run on examples:
 id: 06-my-new-rule
 description: One sentence on what this rule protects.
 severity: HIGH
-tier: 1
+complexity: 1
 scope: line
 applies_to:
   - "**/*.go"
@@ -229,8 +229,9 @@ Get the revision with `git rev-parse --short HEAD`.
 
 ## Waivers
 
-An accepted finding is recorded in `.agents/audit-waivers.yaml`, keyed by the
-item id the audit prints:
+An accepted finding is recorded in `.agents/auditignore` as a YAML mapping,
+keyed by the item id the audit prints. Values are human-written reasons, not
+file patterns:
 
 ```yaml
 a1b2c3d4e5f6a7b8: Reverse sort has no slices equivalent. (ron, 2026-11-09)

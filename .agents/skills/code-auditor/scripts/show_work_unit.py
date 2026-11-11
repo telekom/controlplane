@@ -10,7 +10,7 @@ it is not responsible for are context that can only pull its judgment around.
 
 Usage::
 
-    show_work_unit.py <unit_id> [--report PATH]
+    show_work_unit.py <unit_id> [--report PATH] [--config-root DIR]
 """
 
 from __future__ import annotations
@@ -22,9 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from auditlib import changeset  # noqa: E402
-from auditlib.store import audit_dir  # noqa: E402
-
+from auditlib.context import ConfigError, add_argument, resolve  # noqa: E402
 
 #: Sections that are re-rendered with more structure further down, or that
 #: only concern the engine. Repeating them wastes context and invites the
@@ -45,10 +43,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("unit_id")
     parser.add_argument("--report", type=Path, default=None)
+    add_argument(parser)
     args = parser.parse_args()
 
-    root = changeset.repo_root()
-    path = args.report or (audit_dir(root) / "report.json")
+    if args.report:
+        path = args.report
+    else:
+        try:
+            path = resolve(args.config_root).audit_dir / "report.json"
+        except ConfigError as exc:
+            print(f"Cannot show work unit: {exc}", file=sys.stderr)
+            return 2
     report = json.loads(path.read_text(encoding="utf-8"))
 
     unit = next((u for u in report["work_units"] if u["unit_id"] == args.unit_id), None)

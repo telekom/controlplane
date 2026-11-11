@@ -25,7 +25,7 @@ CHECK_PATTERN = re.compile(
 )
 HEADING_PATTERN = re.compile(r"^(#{2,3})\s+(.+?)\s*$")
 
-TIERS = (0, 1, 2)
+COMPLEXITIES = (0, 1, 2)
 SCOPES = ("line", "file", "changeset")
 REPORT_SCOPES = ("changed", "file")
 DETECTOR_KINDS = ("regex", "tool")
@@ -78,7 +78,7 @@ class Rule:
     path: Path
     description: str
     severity: str
-    tier: int
+    complexity: int
     scope: str
     report_scope: str
     applies_to: tuple[str, ...]
@@ -92,7 +92,7 @@ class Rule:
 
     @property
     def decides_without_llm(self) -> bool:
-        return self.tier == 0
+        return self.complexity == 0
 
 
 def glob_to_regex(pattern: str) -> re.Pattern[str]:
@@ -306,9 +306,9 @@ def parse_rule(path: Path) -> Rule:
     if severity not in SEVERITIES:
         raise RuleError(f"{rule_id}: severity must be one of {SEVERITIES}")
 
-    tier = front.get("tier")
-    if tier not in TIERS:
-        raise RuleError(f"{rule_id}: tier must be one of {TIERS}")
+    complexity = front.get("complexity")
+    if complexity not in COMPLEXITIES:
+        raise RuleError(f"{rule_id}: complexity must be one of {COMPLEXITIES}")
 
     scope = str(front.get("scope", "file")).strip()
     if scope not in SCOPES:
@@ -334,28 +334,28 @@ def parse_rule(path: Path) -> Rule:
     checks = _parse_checks(sections.get("checks", []), rule_id)
     examples = _parse_examples(sections.get("examples", []), rule_id)
 
-    if tier == 0:
+    if complexity == 0:
         if detector is None:
-            raise RuleError(f"{rule_id}: tier 0 rules need a '## Detect' block")
+            raise RuleError(f"{rule_id}: complexity 0 rules need a '## Detect' block")
         if checks:
             raise RuleError(
-                f"{rule_id}: tier 0 rules are decided by the detector and must not "
+                f"{rule_id}: complexity 0 rules are decided by the detector and must not "
                 f"declare '## Checks'"
             )
     else:
         if not checks:
             raise RuleError(
-                f"{rule_id}: tier {tier} rules must decompose into '## Checks' items"
+                f"{rule_id}: complexity {complexity} rules must decompose into '## Checks' items"
             )
-        if tier == 1 and detector is None:
+        if complexity == 1 and detector is None:
             raise RuleError(
-                f"{rule_id}: tier 1 rules need a '## Detect' block; drop to tier 2 "
+                f"{rule_id}: complexity 1 rules need a '## Detect' block; drop to complexity 2 "
                 f"if no deterministic detector is possible"
             )
-        if tier == 2 and detector is not None:
+        if complexity == 2 and detector is not None:
             raise RuleError(
-                f"{rule_id}: tier 2 means 'no detector possible' but '## Detect' is "
-                f"present; promote the rule to tier 1"
+                f"{rule_id}: complexity 2 means 'no detector possible' but '## Detect' is "
+                f"present; promote the rule to complexity 1"
             )
         if not examples.get("violation"):
             raise RuleError(
@@ -378,7 +378,7 @@ def parse_rule(path: Path) -> Rule:
         path=path,
         description=description,
         severity=severity,
-        tier=int(tier),
+        complexity=int(complexity),
         scope=scope,
         report_scope=report_scope,
         applies_to=applies_to,
@@ -468,7 +468,7 @@ def load_index(repo_root: Path, cache_path: Path | None = None) -> list[Rule]:
                         {
                             "id": r.id,
                             "severity": r.severity,
-                            "tier": r.tier,
+                            "complexity": r.complexity,
                             "content_hash": r.content_hash,
                         }
                         for r in rules

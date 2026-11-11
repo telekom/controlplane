@@ -1,4 +1,4 @@
-# Accepted audit findings, keyed by the item id the audit prints.
+# Accepted audit findings in YAML, keyed by the item id the audit prints.
 #
 #   <item_id>: <reason> (<who>, <when>)
 #

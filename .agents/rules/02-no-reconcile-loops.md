@@ -2,7 +2,7 @@
 id: 02-no-reconcile-loops
 description: Reconcilers must not trigger themselves or each other in a cycle.
 severity: CRITICAL
-tier: 1
+complexity: 1
 scope: file
 applies_to:
   - "**/internal/controller/**/*.go"

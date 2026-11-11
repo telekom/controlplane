@@ -73,12 +73,12 @@ def extra_checks(rules: list[rulelib.Rule]) -> list[str]:
                 f"{rule.id}: {len(rule.checks)} checks exceeds the limit of "
                 f"{MAX_CHECKS_PER_RULE}; split the rule so each one stays answerable"
             )
-        if rule.tier > 0 and rule.applies_to == ("**/*",):
+        if rule.complexity > 0 and rule.applies_to == ("**/*",):
             problems.append(
                 f"{rule.id}: judgment rules must narrow 'applies_to'; '**/*' sends "
                 f"every changed file to a model"
             )
-        if rule.tier > 0 and not rule.examples.get("allowed"):
+        if rule.complexity > 0 and not rule.examples.get("allowed"):
             problems.append(
                 f"{rule.id}: add at least one '### Allowed' example so the agent can "
                 f"tell a violation from a false positive"
@@ -142,16 +142,17 @@ def main() -> int:
     for note in skipped:
         print(f"  skipped: {note}", file=sys.stderr)
 
-    tiers = {0: 0, 1: 0, 2: 0}
+    complexities = {0: 0, 1: 0, 2: 0}
     sourced = 0
     for rule in loaded:
-        tiers[rule.tier] += 1
+        complexities[rule.complexity] += 1
         sourced += sum(
             1 for group in rule.examples.values() for e in group if e.is_sourced
         )
     print(
         f"{len(loaded)} rules OK "
-        f"(tier0={tiers[0]} tier1={tiers[1]} tier2={tiers[2]}, "
+        f"(complexity0={complexities[0]} complexity1={complexities[1]} "
+        f"complexity2={complexities[2]}, "
         f"{sourced} sourced example(s) verified, "
         f"index={rulelib.index_hash(loaded)}, waivers={len(waivers)})"
     )

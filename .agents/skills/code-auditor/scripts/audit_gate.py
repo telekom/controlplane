@@ -10,12 +10,12 @@ every rule that applies to it, a receipt must exist under the current rule
 text. Edit a file after auditing and its blob changes, the receipt vanishes and
 the gate blocks. That is the whole mechanism.
 
-Tier 0 rules are re-run here directly: they are cheap, and catching them before
+Complexity 0 rules are re-run here directly: they are cheap, and catching them before
 asking for a full audit is a better experience.
 
 Usage::
 
-    audit_gate.py [--mode staged|range] [--fail-on LEVEL]
+    audit_gate.py [--mode staged|range] [--fail-on LEVEL] [--config-root DIR]
 """
 
 from __future__ import annotations
@@ -28,11 +28,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from auditlib import changeset, detect, rules as rulelib  # noqa: E402
+from auditlib.context import ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.report import SEVERITY_RANK  # noqa: E402
 from auditlib.store import (  # noqa: E402
     ReceiptStore,
-    audit_dir,
     audited_model,
     receipt_key,
 )
@@ -47,15 +47,23 @@ def main() -> int:
         "--fail-on", choices=("LOW", "HIGH", "CRITICAL"), default="CRITICAL"
     )
     parser.add_argument("paths", nargs="*", help="ignored; accepted for pre-commit")
+    add_argument(parser)
     args = parser.parse_args()
 
     if os.environ.get("AUDIT_GATE", "").lower() in ("off", "0", "false"):
         print("audit-gate: disabled via AUDIT_GATE")
         return 0
 
-    root = changeset.repo_root()
     try:
-        rules = rulelib.load_index(root, audit_dir(root) / "rules.index.json")
+        context = resolve(args.config_root)
+    except ConfigError as exc:
+        print(f"audit-gate: {exc}", file=sys.stderr)
+        return 2
+    root = context.repo_root
+    try:
+        rules = rulelib.load_index(
+            context.config_root, context.audit_dir / "rules.index.json"
+        )
     except rulelib.RuleError as exc:
         print(f"audit-gate: the rule corpus is invalid.\n{exc}", file=sys.stderr)
         return 1
@@ -71,13 +79,13 @@ def main() -> int:
 
     threshold = SEVERITY_RANK[args.fail_on]
     try:
-        model = audited_model(root)
+        model = audited_model(context.audit_dir, context.config_root)
     except JudgeError as exc:
         print(f"audit-gate: cannot tell which judge to expect.\n{exc}", file=sys.stderr)
         return 2
-    receipts = ReceiptStore(root)
+    receipts = ReceiptStore(context.audit_dir)
 
-    tier0: list[str] = []
+    complexity0: list[str] = []
     missing: dict[str, set[str]] = {}
     blocked: list[str] = []
 
@@ -86,11 +94,11 @@ def main() -> int:
         if not scoped:
             continue
 
-        if rule.tier == 0:
+        if rule.complexity == 0:
             try:
                 for candidate in detect.run(rule, files, root, contents):
                     if SEVERITY_RANK[rule.severity] >= threshold:
-                        tier0.append(
+                        complexity0.append(
                             f"[{rule.severity}] {rule.id}  {candidate.file}:"
                             f"{candidate.line}  {candidate.detail or candidate.anchor}"
                         )
@@ -111,14 +119,14 @@ def main() -> int:
                     f"verdict={receipt['verdict']}"
                 )
 
-    if not tier0 and not missing and not blocked:
+    if not complexity0 and not missing and not blocked:
         print(f"audit-gate: {len(files)} file(s) covered by a current audit.")
         return 0
 
     print("audit-gate: commit blocked.\n", file=sys.stderr)
-    if tier0:
+    if complexity0:
         print("  Deterministic rule violations:", file=sys.stderr)
-        for line in sorted(tier0):
+        for line in sorted(complexity0):
             print(f"    {line}", file=sys.stderr)
         print(file=sys.stderr)
     if blocked:

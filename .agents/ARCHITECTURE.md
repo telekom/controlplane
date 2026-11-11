@@ -39,7 +39,7 @@ flowchart TD
     B -->|no match| P1[PASS, machine-written]
     B -->|match| C[detector: regex / tool]
     C -->|no candidates| P2[PASS, machine-written]
-    C -->|candidates| D{tier 0?}
+    C -->|candidates| D{complexity 0?}
     D -->|yes| V1[verdict from the detector]
     D -->|no| E{waived?}
     E -->|yes| P3[PASS, waiver recorded]
@@ -112,7 +112,7 @@ flowchart TD
     A["feature finished<br/>(agent session)"] --> B[Gate 1: full audit<br/>detectors + subagents + fixes]
     B --> C[receipts written]
     C --> D[git commit]
-    D --> E["Gate 2: pre-commit<br/>validate rules, tier 0, receipts<br/>blocks on CRITICAL"]
+    D --> E["Gate 2: pre-commit<br/>validate rules, complexity 0, receipts<br/>blocks on CRITICAL"]
     E -->|missing receipt| B
     E -->|ok| F[git push]
     F --> G["Gate 3: pre-push<br/>hack/verify.sh + gate over the branch<br/>blocks on HIGH"]
@@ -135,7 +135,7 @@ Deliberate, visible, and all three leave a trace.
 
 | Situation | Mechanism |
 | --- | --- |
-| Finding is wrong or accepted | `.agents/audit-waivers.yaml`, keyed by item id, expires when the code changes |
+| Finding is wrong or accepted | `.agents/auditignore`, keyed by item id, expires when the code changes |
 | Work in progress | `AUDIT_GATE=off git commit` |
 | Emergency | `git commit --no-verify`, caught by Gate 4 |
 
@@ -147,7 +147,7 @@ passed.
 
 - A sweeping refactor that genuinely trips many rules is genuinely expensive.
   Clustering absorbs most of it, because wide refactors are repetitive.
-- Tier 2 rules read whole files and are the least repeatable part of the
+- Complexity 2 rules read whole files and are the least repeatable part of the
   system. Keep them rare and keep their checks narrow.
 - The verdict cache trusts a previous run. CI deliberately does not use it.
 - Leave-one-out is stricter than production, where the example *is* in the
