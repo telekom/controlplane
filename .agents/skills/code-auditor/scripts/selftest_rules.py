@@ -22,7 +22,7 @@ nothing.
 
 Usage::
 
-    selftest_rules.py --static                      # no model, runs in CI
+    selftest_rules.py --static                      # no model, pre-commit
     selftest_rules.py --plan --samples 3            # build fixture work units
     selftest_rules.py --score --max-flake 0.05      # grade the answers
 """
@@ -67,7 +67,8 @@ class Fixture:
 
     @property
     def fixture_id(self) -> str:
-        return f"{self.rule.id}@{self.kind}{self.index}"
+        identity = f"{self.rule.id}\0{self.kind}\0{self.index}"
+        return "selftest-" + hashlib.sha256(identity.encode()).hexdigest()[:16]
 
     @property
     def expects_fail(self) -> bool:
@@ -198,7 +199,7 @@ def plan(root: Path, rules: list[rulelib.Rule], samples: int) -> dict:
                         "verdict": None,
                         "evidence": None,
                         "detail": (
-                            f"fixture {fixture.kind} #{fixture.index}, sample {sample}; "
+                            f"fixture sample {sample}; "
                             f"'>' marks the example under test"
                         ),
                         "context": fixture.context,
@@ -421,7 +422,9 @@ def score(root: Path, plan_doc: dict, verdicts: dict, max_flake: float) -> tuple
         for sample in sorted(data["samples"]):
             verdicts_for_sample = data["samples"][sample]
             caught = any(v == "FAIL" for v in verdicts_for_sample.values())
-            ok = caught if data["expects_fail"] else not caught
+            ok = caught if data["expects_fail"] else all(
+                v == "PASS" for v in verdicts_for_sample.values()
+            )
             outcomes.append(ok)
             bucket["total"] += 1
             bucket["correct"] += 1 if ok else 0
@@ -523,8 +526,7 @@ def main() -> int:
         out.mkdir(parents=True, exist_ok=True)
         (out / "plan.json").write_text(json.dumps(document, indent=2) + "\n", "utf-8")
         verdicts_path = out / "verdicts.json"
-        if not verdicts_path.exists():
-            verdicts_path.write_text(json.dumps({"verdicts": []}, indent=2) + "\n", "utf-8")
+        verdicts_path.write_text(json.dumps({"verdicts": []}, indent=2) + "\n", "utf-8")
         stats = document["stats"]
         print(f"Selftest plan: {out / 'plan.json'}")
         print(
@@ -536,6 +538,7 @@ def main() -> int:
         print("\nWork units:")
         for unit in document["work_units"]:
             print(f"  {unit['unit_id']}  ({len(unit['item_ids'])} item(s))")
+        print("\nThe viewer resolves selftest-* units from selftest/plan.json.")
         return 0
 
     if args.score:

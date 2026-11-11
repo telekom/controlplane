@@ -112,6 +112,10 @@ python3 .agents/skills/code-auditor/scripts/selftest_rules.py --plan --samples 3
 python3 .agents/skills/code-auditor/scripts/selftest_rules.py --score
 ```
 
+Dispatch each `selftest-*` unit through the same judge as an ordinary audit.
+The viewer automatically loads its plan instead of the production report;
+write the answers to `.agents/.audit/selftest/verdicts.json`.
+
 Fixtures are judged with their own example removed from the prompt, so this
 measures whether the rule generalises rather than whether the agent can
 pattern-match. Accuracy below 100% means the rule is wrong, not the model —

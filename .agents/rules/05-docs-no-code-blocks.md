@@ -17,12 +17,14 @@ A fenced block in a journey guide is almost always YAML, Go or a shell command
 that belongs in the reference or developer docs. `mermaid` is the exception:
 diagrams are what these pages should use instead.
 
-This is a pure pattern match with no exceptions worth judging, so it is decided
-by the detector. A fenced block that genuinely belongs on the page is handled
+This is a deterministic Markdown fence scan, so it is decided by the detector.
+It distinguishes opening and closing fences, including unlabelled and tilde
+fences. A fenced block that genuinely belongs on the page is handled
 with a waiver, which records who accepted it and why.
 
 ## Detect
 
-```regex
-^```(?!mermaid\s*$)(?!\s*$).*$
+```tool
+command: python3 .agents/tools/journey_fences.py
+violation_when: output_lines
 ```

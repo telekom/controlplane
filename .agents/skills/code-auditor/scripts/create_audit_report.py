@@ -42,6 +42,7 @@ def _rule_prompt(rule: rulelib.Rule) -> dict:
         "severity": rule.severity,
         "description": rule.description,
         "body": rule.body,
+        "context_lines": rule.context_lines,
         "checks": [{"id": c.slug, "question": c.question} for c in rule.checks],
         "examples": {
             kind: [
@@ -56,7 +57,12 @@ def _rule_prompt(rule: rulelib.Rule) -> dict:
     }
 
 
-def build(context: AuditContext, mode: str) -> dict:
+def build(
+    context: AuditContext, mode: str, input_tree: Path | None = None,
+) -> dict:
+    if input_tree is None:
+        with changeset.snapshot(context.repo_root, mode) as tree:
+            return build(context, mode, tree)
     root = context.repo_root
     judge = judgelib.load(context.config_root).resolve()
     model = judge.pin
@@ -65,9 +71,11 @@ def build(context: AuditContext, mode: str) -> dict:
     )
     base = changeset.merge_base(root) if mode == "worktree" else "INDEX"
     files = changeset.collect(root, mode=mode, base=None if mode == "staged" else base)
+    files = changeset.freeze(root, input_tree, files)
 
     contents = {
-        f.path: changeset.read_blob(root, f, staged=(mode == "staged")) for f in files
+        f.path: (input_tree / f.path).read_text(encoding="utf-8", errors="replace")
+        for f in files
     }
 
     cache = VerdictCache(context.audit_dir)
@@ -75,7 +83,7 @@ def build(context: AuditContext, mode: str) -> dict:
 
     items: list[reportlib.Item] = []
     rules_summary: list[dict] = []
-    errors: list[str] = []
+    errors: list[str] = list(waivers.errors)
     cluster_seen: dict[str, str] = {}
 
     for rule in rules:
@@ -97,7 +105,7 @@ def build(context: AuditContext, mode: str) -> dict:
             continue
 
         try:
-            candidates = detect.run(rule, files, root, contents)
+            candidates = detect.run(rule, files, input_tree, contents)
         except detect.ToolUnavailable as exc:
             errors.append(str(exc))
             rules_summary.append(
@@ -190,7 +198,7 @@ def build(context: AuditContext, mode: str) -> dict:
                     }
                 else:
                     key = verdict_key(
-                        rule.content_hash, candidate.normalized_anchor + check.slug, model
+                        rule.content_hash, candidate.judgment_key + check.slug, model
                     )
                     cached = cache.get(key)
                     if cached:
@@ -224,6 +232,11 @@ def build(context: AuditContext, mode: str) -> dict:
     items.sort(key=lambda i: (i.rule_id, i.file, i.line, i.check_id))
     units = reportlib.build_work_units(items)
     cache.save()
+    by_id = {rule.id: rule for rule in rules}
+    for summary in rules_summary:
+        rule = by_id[summary["id"]]
+        summary["applies_to"] = list(rule.applies_to)
+        summary["exclude"] = list(rule.exclude)
 
     return reportlib.render(
         base=base,
@@ -235,6 +248,7 @@ def build(context: AuditContext, mode: str) -> dict:
                 "path": f.path,
                 "blob_sha": f.blob_sha,
                 "added_lines": list(f.added_lines),
+                "changed_lines": list(f.touched_lines),
             }
             for f in files
         ],
@@ -245,6 +259,7 @@ def build(context: AuditContext, mode: str) -> dict:
     ) | {
         "judge": judge.complexity,
         "context": context.describe(),
+        "tree_hash": changeset.tree_hash(input_tree),
         "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.complexity > 0},
     }
 
@@ -269,15 +284,20 @@ def main() -> int:
     except JudgeError as exc:
         print(f"Cannot audit: no judge to run on.\n{exc}", file=sys.stderr)
         return 2
+    except changeset.GitError as exc:
+        print(f"Cannot audit: {exc}", file=sys.stderr)
+        return 2
 
     out = args.out or (context.audit_dir / "report.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    write_state(context.audit_dir, document["model"], document["rules_index_hash"])
+    write_state(
+        context.audit_dir, document["model"], document["rules_index_hash"],
+        document["judge"],
+    )
 
     verdicts_path = out.parent / "verdicts.json"
-    if not verdicts_path.exists():
-        verdicts_path.write_text(json.dumps({"verdicts": []}, indent=2) + "\n", "utf-8")
+    verdicts_path.write_text(json.dumps({"verdicts": []}, indent=2) + "\n", "utf-8")
 
     if not args.quiet:
         stats = document["stats"]
@@ -291,9 +311,9 @@ def main() -> int:
             f"deterministically, {stats['items_pending']} need judgment"
         )
         print(f"  {stats['work_units']} work unit(s)")
-        for error in document["errors"]:
-            print(f"  ERROR {error}", file=sys.stderr)
-    return 0
+    for error in document["errors"]:
+        print(f"  ERROR {error}", file=sys.stderr)
+    return 2 if document["errors"] else 0
 
 
 if __name__ == "__main__":

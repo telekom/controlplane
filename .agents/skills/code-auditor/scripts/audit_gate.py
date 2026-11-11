@@ -28,13 +28,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from auditlib import changeset, detect, rules as rulelib  # noqa: E402
-from auditlib.context import ConfigError, add_argument, resolve  # noqa: E402
+from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.report import SEVERITY_RANK  # noqa: E402
+from auditlib.report import item_id  # noqa: E402
 from auditlib.store import (  # noqa: E402
     ReceiptStore,
     audited_model,
     receipt_key,
+    Waivers,
 )
 
 SKILL_HINT = "Run the code-auditor skill, then commit again."
@@ -43,6 +45,11 @@ SKILL_HINT = "Run the code-auditor skill, then commit again."
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("staged", "range"), default="staged")
+    parser.add_argument("--base", help="committed comparison base (range mode)")
+    parser.add_argument(
+        "--revision", default=os.environ.get("PRE_COMMIT_TO_REF") or "HEAD",
+        help="committed tip (range mode; defaults to the pushed ref or HEAD)",
+    )
     parser.add_argument(
         "--fail-on", choices=("LOW", "HIGH", "CRITICAL"), default="CRITICAL"
     )
@@ -59,6 +66,15 @@ def main() -> int:
     except ConfigError as exc:
         print(f"audit-gate: {exc}", file=sys.stderr)
         return 2
+    try:
+        with changeset.snapshot(context.repo_root, args.mode, args.revision) as tree:
+            return check(context, args, tree)
+    except changeset.GitError as exc:
+        print(f"audit-gate: {exc}", file=sys.stderr)
+        return 2
+
+
+def check(context: AuditContext, args: argparse.Namespace, tree: Path) -> int:
     root = context.repo_root
     try:
         rules = rulelib.load_index(
@@ -68,14 +84,22 @@ def main() -> int:
         print(f"audit-gate: the rule corpus is invalid.\n{exc}", file=sys.stderr)
         return 1
 
-    mode = "staged" if args.mode == "staged" else "worktree"
-    files = changeset.collect(root, mode=mode)
+    files = changeset.collect(
+        root, mode=args.mode, base=args.base, revision=args.revision,
+    )
     if not files:
         return 0
 
+    files = changeset.freeze(root, tree, files)
     contents = {
-        f.path: changeset.read_blob(root, f, staged=(mode == "staged")) for f in files
+        f.path: (tree / f.path).read_text(encoding="utf-8", errors="replace")
+        for f in files
     }
+    tree_hash = changeset.tree_hash(tree)
+    waivers = Waivers(context.config_root)
+    if waivers.errors:
+        print("\n".join(waivers.errors), file=sys.stderr)
+        return 2
 
     threshold = SEVERITY_RANK[args.fail_on]
     try:
@@ -96,20 +120,35 @@ def main() -> int:
 
         if rule.complexity == 0:
             try:
-                for candidate in detect.run(rule, files, root, contents):
+                for candidate in detect.run(rule, files, tree, contents):
+                    ident = item_id(
+                        rule.id, "violation", candidate.file, candidate.normalized_anchor
+                    )
+                    if waivers.get(ident):
+                        continue
                     if SEVERITY_RANK[rule.severity] >= threshold:
                         complexity0.append(
                             f"[{rule.severity}] {rule.id}  {candidate.file}:"
                             f"{candidate.line}  {candidate.detail or candidate.anchor}"
                         )
             except detect.ToolUnavailable as exc:
-                print(f"audit-gate: skipping {rule.id}: {exc}", file=sys.stderr)
+                print(f"audit-gate: {exc}", file=sys.stderr)
+                return 2
             continue
 
         for file in scoped:
-            receipt = receipts.get(receipt_key(file.blob_sha, rule.content_hash, model))
+            receipt = receipts.get(receipt_key(
+                file.blob_sha, rule.content_hash, model, file.path,
+                file.touched_lines, tree_hash,
+            ))
             if receipt is None:
                 missing.setdefault(file.path, set()).add(rule.id)
+            elif receipt.get("verdict") not in ("PASS", "FAIL", "UNCLEAR"):
+                print(
+                    f"audit-gate: invalid receipt for {file.path}: {receipt}",
+                    file=sys.stderr,
+                )
+                return 2
             elif (
                 receipt["verdict"] in ("FAIL", "UNCLEAR")
                 and SEVERITY_RANK[rule.severity] >= threshold

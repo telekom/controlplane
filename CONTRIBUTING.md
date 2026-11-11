@@ -18,8 +18,9 @@ Checks are split into two tiers to keep commits fast while catching everything b
 
 | When                         | What                                                             | Why                                                 |
 |------------------------------|------------------------------------------------------------------|-----------------------------------------------------|
-| **Pre-commit**               | REUSE license headers, gitleaks, conventional commit format      | Fast (<2s), runs on every commit                    |
-| **Pre-push / `make verify`** | `go mod tidy`, `make build`, `golangci-lint` per module | Thorough but slow — only needed before sharing code |
+| **Pre-commit / commit-msg** | REUSE, gitleaks, rule validation, CRITICAL audit gate, conventional commit format | Runs on every commit |
+| **Git pre-push** | HIGH audit gate over committed branch content | Rejects missing or invalid audit receipts |
+| **`make verify`** | `go mod tidy`, `make build`, `golangci-lint` per module | Thorough checks before sharing code |
 
 Always use Makefile targets instead of running Go tooling directly. The per-module Makefiles ensure correct flags, code generation, envtest setup, and coverage configuration.
 
@@ -68,7 +69,11 @@ To get started with `pre-commit`, follow these steps:
 
   This will check the `.pre-commit-config.yaml` file and install the needed dependencies for this repository.
 
-With this setup, `pre-commit` will now automatically run checks on every commit.
+This installs pre-commit, commit-msg and pre-push hooks. Re-run it in existing
+checkouts to install the new pre-push gate. The audit gate is independent of
+the agent harness and ignores unstaged fixes when checking committed content.
+Run the `code-auditor` skill before committing or pushing; for partial staging
+generate a staged audit. Model-backed cold CI auditing is planned, not enforced.
 
 You may also manually run it with the following command:
 

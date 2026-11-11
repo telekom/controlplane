@@ -28,8 +28,9 @@ and embedded or `json:",inline"` fields such as `metav1.ObjectMeta` are not
 fields of their own. A field fails when the comment block directly above it,
 together with any trailing comment, holds nothing but `+` markers.
 
-Only changed field lines are reported, so editing a file does not inherit its
-undocumented fields.
+Only fields whose declaration or comment span changed are reported. Deleting
+the prose counts even when the declaration is untouched; unrelated undocumented
+fields elsewhere in the file remain outside the audit.
 
 ## Detect
 

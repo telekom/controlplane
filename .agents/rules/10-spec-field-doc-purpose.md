@@ -35,6 +35,8 @@ The detector `.agents/tools/spec_field_docs.py --thin` lists the spec fields
 whose prose adds at most one word beyond the field name, its Go type and filler
 words such as "defines" or "configuration". Longer comments are passed without
 a model; fields with no prose at all are `09-spec-field-doc-comment`.
+The declaration and its comment span form one candidate, so changing only the
+comment still triggers this check.
 
 ## Detect
 

@@ -34,6 +34,11 @@ of `.agents/.audit/`. See "Shared configuration" in `scripts/README.md`.
 python3 .agents/skills/code-auditor/scripts/create_audit_report.py
 ```
 
+For a partially staged commit, use `--mode staged`. Detectors and evidence
+validation use that frozen index snapshot, including package context.
+Regenerating the report resets its verdict file; reusable judgments come
+from the separate cache.
+
 The judge is pinned in `.agents/judges.yaml` and recorded in every receipt.
 Never set `AUDIT_MODEL`: the model driving this session is not the model that
 answers, and a receipt naming the wrong one is worse than no receipt.

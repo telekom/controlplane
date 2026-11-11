@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from auditlib import SCHEMA_VERSION, VERDICTS  # noqa: E402
+from auditlib import SCHEMA_VERSION, VERDICTS, changeset, detect, rules as rulelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.report import SEVERITY_RANK, worst  # noqa: E402
 from auditlib.store import (  # noqa: E402
@@ -50,18 +50,15 @@ def _normalize(text: str) -> str:
     return " ".join(text.split())
 
 
-def _anchor(root: Path, path: str, line: int, quote: str) -> int:
+def _anchor(root: Path, path: str, line: int, quote: str, blob: str) -> int:
     """Return the real line the quote sits on, or raise if it is not there."""
     target = _normalize(quote)
     if not target:
         raise RejectedReport(f"{path}:{line}: evidence quote is empty")
 
-    file_path = root / path
-    if not file_path.is_file():
-        raise RejectedReport(f"{path}: cited file does not exist")
     try:
-        lines = file_path.read_text(encoding="utf-8").splitlines()
-    except (OSError, UnicodeDecodeError) as exc:
+        lines = changeset.git(root, "cat-file", "-p", blob).splitlines()
+    except changeset.GitError as exc:
         raise RejectedReport(f"{path}: cannot read cited file: {exc}") from exc
 
     start = max(1, line - ANCHOR_WINDOW)
@@ -121,8 +118,11 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
 
     representatives: dict[str, dict] = {}
     changed = {
-        f["path"]: set(f.get("added_lines", [])) for f in report["scope"]["files"]
+        f["path"]: set(f.get("changed_lines", f.get("added_lines", [])))
+        for f in report["scope"]["files"]
     }
+    blobs = {f["path"]: f["blob_sha"] for f in report["scope"]["files"]}
+    prompts = report.get("rule_prompts", {})
     report_scopes = {r["id"]: r.get("report_scope", "changed") for r in report["rules"]}
 
     for item in items:
@@ -153,7 +153,7 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
         if verdict != "PASS":
             quote = str(evidence.get("quote", ""))
             line = int(evidence.get("line", item["line"]) or item["line"])
-            resolved = _anchor(root, item["file"], line, quote)
+            resolved = _anchor(root, item["file"], line, quote, blobs[item["file"]])
             evidence = {
                 "file": item["file"],
                 "line": resolved,
@@ -172,6 +172,12 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
             changed.get(item["file"], set()),
             evidence.get("line", item["line"]),
         )
+        if not item["in_scope"] and item["rule_id"] in prompts:
+            radius = prompts[item["rule_id"]].get("context_lines", 0)
+            item["in_scope"] = any(
+                abs(evidence.get("line", item["line"]) - line) <= radius
+                for line in changed.get(item["file"], set())
+            )
         representatives.setdefault(item["cluster_id"], item)
 
     for item in items:
@@ -201,6 +207,8 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
 
 
 def persist(directory: Path, report: dict, items: list[dict]) -> None:
+    if report.get("errors"):
+        raise RejectedReport("cannot persist a report containing detector errors")
     model = report.get("model", "unknown")
     hashes = {r["id"]: r["content_hash"] for r in report["rules"]}
     cache = VerdictCache(directory)
@@ -211,7 +219,10 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
             cache.put(
                 verdict_key(
                     hashes[item["rule_id"]],
-                    _normalize(item["anchor"]) + item["check_id"],
+                    detect.judgment_key(
+                        item["file"], _normalize(item["anchor"]),
+                        item["context"], item.get("detail", ""),
+                    ) + item["check_id"],
                     model,
                 ),
                 item["verdict"],
@@ -220,6 +231,10 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
             )
 
     blobs = {f["path"]: f["blob_sha"] for f in report["scope"]["files"]}
+    scopes = {
+        f["path"]: tuple(f.get("changed_lines", f["added_lines"]))
+        for f in report["scope"]["files"]
+    }
     covered: dict[tuple[str, str], list[str]] = {}
     for item in items:
         # Advisory findings must not latch the gate shut: the change is not
@@ -231,13 +246,20 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
     severities = {r["id"]: r["severity"] for r in report["rules"]}
     for rule in report["rules"]:
         for path, blob in blobs.items():
+            if not rulelib.Matcher(
+                rule["applies_to"], rule["exclude"]
+            ).matches(path):
+                continue
             verdicts = covered.get((path, rule["id"]))
             # A rule with no candidates for a file still covers that file.
             outcome = worst(verdicts) if verdicts else "PASS"
             if rule["outcome"] == "ERROR":
                 outcome = "ERROR"
             receipts.put(
-                receipt_key(blob, rule["content_hash"], model),
+                receipt_key(
+                    blob, rule["content_hash"], model, path,
+                    scopes[path], report["tree_hash"],
+                ),
                 rule["id"],
                 path,
                 outcome,
@@ -320,6 +342,13 @@ def main() -> int:
         return 2
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("errors"):
+        if args.json:
+            print(json.dumps({"overall": "ERROR", "errors": report["errors"]}))
+        else:
+            for error in report["errors"]:
+                print(f"Audit rejected: {error}", file=sys.stderr)
+        return 2
     mismatch = context_mismatch(report, context)
     if mismatch:
         print(f"Audit rejected: {mismatch}", file=sys.stderr)

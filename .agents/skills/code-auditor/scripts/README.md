@@ -13,13 +13,13 @@ its output before accepting it.
 
 | Script | Runs where | Purpose |
 | --- | --- | --- |
-| `validate_rules.py` | pre-commit, CI | Static validation of `.agents/rules` |
+| `validate_rules.py` | pre-commit | Static validation of `.agents/rules` |
 | `create_audit_report.py` | agent session | Changeset → detectors → items → work units |
 | `show_work_unit.py` | subagent | Print one work unit: rule, context, questions |
 | `process_audit_report.py` | agent session | Verify agent verdicts, write receipts, render findings |
-| `audit_gate.py` | pre-commit, pre-push, CI | Prove an audit covers the staged blobs |
+| `audit_gate.py` | pre-commit, Git pre-push | Prove an audit covers staged or committed blobs |
 | `sync_judges.py` | pre-commit | Keep the harness judge agents equal to the pins |
-| `selftest_rules.py` | pre-commit (`--static`), CI | Grade the rules themselves: accuracy, flake rate, cost |
+| `selftest_rules.py` | pre-commit (`--static`), manual model-backed run | Grade accuracy, flake rate, cost |
 
 Work units are packed **candidate-major**: every check of one candidate rides
 in the same prompt, so its frozen context is sent once instead of once per
@@ -58,6 +58,42 @@ rule's prose justifies it.
 Accuracy and flake rate are separate axes. A rule can be perfectly repeatable
 and perfectly wrong.
 
+Fixture IDs are opaque and expected outcomes stay in scoring-only metadata.
+Allowed fixtures require explicit `PASS` answers to every check; `UNCLEAR`
+is not a correct answer. The viewer automatically resolves `selftest-*` unit
+IDs from `.agents/.audit/selftest/plan.json`. An explicit `--report` overrides
+that location. Creating a new plan resets its verdict file.
+
+## Snapshot and receipt contract
+
+The session audit compares against the default branch's merge base, including
+already-pushed feature commits. `--mode staged` exports the complete index;
+the push gate's `--mode range` exports committed `HEAD`, ignoring local edits.
+`--base` and `--revision` select explicit committed endpoints for the gate.
+Detector tools run inside these isolated trees with package context intact.
+Evidence is verified against the recorded blobs in Git's object store.
+
+Judgment reuse includes the file path, numbered context, change markers and
+detector detail. Receipts additionally bind to the file's changed-line scope
+and complete dependency tree hash. Only applicable file/rule pairs receive
+receipts. Schema 3 invalidates older reports and receipts; regenerate them.
+Both deterministic checks and model judgments honor `auditignore`.
+
+Deletion boundaries count as touched lines. Judgment detectors discover
+triggers within `context_lines` of edits, including deletions, while
+file-scoped judgments receive the complete file. Evidence in that affected
+window can block; distant pre-existing findings remain advisory. Spec-field
+tools report a declaration/comment span so comment-only changes are covered.
+
+Missing tools, crashes and invalid receipts are engine errors, never passes.
+`output_lines` tools must exit 0; codespell's documented findings status 65
+is also accepted. A report containing errors cannot write receipts.
+Regenerating a report resets `verdicts.json`; reusable judgments live in the
+separate context-addressed cache.
+
+Run `pre-commit install` to install pre-commit, commit-msg and pre-push hooks.
+Model-backed cold CI auditing is planned and is not currently enforced.
+
 ## State
 
 `.agents/.audit/` is gitignored, local, and safe to delete at any time —
@@ -67,10 +103,10 @@ deleting it only costs re-judging.
 | --- | --- |
 | `report.json` | the current audit |
 | `verdicts.json` | the agent's answers, merged by the processor |
-| `receipts.json` | per (file blob, rule) proof used by the commit gate |
+| `receipts.json` | path, blob, rule, change-scope and dependency-tree proof |
 | `verdicts.cache.json` | content-addressed verdict reuse |
 | `rules.index.json` | compiled rule index, keyed on the rules directory |
-| `state.json` | model and rule index hash of the last audit |
+| `state.json` | selected judge identity, model pin and rule index hash |
 
 `.agents/auditignore` is the one piece of state that *is* committed. Despite
 its extensionless name, it is YAML: each finding's item id maps to a reason,

@@ -383,7 +383,8 @@ class SharedConfigTest(unittest.TestCase):
         self.assertIn("rover/internal/handler/rover.go", result.stdout)
 
     def test_process_and_gate_share_receipts_in_the_workspace(self) -> None:
-        self.create("--config-root", str(self.workspace))
+        git(self.sub, "add", "rover/internal/handler/rover.go", "docs/docs/user-journey/guide.md")
+        self.create("--config-root", str(self.workspace), "--mode", "staged")
         report = self.report()
         pending = [i for i in report["items"] if i["status"] == "pending"]
         verdicts = {
@@ -412,12 +413,11 @@ class SharedConfigTest(unittest.TestCase):
         self.assertTrue((self.state / "receipts.json").is_file())
         self.assertTrue((self.state / "verdicts.cache.json").is_file())
 
-        git(self.sub, "add", "rover/internal/handler/rover.go")
         gate = run(
             "audit_gate.py",
             self.sub,
             "--fail-on",
-            "HIGH",
+            "CRITICAL",
             "--config-root",
             str(self.workspace),
         )

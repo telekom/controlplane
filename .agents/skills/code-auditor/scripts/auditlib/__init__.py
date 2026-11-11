@@ -8,7 +8,7 @@ The library is intentionally dependency-free (stdlib only) so that it can run
 inside a git hook, inside CI and inside an agent session without a virtualenv.
 """
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SEVERITIES = ("LOW", "HIGH", "CRITICAL")
 VERDICTS = ("PASS", "FAIL", "UNCLEAR")
 

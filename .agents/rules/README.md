@@ -72,6 +72,14 @@ into a single candidate judged as a whole.
 Findings outside the change are not discarded: they are reported as
 **advisory** and excluded from the gate.
 
+Deletion boundaries are marked as touched. Judgment detectors also discover
+existing triggers within `context_lines` of a touched line; this catches
+removed guards or labels without scanning unrelated distant code. Evidence
+in that affected window may block. `scope: file` supplies the complete file
+to the judge rather than discarding distant matches after the first window.
+Tool detectors can append `[audit-span=START-END]` to a finding to associate
+a declaration with its comments; edits anywhere in that span count.
+
 ## Sections
 
 ### `## Detect`

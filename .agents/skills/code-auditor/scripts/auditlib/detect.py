@@ -41,8 +41,18 @@ class Candidate:
         digest = hashlib.sha256()
         digest.update(rule.content_hash.encode("utf-8"))
         digest.update(b"\0")
-        digest.update(self.normalized_anchor.encode("utf-8"))
+        digest.update(self.judgment_key.encode("utf-8"))
         return digest.hexdigest()[:16]
+
+    @property
+    def judgment_key(self) -> str:
+        return judgment_key(self.file, self.normalized_anchor, self.context, self.detail)
+
+
+def judgment_key(path: str, anchor: str, context: str, detail: str) -> str:
+    return hashlib.sha256(
+        "\0".join((path, anchor, context, detail)).encode("utf-8")
+    ).hexdigest()
 
 
 class ToolUnavailable(RuntimeError):
@@ -70,13 +80,22 @@ def _scan_lines(rule: Rule, file: ChangedFile, total: int):
     """Which lines of a file are eligible to produce a candidate."""
     if rule.report_scope == "file":
         return range(1, total + 1)
-    return file.added_lines
+    if rule.complexity > 0:
+        return sorted({
+            number
+            for changed in file.touched_lines
+            for number in range(
+                max(1, changed - rule.context_lines),
+                min(total, changed + rule.context_lines) + 1,
+            )
+        })
+    return file.touched_lines
 
 
 def _regex_candidates(rule: Rule, file: ChangedFile, content: str) -> list[Candidate]:
     pattern = re.compile(rule.detector.pattern)
     lines = content.splitlines()
-    changed = frozenset(file.added_lines)
+    changed = frozenset(file.touched_lines)
 
     found = []
     for number in _scan_lines(rule, file, len(lines)):
@@ -107,7 +126,9 @@ def _regex_candidates(rule: Rule, file: ChangedFile, content: str) -> list[Candi
                 file=file.path,
                 line=head.line,
                 anchor=head.anchor,
-                context=head.context,
+                context=render_context(
+                    lines, 1, len(lines), changed
+                ),
                 detail=f"also matched at {extra}" if extra else "",
             )
         ]
@@ -141,7 +162,7 @@ def _tool_candidates(
     result = subprocess.run(
         [*argv, *paths], cwd=root, capture_output=True, text=True
     )
-    output = (result.stdout + result.stderr).strip()
+    output = result.stdout.strip()
 
     if rule.detector.violation_when == "nonzero_exit":
         if result.returncode == 0:
@@ -153,10 +174,19 @@ def _tool_candidates(
                 file=first.path,
                 line=1,
                 anchor=f"{argv[0]} exited {result.returncode}",
-                context=output[:4000],
-                detail=output[:4000],
+                context=(output + result.stderr)[:4000],
+                detail=(output + result.stderr)[:4000],
             )
         ]
+
+    # codespell uses 65 for findings. Other failures, including invocation
+    # errors and Python tracebacks, must never turn into "no candidates".
+    accepted = {0, 65} if Path(argv[0]).name == "codespell" else {0}
+    if result.returncode not in accepted:
+        raise ToolUnavailable(
+            f"{rule.id}: detector exited {result.returncode}: "
+            f"{(result.stderr or output).strip()[:4000]}"
+        )
 
     candidates = []
     known = {f.path: f for f in files}
@@ -169,11 +199,19 @@ def _tool_candidates(
         if changed_file is None:
             continue
         number = int(match.group("line"))
-        changed = frozenset(changed_file.added_lines)
+        changed = frozenset(changed_file.touched_lines)
         # A tool reports on whole files. Without this filter, touching one line
         # of a file makes you the owner of every pre-existing hit in it.
-        if rule.report_scope == "changed" and number not in changed:
+        detail = match.group("rest").strip()
+        span = re.search(r" \[audit-span=(\d+)-(\d+)\]$", detail)
+        eligible = {number}
+        if span:
+            eligible = set(range(int(span[1]), int(span[2]) + 1))
+            detail = detail[:span.start()]
+        if rule.report_scope == "changed" and not eligible.intersection(changed):
             continue
+        if number not in changed and eligible.intersection(changed):
+            number = min(eligible.intersection(changed))
         body = contents.get(path, "").splitlines()
         anchor = body[number - 1].strip() if 0 < number <= len(body) else ""
         candidates.append(
@@ -185,7 +223,7 @@ def _tool_candidates(
                 context=render_context(body, number, rule.context_lines, changed)
                 if body
                 else "",
-                detail=match.group("rest").strip(),
+                detail=detail,
             )
         )
     return candidates
@@ -197,7 +235,7 @@ def _whole_file_candidates(
     lines = content.splitlines()
     if not lines:
         return []
-    changed = frozenset(file.added_lines)
+    changed = frozenset(file.touched_lines)
     anchor_line = min(changed) if changed else 1
     width = len(str(len(lines)))
     numbered = "\n".join(

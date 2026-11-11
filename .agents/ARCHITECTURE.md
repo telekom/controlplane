@@ -18,14 +18,15 @@ does it break this one rule" is a closed question and closed questions mostly
 do. Scripts find candidates; the model only judges them.
 
 **Trust nothing the model writes.** Every verdict must quote source that is
-re-matched against the real file, every pending item must be answered, and the
+re-matched against the audited Git blob, every pending item must be answered, and the
 audit is rejected outright if either fails. The same standard applies to the
 rules themselves: an example that claims to come from this repository is
 re-read from the pinned revision and rejected if it does not match.
 
 **Measure it.** Sourced examples double as fixtures, judged with the example
 itself held out of the prompt. A rule that misclassifies its own fixtures, or
-whose verdict flips between runs, fails CI the same way a flaky test does.
+whose verdict flips between runs, fails the model-backed selftest. Automated
+model-backed CI enforcement is planned, not installed.
 
 ## The funnel
 
@@ -46,7 +47,7 @@ flowchart TD
     E -->|no| F{in verdict cache?}
     F -->|hit| V2[verdict reused]
     F -->|miss| G{identical snippet<br/>already queued?}
-    G -->|yes| V3[cluster: judged once, applied to all]
+    G -->|yes| V3[identical judgment input: reused]
     G -->|no| H[pending item]
     H --> I[work units, rule-major]
     I --> J[subagents, one per unit]
@@ -86,9 +87,22 @@ Everything is keyed on content, never on a timestamp or a run id.
 
 ```
 item_id     = sha256(rule_id, check_slug, file, normalized_anchor)
-verdict_key = sha256(rule_content_hash, normalized_anchor + check_slug, model)
-receipt_key = sha256(blob_sha, rule_content_hash, model)
+judgment_key = sha256(file, normalized_anchor, numbered_context, detector_detail)
+verdict_key  = sha256(rule_content_hash, judgment_key + check_slug, model)
+receipt_key  = sha256(version, file, blob_sha, rule_content_hash, model, changed_lines, tree_hash)
 ```
+
+Context includes change markers. File-scoped judgments receive the complete
+file. Receipts are only written for applicable paths, and the tree hash binds
+package and other cross-file inputs. This conservative dependency scope can
+require re-auditing after an otherwise unrelated file changes. Changing or
+removing the selected judge pin also invalidates the last audit.
+
+Detectors run in an isolated complete snapshot: the index for staged audits,
+committed blobs for the push gate, and frozen working-tree files for session
+audits. Evidence is verified against the recorded blobs, not later edits.
+The branch comparison base comes from the default target branch, never from
+the feature branch's tracking ref.
 
 This single decision buys four properties at once:
 
@@ -116,7 +130,7 @@ flowchart TD
     E -->|missing receipt| B
     E -->|ok| F[git push]
     F --> G["Gate 3: pre-push<br/>hack/verify.sh + gate over the branch<br/>blocks on HIGH"]
-    G --> H["Gate 4: CI<br/>cold re-run, reports everything"]
+    G -. planned .-> H["Gate 4: CI<br/>cold model-backed re-run"]
 ```
 
 | Gate | Cost | Model | Blocks on |
@@ -124,7 +138,7 @@ flowchart TD
 | 1 — session | 20–60 s | yes | nothing, it reports |
 | 2 — pre-commit | < 1 s | no | `CRITICAL` |
 | 3 — pre-push | seconds | no | `HIGH` |
-| 4 — CI | 1–2 min | yes | `HIGH`, authoritative |
+| 4 — CI (planned) | not installed | yes | intended: `HIGH` |
 
 Thresholds tighten as the change travels. A gate people learn to bypass in the
 first week never recovers, so commit-time stays cheap and narrow.
@@ -137,7 +151,11 @@ Deliberate, visible, and all three leave a trace.
 | --- | --- |
 | Finding is wrong or accepted | `.agents/auditignore`, keyed by item id, expires when the code changes |
 | Work in progress | `AUDIT_GATE=off git commit` |
-| Emergency | `git commit --no-verify`, caught by Gate 4 |
+| Emergency | `git commit --no-verify`; a normal push still runs Gate 3 |
+
+Gate 3 is installed by `pre-commit install` as a Git pre-push hook, so it
+applies to terminal pushes and every agent harness. Bypassing both local
+hooks currently has no model-backed CI backstop.
 
 A detector tool that is not installed is **not** an escape hatch: it produces
 an engine error. A check that cannot run must never look like a check that
@@ -149,7 +167,8 @@ passed.
   Clustering absorbs most of it, because wide refactors are repetitive.
 - Complexity 2 rules read whole files and are the least repeatable part of the
   system. Keep them rare and keep their checks narrow.
-- The verdict cache trusts a previous run. CI deliberately does not use it.
+- The verdict cache trusts a previous judgment of identical frozen inputs.
+  The planned cold CI audit will not reuse local verdicts.
 - Leave-one-out is stricter than production, where the example *is* in the
   prompt. That is deliberate: the gap between the two is exactly the amount of
   the verdict that rests on recognising the example instead of applying the

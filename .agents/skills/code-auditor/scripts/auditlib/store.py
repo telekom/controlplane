@@ -46,11 +46,13 @@ def model_id(repo_root: Path) -> str:
     return judges.load(repo_root).resolve().pin
 
 
-def write_state(directory: Path, model: str, rules_index_hash: str) -> None:
+def write_state(
+    directory: Path, model: str, rules_index_hash: str, judge: str = "",
+) -> None:
     """Record the last audit in ``directory``, the audit's state directory."""
     _save(
         directory / "state.json",
-        {"model": model, "rules_index_hash": rules_index_hash},
+        {"model": model, "judge": judge, "rules_index_hash": rules_index_hash},
     )
 
 
@@ -62,7 +64,18 @@ def audited_model(directory: Path, config_root: Path) -> str:
     export would make the gate pass or fail for the wrong reasons.
     """
     state = _load(directory / "state.json")
-    return str(state.get("model") or model_id(config_root))
+    configured = judges.load(config_root)
+    if not state:
+        return configured.resolve().pin
+    identity = state.get("judge")
+    model = state.get("model")
+    if identity:
+        current = configured.get(identity).pin
+        if current == model:
+            return current
+    elif any(configured.get(name).pin == model for name in configured.complexities):
+        return str(model)
+    raise judges.JudgeError("the audited judge pin changed or was removed; re-run the audit")
 
 
 def verdict_key(rule_content_hash: str, normalized_anchor: str, model: str) -> str:
@@ -73,9 +86,15 @@ def verdict_key(rule_content_hash: str, normalized_anchor: str, model: str) -> s
     return digest.hexdigest()[:16]
 
 
-def receipt_key(blob_sha: str, rule_content_hash: str, model: str) -> str:
+def receipt_key(
+    blob_sha: str, rule_content_hash: str, model: str,
+    path: str = "", changed_lines: tuple[int, ...] = (), tree: str = "",
+) -> str:
     digest = hashlib.sha256()
-    for part in (blob_sha, rule_content_hash, model):
+    for part in (
+        "receipt-v2", path, blob_sha, rule_content_hash, model,
+        ",".join(map(str, changed_lines)), tree,
+    ):
         digest.update(part.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()[:16]

@@ -42,7 +42,7 @@ environment-scoped. Undocumented exceptions are violations.
 ## Detect
 
 ```regex
-(\br\.(Client\.)?(List|Get|Create|Update|Patch|Delete)\(ctx|mgr\.GetClient\(\))
+(\b(r|v)\.((Client|client)\.)?(List|Get|Create|Update|Patch|Delete)\(ctx|mgr\.GetClient\(\))
 ```
 
 ## Checks
@@ -52,6 +52,7 @@ environment-scoped. Undocumented exceptions are violations.
 - [unscoped-get] when=`\.Get\(ctx` Does the marked `Get` use a key that is not derived from an object in the same environment (e.g. a fixed or user-supplied namespace)?
 - [unlabelled-write] when=`\.(Create|Update|Patch)\(ctx` Does the marked write through the raw client create or modify an object without setting the environment label from the source object?
 - [unscoped-reader] when=`mgr\.GetClient\(\)` Is the raw manager client handed to a webhook or helper that then reads without environment scoping?
+- [unscoped-delete] when=`\.Delete\(ctx` Does the marked deletion use a raw client without verifying that the target belongs to the source environment or wrapping the client in a `NewScopedClient`?
 
 ## Examples
 
@@ -69,6 +70,12 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 ```go synthetic="same reason; shows the undocumented namespace variant"
 	var publishers pubsubv1.PublisherList
 	err := r.List(ctx, &publishers, client.InNamespace(eventStore.Namespace))
+```
+
+```go synthetic="a raw-client deletion must verify the target environment before deleting"
+	if err := r.Delete(ctx, target); err != nil {
+		return err
+	}
 ```
 
 ### Allowed

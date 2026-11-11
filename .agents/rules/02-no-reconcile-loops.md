@@ -35,7 +35,7 @@ The rule-level detector must stay at least as broad as the union of the
 `when=` patterns below, or a check could never be asked.
 
 ```regex
-(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx|SetCondition|ObservedGeneration|RequeueAfter|\.List\(|\.Items\b)
+(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx|SetCondition|SetStatusCondition|ObservedGeneration|RequeueAfter|Requeue:|\.List\(|\.Items\b)
 ```
 
 ## Checks

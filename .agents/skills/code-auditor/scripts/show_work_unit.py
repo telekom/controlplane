@@ -50,10 +50,18 @@ def main() -> int:
         path = args.report
     else:
         try:
-            path = resolve(args.config_root).audit_dir / "report.json"
+            directory = resolve(args.config_root).audit_dir
+            path = (
+                directory / "selftest/plan.json"
+                if args.unit_id.startswith("selftest-")
+                else directory / "report.json"
+            )
         except ConfigError as exc:
             print(f"Cannot show work unit: {exc}", file=sys.stderr)
             return 2
+    if not path.is_file():
+        print(f"No report at {path}. Generate the audit or selftest plan first.", file=sys.stderr)
+        return 2
     report = json.loads(path.read_text(encoding="utf-8"))
 
     unit = next((u for u in report["work_units"] if u["unit_id"] == args.unit_id), None)

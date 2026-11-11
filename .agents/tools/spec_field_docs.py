@@ -10,7 +10,8 @@ of a struct in the same package that a spec field reaches. Status types are
 never followed. Types from other packages are out of scope.
 
 Each reported line reads ``path:line: message`` so the audit engine can use
-it as a tool detector.
+it as a tool detector. A trailing ``[audit-span=START-END]`` associates the
+declaration with its comment lines for comment-only edits and deletions.
 
 Usage::
 
@@ -59,6 +60,7 @@ class Field:
     serialised: bool
     prose: str = ""
     type_expr: str = ""
+    comment_start: int = 0
 
 
 @dataclass
@@ -163,6 +165,7 @@ def parse_structs(path: Path) -> list[Struct]:
                         serialised=_serialised(field_match.group("tag")),
                         prose=prose,
                         type_expr=field_match.group("type"),
+                        comment_start=number - len(comments),
                     )
                 )
         elif embedded:
@@ -233,6 +236,7 @@ def report(paths: list[str], thin: bool) -> list[str]:
                     continue
                 out.append(
                     f"{raw}:{item.line}: spec field {struct.name}.{item.name} {state}"
+                    f" [audit-span={item.comment_start or item.line}-{item.line}]"
                 )
     return sorted(
         out, key=lambda entry: (entry.split(":")[0], int(entry.split(":")[1]))
