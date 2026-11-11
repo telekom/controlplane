@@ -4,6 +4,9 @@
 
 """Regression tests for the second review of PR 850."""
 
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from dataclasses import replace
@@ -143,6 +146,92 @@ class FollowupTest(unittest.TestCase):
             for text in ("first version\n", "second version\n")
         ]
         self.assertNotEqual(candidates[0].normalized_anchor, candidates[1].normalized_anchor)
+
+    def test_push_target_uses_pushed_branch_not_checkout(self):
+        (self.repo / "bad.txt").write_text("BAD\n")
+        git(self.repo, "add", "bad.txt")
+        git(self.repo, "commit", "-qm", "release baseline")
+        git(self.repo, "branch", "release")
+        git(self.repo, "branch", "feature/topic")
+        git(self.repo, "config", "branch.feature/topic.auditTarget", "release")
+        tip = git(self.repo, "rev-parse", "HEAD").strip()
+        git(self.repo, "switch", "-c", "other", self.base)
+        git(self.repo, "config", "branch.other.auditTarget", "origin/main")
+        env = {
+            "PRE_COMMIT_TO_REF": tip,
+            "PRE_COMMIT_LOCAL_BRANCH": "refs/heads/feature/topic",
+        }
+        gate = run("audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH", env=env)
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+        gate = run(
+            "audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH",
+            "--target", "origin/main", env=env,
+        )
+        self.assertEqual(gate.returncode, 1, gate.stdout + gate.stderr)
+        gate = run(
+            "audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH",
+            env={**env, "AUDIT_TARGET": "origin/main"},
+        )
+        self.assertEqual(gate.returncode, 1, gate.stdout + gate.stderr)
+        git(self.repo, "switch", "--detach")
+        gate = run("audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH", env=env)
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+
+    def test_nonbranch_push_does_not_inherit_checkout_target(self):
+        (self.repo / "bad.txt").write_text("BAD\n")
+        git(self.repo, "add", "bad.txt")
+        git(self.repo, "commit", "-qm", "release baseline")
+        tip = git(self.repo, "rev-parse", "HEAD").strip()
+        git(self.repo, "branch", "release")
+        git(self.repo, "config", "branch.main.auditTarget", "release")
+        for source in ("refs/tags/version", "HEAD"):
+            gate = run(
+                "audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH",
+                env={"PRE_COMMIT_TO_REF": tip, "PRE_COMMIT_LOCAL_BRANCH": source},
+            )
+            self.assertEqual(gate.returncode, 1, gate.stdout + gate.stderr)
+        git(self.repo, "config", "audit.target", "release")
+        gate = run(
+            "audit_gate.py", self.repo, "--mode", "range", "--fail-on", "HIGH",
+            env={"PRE_COMMIT_TO_REF": tip, "PRE_COMMIT_LOCAL_BRANCH": "refs/tags/version"},
+        )
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+
+    @unittest.skipUnless(shutil.which("pre-commit"), "pre-commit not installed")
+    def test_installed_hook_uses_target_of_nonchecked_out_branch(self):
+        remote = self.repo / "remote.git"
+        git(self.repo, "init", "--bare", str(remote))
+        git(self.repo, "remote", "add", "origin", str(remote))
+        (self.repo / ".pre-commit-config.yaml").write_text(
+            "repos:\n- repo: local\n  hooks:\n  - id: audit-gate-push\n"
+            f"    name: audit\n    entry: {sys.executable} {SCRIPTS / 'audit_gate.py'} "
+            "--mode range --fail-on HIGH\n"
+            "    language: system\n    pass_filenames: false\n"
+            "    always_run: true\n    stages: [pre-push]\n"
+        )
+        (self.repo / "bad.txt").write_text("BAD\n")
+        git(self.repo, "add", ".pre-commit-config.yaml", "bad.txt")
+        git(self.repo, "commit", "-qm", "release baseline")
+        git(self.repo, "branch", "release")
+        git(self.repo, "branch", "feature")
+        git(self.repo, "config", "branch.feature.auditTarget", "release")
+        git(self.repo, "switch", "-c", "other")
+        git(self.repo, "config", "branch.other.auditTarget", "origin/main")
+        installed = subprocess.run(
+            ["pre-commit", "install", "--hook-type", "pre-push"], cwd=self.repo,
+            capture_output=True, text=True, env=fixtures.hermetic_env(),
+        )
+        self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
+        pushed = subprocess.run(
+            ["git", "push", "origin", "feature:refs/heads/feature"], cwd=self.repo,
+            capture_output=True, text=True, env=fixtures.hermetic_env(),
+        )
+        self.assertEqual(pushed.returncode, 0, pushed.stdout + pushed.stderr)
+        self.assertIn("Passed", pushed.stdout + pushed.stderr)
+        self.assertEqual(
+            git(self.repo, "rev-parse", "feature").strip(),
+            git(self.repo, "--git-dir", str(remote), "rev-parse", "refs/heads/feature").strip(),
+        )
 
     def test_repeated_anchors_have_distinct_item_ids(self):
         rule = self.repo / ".agents/rules/01-no-bad.md"

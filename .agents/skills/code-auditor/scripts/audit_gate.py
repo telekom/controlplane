@@ -74,9 +74,19 @@ def main() -> int:
     try:
         if args.mode == "range":
             args.revision = changeset.commit(context.repo_root, args.revision)
+            source_ref = os.environ.get("PRE_COMMIT_LOCAL_BRANCH")
+            branch = None
+            if source_ref is not None:
+                # Tags and detached pushes have no branch-specific target.
+                branch = (
+                    source_ref.removeprefix("refs/heads/")
+                    if source_ref.startswith("refs/heads/") else ""
+                )
             args.base = (
                 changeset.commit(context.repo_root, args.base) if args.base
-                else changeset.merge_base(context.repo_root, args.revision, args.target)
+                else changeset.merge_base(
+                    context.repo_root, args.revision, args.target, branch=branch,
+                )
             )
         with changeset.snapshot(context.repo_root, args.mode, args.revision) as tree:
             with snapshot_config(context, tree) as config:

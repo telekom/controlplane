@@ -75,9 +75,10 @@ def commit(root: Path, revision: str) -> str:
 
 def merge_base(
     root: Path, revision: str = "HEAD", target: str | None = None,
+    *, branch: str | None = None,
 ) -> str:
     """Resolve the base commit the change should be measured against."""
-    target = target or target_branch(root)
+    target = target or target_branch(root, branch=branch)
     if target is not None:
         return git(root, "merge-base", commit(root, target), commit(root, revision)).strip()
     head = git(root, "symbolic-ref", "refs/remotes/origin/HEAD", check=False).strip()
@@ -89,12 +90,13 @@ def merge_base(
     raise GitError("cannot resolve a target branch; set origin/HEAD or fetch origin/main")
 
 
-def target_branch(root: Path) -> str | None:
-    """Explicit target overrides the branch's configured target."""
+def target_branch(root: Path, *, branch: str | None = None) -> str | None:
+    """Resolve the target for a branch; None uses HEAD, empty skips branch config."""
     override = os.environ.get("AUDIT_TARGET", "").strip()
     if override:
         return override
-    branch = git(root, "symbolic-ref", "--short", "HEAD", check=False).strip()
+    if branch is None:
+        branch = git(root, "symbolic-ref", "--short", "HEAD", check=False).strip()
     if branch:
         target = git(root, "config", "--get", f"branch.{branch}.auditTarget", check=False).strip()
         if target:

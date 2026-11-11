@@ -92,6 +92,9 @@ git config branch.<your-branch>.auditTarget origin/<target-branch>
 The configured ref must be fetched. `AUDIT_TARGET=origin/<target-branch>`
 overrides the configured target for an individual audit or push. Without a
 configured target, the repository's default branch is used.
+The push hook reads the configuration of the branch being pushed, even when
+another branch is checked out. Tag and non-branch pushes use the environment
+override, repository-wide `audit.target`, or default branch instead.
 
 You may also manually run it with the following command:
 

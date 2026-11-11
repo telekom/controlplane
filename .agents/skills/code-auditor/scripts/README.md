@@ -92,6 +92,11 @@ The gate also accepts `--target REF` to compute a merge base. Both report and
 gate use this target precedence: explicit `--base` (report) / `--target`
 (gate), `AUDIT_TARGET`, `branch.<current-branch>.auditTarget`, `audit.target`,
 then the default branch. The gate's exact `--base` overrides target selection.
+During pre-push, branch-specific configuration comes from the pushed local
+ref (`PRE_COMMIT_LOCAL_BRANCH`), not the checkout. This also works when pushing
+another branch or from detached HEAD. Tag and non-branch source refs skip
+branch-specific configuration and use `AUDIT_TARGET`, `audit.target`, or the
+default branch. Outside pre-push, branch-specific selection still uses HEAD.
 For a non-default PR target, set the branch-specific Git configuration so an
 ordinary `git push` checks the same range as the report:
 
