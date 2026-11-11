@@ -41,8 +41,9 @@ comment still triggers this check.
 ## Detect
 
 ```tool
-command: python3 .agents/tools/spec_field_docs.py --thin
+command: python3 .agents/tools/spec_field_docs.py --thin --jsonl
 violation_when: output_lines
+output_format: jsonl
 ```
 
 ## Checks

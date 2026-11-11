@@ -192,10 +192,12 @@ class Waivers:
             self.errors.append(f"{WAIVERS_FILENAME}: {exc}")
             return
         for key, value in raw.items():
-            reason = str(value).strip()
-            if not reason:
-                self.errors.append(f"{WAIVERS_FILENAME}: waiver '{key}' has no reason")
+            if not isinstance(value, str) or not value.strip():
+                self.errors.append(
+                    f"{WAIVERS_FILENAME}: waiver '{key}' needs a nonempty string reason"
+                )
                 continue
+            reason = value.strip()
             self._data[key] = Waiver(item_id=key, reason=reason)
 
     def get(self, item_id: str) -> Waiver | None:

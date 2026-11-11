@@ -13,6 +13,7 @@ applies_to:
 exclude:
   - "**/_category_.json"
 context_lines: 200
+report_radius: 0
 ---
 
 # Over-technical user documentation

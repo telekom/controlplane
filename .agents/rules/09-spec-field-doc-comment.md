@@ -35,6 +35,7 @@ fields elsewhere in the file remain outside the audit.
 ## Detect
 
 ```tool
-command: python3 .agents/tools/spec_field_docs.py
+command: python3 .agents/tools/spec_field_docs.py --jsonl
 violation_when: output_lines
+output_format: jsonl
 ```

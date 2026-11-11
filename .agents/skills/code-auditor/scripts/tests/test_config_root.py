@@ -304,9 +304,9 @@ class SharedConfigTest(unittest.TestCase):
         agents = self.workspace / ".agents"
         (agents / "codespell-ignore.txt").write_text("workspace vocabulary", "utf-8")
         (agents / "tools/option_detector.py").write_text(
-            "import sys\nfrom pathlib import Path\n"
+            "import sys, json\nfrom pathlib import Path\n"
             "data = Path(sys.argv[1].split('=', 1)[1]).read_text()\n"
-            "print(f'{sys.argv[2]}:4: {data}')\n",
+            "print(json.dumps({'file': sys.argv[-1], 'line': 4, 'detail': data}))\n",
             "utf-8",
         )
         path = agents / "rules/09-spec-field-doc-comment.md"

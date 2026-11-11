@@ -122,6 +122,9 @@ Finding IDs include the occurrence's line and detector detail; document-level
 candidates also include a content fingerprint. A waiver covers one occurrence
 in that content, rather than every matching line or every future document edit.
 Cached findings recalculate scope from their evidence just like fresh answers.
+For judgments, `report_radius` controls the affected evidence window separately
+from prompt context. The documentation rule uses zero: only touched lines can
+block, even though its prompt contains the entire document.
 
 Deletion boundaries count as touched lines. Judgment detectors discover
 triggers within `context_lines` of edits, including deletions, while
@@ -129,10 +132,16 @@ file-scoped judgments receive the complete file. Evidence in that affected
 window can block; distant pre-existing findings remain advisory. Spec-field
 tools report a declaration/comment span so comment-only changes are covered.
 Serialized fields inside anonymous structs are included, with their own spans.
+Types reachable only through `json:"-"` fields are excluded; inline fields
+still contribute their serialized children.
 
-Missing tools, crashes and invalid receipts are engine errors, never passes.
-`output_lines` tools must exit 0; codespell's documented findings status 65
-is also accepted. A report containing errors cannot write receipts.
+Missing tools, crashes, malformed detector output and invalid receipts are
+engine errors, never passes. Built-in `output_lines` tools emit JSONL with
+exact filenames, line numbers and optional declaration/comment spans.
+The spelling adapter converts codespell's stdin findings to this protocol;
+codespell's findings status 65 is accepted internally, while the adapter
+exits 0 on a completed scan and nonzero on errors.
+A report containing errors cannot write receipts.
 Regenerating a report resets `verdicts.json`; reusable judgments live in the
 separate context-addressed cache.
 
@@ -175,6 +184,12 @@ python3 ../.agents/skills/code-auditor/scripts/create_audit_report.py --mode loc
 python3 ../.agents/skills/code-auditor/scripts/show_work_unit.py '<unit_id>' --config-root ..
 python3 ../.agents/skills/code-auditor/scripts/process_audit_report.py --config-root .. --fail-on HIGH
 ```
+
+Dispatch judges with the absolute viewer path, audited repository root,
+configuration root and unit ID. The generated persona runs that viewer from
+the audited root with `--config-root`; a relative submodule script path cannot
+locate workspace-owned tools. Selftest dispatches need the same invocation
+context; the viewer resolves selftest plans automatically.
 
 | Comes from | What |
 | --- | --- |

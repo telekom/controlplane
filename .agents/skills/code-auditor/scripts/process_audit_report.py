@@ -215,7 +215,8 @@ def _finding_in_scope(
     lines = changed.get(item["file"], set())
     if _in_scope(scopes.get(item["rule_id"], "changed"), lines, line):
         return True
-    radius = prompts.get(item["rule_id"], {}).get("context_lines", 0)
+    prompt = prompts.get(item["rule_id"], {})
+    radius = prompt.get("report_radius", prompt.get("context_lines", 0))
     return any(abs(line - number) <= radius for number in lines)
 
 

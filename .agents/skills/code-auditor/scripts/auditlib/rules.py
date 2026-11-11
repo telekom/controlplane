@@ -43,6 +43,7 @@ class Detector:
     command: str = ""
     violation_when: str = "output_lines"
     flags: str = ""
+    output_format: str = "text"
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,7 @@ class Rule:
     detector: Detector | None = None
     checks: tuple[Check, ...] = ()
     examples: dict[str, tuple[Example, ...]] = field(default_factory=dict)
+    report_radius: int | None = None
 
     @property
     def decides_without_llm(self) -> bool:
@@ -204,7 +206,12 @@ def _parse_detector(lines: list[str], rule_id: str) -> Detector:
         raise RuleError(
             f"{rule_id}: violation_when must be one of {VIOLATION_WHEN}, got '{when}'"
         )
-    return Detector(kind="tool", command=command, violation_when=when)
+    output_format = config.get("output_format", "text")
+    if output_format not in ("text", "jsonl"):
+        raise RuleError(f"{rule_id}: output_format must be text or jsonl")
+    return Detector(
+        kind="tool", command=command, violation_when=when, output_format=output_format,
+    )
 
 
 def _parse_checks(lines: list[str], rule_id: str) -> tuple[Check, ...]:
@@ -326,6 +333,9 @@ def parse_rule(path: Path) -> Rule:
     context_lines = front.get("context_lines", 20)
     if not isinstance(context_lines, int) or not 0 < context_lines <= 200:
         raise RuleError(f"{rule_id}: context_lines must be an int in 1..200")
+    report_radius = front.get("report_radius", context_lines)
+    if type(report_radius) is not int or not 0 <= report_radius <= 200:
+        raise RuleError(f"{rule_id}: report_radius must be an int in 0..200")
 
     sections = _sections(body)
     detector = None
@@ -389,6 +399,7 @@ def parse_rule(path: Path) -> Rule:
         detector=detector,
         checks=checks,
         examples=examples,
+        report_radius=report_radius,
     )
 
 

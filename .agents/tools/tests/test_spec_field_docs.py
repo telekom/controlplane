@@ -67,6 +67,18 @@ type Widget struct {
 
 
 class SpecFieldDocsTest(unittest.TestCase):
+    def test_ignored_named_and_embedded_types_are_not_reachable(self) -> None:
+        for declaration in (
+            'Hidden HiddenConfig `json:"-"`',
+            'HiddenConfig `json:"-"`',
+        ):
+            with self.subTest(declaration=declaration):
+                self.path.write_text(
+                    "package v1\n\ntype WidgetSpec struct {\n\t" + declaration +
+                    '\n}\n\ntype HiddenConfig struct {\n\tSecret string `json:"secret"`\n}\n'
+                )
+                self.assertEqual(self.fields(False), [])
+
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)

@@ -24,6 +24,8 @@ fails, the data is just wrong, so this is caught at review time.
 Review all detected calls in the file together. Each check reports one finding
 per file per pass; after a fix, rerun the audit to expose any remaining calls.
 Findings outside the affected change window remain advisory.
+Discovery and check triggers are independent of context argument names and
+argument layout, and include `Status().Update` and `Status().Patch` writes.
 
 `cclient.NewScopedClient` enforces the label automatically. Code that uses the
 raw manager client instead — `r.List`, `r.Get`, `r.Client.*`,
@@ -46,17 +48,17 @@ environment-scoped. Undocumented exceptions are violations.
 ## Detect
 
 ```regex
-(\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\.(List|Get|Create|Update|Patch|Delete)\(\s*ctx\b|mgr\.GetClient\(\))
+(\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*(?:\.Status\(\))?\.(List|Get|Create|Update|Patch|Delete)\s*\(|mgr\.GetClient\(\))
 ```
 
 ## Checks
 
-- [unscoped-list] when=`\.List\(ctx` Does the marked `List` run on the raw client without an environment label selector, a `NewScopedClient` wrapper, or a namespace restriction?
+- [unscoped-list] when=`\.List\s*\(` Does the marked `List` run on the raw client without an environment label selector, a `NewScopedClient` wrapper, or a namespace restriction?
 - [undocumented-namespace] when=`InNamespace` Does the marked call rely on `client.InNamespace` for isolation without a nearby comment stating that the namespace isolates the environment?
-- [unscoped-get] when=`\.Get\(ctx` Does the marked `Get` use a key that is not derived from an object in the same environment (e.g. a fixed or user-supplied namespace)?
-- [unlabelled-write] when=`\.(Create|Update|Patch)\(ctx` Does the marked write through the raw client create or modify an object without setting the environment label from the source object?
+- [unscoped-get] when=`\.Get\s*\(` Does the marked `Get` use a key that is not derived from an object in the same environment (e.g. a fixed or user-supplied namespace)?
+- [unlabelled-write] when=`\.(Create|Update|Patch)\s*\(` Does the marked raw-client write either create or modify an object without preserving the source environment label, or write a status subresource without verifying the target belongs to that environment?
 - [unscoped-reader] when=`mgr\.GetClient\(\)` Is the raw manager client handed to a webhook or helper that then reads without environment scoping?
-- [unscoped-delete] when=`\.Delete\(ctx` Does the marked deletion use a raw client without verifying that the target belongs to the source environment or wrapping the client in a `NewScopedClient`?
+- [unscoped-delete] when=`\.Delete\s*\(` Does the marked deletion use a raw client without verifying that the target belongs to the source environment or wrapping the client in a `NewScopedClient`?
 
 ## Examples
 

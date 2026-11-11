@@ -46,6 +46,7 @@ def _rule_prompt(rule: rulelib.Rule) -> dict:
         "description": rule.description,
         "body": rule.body,
         "context_lines": rule.context_lines,
+        "report_radius": rule.report_radius if rule.report_radius is not None else rule.context_lines,
         "checks": [{"id": c.slug, "question": c.question} for c in rule.checks],
         "examples": {
             kind: [

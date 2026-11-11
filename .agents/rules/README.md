@@ -41,6 +41,7 @@ now costs nothing. Run the selftest before assuming a rule needs judgement.
 | `applies_to` | yes | list of globs; `**/*` is rejected for complexity 1 and 2 |
 | `exclude` | no | list of globs, applied after `applies_to` |
 | `context_lines` | no | lines of frozen context around a candidate, default 20 |
+| `report_radius` | no | judgment evidence distance from touched lines, 0..200; defaults to `context_lines` |
 
 Severity drives everything downstream: batch size, whether the commit gate
 blocks, and whether a `FAIL` is re-sampled. Pick it deliberately.
@@ -69,6 +70,11 @@ into a single candidate judged as a whole.
   marked lines do X, given the rest of the document", it belongs in
   `changed`.
 
+For judgments with `report_scope: changed`, `report_radius` controls how far
+evidence may sit from a touched line. Set it to `0` for marked-lines-only
+checks such as `04-over-technical-docs`. This is independent of the context
+shown to the judge: `scope: file` still supplies the complete file.
+
 Findings outside the change are not discarded: they are reported as
 **advisory** and excluded from the gate.
 
@@ -96,14 +102,23 @@ or a tool whose output locates the violations:
 
 ````md
 ```tool
-command: codespell --quiet-level=2 --
+command: python3 .agents/tools/spelling.py --ignore-words=.agents/codespell-ignore.txt --
 violation_when: output_lines
+output_format: jsonl
 ```
 ````
 
-`violation_when` is `output_lines` (parse `file:line:message`) or
-`nonzero_exit`. A tool that is not installed produces an engine error, never a
-silent pass.
+`violation_when` is `output_lines` or `nonzero_exit`.
+For `output_lines`, use `output_format: jsonl`: each output line is a JSON
+object with `file` (exact input path), `line` (positive integer) and `detail`
+(string), optionally `span: [start, end]` for declaration/comment coverage.
+JSON escaping preserves filenames containing colons, whitespace or newlines.
+Built-in detectors use this format. The spelling adapter feeds each file's
+bytes to codespell through stdin and attaches its original path to each result.
+Legacy `output_format: text` (the default) accepts `file:line:message` for
+single-line filenames. Malformed records, unknown paths and invalid line/span
+bounds produce engine errors instead of being silently dropped.
+A tool that is not installed produces an engine error, never a silent pass.
 
 Keep detectors tight. A pattern that matches a hundred lines per change is a
 cost and a noise problem, and the rule selftest will flag it.
@@ -158,7 +173,9 @@ sort.Slice(statuses, func(i, j int) bool { return statuses[i].Name < statuses[j]
 ````
 
 `validate_rules.py` runs `git show <rev>:<path>` and re-anchors every
-significant line of the block near the cited line. A wrong line, an invented
+significant line of the block near the cited line, requiring exact equality
+after whitespace normalization. Elision-only lines (`...`) are skipped;
+truncating a source statement is not elision. A wrong line, an invented
 snippet or a drifting quote all fail the commit.
 
 The revision is pinned deliberately. Violation examples describe code the
@@ -247,3 +264,5 @@ a1b2c3d4e5f6a7b8: Reverse sort has no slices equivalent. (ron, 2026-11-09)
 
 Waivers expire by construction — the id contains the snippet, so changing the
 code retires the waiver automatically.
+Each reason must be a nonempty string; empty values, lists, booleans and
+numbers are rejected. Quote numeric-looking reasons if they are intended as text.

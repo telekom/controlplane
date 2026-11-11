@@ -11,6 +11,7 @@ no candidates is machine-passed and never reaches an agent.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import shlex
 import shutil
@@ -20,9 +21,6 @@ from pathlib import Path
 
 from .changeset import ChangedFile
 from .rules import Matcher, Rule
-
-TOOL_OUTPUT_PATTERN = re.compile(r"^(?P<file>[^:]+):(?P<line>\d+):(?P<rest>.*)$")
-
 
 @dataclass(frozen=True)
 class Candidate:
@@ -166,7 +164,7 @@ def _tool_candidates(
     result = subprocess.run(
         [*argv, *paths], cwd=root, capture_output=True, text=True
     )
-    output = result.stdout.strip()
+    output = result.stdout
 
     if rule.detector.violation_when == "nonzero_exit":
         if result.returncode == 0:
@@ -194,29 +192,59 @@ def _tool_candidates(
 
     candidates = []
     known = {f.path: f for f in files}
-    for line in output.splitlines():
-        match = TOOL_OUTPUT_PATTERN.match(line.strip())
-        if not match:
+    text_pattern = re.compile(
+        r"^(?P<file>" + "|".join(re.escape(p) for p in sorted(known, key=len, reverse=True))
+        + r"):(?P<line>\d+):(?P<rest>.*)$"
+    )
+    for line in output.split("\n"):
+        if not line:
             continue
-        path = match.group("file")
+        if rule.detector.output_format == "jsonl":
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise ToolUnavailable(f"{rule.id}: malformed JSON detector output: {exc}") from exc
+            if (
+                not isinstance(record, dict)
+                or not isinstance(record.get("file"), str)
+                or type(record.get("line")) is not int
+                or not isinstance(record.get("detail"), str)
+            ):
+                raise ToolUnavailable(f"{rule.id}: invalid detector record: {record!r}")
+            path, number, detail = record["file"], record["line"], record["detail"]
+            span_value = record.get("span")
+            if span_value is not None and (
+                not isinstance(span_value, list) or len(span_value) != 2
+                or any(type(n) is not int for n in span_value)
+            ):
+                raise ToolUnavailable(f"{rule.id}: invalid detector span: {span_value!r}")
+        else:
+            match = text_pattern.fullmatch(line)
+            if not match:
+                raise ToolUnavailable(f"{rule.id}: malformed detector output: {line!r}")
+            path, number, detail = match["file"], int(match["line"]), match["rest"].strip()
+            span = re.search(r" \[audit-span=(\d+)-(\d+)\]$", detail)
+            span_value = [int(span[1]), int(span[2])] if span else None
+            if span:
+                detail = detail[:span.start()]
         changed_file = known.get(path)
         if changed_file is None:
-            continue
-        number = int(match.group("line"))
+            raise ToolUnavailable(f"{rule.id}: detector reported an unknown path: {path!r}")
+        body = contents.get(path, "").splitlines()
+        if not 1 <= number <= len(body):
+            raise ToolUnavailable(f"{rule.id}: detector line outside file: {path!r}:{number}")
+        if span_value is not None and not 1 <= span_value[0] <= number <= span_value[1] <= len(body):
+            raise ToolUnavailable(f"{rule.id}: detector span outside file: {span_value!r}")
         changed = frozenset(changed_file.touched_lines)
         # A tool reports on whole files. Without this filter, touching one line
         # of a file makes you the owner of every pre-existing hit in it.
-        detail = match.group("rest").strip()
-        span = re.search(r" \[audit-span=(\d+)-(\d+)\]$", detail)
         eligible = {number}
-        if span:
-            eligible = set(range(int(span[1]), int(span[2]) + 1))
-            detail = detail[:span.start()]
+        if span_value:
+            eligible = set(range(span_value[0], span_value[1] + 1))
         if rule.report_scope == "changed" and not eligible.intersection(changed):
             continue
         if number not in changed and eligible.intersection(changed):
             number = min(eligible.intersection(changed))
-        body = contents.get(path, "").splitlines()
         anchor = body[number - 1].strip() if 0 < number <= len(body) else ""
         candidates.append(
             Candidate(

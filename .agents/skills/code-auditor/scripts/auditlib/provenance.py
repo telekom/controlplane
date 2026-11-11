@@ -136,7 +136,7 @@ def verify(root: Path, provenance: Provenance, code: str) -> str | None:
     cursor = 0
     for needle in wanted:
         for index in range(cursor, len(window)):
-            if needle in window[index]:
+            if needle == window[index]:
                 cursor = index + 1
                 break
         else:

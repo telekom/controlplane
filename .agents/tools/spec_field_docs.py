@@ -27,6 +27,7 @@ restatement.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -88,6 +89,11 @@ def _serialised(tag: str | None) -> bool:
         return True
     name, _, options = match.group("value").partition(",")
     return name != "-" and "inline" not in options.split(",")
+
+
+def _ignored(tag: str | None) -> bool:
+    match = JSON_TAG.search(tag or "")
+    return bool(match and match["value"].split(",")[0] == "-")
 
 
 def _prose(comments: list[str]) -> str:
@@ -179,7 +185,7 @@ def parse_structs(path: Path) -> list[Struct]:
                     Field(
                         name=name,
                         line=number,
-                        type_names=type_names,
+                        type_names=[] if _ignored(field_match.group("tag")) else type_names,
                         documented=bool(prose),
                         serialised=_serialised(field_match.group("tag")),
                         prose=prose,
@@ -199,7 +205,10 @@ def parse_structs(path: Path) -> list[Struct]:
                 Field(
                     name="",
                     line=number,
-                    type_names=_type_names(embedded.group("type")),
+                    type_names=(
+                        [] if _ignored(embedded.group("tag"))
+                        else _type_names(embedded.group("type"))
+                    ),
                     documented=True,
                     serialised=False,
                 )
@@ -236,7 +245,7 @@ def spec_structs(directory: Path) -> dict[str, Struct]:
     return reached
 
 
-def report(paths: list[str], thin: bool) -> list[str]:
+def findings(paths: list[str], thin: bool) -> list[dict]:
     """Undocumented spec fields, or with ``thin`` the documented ones whose prose
     adds at most ``THIN_NOVEL_WORDS`` words to the field name and type."""
     out = []
@@ -260,22 +269,34 @@ def report(paths: list[str], thin: bool) -> list[str]:
                     state = "has no purpose comment"
                 else:
                     continue
-                out.append(
-                    f"{raw}:{item.line}: spec field {struct.name}.{item.name} {state}"
-                    f" [audit-span={item.comment_start or item.line}-{item.line}]"
-                )
-    return sorted(
-        out, key=lambda entry: (entry.split(":")[0], int(entry.split(":")[1]))
-    )
+                out.append({
+                    "file": raw, "line": item.line,
+                    "detail": f"spec field {struct.name}.{item.name} {state}",
+                    "span": [item.comment_start or item.line, item.line],
+                })
+    return sorted(out, key=lambda entry: (entry["file"], entry["line"]))
+
+
+def report(paths: list[str], thin: bool) -> list[str]:
+    return [
+        f"{f['file']}:{f['line']}: {f['detail']}"
+        f" [audit-span={f['span'][0]}-{f['span'][1]}]"
+        for f in findings(paths, thin)
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--thin", action="store_true")
+    parser.add_argument("--jsonl", action="store_true")
     parser.add_argument("files", nargs="*")
     args = parser.parse_args(argv)
-    for entry in report(args.files, args.thin):
-        print(entry)
+    if args.jsonl:
+        for entry in findings(args.files, args.thin):
+            print(json.dumps(entry))
+    else:
+        for entry in report(args.files, args.thin):
+            print(entry)
     return 0
 
 

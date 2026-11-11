@@ -20,9 +20,13 @@ cannot, and every answer you give is machine-verified before it counts.
 
 ## Auditing a submodule
 
+Resolve the audited Git root as `REPO_ROOT` and the rules-owning root as
+`CONFIG_ROOT`, both absolute paths. Set `SCRIPTS_DIR` to
+`<CONFIG_ROOT>/.agents/skills/code-auditor/scripts` and `VIEWER_PATH` to
+`<SCRIPTS_DIR>/show_work_unit.py`; verify those scripts exist before running.
+Run every command from `REPO_ROOT` and pass `--config-root "$CONFIG_ROOT"`.
 When the change lives in a submodule whose rules sit in the enclosing
-workspace, run every script below from the submodule and pass
-`--config-root <workspace>` to each of them, including `show_work_unit.py`.
+workspace, `CONFIG_ROOT` is that workspace.
 State then lives in `<workspace>/.agents/.audit/repos/<submodule>/` instead
 of `.agents/.audit/`. See "Shared configuration" in `scripts/README.md`.
 
@@ -69,9 +73,9 @@ for every regeneration after fixes; change it only on user direction.
 Run the command for the selected scope:
 
 ```bash
-python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode local
-python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode staged
-python3 .agents/skills/code-auditor/scripts/create_audit_report.py --mode range --base origin/<target> --revision <head-commit>
+python3 "$SCRIPTS_DIR/create_audit_report.py" --config-root "$CONFIG_ROOT" --mode local
+python3 "$SCRIPTS_DIR/create_audit_report.py" --config-root "$CONFIG_ROOT" --mode staged
+python3 "$SCRIPTS_DIR/create_audit_report.py" --config-root "$CONFIG_ROOT" --mode range --base origin/<target> --revision <head-commit>
 ```
 
 Run only the selected command, not all three. The CLI requires an explicit
@@ -90,7 +94,8 @@ The judge is pinned in `.agents/judges.yaml` and recorded in every receipt.
 Never set `AUDIT_MODEL`: the model driving this session is not the model that
 answers, and a receipt naming the wrong one is worse than no receipt.
 
-Read `.agents/.audit/report.json`. If `stats.items_pending` is `0`, skip to
+Read `report.json` from the state directory recorded above. If
+`stats.items_pending` is `0`, skip to
 step 4 — everything was settled deterministically.
 
 If `errors` is non-empty a detector tool is missing. Report that to the user;
@@ -104,7 +109,9 @@ Start one subagent per work unit, in parallel, each with:
 
 - the judge agent named by the report: `audit-judge-<judge>`. If this harness
   has no such agent, stop and tell the user; never fall back to another model.
-- its `unit_id`
+- its `unit_id` as `UNIT_ID`, plus the resolved `VIEWER_PATH`, `REPO_ROOT`
+  and `CONFIG_ROOT`. Include the exact quoted viewer invocation with these
+  paths in each dispatch, including selftest dispatches.
 
 The persona and the pinned model live in those agent definitions, generated
 from `.agents/judges.yaml`. Do not paste the persona into the prompt and do
@@ -113,7 +120,8 @@ not name a model yourself: a model you type is a model nobody verified.
 A subagent must never read `report.json`. It runs:
 
 ```bash
-python3 .agents/skills/code-auditor/scripts/show_work_unit.py '<unit_id>'
+cd "$REPO_ROOT"
+python3 "$VIEWER_PATH" "$UNIT_ID" --config-root "$CONFIG_ROOT"
 ```
 
 which prints only its own rule, examples, frozen context and questions.
@@ -124,7 +132,7 @@ fresh context on purpose.
 
 ### 3. Collect the verdicts
 
-Merge every subagent's answers into `.agents/.audit/verdicts.json`:
+Merge every subagent's answers into `verdicts.json` beside that report:
 
 ```json
 {
@@ -145,7 +153,7 @@ Merge every subagent's answers into `.agents/.audit/verdicts.json`:
 ### 4. Settle
 
 ```bash
-python3 .agents/skills/code-auditor/scripts/process_audit_report.py --fail-on HIGH
+python3 "$SCRIPTS_DIR/process_audit_report.py" --config-root "$CONFIG_ROOT" --fail-on HIGH
 ```
 
 Exit `0` is clean, `1` means findings, `2` means the audit was **rejected** —

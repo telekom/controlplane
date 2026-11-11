@@ -31,6 +31,7 @@ passed.
 ## Detect
 
 ```tool
-command: codespell --quiet-level=2 --ignore-words=.agents/codespell-ignore.txt --
+command: python3 .agents/tools/spelling.py --ignore-words=.agents/codespell-ignore.txt --
 violation_when: output_lines
+output_format: jsonl
 ```
