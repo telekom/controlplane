@@ -22,6 +22,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,6 +57,27 @@ class AuditContext:
 
     def describe(self) -> dict:
         return {"repo_root": str(self.repo_root), "config_root": str(self.config_root)}
+
+
+@contextmanager
+def snapshot_config(context: AuditContext, tree: Path):
+    """Use repository-owned config from the tree; freeze external config once."""
+    if not context.shared:
+        yield tree
+        return
+    with tempfile.TemporaryDirectory(prefix="code-audit-config-") as directory:
+        root = Path(directory)
+        shutil.copytree(
+            context.config_root / ".agents", root / ".agents",
+            ignore=shutil.ignore_patterns(".audit", "__pycache__", ".ruff_cache"),
+        )
+        yield root
+
+
+def config_hash(root: Path) -> str:
+    return changeset.tree_hash(
+        root / ".agents", exclude=(".audit", "__pycache__", ".ruff_cache")
+    )
 
 
 def add_argument(parser: argparse.ArgumentParser) -> None:

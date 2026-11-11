@@ -350,7 +350,7 @@ class SharedConfigTest(unittest.TestCase):
     def test_without_config_root_the_subrepo_has_no_rules(self) -> None:
         result = self.create()
         self.assertEqual(result.returncode, 2)
-        self.assertIn("controlplane/.agents/judges.yaml is missing", result.stderr)
+        self.assertIn(".agents/judges.yaml is missing", result.stderr)
 
     def test_config_root_without_judges_is_rejected(self) -> None:
         (self.workspace / ".agents" / "judges.yaml").unlink()

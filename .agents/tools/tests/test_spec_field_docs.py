@@ -93,10 +93,42 @@ class SpecFieldDocsTest(unittest.TestCase):
                 "WidgetSpec.Mode",
                 "WidgetSpec.Inner",
                 "WidgetSpec.Anon",
+                "WidgetSpec.Anon.Nested",
                 "InnerConfig.Url",
                 "InnerConfig.Refs",
             ],
         )
+
+    def test_documented_anonymous_parent_still_checks_nested_fields(self) -> None:
+        self.path.write_text(
+            'package v1\n\ntype WidgetSpec struct {\n'
+            '\t// Anon configures nested behavior.\n\tAnon struct {\n'
+            '\t\t// +optional\n\t\tNested string `json:"nested"`\n'
+            '\t} `json:"anon"`\n}\n',
+            encoding="utf-8",
+        )
+        entries = spec_field_docs.report([str(self.path)], False)
+        self.assertEqual(len(entries), 1)
+        self.assertIn("WidgetSpec.Anon.Nested", entries[0])
+        self.assertIn("[audit-span=6-7]", entries[0])
+
+    def test_ignored_anonymous_struct_does_not_expose_children(self) -> None:
+        self.path.write_text(
+            'package v1\n\ntype WidgetSpec struct {\n'
+            '\tAnon struct {\n\t\tNested string `json:"nested"`\n'
+            '\t} `json:"-"`\n}\n',
+            encoding="utf-8",
+        )
+        self.assertEqual(self.fields(False), [])
+
+    def test_inlined_anonymous_struct_still_exposes_children(self) -> None:
+        self.path.write_text(
+            'package v1\n\ntype WidgetSpec struct {\n'
+            '\tAnon struct {\n\t\tNested string `json:"nested"`\n'
+            '\t} `json:",inline"`\n}\n',
+            encoding="utf-8",
+        )
+        self.assertEqual(self.fields(False), ["WidgetSpec.Anon.Nested"])
 
     def test_thin_reports_name_restatements_only(self) -> None:
         self.assertEqual(

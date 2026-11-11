@@ -57,7 +57,11 @@ To get started with `pre-commit`, follow these steps:
 
 - **Install `pre-commit`**: 
 
-  You can install it using `pip` with the command `pip install pre-commit`. For more details, refer to [the `pre-commit` installation instructions](https://pre-commit.com/#install).
+  Install `pre-commit` and `codespell` with `pip install pre-commit codespell`
+  (or your package manager), and ensure both commands are on `PATH` in your
+  terminal and Git client. The system-language audit hooks and agent sessions
+  need `codespell`; pre-commit does not install it for them.
+  For more details, refer to [the `pre-commit` installation instructions](https://pre-commit.com/#install).
 
 - **Activate `pre-commit` in the repository**: 
 
@@ -67,7 +71,8 @@ To get started with `pre-commit`, follow these steps:
   pre-commit install
   ```
 
-  This will check the `.pre-commit-config.yaml` file and install the needed dependencies for this repository.
+  This installs the configured Git hooks. Hook-managed dependencies are
+  installed on first use; system-language dependencies must already be on `PATH`.
 
 This installs pre-commit, commit-msg and pre-push hooks. Re-run it in existing
 checkouts to install the new pre-push gate. The audit gate is independent of
@@ -76,6 +81,17 @@ Run the `code-auditor` skill before committing or pushing and specify local,
 staged, or branch/PR scope; it asks when the scope is unclear. For partial
 staging generate a staged audit; before pushing review the committed branch
 against its target. Model-backed cold CI auditing is planned, not enforced.
+
+For a PR targeting a non-default branch, configure the same target for both
+the branch audit and push hook:
+
+```bash
+git config branch.<your-branch>.auditTarget origin/<target-branch>
+```
+
+The configured ref must be fetched. `AUDIT_TARGET=origin/<target-branch>`
+overrides the configured target for an individual audit or push. Without a
+configured target, the repository's default branch is used.
 
 You may also manually run it with the following command:
 

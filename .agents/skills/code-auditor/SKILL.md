@@ -50,7 +50,12 @@ For a PR, read its target branch and head commit from PR metadata (for example
 verify that the repository contains that head. Pass the target ref with
 `--base` and the head commit with `--revision`. Do not assume the target is
 `main`. For a branch review without a specified target, use the repository's
-default branch; ask if it cannot be resolved.
+configured audit target or default branch; ask if it cannot be resolved.
+When the reviewed tip is the current branch's `HEAD`, align its push hook
+with the selected target using
+`git config branch.<current-branch>.auditTarget <target-ref>`.
+For another tip, leave the current branch's configuration unchanged.
+See "Snapshot and receipt contract" in `scripts/README.md` for target precedence.
 
 Include branch changes **and** local edits only when explicitly requested
 (`--mode worktree --base <target>`). This combined scope is not a fallback.
@@ -74,6 +79,10 @@ mode and prints the resolved comparison. Check that the recorded `mode`,
 `base` and `comparison` in the report match the announced scope.
 Detectors and evidence validation use the chosen frozen snapshot, including
 package context.
+Repository-owned rules, waivers, judges and detector inputs come from that
+snapshot too. For a staged audit, stage intended configuration changes first;
+for a branch audit, commit them first. Shared configuration is frozen and
+content-bound to receipts. Ensure `codespell` is on `PATH` before auditing.
 Regenerating the report resets its verdict file; reusable judgments come
 from the separate cache.
 

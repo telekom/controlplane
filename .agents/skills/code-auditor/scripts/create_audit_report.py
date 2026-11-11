@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from auditlib import changeset, detect, report as reportlib, rules as rulelib  # noqa: E402
 from auditlib import judges as judgelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
+from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.store import (  # noqa: E402
     VerdictCache,
@@ -70,32 +71,37 @@ def build(
         else changeset.merge_base(root, tip, target=base)
     )
     comparison = {
-        "target": base,
+        "target": (
+            base or changeset.target_branch(root)
+            if mode in ("range", "worktree") else None
+        ),
         "base": comparison_base,
         "revision": tip if mode == "range" else (
             "INDEX" if mode == "staged" else "WORKTREE"
         ),
     }
     if announce:
-        target = f" (target {base})" if base else ""
+        target = f" (target {comparison['target']})" if comparison["target"] else ""
         print(
             f"Scope: {mode}{target}; "
             f"{comparison_base} -> {comparison['revision']}",
             flush=True,
         )
     with changeset.snapshot(root, mode, tip) as tree:
-        return _build(context, mode, tree, comparison, tip)
+        with snapshot_config(context, tree) as config:
+            return _build(context, mode, tree, comparison, tip, config)
 
 
 def _build(
     context: AuditContext, mode: str, input_tree: Path,
-    comparison: dict, revision: str,
+    comparison: dict, revision: str, config: Path,
 ) -> dict:
     root = context.repo_root
-    judge = judgelib.load(context.config_root).resolve()
+    configuration_hash = config_hash(config)
+    judge = judgelib.load(config).resolve()
     model = judge.pin
     rules = rulelib.load_index(
-        context.config_root, context.audit_dir / "rules.index.json"
+        config, context.audit_dir / "rules.index.json"
     )
     base = comparison["base"]
     files = changeset.collect(root, mode=mode, base=base, revision=revision)
@@ -107,7 +113,7 @@ def _build(
     }
 
     cache = VerdictCache(context.audit_dir)
-    waivers = Waivers(context.config_root)
+    waivers = Waivers(config)
 
     items: list[reportlib.Item] = []
     rules_summary: list[dict] = []
@@ -175,7 +181,7 @@ def _build(
             )
             for check in checks:
                 ident = reportlib.item_id(
-                    rule.id, check.slug, candidate.file, candidate.normalized_anchor
+                    rule.id, check.slug, candidate.file, candidate.occurrence_anchor
                 )
                 item = reportlib.Item(
                     item_id=ident,
@@ -226,7 +232,8 @@ def _build(
                     }
                 else:
                     key = verdict_key(
-                        rule.content_hash, candidate.judgment_key + check.slug, model
+                        rule.content_hash, candidate.judgment_key + check.slug, model,
+                        configuration_hash,
                     )
                     cached = cache.get(key)
                     if cached:
@@ -288,6 +295,7 @@ def _build(
         "judge": judge.complexity,
         "context": context.describe(),
         "comparison": comparison,
+        "config_hash": configuration_hash,
         "tree_hash": changeset.tree_hash(input_tree),
         "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.complexity > 0},
     }

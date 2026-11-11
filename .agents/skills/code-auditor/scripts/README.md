@@ -79,8 +79,8 @@ when the prompt does not specify one:
 For report generation, `--base TARGET` selects the target branch for `range`
 or `worktree`, and `--revision REF` selects the committed tip for `range`
 (default `HEAD`). The comparison starts at their **merge base**, not the
-target's tip. Without `--base`, the repository's default target is used,
-never the feature branch's tracking ref. For a PR, obtain the actual target
+target's tip. Without `--base`, the configured target or repository default is
+used, never the feature branch's tracking ref. For a PR, obtain the actual target
 and head commit from PR metadata and pass both explicitly.
 Local/staged modes reject `--base` and `--revision`; worktree rejects
 `--revision`. Reports record resolved endpoints under `comparison` and `base`.
@@ -88,20 +88,47 @@ Local/staged modes reject `--base` and `--revision`; worktree rejects
 The push gate's `--mode range` exports committed content, ignoring local edits.
 Unlike report generation, the gate's `--base` is an exact comparison commit;
 its `--revision` is the committed tip.
+The gate also accepts `--target REF` to compute a merge base. Both report and
+gate use this target precedence: explicit `--base` (report) / `--target`
+(gate), `AUDIT_TARGET`, `branch.<current-branch>.auditTarget`, `audit.target`,
+then the default branch. The gate's exact `--base` overrides target selection.
+For a non-default PR target, set the branch-specific Git configuration so an
+ordinary `git push` checks the same range as the report:
+
+```bash
+git config branch.<your-branch>.auditTarget origin/<target-branch>
+```
+
+Fetch the configured target before auditing. No network lookup runs in hooks.
 Detector tools run inside these isolated trees with package context intact.
 Evidence is verified against the recorded blobs in Git's object store.
+Index and committed snapshots export raw Git blobs, without EOL/smudge filters
+or archive attributes. Renames are compared as deletions plus additions, so
+rules newly applicable at the destination run. Quoted and untracked paths
+retain their exact filenames.
+
+Repository-owned rules, judges, waivers, detector scripts and data come from
+the selected snapshot, not the live checkout. An external shared configuration
+is copied once per run; its full `.agents` content hash (excluding audit state
+and Python/linter caches) binds judgments and receipts. Changing shared tools,
+data or waivers therefore requires another audit.
 
 Judgment reuse includes the file path, numbered context, change markers and
 detector detail. Receipts additionally bind to the file's changed-line scope
 and complete dependency tree hash. Only applicable file/rule pairs receive
-receipts. Schema 3 invalidates older reports and receipts; regenerate them.
+receipts. Schema 4 invalidates older reports and receipts; regenerate them.
 Both deterministic checks and model judgments honor `auditignore`.
+Finding IDs include the occurrence's line and detector detail; document-level
+candidates also include a content fingerprint. A waiver covers one occurrence
+in that content, rather than every matching line or every future document edit.
+Cached findings recalculate scope from their evidence just like fresh answers.
 
 Deletion boundaries count as touched lines. Judgment detectors discover
 triggers within `context_lines` of edits, including deletions, while
 file-scoped judgments receive the complete file. Evidence in that affected
 window can block; distant pre-existing findings remain advisory. Spec-field
 tools report a declaration/comment span so comment-only changes are covered.
+Serialized fields inside anonymous structs are included, with their own spans.
 
 Missing tools, crashes and invalid receipts are engine errors, never passes.
 `output_lines` tools must exit 0; codespell's documented findings status 65
@@ -109,6 +136,9 @@ is also accepted. A report containing errors cannot write receipts.
 Regenerating a report resets `verdicts.json`; reusable judgments live in the
 separate context-addressed cache.
 
+Install `pre-commit` and `codespell` (for example `pip install pre-commit codespell`)
+and ensure both are on `PATH` for Git hooks and audit sessions. The hooks use
+`language: system`, so pre-commit does not install codespell for them.
 Run `pre-commit install` to install pre-commit, commit-msg and pre-push hooks.
 Model-backed cold CI auditing is planned and is not currently enforced.
 

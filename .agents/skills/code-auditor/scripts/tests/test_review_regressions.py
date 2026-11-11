@@ -135,7 +135,7 @@ class IntegrityTest(unittest.TestCase):
         receipts.put(
             store.receipt_key(
                 file["blob_sha"], rule["content_hash"], report["model"], file["path"],
-                tuple(file["changed_lines"]), report["tree_hash"],
+                tuple(file["changed_lines"]), report["tree_hash"], report["config_hash"],
             ), rule["id"], file["path"], "ERROR", "HIGH",
         )
         receipts.save()

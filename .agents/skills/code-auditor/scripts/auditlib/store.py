@@ -78,9 +78,11 @@ def audited_model(directory: Path, config_root: Path) -> str:
     raise judges.JudgeError("the audited judge pin changed or was removed; re-run the audit")
 
 
-def verdict_key(rule_content_hash: str, normalized_anchor: str, model: str) -> str:
+def verdict_key(
+    rule_content_hash: str, normalized_anchor: str, model: str, config: str = "",
+) -> str:
     digest = hashlib.sha256()
-    for part in (rule_content_hash, normalized_anchor, model):
+    for part in (rule_content_hash, normalized_anchor, model, config):
         digest.update(part.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()[:16]
@@ -89,11 +91,12 @@ def verdict_key(rule_content_hash: str, normalized_anchor: str, model: str) -> s
 def receipt_key(
     blob_sha: str, rule_content_hash: str, model: str,
     path: str = "", changed_lines: tuple[int, ...] = (), tree: str = "",
+    config: str = "",
 ) -> str:
     digest = hashlib.sha256()
     for part in (
-        "receipt-v2", path, blob_sha, rule_content_hash, model,
-        ",".join(map(str, changed_lines)), tree,
+        "receipt-v3", path, blob_sha, rule_content_hash, model,
+        ",".join(map(str, changed_lines)), tree, config,
     ):
         digest.update(part.encode("utf-8"))
         digest.update(b"\0")

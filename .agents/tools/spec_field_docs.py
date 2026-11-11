@@ -117,12 +117,13 @@ def is_thin(item: Field) -> bool:
 
 
 def parse_structs(path: Path) -> list[Struct]:
-    """Every top-level struct in a Go file, with its direct fields."""
+    """Top-level and anonymous structs, linked through their field types."""
     lines = path.read_text(encoding="utf-8").splitlines()
     structs: list[Struct] = []
     current: Struct | None = None
     depth = 0
     comments: list[str] = []
+    parents: list[tuple[Struct, list[Field]]] = []
 
     for number, raw in enumerate(lines, start=1):
         line = raw.rstrip()
@@ -136,9 +137,21 @@ def parse_structs(path: Path) -> list[Struct]:
 
         stripped = line.strip()
         opened, closed = stripped.count("{"), stripped.count("}")
-        if depth == 1 and stripped == "}":
+        if depth == 1 and stripped.startswith("}"):
             structs.append(current)
-            current = None
+            if parents:
+                parent, anonymous_fields = parents.pop()
+                tag = re.search(r"`[^`]*`", stripped)
+                json_tag = JSON_TAG.search(tag[0]) if tag else None
+                for item in anonymous_fields:
+                    item.serialised = _serialised(tag[0] if tag else None)
+                    if json_tag and json_tag["value"].split(",")[0] == "-":
+                        item.type_names = []
+                current = parent
+                depth = 1
+            else:
+                current = None
+            comments = []
             continue
         if depth > 1:
             depth += opened - closed
@@ -155,12 +168,18 @@ def parse_structs(path: Path) -> list[Struct]:
         if field_match:
             trailing = field_match.group("trailing")
             prose = _prose(comments + ([trailing] if trailing else []))
+            anonymous_fields = []
+            anonymous = re.search(r"\bstruct\s*\{\s*$", field_match.group("type"))
             for name in re.split(r"\s*,\s*", field_match.group("names")):
+                type_names = (
+                    [f"{current.name}.{name}"] if anonymous
+                    else _type_names(field_match.group("type"))
+                )
                 current.fields.append(
                     Field(
                         name=name,
                         line=number,
-                        type_names=_type_names(field_match.group("type")),
+                        type_names=type_names,
                         documented=bool(prose),
                         serialised=_serialised(field_match.group("tag")),
                         prose=prose,
@@ -168,6 +187,13 @@ def parse_structs(path: Path) -> list[Struct]:
                         comment_start=number - len(comments),
                     )
                 )
+                anonymous_fields.append(current.fields[-1])
+            if anonymous:
+                parents.append((current, anonymous_fields))
+                current = Struct(anonymous_fields[0].type_names[0], path)
+                comments = []
+                depth = 1
+                continue
         elif embedded:
             current.fields.append(
                 Field(

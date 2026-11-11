@@ -86,10 +86,10 @@ no subagents at all.
 Everything is keyed on content, never on a timestamp or a run id.
 
 ```
-item_id     = sha256(rule_id, check_slug, file, normalized_anchor)
+item_id     = sha256(rule_id, check_slug, file, line + normalized_anchor + detector_detail)
 judgment_key = sha256(file, normalized_anchor, numbered_context, detector_detail)
-verdict_key  = sha256(rule_content_hash, judgment_key + check_slug, model)
-receipt_key  = sha256(version, file, blob_sha, rule_content_hash, model, changed_lines, tree_hash)
+verdict_key  = sha256(rule_content_hash, judgment_key + check_slug, model, config_hash)
+receipt_key  = sha256(version, file, blob_sha, rule_content_hash, model, changed_lines, tree_hash, config_hash)
 ```
 
 Context includes change markers. File-scoped judgments receive the complete
@@ -109,6 +109,15 @@ Branch/PR reports resolve the merge base with the specified target, or the
 default branch when unspecified, never the feature branch's tracking ref.
 PR targets come from PR metadata. Report `comparison` records the selected
 target and resolved endpoints.
+Configure `branch.<branch>.auditTarget` for non-default targets so the push
+hook and report use the same merge base; `AUDIT_TARGET` overrides this per run.
+
+Raw blobs are exported without checkout conversions or archive attributes.
+Repository-owned rules, judges, waivers and detector inputs come from the
+selected snapshot. Shared configuration is frozen once and its content hash
+binds both cached judgments and receipts. Document-level anchors include a
+content fingerprint; occurrence-specific item IDs prevent waivers from
+covering unrelated matches. Cached evidence is scoped again when settled.
 
 This single decision buys four properties at once:
 

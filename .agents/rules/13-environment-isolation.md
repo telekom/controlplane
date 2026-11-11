@@ -3,7 +3,7 @@ id: 13-environment-isolation
 description: Raw-client reads and writes outside the ScopedClient must stay within one environment.
 severity: CRITICAL
 complexity: 1
-scope: line
+scope: file
 applies_to:
   - "**/internal/**/*.go"
 exclude:
@@ -20,6 +20,10 @@ every CustomResource carries `cconfig.EnvironmentLabelKey`, and every read and
 write must be restricted to a single environment. A list that leaks across
 environments enqueues, reads or mutates another tenant's objects — nothing
 fails, the data is just wrong, so this is caught at review time.
+
+Review all detected calls in the file together. Each check reports one finding
+per file per pass; after a fix, rerun the audit to expose any remaining calls.
+Findings outside the affected change window remain advisory.
 
 `cclient.NewScopedClient` enforces the label automatically. Code that uses the
 raw manager client instead — `r.List`, `r.Get`, `r.Client.*`,
@@ -42,7 +46,7 @@ environment-scoped. Undocumented exceptions are violations.
 ## Detect
 
 ```regex
-(\b(r|v)\.((Client|client)\.)?(List|Get|Create|Update|Patch|Delete)\(ctx|mgr\.GetClient\(\))
+(\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\.(List|Get|Create|Update|Patch|Delete)\(\s*ctx\b|mgr\.GetClient\(\))
 ```
 
 ## Checks

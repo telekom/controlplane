@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from auditlib import changeset, detect, rules as rulelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
+from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.report import SEVERITY_RANK  # noqa: E402
 from auditlib.report import item_id  # noqa: E402
@@ -45,7 +46,9 @@ SKILL_HINT = "Run the code-auditor skill, then commit again."
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("staged", "range"), default="staged")
-    parser.add_argument("--base", help="committed comparison base (range mode)")
+    comparison = parser.add_mutually_exclusive_group()
+    comparison.add_argument("--base", help="exact committed comparison base (range mode)")
+    comparison.add_argument("--target", help="target branch/ref; compare from its merge base")
     parser.add_argument(
         "--revision", default=os.environ.get("PRE_COMMIT_TO_REF") or "HEAD",
         help="committed tip (range mode; defaults to the pushed ref or HEAD)",
@@ -56,6 +59,8 @@ def main() -> int:
     parser.add_argument("paths", nargs="*", help="ignored; accepted for pre-commit")
     add_argument(parser)
     args = parser.parse_args()
+    if args.mode != "range" and (args.base or args.target):
+        parser.error("--base and --target require --mode range")
 
     if os.environ.get("AUDIT_GATE", "").lower() in ("off", "0", "false"):
         print("audit-gate: disabled via AUDIT_GATE")
@@ -67,18 +72,27 @@ def main() -> int:
         print(f"audit-gate: {exc}", file=sys.stderr)
         return 2
     try:
+        if args.mode == "range":
+            args.revision = changeset.commit(context.repo_root, args.revision)
+            args.base = (
+                changeset.commit(context.repo_root, args.base) if args.base
+                else changeset.merge_base(context.repo_root, args.revision, args.target)
+            )
         with changeset.snapshot(context.repo_root, args.mode, args.revision) as tree:
-            return check(context, args, tree)
+            with snapshot_config(context, tree) as config:
+                return check(context, args, tree, config)
     except changeset.GitError as exc:
         print(f"audit-gate: {exc}", file=sys.stderr)
         return 2
 
 
-def check(context: AuditContext, args: argparse.Namespace, tree: Path) -> int:
+def check(
+    context: AuditContext, args: argparse.Namespace, tree: Path, config: Path,
+) -> int:
     root = context.repo_root
     try:
         rules = rulelib.load_index(
-            context.config_root, context.audit_dir / "rules.index.json"
+            config, context.audit_dir / "rules.index.json"
         )
     except rulelib.RuleError as exc:
         print(f"audit-gate: the rule corpus is invalid.\n{exc}", file=sys.stderr)
@@ -96,14 +110,15 @@ def check(context: AuditContext, args: argparse.Namespace, tree: Path) -> int:
         for f in files
     }
     tree_hash = changeset.tree_hash(tree)
-    waivers = Waivers(context.config_root)
+    configuration_hash = config_hash(config)
+    waivers = Waivers(config)
     if waivers.errors:
         print("\n".join(waivers.errors), file=sys.stderr)
         return 2
 
     threshold = SEVERITY_RANK[args.fail_on]
     try:
-        model = audited_model(context.audit_dir, context.config_root)
+        model = audited_model(context.audit_dir, config)
     except JudgeError as exc:
         print(f"audit-gate: cannot tell which judge to expect.\n{exc}", file=sys.stderr)
         return 2
@@ -122,7 +137,7 @@ def check(context: AuditContext, args: argparse.Namespace, tree: Path) -> int:
             try:
                 for candidate in detect.run(rule, files, tree, contents):
                     ident = item_id(
-                        rule.id, "violation", candidate.file, candidate.normalized_anchor
+                        rule.id, "violation", candidate.file, candidate.occurrence_anchor
                     )
                     if waivers.get(ident):
                         continue
@@ -139,7 +154,7 @@ def check(context: AuditContext, args: argparse.Namespace, tree: Path) -> int:
         for file in scoped:
             receipt = receipts.get(receipt_key(
                 file.blob_sha, rule.content_hash, model, file.path,
-                file.touched_lines, tree_hash,
+                file.touched_lines, tree_hash, configuration_hash,
             ))
             if receipt is None:
                 missing.setdefault(file.path, set()).add(rule.id)

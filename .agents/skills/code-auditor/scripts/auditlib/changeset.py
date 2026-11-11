@@ -26,11 +26,10 @@ Four explicit modes exist and they must never be conflated:
 from __future__ import annotations
 
 import hashlib
-import io
+import os
 import re
 import shutil
 import subprocess
-import tarfile
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -78,6 +77,7 @@ def merge_base(
     root: Path, revision: str = "HEAD", target: str | None = None,
 ) -> str:
     """Resolve the base commit the change should be measured against."""
+    target = target or target_branch(root)
     if target is not None:
         return git(root, "merge-base", commit(root, target), commit(root, revision)).strip()
     head = git(root, "symbolic-ref", "refs/remotes/origin/HEAD", check=False).strip()
@@ -87,6 +87,19 @@ def merge_base(
         if base:
             return base
     raise GitError("cannot resolve a target branch; set origin/HEAD or fetch origin/main")
+
+
+def target_branch(root: Path) -> str | None:
+    """Explicit target overrides the branch's configured target."""
+    override = os.environ.get("AUDIT_TARGET", "").strip()
+    if override:
+        return override
+    branch = git(root, "symbolic-ref", "--short", "HEAD", check=False).strip()
+    if branch:
+        target = git(root, "config", "--get", f"branch.{branch}.auditTarget", check=False).strip()
+        if target:
+            return target
+    return git(root, "config", "--get", "audit.target", check=False).strip() or None
 
 
 @dataclass(frozen=True)
@@ -110,7 +123,19 @@ def _added_lines(diff: str, include_deletions: bool = False) -> dict[str, list[i
     current: str | None = None
     for line in diff.splitlines():
         if line.startswith("+++ "):
-            target = line[4:].strip()
+            target = line[4:].removesuffix("\t")
+            if target.startswith('"'):
+                escapes = {
+                    b"a": b"\a", b"b": b"\b", b"f": b"\f", b"n": b"\n",
+                    b"r": b"\r", b"t": b"\t", b"v": b"\v",
+                    b'"': b'"', b"\\": b"\\",
+                }
+                raw = re.sub(
+                    rb'\\([0-7]{1,3}|[abfnrtv"\\])',
+                    lambda m: bytes([int(m[1], 8)]) if m[1][:1].isdigit() else escapes[m[1]],
+                    target[1:-1].encode("utf-8"),
+                )
+                target = os.fsdecode(raw)
             current = None if target == "/dev/null" else target[2:]
             if current:
                 result.setdefault(current, [])
@@ -133,7 +158,7 @@ def _blob_sha(root: Path, path: str, staged: bool) -> str:
     absolute = root / path
     if not absolute.is_file():
         return ""
-    return git(root, "hash-object", "--", path).strip()
+    return git(root, "hash-object", "--no-filters", "--", path).strip()
 
 
 def collect(
@@ -158,15 +183,15 @@ def collect(
     else:
         raise ValueError(f"unknown changeset mode: {mode}")
 
-    diff = git(root, *diff_args)
+    diff = git(root, "-c", "core.quotePath=true", *diff_args, "--no-renames", "--no-textconv")
     added = _added_lines(diff)
     touched = _added_lines(diff, include_deletions=True)
 
     if mode in ("local", "worktree"):
         # Untracked files are part of the change too; a brand new controller
         # must not escape the audit just because it was never added.
-        untracked = git(root, "ls-files", "--others", "--exclude-standard").split("\n")
-        for path in (p.strip() for p in untracked):
+        untracked = git(root, "ls-files", "-z", "--others", "--exclude-standard").split("\0")
+        for path in untracked:
             if not path or path in added or path.startswith(".agents/.audit/"):
                 continue
             try:
@@ -178,7 +203,7 @@ def collect(
 
     files = []
     committed = (
-        set(git(root, "ls-tree", "-r", "--name-only", revision).splitlines())
+        set(git(root, "ls-tree", "-rz", "--name-only", revision).split("\0"))
         if mode == "range" else set()
     )
     for path in sorted(added):
@@ -217,16 +242,8 @@ def snapshot(root: Path, mode: str, revision: str = "HEAD"):
     """Export a complete, isolated tree, including detector package context."""
     with tempfile.TemporaryDirectory(prefix="code-audit-") as directory:
         target = Path(directory)
-        if mode == "staged":
-            git(root, "checkout-index", "--all", f"--prefix={target}/")
-        elif mode == "range":
-            archive = subprocess.run(
-                ["git", "archive", revision], cwd=root, capture_output=True
-            )
-            if archive.returncode:
-                raise GitError(f"cannot snapshot {revision}: {archive.stderr.decode().strip()}")
-            with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tree:
-                tree.extractall(target, filter="data")
+        if mode in ("staged", "range"):
+            _export_blobs(root, target, mode, revision)
         else:
             paths = git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
             for name in paths.split("\0"):
@@ -238,6 +255,52 @@ def snapshot(root: Path, mode: str, revision: str = "HEAD"):
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(source, destination)
         yield target
+
+
+def _export_blobs(root: Path, target: Path, mode: str, revision: str) -> None:
+    """Export raw blobs, without checkout filters or archive attributes."""
+    entries = git(
+        root, *(
+            ("ls-files", "--stage", "-z") if mode == "staged"
+            else ("ls-tree", "-rz", revision)
+        )
+    )
+    blobs = []
+    for entry in entries.split("\0"):
+        if not entry:
+            continue
+        metadata, name = entry.split("\t", 1)
+        parts = metadata.split()
+        file_mode, oid, stage = (
+            parts if mode == "staged" else (parts[0], parts[2], "0")
+        )
+        if stage != "0":
+            raise GitError(f"cannot audit an unresolved index entry: {name}")
+        if file_mode == "160000":
+            continue
+        if not name.startswith(".agents/.audit/"):
+            blobs.append((name, oid, file_mode))
+    result = subprocess.run(
+        ["git", "cat-file", "--batch"], cwd=root,
+        input="".join(f"{oid}\n" for _, oid, _ in blobs).encode(),
+        capture_output=True,
+    )
+    if result.returncode:
+        raise GitError(f"cannot export blobs: {result.stderr.decode().strip()}")
+    offset = 0
+    for name, oid, file_mode in blobs:
+        end = result.stdout.index(b"\n", offset)
+        header = result.stdout[offset:end].split()
+        if len(header) != 3 or header[0].decode() != oid or header[1] != b"blob":
+            raise GitError(f"cannot export blob for {name}: {header!r}")
+        size = int(header[2])
+        content = result.stdout[end + 1:end + 1 + size]
+        destination = target / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
+        if file_mode == "100755":
+            destination.chmod(0o755)
+        offset = end + 2 + size
 
 
 def freeze(root: Path, tree: Path, files: list[ChangedFile]) -> list[ChangedFile]:
@@ -260,10 +323,12 @@ def freeze(root: Path, tree: Path, files: list[ChangedFile]) -> list[ChangedFile
     return frozen
 
 
-def tree_hash(tree: Path) -> str:
+def tree_hash(tree: Path, exclude: tuple[str, ...] = ()) -> str:
     """Bind receipts to package and other cross-file dependencies, not just a blob."""
     digest = hashlib.sha256()
     for path in sorted(p for p in tree.rglob("*") if p.is_file()):
+        if any(part in exclude for part in path.relative_to(tree).parts):
+            continue
         digest.update(path.relative_to(tree).as_posix().encode())
         digest.update(b"\0")
         digest.update(hashlib.sha256(path.read_bytes()).digest())

@@ -63,7 +63,7 @@ def _anchor(root: Path, path: str, line: int, quote: str, blob: str) -> int:
 
     start = max(1, line - ANCHOR_WINDOW)
     end = min(len(lines), line + ANCHOR_WINDOW)
-    for number in range(start, end + 1):
+    for number in sorted(range(start, end + 1), key=lambda n: abs(n - line)):
         if target in _normalize(lines[number - 1]):
             return number
 
@@ -127,6 +127,17 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
 
     for item in items:
         if item["status"] == "resolved" and item["source"] != "cluster":
+            if item["source"] == "cache":
+                evidence = item.get("evidence") or {}
+                line = evidence.get("line", item["line"])
+                if item["verdict"] != "PASS":
+                    line = _anchor(
+                        root, item["file"], line, evidence.get("quote", ""),
+                        blobs[item["file"]],
+                    )
+                item["in_scope"] = _finding_in_scope(
+                    item, line, report_scopes, changed, prompts,
+                )
             representatives.setdefault(item["cluster_id"], item)
             continue
         if item["source"] == "cluster":
@@ -167,17 +178,9 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
         item["evidence"] = evidence
         item["status"] = "resolved"
         item["source"] = "agent"
-        item["in_scope"] = _in_scope(
-            report_scopes.get(item["rule_id"], "changed"),
-            changed.get(item["file"], set()),
-            evidence.get("line", item["line"]),
+        item["in_scope"] = _finding_in_scope(
+            item, evidence.get("line", item["line"]), report_scopes, changed, prompts,
         )
-        if not item["in_scope"] and item["rule_id"] in prompts:
-            radius = prompts[item["rule_id"]].get("context_lines", 0)
-            item["in_scope"] = any(
-                abs(evidence.get("line", item["line"]) - line) <= radius
-                for line in changed.get(item["file"], set())
-            )
         representatives.setdefault(item["cluster_id"], item)
 
     for item in items:
@@ -206,6 +209,16 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
     return items
 
 
+def _finding_in_scope(
+    item: dict, line: int, scopes: dict, changed: dict, prompts: dict,
+) -> bool:
+    lines = changed.get(item["file"], set())
+    if _in_scope(scopes.get(item["rule_id"], "changed"), lines, line):
+        return True
+    radius = prompts.get(item["rule_id"], {}).get("context_lines", 0)
+    return any(abs(line - number) <= radius for number in lines)
+
+
 def persist(directory: Path, report: dict, items: list[dict]) -> None:
     if report.get("errors"):
         raise RejectedReport("cannot persist a report containing detector errors")
@@ -224,6 +237,7 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
                         item["context"], item.get("detail", ""),
                     ) + item["check_id"],
                     model,
+                    report["config_hash"],
                 ),
                 item["verdict"],
                 item["evidence"],
@@ -258,7 +272,7 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
             receipts.put(
                 receipt_key(
                     blob, rule["content_hash"], model, path,
-                    scopes[path], report["tree_hash"],
+                    scopes[path], report["tree_hash"], report["config_hash"],
                 ),
                 rule["id"],
                 path,

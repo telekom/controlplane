@@ -37,6 +37,10 @@ class Candidate:
     def normalized_anchor(self) -> str:
         return " ".join(self.anchor.split())
 
+    @property
+    def occurrence_anchor(self) -> str:
+        return f"{self.line}:{self.normalized_anchor}:{' '.join(self.detail.split())}"
+
     def cluster_key(self, rule: Rule) -> str:
         digest = hashlib.sha256()
         digest.update(rule.content_hash.encode("utf-8"))
@@ -247,7 +251,7 @@ def _whole_file_candidates(
             rule_id=rule.id,
             file=file.path,
             line=anchor_line,
-            anchor=file.path,
+            anchor=f"{file.path}:{hashlib.sha256(content.encode('utf-8')).hexdigest()[:16]}",
             context=numbered,
             detail=f"{len(changed)} changed line(s), marked '>' in the context",
         )

@@ -24,9 +24,9 @@ MAX_ITEMS_PER_UNIT = {"CRITICAL": 8, "HIGH": 20, "LOW": 40}
 SEVERITY_RANK = {name: rank for rank, name in enumerate(SEVERITIES)}
 
 
-def item_id(rule_id: str, check_slug: str, path: str, normalized_anchor: str) -> str:
+def item_id(rule_id: str, check_slug: str, path: str, occurrence_anchor: str) -> str:
     digest = hashlib.sha256()
-    for part in (rule_id, check_slug, path, normalized_anchor):
+    for part in (rule_id, check_slug, path, occurrence_anchor):
         digest.update(part.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()[:16]
