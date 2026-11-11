@@ -16,6 +16,17 @@ type Snapshot interface {
 	ID() string
 }
 
+// SensitiveSnapshot is optionally implemented by snapshots that may contain
+// confidential data. Stores must restrict access to such snapshots.
+type SensitiveSnapshot interface {
+	Sensitive() bool
+}
+
+func isSensitive(snap any) bool {
+	s, ok := snap.(SensitiveSnapshot)
+	return ok && s.Sensitive()
+}
+
 type SnapshotList[T Snapshot] interface {
 	Add(snap T)
 	All() []T

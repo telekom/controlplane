@@ -19,6 +19,9 @@ var (
 	snapSourceKey  string
 	snapRouteId    string
 	snapConsumerId string
+	snapStorePath  string
+	snapRaw        bool
+	snapLimit      int
 	snapCmd        = &cobra.Command{
 		Use:   "snap",
 		Short: "Take snapshots of resources",
@@ -35,7 +38,22 @@ var (
 				return fmt.Errorf("only one of route or consumer ID can be provided")
 			}
 
-			snapshotStore := NewStore(cfg.StorePath, noStore)
+			if err := validateSnapFlags(snapRouteId, snapRaw); err != nil {
+				return err
+			}
+
+			if err := validateSnapLimit(snapLimit, cmd.Flags().Changed("limit"), snapRouteId, snapConsumerId); err != nil {
+				return err
+			}
+
+			storePath, err := resolveStorePath(cfg, snapStorePath, noStore)
+			if err != nil {
+				return err
+			}
+			if !noStore {
+				zap.L().Info("using snapshot store", zap.String("path", storePath))
+			}
+			snapshotStore := NewStore(storePath, noStore)
 			if cleanStore {
 				if err := snapshotStore.Clean(); err != nil {
 					return fmt.Errorf("failed to clean snapshot store: %w", err)
@@ -61,6 +79,8 @@ var (
 				return fmt.Errorf("no orchestrator found for source key: %s", snapSourceKey)
 			}
 
+			instance.Raw = snapRaw
+
 			resourceType := "route"
 			resId := snapRouteId
 			if snapConsumerId != "" {
@@ -80,7 +100,7 @@ var (
 			if isGlobalSnapshotting {
 				_, err = instance.Run(rootCtx, orchestrator.RunOptions{
 					ResourceType: resourceType,
-					Limit:        100,
+					Limit:        snapLimit,
 				})
 				return err
 			} else {
@@ -100,4 +120,26 @@ func init() {
 	snapCmd.Flags().StringVar(&snapRouteId, "route", "", "ID of the route to snapshot")
 	snapCmd.Flags().StringVar(&snapConsumerId, "consumer", "", "ID of the consumer to snapshot")
 	snapCmd.Flags().BoolVar(&noStore, "no-store", false, "Do not store snapshots")
+	snapCmd.Flags().BoolVar(&snapRaw, "raw", false, "Store the unmodified gateway state (no obfuscators/decoders); required for apply. May contain sensitive data.")
+	snapCmd.Flags().IntVar(&snapLimit, "limit", 100, "Maximum number of resources for a global snapshot (without --route/--consumer); 0 = no limit")
+	snapCmd.Flags().StringVar(&snapStorePath, "store", "", "Directory to store snapshots in (overrides storePath from the config file)")
+}
+
+// validateSnapFlags checks flag combinations of the snap command.
+func validateSnapFlags(routeId string, raw bool) error {
+	if raw && routeId == "" {
+		return fmt.Errorf("--raw is only supported together with --route")
+	}
+	return nil
+}
+
+// validateSnapLimit checks the --limit flag; limitSet reports whether it was set explicitly.
+func validateSnapLimit(limit int, limitSet bool, routeId, consumerId string) error {
+	if limit < 0 {
+		return fmt.Errorf("--limit must be >= 0")
+	}
+	if limitSet && (routeId != "" || consumerId != "") {
+		return fmt.Errorf("--limit is only valid without --route/--consumer")
+	}
+	return nil
 }

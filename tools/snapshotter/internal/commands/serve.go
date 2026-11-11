@@ -28,7 +28,14 @@ var (
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			snapshotStore := NewStore(cfg.StorePath, noStore)
+			storePath, err := resolveStorePath(cfg, "", noStore)
+			if err != nil {
+				return err
+			}
+			if !noStore {
+				zap.L().Info("using snapshot store", zap.String("path", storePath))
+			}
+			snapshotStore := NewStore(storePath, noStore)
 			if cleanStore {
 				if err := snapshotStore.Clean(); err != nil {
 					return fmt.Errorf("failed to clean snapshot store: %w", err)
