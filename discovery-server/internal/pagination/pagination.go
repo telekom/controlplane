@@ -7,6 +7,7 @@ package pagination
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
@@ -55,7 +56,8 @@ func FetchAll[T store.Object](ctx context.Context, s store.ObjectStore[T], opts 
 // the page together with Paging metadata and HATEOAS Links.
 //
 // basePath is the request path used to build link URLs (e.g.
-// "/applications/myapp/apiexposures").
+// "/applications/myapp/apiexposures"). It may carry a query string (e.g.
+// active filters), in which case offset/limit are appended to it.
 // A limit of 0 is treated as "use default".
 func Paginate[T any](items []T, offset, limit int32, basePath string) PaginatedResult[T] {
 	total := len(items)
@@ -95,8 +97,12 @@ func Paginate[T any](items []T, offset, limit int32, basePath string) PaginatedR
 }
 
 func buildLinks(basePath string, offset, limit, total int) api.Links {
+	sep := "?"
+	if strings.Contains(basePath, "?") {
+		sep = "&"
+	}
 	makeURL := func(off int) string {
-		return fmt.Sprintf("%s?offset=%d&limit=%d", basePath, off, limit)
+		return fmt.Sprintf("%s%soffset=%d&limit=%d", basePath, sep, off, limit)
 	}
 
 	lastOffset := 0

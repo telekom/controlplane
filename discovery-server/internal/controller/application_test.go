@@ -5,13 +5,18 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
 
+	"github.com/telekom/controlplane/discovery-server/internal/api"
+
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Application Controller", func() {
@@ -55,6 +60,31 @@ var _ = Describe("Application Controller", func() {
 			body := ExpectStatusOk(resp, err)
 			snaps.MatchJSON(GinkgoT(), body)
 		})
+
+		DescribeTable("should filter applications by external ids",
+			func(query string, expectedCount int) {
+				req := httptest.NewRequest(http.MethodGet, "/applications?"+query, http.NoBody)
+				resp, err := ExecuteRequest(req, adminToken)
+				body := ExpectStatusOk(resp, err)
+
+				Expect(resp.Header.Get("X-Total-Count")).To(Equal(strconv.Itoa(expectedCount)))
+
+				var list api.ApplicationListResponse
+				Expect(json.Unmarshal([]byte(body), &list)).To(Succeed())
+				Expect(list.Items).To(HaveLen(expectedCount))
+				Expect(list.UnderscoreLinks.Self).To(HavePrefix("/applications?" + query + "&"))
+				for _, item := range list.Items {
+					Expect(item.Icto).To(Equal("icto-12345"))
+					Expect(item.Psiid).To(Equal("PSI-123456"))
+				}
+			},
+			Entry("matching icto", "icto=icto-12345", 1),
+			Entry("non-matching icto", "icto=icto-99999", 0),
+			Entry("matching psiid", "psiid=PSI-123456", 1),
+			Entry("non-matching psiid", "psiid=PSI-999999", 0),
+			Entry("matching icto and psiid", "icto=icto-12345&psiid=PSI-123456", 1),
+			Entry("matching icto, non-matching psiid", "icto=icto-12345&psiid=PSI-999999", 0),
+		)
 	})
 
 	Describe("GET /applications/:applicationId", func() {

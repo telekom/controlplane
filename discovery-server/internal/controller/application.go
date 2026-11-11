@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -39,12 +40,19 @@ func (c *applicationController) GetAll(ctx context.Context, params api.GetAllApp
 		return nil, err
 	}
 
-	mapped := make([]api.ApplicationResponse, len(items))
-	for i, item := range items {
-		mapped[i] = applicationmapper.MapResponse(item)
+	mapped := make([]api.ApplicationResponse, 0, len(items))
+	for _, item := range items {
+		resp := applicationmapper.MapResponse(item)
+		if !matchesExternalIdFilters(&resp, &params) {
+			continue
+		}
+		mapped = append(mapped, resp)
 	}
 
 	basePath := "/applications"
+	if q := externalIdFilterQuery(&params); q != "" {
+		basePath += "?" + q
+	}
 	result := pagination.Paginate(mapped, params.Offset, params.Limit, basePath)
 
 	return &api.ApplicationListResponse{
@@ -80,4 +88,29 @@ func (c *applicationController) GetStatus(ctx context.Context, applicationId str
 	}
 
 	return statusmapper.MapResponse(app), nil
+}
+
+// matchesExternalIdFilters reports whether the application matches the
+// optional icto/psiid query filters (exact match). Empty filters match all.
+func matchesExternalIdFilters(app *api.ApplicationResponse, params *api.GetAllApplicationsParams) bool {
+	if params.Icto != "" && app.Icto != params.Icto {
+		return false
+	}
+	if params.Psiid != "" && app.Psiid != params.Psiid {
+		return false
+	}
+	return true
+}
+
+// externalIdFilterQuery encodes the active icto/psiid filters so that
+// pagination links keep them.
+func externalIdFilterQuery(params *api.GetAllApplicationsParams) string {
+	q := url.Values{}
+	if params.Icto != "" {
+		q.Set("icto", params.Icto)
+	}
+	if params.Psiid != "" {
+		q.Set("psiid", params.Psiid)
+	}
+	return q.Encode()
 }
