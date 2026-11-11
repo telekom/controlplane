@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/projector
 
-go 1.26.10
+go 1.26.11
 
 require (
 	entgo.io/ent v0.14.6
