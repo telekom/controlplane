@@ -7,6 +7,7 @@ package security
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -24,6 +25,19 @@ const (
 )
 
 var accessDenied = problems.Forbidden("Access Denied", "Access to requested resource not allowed")
+
+// RequireClientTypes allows only the specified business-context client types.
+// It must run after the security guard; it does not check resource or write access.
+// Missing contexts and an empty allowlist are denied.
+func RequireClientTypes(allowed ...ClientType) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		bCtx, ok := FromContext(c.UserContext())
+		if !ok || bCtx == nil || !slices.Contains(allowed, bCtx.ClientType) {
+			return c.Status(accessDenied.Code()).JSON(accessDenied, "application/problem+json")
+		}
+		return c.Next()
+	}
+}
 
 // ResourcePathFunc must return the expected resource for the provided BusinessContext
 type ResourcePathFunc func(*BusinessContext, map[string]string, map[ClientType]ComparisonTemplates) (string, error)

@@ -264,7 +264,7 @@ var _ = Describe("Team Handlers", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/organization/v1/hubs/eni/teams/hyperion/teamToken", http.NoBody)
 			resp, err := executeRequest(app, req, obfToken)
 			expectStatus(resp, err, http.StatusForbidden)
-			Expect(gqlOperations).NotTo(ContainElement("RotateTeamToken"))
+			Expect(gqlOperations).To(BeEmpty())
 		})
 	})
 
@@ -283,6 +283,9 @@ var _ = Describe("Team Handlers", func() {
 				req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
 				resp, err := executeRequest(app, req, makeToken(tokenGroup, tokenTeam, []string{scope}))
 				expectStatus(resp, err, expectedStatus)
+				if expectedStatus == http.StatusForbidden {
+					Expect(gqlOperations).To(BeEmpty())
+				}
 			},
 			Entry("allows exact team", "eni", "hyperion", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusOK),
 			Entry("rejects shorter token team", "eni", "hyper", "tardis:team:read", "/organization/v1/hubs/eni/teams/hyperion", http.StatusForbidden),
@@ -306,6 +309,7 @@ var _ = Describe("Team Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := app.Test(req, -1)
 			expectStatus(resp, err, http.StatusUnauthorized)
+			Expect(gqlOperations).To(BeEmpty())
 		})
 
 		DescribeTable("enforces mutation access type",
@@ -314,21 +318,36 @@ var _ = Describe("Team Handlers", func() {
 				req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni/teams/hyperion", strings.NewReader(body))
 				resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{scope}))
 				expectStatus(resp, err, expectedStatus)
+				if expectedStatus == http.StatusForbidden {
+					Expect(gqlOperations).To(BeEmpty())
+				}
 			},
 			Entry("rejects team read scope", "tardis:team:read", http.StatusForbidden),
 			Entry("allows team all scope", "tardis:team:all", http.StatusAccepted),
 		)
 
-		DescribeTable("team creation requires admin:all",
-			func(scope string) {
+		DescribeTable("team creation requires group or admin write access",
+			func(tokenGroup, scope, hub string, expectedStatus int) {
 				body := `{"name":"newteam","email":"new@telekom.de","members":[]}`
-				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/eni/teams", strings.NewReader(body))
-				resp, err := executeRequest(app, req, makeToken("eni", "hyperion", []string{scope}))
-				expectStatus(resp, err, http.StatusForbidden)
+				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs/"+hub+"/teams", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken(tokenGroup, "hyperion", []string{scope}))
+				expectStatus(resp, err, expectedStatus)
+				if expectedStatus == http.StatusForbidden {
+					Expect(gqlOperations).To(BeEmpty())
+				}
 			},
-			Entry("team client", "tardis:team:all"),
-			Entry("group client", "tardis:group:all"),
-			Entry("read-only admin client", "tardis:admin:read"),
+			Entry("admin client", "eni", "tardis:admin:all", "eni", http.StatusAccepted),
+			Entry("group client", "eni", "tardis:group:all", "eni", http.StatusAccepted),
+			Entry("legacy hub client", "eni", "tardis:hub:all", "eni", http.StatusAccepted),
+			Entry("team client", "eni", "tardis:team:all", "eni", http.StatusForbidden),
+			Entry("read-only admin client", "eni", "tardis:admin:read", "eni", http.StatusForbidden),
+			Entry("read-only group client", "eni", "tardis:group:read", "eni", http.StatusForbidden),
+			Entry("obfuscated admin client", "eni", "tardis:admin:obfuscated", "eni", http.StatusForbidden),
+			Entry("obfuscated group client", "eni", "tardis:group:obfuscated", "eni", http.StatusForbidden),
+			Entry("group client in another hub", "eni", "tardis:group:all", "other", http.StatusForbidden),
+			Entry("legacy hub client in another hub", "eni", "tardis:hub:all", "other", http.StatusForbidden),
+			Entry("shorter token hub", "en", "tardis:group:all", "eni", http.StatusForbidden),
+			Entry("longer requested hub", "eni", "tardis:group:all", "enigma", http.StatusForbidden),
 		)
 
 		It("should reject cross-team access for non-admin tokens", func() {
@@ -336,6 +355,7 @@ var _ = Describe("Team Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := executeRequest(app, req, teamToken)
 			expectStatus(resp, err, http.StatusForbidden)
+			Expect(gqlOperations).To(BeEmpty())
 		})
 
 		It("should reject cross-hub access for non-admin tokens", func() {
@@ -343,6 +363,7 @@ var _ = Describe("Team Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni/teams/hyperion", http.NoBody)
 			resp, err := executeRequest(app, req, otherHubToken)
 			expectStatus(resp, err, http.StatusForbidden)
+			Expect(gqlOperations).To(BeEmpty())
 		})
 	})
 })
