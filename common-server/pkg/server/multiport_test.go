@@ -183,6 +183,28 @@ var _ = Describe("Guarded", func() {
 		Expect(server.Guarded([]fiber.Handler{g}, h)).To(HaveLen(2))
 	})
 
+	It("runs guards, route middleware, and handlers in order", func() {
+		var calls []string
+		step := func(name string) fiber.Handler {
+			return func(c *fiber.Ctx) error {
+				calls = append(calls, name)
+				return c.Next()
+			}
+		}
+		app := fiber.New()
+		app.Get("/", server.Guarded([]fiber.Handler{step("guard")},
+			step("middleware"), func(c *fiber.Ctx) error {
+				calls = append(calls, "handler")
+				return c.SendStatus(http.StatusOK)
+			})...)
+
+		resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(resp.Body.Close)
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(calls).To(Equal([]string{"guard", "middleware", "handler"}))
+	})
+
 	It("returns independent handler chains", func() {
 		guard := make([]fiber.Handler, 1, 2)
 		guard[0] = h

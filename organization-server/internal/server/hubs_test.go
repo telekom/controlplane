@@ -175,6 +175,21 @@ var _ = Describe("Hub Handlers", func() {
 			Entry("canonical group scope", "tardis:group:read"),
 			Entry("legacy hub scope", "tardis:hub:read"),
 		)
+
+		DescribeTable("hub updates and deletes require admin write access",
+			func(method, scope string) {
+				body := `{"displayName":"Updated Eni","description":"Updated description"}`
+				req := httptest.NewRequest(method, "/organization/v1/hubs/eni", strings.NewReader(body))
+				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
+				expectStatus(resp, err, http.StatusForbidden)
+			},
+			Entry("group cannot update", http.MethodPut, "tardis:group:all"),
+			Entry("group cannot delete", http.MethodDelete, "tardis:group:all"),
+			Entry("team cannot update", http.MethodPut, "tardis:team:all"),
+			Entry("team cannot delete", http.MethodDelete, "tardis:team:all"),
+			Entry("read-only admin cannot update", http.MethodPut, "tardis:admin:read"),
+			Entry("read-only admin cannot delete", http.MethodDelete, "tardis:admin:read"),
+		)
 	})
 
 	Describe("Obfuscation", func() {
