@@ -119,7 +119,7 @@ sequenceDiagram
 
 Some subscribers prefer to be *called back*: instead of fetching events, they give the platform an address of their own and let each event be pushed there. The callback route makes this happen. The event backend sends every event to the callback route, which reads the subscriber's real address (carried along with the request) and forwards the event to it.
 
-Callback delivery starts in the **backend zone**, where Horizon runs. In this example, Horizon is configured with `https://dataplane1-gateway/horizon-dataplane3/callback/v1?callback=U`, where `U` represents the subscriber's URL. The hostname is illustrative; the actual address comes from the gateway preset. **Backend-local callback ingress means that gateway's advertised URL, not loopback or `localhost`.**
+Callback delivery starts in the **backend zone**, where Horizon runs. In this example, Horizon is configured with `https://dataplane1-gateway/horizon-dataplane3/callback/v1?callback=U`, where `U` represents the subscriber's query-encoded URL. The hostname is illustrative; the actual address comes from the gateway preset. **Backend-local callback ingress means that gateway's advertised URL, not loopback or `localhost`.**
 
 ```mermaid
 sequenceDiagram

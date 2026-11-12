@@ -19,12 +19,12 @@ import (
 //
 // Subscriber and backend share the same Zone ("foo" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
-// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://foo-gateway/horizon-foo/callback/v1?callback=https://my-callback/v1/post"
+// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://foo-gateway/horizon-foo/callback/v1?callback=https%3A%2F%2Fmy-callback%2Fv1%2Fpost"
 // 3. Horizon publishes events as eventstore; the foo-gateway forwards them to the callbackUrl with a gateway LMS token.
 //
 // Subscriber is on a different zone ("backend" --> "subscriber" --> "consumer"):
 // 1. Subscriber has deliveryType callback with the callbackUrl "https://my-callback/v1/post"
-// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://backend-gateway/horizon-subscriber/callback/v1?callback=https://my-callback/v1/post"
+// 2. Approval is done and pubsub-Subscription is provisioned with the callbackUrl "https://backend-gateway/horizon-subscriber/callback/v1?callback=https%3A%2F%2Fmy-callback%2Fv1%2Fpost"
 // 3. Horizon sends events as eventstore to the backend gateway, which forwards with a gateway LMS token to the subscriber zone's primary Route; that Route forwards to the callbackUrl.
 // This also applies when exposure and subscriber share a proxy zone: the first hop remains in the physical backend zone.
 
