@@ -28,8 +28,8 @@ arguments of `cmp.Compare` swapped). With no genuine exception left to judge,
 the detector decides and the rule costs nothing to run.
 
 If you hit a call that truly cannot convert — a type implementing
-`sort.Interface` to satisfy a third-party contract, for instance — waive it.
-The waiver records who accepted it and why, which is a better outcome than a
+`sort.Interface` to satisfy a third-party contract, for instance — add an audit ignore.
+The audit ignore records who accepted it and why, which is a better outcome than a
 model re-deciding it on every audit.
 
 ## Detect

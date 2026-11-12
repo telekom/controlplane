@@ -21,7 +21,7 @@ This is a deterministic Markdown fence scan, so it is decided by the detector.
 It distinguishes opening and closing fences, including unlabelled and tilde
 fences within blockquotes and lists. Mermaid blocks remain exempt inside
 those containers too. A fenced block that genuinely belongs on the page is handled
-with a waiver, which records who accepted it and why.
+with an audit ignore, which records who accepted it and why.
 
 ## Detect
 

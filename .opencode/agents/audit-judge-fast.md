@@ -81,7 +81,7 @@ one entry:
 
 - Do not modify any file.
 - Do not fix the code. Reporting is your whole job.
-- Do not add waivers.
+- Do not add audit ignores.
 - Do not answer items outside your work unit.
 - Do not soften a `FAIL` because the fix looks inconvenient, and do not invent
   a `FAIL` to look thorough. A false positive costs the team more trust than a

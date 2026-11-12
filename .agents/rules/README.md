@@ -252,7 +252,7 @@ some-narrow-pattern
 
 Get the revision with `git rev-parse --short HEAD`.
 
-## Waivers
+## Audit ignores
 
 An accepted finding is recorded in `.agents/auditignore` as a YAML mapping,
 keyed by the item id the audit prints. Values are human-written reasons, not
@@ -262,7 +262,7 @@ file patterns:
 a1b2c3d4e5f6a7b8: Reverse sort has no slices equivalent. (ron, 2026-11-09)
 ```
 
-Waivers expire by construction — the id contains the snippet, so changing the
-code retires the waiver automatically.
+Audit ignores expire by construction — the id contains the snippet, so changing
+the code retires the audit ignore automatically.
 Each reason must be a nonempty string; empty values, lists, booleans and
 numbers are rejected. Quote numeric-looking reasons if they are intended as text.

@@ -77,7 +77,7 @@ class FollowupTest(unittest.TestCase):
         git(self.repo, "commit", "-qm", "rename")
         self.assertEqual([i["verdict"] for i in self.build("range")["items"]], ["FAIL"])
 
-    def test_unstaged_waiver_cannot_change_staged_or_committed_audit(self):
+    def test_unstaged_audit_ignore_cannot_change_staged_or_committed_audit(self):
         (self.repo / "bad.txt").write_text("BAD\n")
         git(self.repo, "add", "bad.txt")
         ident = self.build()["items"][0]["item_id"]
@@ -138,7 +138,7 @@ class FollowupTest(unittest.TestCase):
         )
         self.assertEqual(gate.returncode, 1, gate.stdout + gate.stderr)
 
-    def test_file_waiver_identity_changes_with_content(self):
+    def test_file_audit_ignore_identity_changes_with_content(self):
         rule = replace(rules.load_rules(self.repo)[0], detector=None)
         file = changeset.ChangedFile("guide.txt", "blob", (1,))
         candidates = [
@@ -248,7 +248,7 @@ class FollowupTest(unittest.TestCase):
         ]})
         self.assertEqual(len(settled), 2)
 
-    def test_one_deterministic_waiver_does_not_cover_repeated_anchor(self):
+    def test_one_deterministic_audit_ignore_does_not_cover_repeated_anchor(self):
         (self.repo / "bad.txt").write_text("BAD\nsafe\nBAD\n")
         git(self.repo, "add", "bad.txt")
         document = self.build()

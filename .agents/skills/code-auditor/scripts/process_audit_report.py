@@ -414,7 +414,7 @@ def main() -> int:
             if quote:
                 print(f"    > {quote.strip()}")
             print(f"    {evidence.get('reason', '')}")
-            print(f"    waive with: {entry['item_id']}")
+            print(f"    audit ignore id: {entry['item_id']}")
             print()
 
     if findings:

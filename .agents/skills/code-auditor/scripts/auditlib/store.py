@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Content-addressed verdict cache, commit receipts and waivers.
+"""Content-addressed verdict cache, commit receipts and audit ignores.
 
 One key space serves three purposes:
 
@@ -28,7 +28,7 @@ from . import judges
 from .yamlish import YamlishError, parse as parse_yamlish
 
 AUDIT_DIRNAME = ".audit"
-WAIVERS_FILENAME = "auditignore"
+AUDITIGNORE_FILENAME = "auditignore"
 
 
 def audit_dir(repo_root: Path) -> Path:
@@ -166,21 +166,21 @@ class ReceiptStore:
 
 
 @dataclass(frozen=True)
-class Waiver:
+class AuditIgnore:
     item_id: str
     reason: str
 
 
-class Waivers:
-    """Item-keyed exemptions.
+class AuditIgnores:
+    """Item-keyed audit ignores.
 
-    Waivers are committed to the repository and expire by construction: the
-    item id contains the snippet, so changing the code retires the waiver.
+    Audit ignores are committed to the repository and expire by construction:
+    the item id contains the snippet, so changing the code retires the audit ignore.
     """
 
     def __init__(self, config_root: Path):
-        self.path = config_root / ".agents" / WAIVERS_FILENAME
-        self._data: dict[str, Waiver] = {}
+        self.path = config_root / ".agents" / AUDITIGNORE_FILENAME
+        self._data: dict[str, AuditIgnore] = {}
         self.errors: list[str] = []
         if self.path.is_file():
             self._parse(self.path.read_text(encoding="utf-8"))
@@ -189,18 +189,18 @@ class Waivers:
         try:
             raw = parse_yamlish(text)
         except YamlishError as exc:
-            self.errors.append(f"{WAIVERS_FILENAME}: {exc}")
+            self.errors.append(f"{AUDITIGNORE_FILENAME}: {exc}")
             return
         for key, value in raw.items():
             if not isinstance(value, str) or not value.strip():
                 self.errors.append(
-                    f"{WAIVERS_FILENAME}: waiver '{key}' needs a nonempty string reason"
+                    f"{AUDITIGNORE_FILENAME}: audit ignore '{key}' needs a nonempty string reason"
                 )
                 continue
             reason = value.strip()
-            self._data[key] = Waiver(item_id=key, reason=reason)
+            self._data[key] = AuditIgnore(item_id=key, reason=reason)
 
-    def get(self, item_id: str) -> Waiver | None:
+    def get(self, item_id: str) -> AuditIgnore | None:
         return self._data.get(item_id)
 
     def __len__(self) -> int:

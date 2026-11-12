@@ -106,7 +106,7 @@ class IntegrityTest(unittest.TestCase):
         self.create()
         self.assertEqual(json.loads(path.read_text()), {"verdicts": []})
 
-    def test_gate_honors_deterministic_waiver(self):
+    def test_gate_honors_deterministic_audit_ignore(self):
         self.create()
         item = next(i for i in self.case.report()["items"]
                     if i["rule_id"] == "05-docs-no-code-blocks")

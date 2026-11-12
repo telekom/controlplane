@@ -39,7 +39,7 @@ left alone — there is nothing to decide, so no model is asked.
 It will also catch a `client.MatchingLabels` selector built the same way, as
 at `organization/internal/controller/team_controller.go:93`. A selector has to
 be spelled exactly like the value it matches, so normalizing it is usually the
-right fix too; if it genuinely is not, waive it.
+right fix too; if it genuinely is not, add an audit ignore.
 
 Sibling concern, deliberately not covered: `labelutil.NormalizeNameValue` for
 `ObjectMeta.Name`. Most name sites normalize inside a `Make…Name` helper, so

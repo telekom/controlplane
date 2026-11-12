@@ -19,7 +19,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from auditlib import context as contextlib_  # noqa: E402
 from auditlib import rules as rulelib  # noqa: E402
-from auditlib.store import Waivers  # noqa: E402
+from auditlib.store import AuditIgnores  # noqa: E402
 
 JUDGES = "default: fast\nfast: github-copilot/gpt-6-luna#low\n"
 
@@ -222,12 +222,12 @@ class SharedConfigTest(unittest.TestCase):
         )
         result = self.create("--config-root", str(self.workspace))
         self.assertEqual(result.returncode, 0, result.stderr)
-        waived = next(
+        ignored = next(
             i for i in self.report()["items"] if i["item_id"] == item["item_id"]
         )
-        self.assertEqual(waived["source"], "waiver")
-        self.assertEqual(waived["verdict"], "PASS")
-        self.assertEqual(waived["evidence"]["reason"], f"waived: {reason}")
+        self.assertEqual(ignored["source"], "audit_ignore")
+        self.assertEqual(ignored["verdict"], "PASS")
+        self.assertEqual(ignored["evidence"]["reason"], f"ignored: {reason}")
 
         (self.sub / "rover/internal/handler/rover.go").write_text(
             "package handler\n\n// TODO a different task\n", encoding="utf-8"
@@ -242,9 +242,9 @@ class SharedConfigTest(unittest.TestCase):
 
     def test_malformed_auditignore_is_reported_by_validation(self) -> None:
         (self.workspace / ".agents/auditignore").write_text("not a mapping\n", "utf-8")
-        waivers = Waivers(self.workspace)
-        self.assertTrue(waivers.errors)
-        self.assertIn("auditignore", waivers.errors[0])
+        audit_ignores = AuditIgnores(self.workspace)
+        self.assertTrue(audit_ignores.errors)
+        self.assertIn("auditignore", audit_ignores.errors[0])
         result = run("validate_rules.py", self.workspace, "--json")
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertTrue(

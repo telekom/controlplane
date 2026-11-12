@@ -86,7 +86,7 @@ def add_argument(parser: argparse.ArgumentParser) -> None:
         type=Path,
         default=None,
         help=(
-            "directory whose .agents holds the rules, judges and waivers; must "
+            "directory whose .agents holds the rules, judges and audit ignores; must "
             f"be the audited git root or an ancestor of it (env: {CONFIG_ROOT_ENV})"
         ),
     )

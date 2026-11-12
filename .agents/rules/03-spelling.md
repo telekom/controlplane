@@ -22,7 +22,7 @@ exclude:
 
 Spelling is decided entirely by `codespell`; no model is involved and no
 judgement is required. Project vocabulary that `codespell` gets wrong belongs
-in `.agents/codespell-ignore.txt`, not in a waiver.
+in `.agents/codespell-ignore.txt`, not in an audit ignore.
 
 If `codespell` is not installed the rule reports an engine error rather than
 silently passing — a check that cannot run must never look like a check that

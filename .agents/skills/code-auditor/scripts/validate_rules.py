@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import re  # noqa: E402
 
 from auditlib import changeset, provenance, rules as rulelib  # noqa: E402
-from auditlib.store import Waivers  # noqa: E402
+from auditlib.store import AuditIgnores  # noqa: E402
 
 MAX_CHECKS_PER_RULE = 8
 
@@ -110,8 +110,8 @@ def main() -> int:
         unanchored, skipped = check_provenance(root, loaded)
         problems.extend(unanchored)
 
-    waivers = Waivers(root)
-    problems.extend(waivers.errors)
+    audit_ignores = AuditIgnores(root)
+    problems.extend(audit_ignores.errors)
 
     if args.json:
         print(
@@ -120,7 +120,7 @@ def main() -> int:
                     "ok": not problems,
                     "rules": len(loaded),
                     "index_hash": rulelib.index_hash(loaded) if loaded else None,
-                    "waivers": len(waivers),
+                    "audit_ignores": len(audit_ignores),
                     "problems": problems,
                     "skipped": skipped,
                 },
@@ -154,7 +154,7 @@ def main() -> int:
         f"(complexity0={complexities[0]} complexity1={complexities[1]} "
         f"complexity2={complexities[2]}, "
         f"{sourced} sourced example(s) verified, "
-        f"index={rulelib.index_hash(loaded)}, waivers={len(waivers)})"
+        f"index={rulelib.index_hash(loaded)}, audit_ignores={len(audit_ignores)})"
     )
     return 0
 

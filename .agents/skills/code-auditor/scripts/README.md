@@ -28,7 +28,7 @@ check. Severity sets two caps, on candidates and on resulting questions.
 `auditlib/` holds the shared pieces: `yamlish` (frontmatter subset),
 `rules` (parse and index), `provenance` (example sources), `changeset`
 (git scope), `context` (config root and state location), `detect` (candidates), `report` (schema, item ids, batching) and
-`store` (cache, receipts, waivers).
+`store` (cache, receipts, audit ignores).
 
 Two things are re-anchored against real files, and both reject rather than
 warn: an agent's evidence quote (`process_audit_report.py`) and a rule's
@@ -112,11 +112,11 @@ or archive attributes. Renames are compared as deletions plus additions, so
 rules newly applicable at the destination run. Quoted and untracked paths
 retain their exact filenames.
 
-Repository-owned rules, judges, waivers, detector scripts and data come from
+Repository-owned rules, judges, audit ignores, detector scripts and data come from
 the selected snapshot, not the live checkout. An external shared configuration
 is copied once per run; its full `.agents` content hash (excluding audit state
 and Python/linter caches) binds judgments and receipts. Changing shared tools,
-data or waivers therefore requires another audit.
+data or audit ignores therefore requires another audit.
 
 Judgment reuse includes the file path, numbered context, change markers and
 detector detail. Receipts additionally bind to the file's changed-line scope
@@ -124,7 +124,7 @@ and complete dependency tree hash. Only applicable file/rule pairs receive
 receipts. Schema 4 invalidates older reports and receipts; regenerate them.
 Both deterministic checks and model judgments honor `auditignore`.
 Finding IDs include the occurrence's line and detector detail; document-level
-candidates also include a content fingerprint. A waiver covers one occurrence
+candidates also include a content fingerprint. An audit ignore covers one occurrence
 in that content, rather than every matching line or every future document edit.
 Cached findings recalculate scope from their evidence just like fresh answers.
 For judgments, `report_radius` controls the affected evidence window separately

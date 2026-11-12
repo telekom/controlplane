@@ -37,7 +37,7 @@ from auditlib.store import (  # noqa: E402
     ReceiptStore,
     audited_model,
     receipt_key,
-    Waivers,
+    AuditIgnores,
 )
 
 SKILL_HINT = "Run the code-auditor skill, then commit again."
@@ -121,9 +121,9 @@ def check(
     }
     tree_hash = changeset.tree_hash(tree)
     configuration_hash = config_hash(config)
-    waivers = Waivers(config)
-    if waivers.errors:
-        print("\n".join(waivers.errors), file=sys.stderr)
+    audit_ignores = AuditIgnores(config)
+    if audit_ignores.errors:
+        print("\n".join(audit_ignores.errors), file=sys.stderr)
         return 2
 
     threshold = SEVERITY_RANK[args.fail_on]
@@ -149,7 +149,7 @@ def check(
                     ident = item_id(
                         rule.id, "violation", candidate.file, candidate.occurrence_anchor
                     )
-                    if waivers.get(ident):
+                    if audit_ignores.get(ident):
                         continue
                     if SEVERITY_RANK[rule.severity] >= threshold:
                         complexity0.append(

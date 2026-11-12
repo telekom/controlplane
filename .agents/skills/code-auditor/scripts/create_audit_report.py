@@ -33,7 +33,7 @@ from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.store import (  # noqa: E402
     VerdictCache,
-    Waivers,
+    AuditIgnores,
     verdict_key,
     write_state,
 )
@@ -114,11 +114,11 @@ def _build(
     }
 
     cache = VerdictCache(context.audit_dir)
-    waivers = Waivers(config)
+    audit_ignores = AuditIgnores(config)
 
     items: list[reportlib.Item] = []
     rules_summary: list[dict] = []
-    errors: list[str] = list(waivers.errors)
+    errors: list[str] = list(audit_ignores.errors)
     cluster_seen: dict[str, str] = {}
 
     for rule in rules:
@@ -199,12 +199,12 @@ def _build(
                     context=candidate.context,
                 )
 
-                waiver = waivers.get(ident)
-                if waiver:
+                audit_ignore = audit_ignores.get(ident)
+                if audit_ignore:
                     item.status = "resolved"
-                    item.source = "waiver"
+                    item.source = "audit_ignore"
                     item.verdict = "PASS"
-                    item.evidence = {"reason": f"waived: {waiver.reason}"}
+                    item.evidence = {"reason": f"ignored: {audit_ignore.reason}"}
                 elif not check.applies_to_context(candidate.context):
                     # The check declares a trigger and nothing in the window
                     # matches it. Answer it here rather than paying a model to

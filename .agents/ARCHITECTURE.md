@@ -42,8 +42,8 @@ flowchart TD
     C -->|no candidates| P2[PASS, machine-written]
     C -->|candidates| D{complexity 0?}
     D -->|yes| V1[verdict from the detector]
-    D -->|no| E{waived?}
-    E -->|yes| P3[PASS, waiver recorded]
+    D -->|no| E{ignored?}
+    E -->|yes| P3[PASS, audit ignore recorded]
     E -->|no| F{in verdict cache?}
     F -->|hit| V2[verdict reused]
     F -->|miss| G{identical snippet<br/>already queued?}
@@ -113,10 +113,10 @@ Configure `branch.<branch>.auditTarget` for non-default targets so the push
 hook and report use the same merge base; `AUDIT_TARGET` overrides this per run.
 
 Raw blobs are exported without checkout conversions or archive attributes.
-Repository-owned rules, judges, waivers and detector inputs come from the
+Repository-owned rules, judges, audit ignores and detector inputs come from the
 selected snapshot. Shared configuration is frozen once and its content hash
 binds both cached judgments and receipts. Document-level anchors include a
-content fingerprint; occurrence-specific item IDs prevent waivers from
+content fingerprint; occurrence-specific item IDs prevent audit ignores from
 covering unrelated matches. Cached evidence is scoped again when settled.
 
 This single decision buys four properties at once:
@@ -124,8 +124,8 @@ This single decision buys four properties at once:
 - **caching** — unchanged snippet, unchanged rule, same answer
 - **incrementality** — editing a rule invalidates only that rule's entries
 - **commit receipts** — see below
-- **self-expiring waivers** — the id contains the snippet, so changing the code
-  retires the waiver automatically
+- **self-expiring audit ignores** — the id contains the snippet, so changing the code
+  retires the audit ignore automatically
 
 ## Gates
 

@@ -15,7 +15,7 @@ cannot, and every answer you give is machine-verified before it counts.
 - Never edit `.agents/.audit/report.json`. Write answers to `verdicts.json`.
 - Never guess a verdict. `UNCLEAR` is a valid answer and is always better than
   an invented one.
-- Never add a waiver yourself. Only a human waives a finding.
+- Never add an audit ignore yourself. Only a human may ignore a finding.
 - Never fix code during the audit. Audit first, report, then fix.
 
 ## Auditing a submodule
@@ -83,7 +83,7 @@ mode and prints the resolved comparison. Check that the recorded `mode`,
 `base` and `comparison` in the report match the announced scope.
 Detectors and evidence validation use the chosen frozen snapshot, including
 package context.
-Repository-owned rules, waivers, judges and detector inputs come from that
+Repository-owned rules, audit ignores, judges and detector inputs come from that
 snapshot too. For a staged audit, stage intended configuration changes first;
 for a branch audit, commit them first. Shared configuration is frozen and
 content-bound to receipts. Ensure `codespell` is on `PATH` before auditing.
@@ -164,7 +164,7 @@ the rejection.
 ### 5. Report to the user
 
 Print the findings exactly as the script rendered them: severity, rule, file,
-line, quote, reason, waive id. Then offer to fix them.
+line, quote, reason, audit ignore id. Then offer to fix them.
 
 Anything printed under **advisory** sits outside the change — it is real, but
 it is not this change's regression and it does not block. Mention it once; do

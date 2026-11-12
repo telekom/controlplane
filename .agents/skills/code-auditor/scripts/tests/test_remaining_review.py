@@ -194,16 +194,16 @@ class RemainingReviewTest(unittest.TestCase):
         self.assertIsNotNone(provenance.verify(self.repo, source, "return nil"))
         self.assertIsNone(provenance.verify(self.repo, source, "  return   nil, err"))
 
-    def test_waivers_require_nonempty_string_reason(self):
+    def test_audit_ignores_require_nonempty_string_reason(self):
         (self.repo / ".agents").mkdir()
         for value in ("", "[]", "false", "true", "123", '""', '"   "'):
             with self.subTest(value=value):
                 (self.repo / ".agents/auditignore").write_text(f"abc123: {value}\n")
-                waiver = store.Waivers(self.repo)
-                self.assertTrue(waiver.errors)
-                self.assertIsNone(waiver.get("abc123"))
+                audit_ignore = store.AuditIgnores(self.repo)
+                self.assertTrue(audit_ignore.errors)
+                self.assertIsNone(audit_ignore.get("abc123"))
         (self.repo / ".agents/auditignore").write_text('abc123: "approved exception"\n')
-        self.assertFalse(store.Waivers(self.repo).errors)
+        self.assertFalse(store.AuditIgnores(self.repo).errors)
 
     def test_shared_viewer_command_is_explicit_in_persona_and_skill(self):
         persona = (ROOT / ".agents/skills/code-auditor/persona/README.md").read_text()
