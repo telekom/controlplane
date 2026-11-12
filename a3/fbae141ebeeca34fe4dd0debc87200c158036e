@@ -1,0 +1,19 @@
+REUSE.toml
+  s_fcbd43e11bddb1::t_7c4514216f5b80 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a3fbae141ebeeca34fe4dd0debc87200c158036e",
+  "prompts": {},
+  "sessions": {
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
