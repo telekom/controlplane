@@ -330,6 +330,7 @@ spec:
                                     type: string
                                   maxItems: 10
                                   type: array
+                                  x-kubernetes-list-type: set
                               type: object
                             loadBalancing:
                               description: LoadBalancing defines how traffic is distributed
@@ -785,6 +786,7 @@ spec:
                                     type: string
                                   maxItems: 10
                                   type: array
+                                  x-kubernetes-list-type: set
                               type: object
                             loadBalancing:
                               description: LoadBalancing defines how traffic is distributed

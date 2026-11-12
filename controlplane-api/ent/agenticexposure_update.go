@@ -265,6 +265,26 @@ func (_u *AgenticExposureUpdate) ClearTransformation() *AgenticExposureUpdate {
 	return _u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_u *AgenticExposureUpdate) SetLmsIssuer(v string) *AgenticExposureUpdate {
+	_u.mutation.SetLmsIssuer(v)
+	return _u
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_u *AgenticExposureUpdate) SetNillableLmsIssuer(v *string) *AgenticExposureUpdate {
+	if v != nil {
+		_u.SetLmsIssuer(*v)
+	}
+	return _u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (_u *AgenticExposureUpdate) ClearLmsIssuer() *AgenticExposureUpdate {
+	_u.mutation.ClearLmsIssuer()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *AgenticExposureUpdate) SetOwnerID(id int) *AgenticExposureUpdate {
 	_u.mutation.SetOwnerID(id)
@@ -527,6 +547,12 @@ func (_u *AgenticExposureUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.TransformationCleared() {
 		_spec.ClearField(agenticexposure.FieldTransformation, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.LmsIssuer(); ok {
+		_spec.SetField(agenticexposure.FieldLmsIssuer, field.TypeString, value)
+	}
+	if _u.mutation.LmsIssuerCleared() {
+		_spec.ClearField(agenticexposure.FieldLmsIssuer, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -908,6 +934,26 @@ func (_u *AgenticExposureUpdateOne) ClearTransformation() *AgenticExposureUpdate
 	return _u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_u *AgenticExposureUpdateOne) SetLmsIssuer(v string) *AgenticExposureUpdateOne {
+	_u.mutation.SetLmsIssuer(v)
+	return _u
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_u *AgenticExposureUpdateOne) SetNillableLmsIssuer(v *string) *AgenticExposureUpdateOne {
+	if v != nil {
+		_u.SetLmsIssuer(*v)
+	}
+	return _u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (_u *AgenticExposureUpdateOne) ClearLmsIssuer() *AgenticExposureUpdateOne {
+	_u.mutation.ClearLmsIssuer()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *AgenticExposureUpdateOne) SetOwnerID(id int) *AgenticExposureUpdateOne {
 	_u.mutation.SetOwnerID(id)
@@ -1200,6 +1246,12 @@ func (_u *AgenticExposureUpdateOne) sqlSave(ctx context.Context) (_node *Agentic
 	}
 	if _u.mutation.TransformationCleared() {
 		_spec.ClearField(agenticexposure.FieldTransformation, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.LmsIssuer(); ok {
+		_spec.SetField(agenticexposure.FieldLmsIssuer, field.TypeString, value)
+	}
+	if _u.mutation.LmsIssuerCleared() {
+		_spec.ClearField(agenticexposure.FieldLmsIssuer, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

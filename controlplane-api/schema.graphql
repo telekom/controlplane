@@ -274,6 +274,12 @@ type Failover {
   zones: [String!]
 }
 
+"The LMS issuer of a provider failover zone's gateway."
+type FailoverLmsIssuer {
+  zone: String!
+  url: String!
+}
+
 type Traffic {
   failover: Failover
   rateLimit: RateLimit

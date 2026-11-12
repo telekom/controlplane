@@ -48,6 +48,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	if api == nil {
 		// Api does not exist or is not active, conditions are already set in the function
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
@@ -60,6 +62,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	apiExp.SetCondition(NewApiExposureActiveCondition(apiExp, apiExp.Status.Active))
 	if !apiExp.Status.Active {
 		// its already exposed by another apiExposure, conditions are already set in the function
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
@@ -70,25 +74,35 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		msg := fmt.Sprintf("Application for ApiExposure cannot be resolved: %v", err)
 		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		apiExp.SetCondition(condition.NewBlockedCondition(msg))
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
 	if !validateApiCategoryPolicy(ctx, api, apiExpApplication, apiExp) {
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
 	if err = validateBasicWithScopesPolicy(apiExp); err != nil {
 		apiExp.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
 		apiExp.SetCondition(condition.NewBlockedCondition(err.Error()))
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
 	// Validate specification scopes unless this exposure has an external token endpoint.
 	if !validateExposureScopes(ctx, api, apiExp) {
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
 	if !validateFailover(apiExp) {
+		apiExp.Status.LmsIssuer = ""
+		apiExp.Status.FailoverLmsIssuers = nil
 		return nil
 	}
 
@@ -129,6 +143,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	apiExp.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
+	apiExp.Status.LmsIssuer = state.exposureLmsIssuer
 	logger.Info("✅ ApiExposure is processed")
 
 	return nil
@@ -292,6 +307,7 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	apiExp.Status.FailoverRoutes = nil
+	apiExp.Status.FailoverLmsIssuers = nil
 	if !apiExp.HasFailover() {
 		return nil
 	}
@@ -303,6 +319,21 @@ func (h *ApiExposureHandler) createFailoverRoutes(ctx context.Context, apiExp *a
 				return errors.Wrapf(err, "failed to get provider failover zone %q for apiExposure", failoverZone.Name)
 			}
 			return ctrlerrors.BlockedErrorf("Provider failover zone %q does not exist", failoverZone.Name)
+		}
+
+		failoverPreset, err := providerFailoverZone.Spec.GetDefaultPreset()
+		if err != nil {
+			return errors.Wrapf(err, "failed to get default preset for provider failover zone %s", failoverZone.Name)
+		}
+		failoverPresetStatus, err := providerFailoverZone.Status.GetPreset(failoverPreset.Name)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get default preset status for provider failover zone %s", failoverZone.Name)
+		}
+		if failoverPresetStatus.Links.LmsIssuer != "" {
+			apiExp.Status.FailoverLmsIssuers = append(apiExp.Status.FailoverLmsIssuers, apiapi.FailoverLmsIssuer{
+				Zone: failoverZone.Name,
+				Url:  failoverPresetStatus.Links.LmsIssuer,
+			})
 		}
 
 		options := []util.CreateRouteOption{
@@ -436,6 +467,7 @@ func (h *ApiExposureHandler) createRealRoute(ctx context.Context, apiExp *apiapi
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get exposure zone default preset status")
 	}
+	state.exposureLmsIssuer = exposurePresetStatus.Links.LmsIssuer
 	if state.hasLocalSubs && exposurePresetStatus.Links.Issuer != "" {
 		trustedIssuers = append(trustedIssuers, exposurePresetStatus.Links.Issuer)
 	}

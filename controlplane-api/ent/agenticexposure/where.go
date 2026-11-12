@@ -93,6 +93,11 @@ func Active(v bool) predicate.AgenticExposure {
 	return predicate.AgenticExposure(sql.FieldEQ(FieldActive, v))
 }
 
+// LmsIssuer applies equality check predicate on the "lms_issuer" field. It's identical to LmsIssuerEQ.
+func LmsIssuer(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldEQ(FieldLmsIssuer, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.AgenticExposure {
 	return predicate.AgenticExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -571,6 +576,81 @@ func TransformationIsNil() predicate.AgenticExposure {
 // TransformationNotNil applies the NotNil predicate on the "transformation" field.
 func TransformationNotNil() predicate.AgenticExposure {
 	return predicate.AgenticExposure(sql.FieldNotNull(FieldTransformation))
+}
+
+// LmsIssuerEQ applies the EQ predicate on the "lms_issuer" field.
+func LmsIssuerEQ(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldEQ(FieldLmsIssuer, v))
+}
+
+// LmsIssuerNEQ applies the NEQ predicate on the "lms_issuer" field.
+func LmsIssuerNEQ(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldNEQ(FieldLmsIssuer, v))
+}
+
+// LmsIssuerIn applies the In predicate on the "lms_issuer" field.
+func LmsIssuerIn(vs ...string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldIn(FieldLmsIssuer, vs...))
+}
+
+// LmsIssuerNotIn applies the NotIn predicate on the "lms_issuer" field.
+func LmsIssuerNotIn(vs ...string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldNotIn(FieldLmsIssuer, vs...))
+}
+
+// LmsIssuerGT applies the GT predicate on the "lms_issuer" field.
+func LmsIssuerGT(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldGT(FieldLmsIssuer, v))
+}
+
+// LmsIssuerGTE applies the GTE predicate on the "lms_issuer" field.
+func LmsIssuerGTE(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldGTE(FieldLmsIssuer, v))
+}
+
+// LmsIssuerLT applies the LT predicate on the "lms_issuer" field.
+func LmsIssuerLT(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldLT(FieldLmsIssuer, v))
+}
+
+// LmsIssuerLTE applies the LTE predicate on the "lms_issuer" field.
+func LmsIssuerLTE(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldLTE(FieldLmsIssuer, v))
+}
+
+// LmsIssuerContains applies the Contains predicate on the "lms_issuer" field.
+func LmsIssuerContains(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldContains(FieldLmsIssuer, v))
+}
+
+// LmsIssuerHasPrefix applies the HasPrefix predicate on the "lms_issuer" field.
+func LmsIssuerHasPrefix(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldHasPrefix(FieldLmsIssuer, v))
+}
+
+// LmsIssuerHasSuffix applies the HasSuffix predicate on the "lms_issuer" field.
+func LmsIssuerHasSuffix(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldHasSuffix(FieldLmsIssuer, v))
+}
+
+// LmsIssuerIsNil applies the IsNil predicate on the "lms_issuer" field.
+func LmsIssuerIsNil() predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldIsNull(FieldLmsIssuer))
+}
+
+// LmsIssuerNotNil applies the NotNil predicate on the "lms_issuer" field.
+func LmsIssuerNotNil() predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldNotNull(FieldLmsIssuer))
+}
+
+// LmsIssuerEqualFold applies the EqualFold predicate on the "lms_issuer" field.
+func LmsIssuerEqualFold(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldEqualFold(FieldLmsIssuer, v))
+}
+
+// LmsIssuerContainsFold applies the ContainsFold predicate on the "lms_issuer" field.
+func LmsIssuerContainsFold(v string) predicate.AgenticExposure {
+	return predicate.AgenticExposure(sql.FieldContainsFold(FieldLmsIssuer, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

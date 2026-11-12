@@ -538,6 +538,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              lmsIssuer:
+                description: |-
+                  LmsIssuer is the issuer of the Last-Mile-Security tokens that the exposure zone's
+                  AI gateway sends to the upstream. Empty until the primary route is provisioned.
+                type: string
               proxyRoutes:
                 description: ProxyRoutes references proxy gateway Route CRs for cross-zone
                   MCP delivery.

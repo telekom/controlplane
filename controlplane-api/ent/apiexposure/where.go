@@ -98,6 +98,11 @@ func APIVersion(v string) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))
 }
 
+// LmsIssuer applies equality check predicate on the "lms_issuer" field. It's identical to LmsIssuerEQ.
+func LmsIssuer(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEQ(FieldLmsIssuer, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -621,6 +626,91 @@ func APIVersionEqualFold(v string) predicate.ApiExposure {
 // APIVersionContainsFold applies the ContainsFold predicate on the "api_version" field.
 func APIVersionContainsFold(v string) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldContainsFold(FieldAPIVersion, v))
+}
+
+// LmsIssuerEQ applies the EQ predicate on the "lms_issuer" field.
+func LmsIssuerEQ(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEQ(FieldLmsIssuer, v))
+}
+
+// LmsIssuerNEQ applies the NEQ predicate on the "lms_issuer" field.
+func LmsIssuerNEQ(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNEQ(FieldLmsIssuer, v))
+}
+
+// LmsIssuerIn applies the In predicate on the "lms_issuer" field.
+func LmsIssuerIn(vs ...string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIn(FieldLmsIssuer, vs...))
+}
+
+// LmsIssuerNotIn applies the NotIn predicate on the "lms_issuer" field.
+func LmsIssuerNotIn(vs ...string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotIn(FieldLmsIssuer, vs...))
+}
+
+// LmsIssuerGT applies the GT predicate on the "lms_issuer" field.
+func LmsIssuerGT(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldGT(FieldLmsIssuer, v))
+}
+
+// LmsIssuerGTE applies the GTE predicate on the "lms_issuer" field.
+func LmsIssuerGTE(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldGTE(FieldLmsIssuer, v))
+}
+
+// LmsIssuerLT applies the LT predicate on the "lms_issuer" field.
+func LmsIssuerLT(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldLT(FieldLmsIssuer, v))
+}
+
+// LmsIssuerLTE applies the LTE predicate on the "lms_issuer" field.
+func LmsIssuerLTE(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldLTE(FieldLmsIssuer, v))
+}
+
+// LmsIssuerContains applies the Contains predicate on the "lms_issuer" field.
+func LmsIssuerContains(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldContains(FieldLmsIssuer, v))
+}
+
+// LmsIssuerHasPrefix applies the HasPrefix predicate on the "lms_issuer" field.
+func LmsIssuerHasPrefix(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldHasPrefix(FieldLmsIssuer, v))
+}
+
+// LmsIssuerHasSuffix applies the HasSuffix predicate on the "lms_issuer" field.
+func LmsIssuerHasSuffix(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldHasSuffix(FieldLmsIssuer, v))
+}
+
+// LmsIssuerIsNil applies the IsNil predicate on the "lms_issuer" field.
+func LmsIssuerIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldLmsIssuer))
+}
+
+// LmsIssuerNotNil applies the NotNil predicate on the "lms_issuer" field.
+func LmsIssuerNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldLmsIssuer))
+}
+
+// LmsIssuerEqualFold applies the EqualFold predicate on the "lms_issuer" field.
+func LmsIssuerEqualFold(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEqualFold(FieldLmsIssuer, v))
+}
+
+// LmsIssuerContainsFold applies the ContainsFold predicate on the "lms_issuer" field.
+func LmsIssuerContainsFold(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldContainsFold(FieldLmsIssuer, v))
+}
+
+// FailoverLmsIssuersIsNil applies the IsNil predicate on the "failover_lms_issuers" field.
+func FailoverLmsIssuersIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldFailoverLmsIssuers))
+}
+
+// FailoverLmsIssuersNotNil applies the NotNil predicate on the "failover_lms_issuers" field.
+func FailoverLmsIssuersNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldFailoverLmsIssuers))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

@@ -663,6 +663,35 @@ var _ = Describe("AgenticExposure Repository", func() {
 			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
 
+		It("should set the LMS issuer and clear it when it is removed", func() {
+			lmsIssuer := "https://lms.example.com"
+			data := &agenticexposure.AgenticExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "lms-exp", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/mcp/v1/lms",
+				Visibility:     "WORLD",
+				Variant:        "MCP",
+				Active:         true,
+				Upstreams:      []model.Upstream{{URL: "https://up.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+				LmsIssuer:      &lmsIssuer,
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.AgenticExposure.Query().Where(entagenticexposure.BasePathEQ("/mcp/v1/lms")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.LmsIssuer).To(HaveValue(Equal("https://lms.example.com")))
+
+			data.LmsIssuer = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.AgenticExposure.Query().Where(entagenticexposure.BasePathEQ("/mcp/v1/lms")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.LmsIssuer).To(BeNil())
+		})
+
 		It("should update existing exposure on conflict with UpdateNewValues", func() {
 			data := &agenticexposure.AgenticExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "upd-exp", nil),

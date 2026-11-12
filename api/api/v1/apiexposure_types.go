@@ -148,6 +148,26 @@ type ApiExposureStatus struct {
 	Route          *ctypes.ObjectRef  `json:"route,omitempty"`
 	FailoverRoutes []ctypes.ObjectRef `json:"failoverRoutes,omitempty"`
 	ProxyRoutes    []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
+
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens that the exposure zone's
+	// gateway sends to the upstream. Empty until the primary route is provisioned.
+	// +optional
+	LmsIssuer string `json:"lmsIssuer,omitempty"`
+
+	// FailoverLmsIssuers are the LMS issuers of the provider failover zones' gateways.
+	// The upstream must trust them to accept traffic after a failover.
+	// +optional
+	// +listType=map
+	// +listMapKey=zone
+	FailoverLmsIssuers []FailoverLmsIssuer `json:"failoverLmsIssuers,omitempty"`
+}
+
+// FailoverLmsIssuer is the LMS issuer of a provider failover zone's gateway.
+type FailoverLmsIssuer struct {
+	// Zone is the name of the failover zone.
+	Zone string `json:"zone"`
+	// Url is the issuer URL of the Last-Mile-Security tokens sent by the zone's gateway.
+	Url string `json:"url"`
 }
 
 // +kubebuilder:object:root=true

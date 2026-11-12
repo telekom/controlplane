@@ -810,6 +810,49 @@ var _ = Describe("AgenticExposure Translator", func() {
 
 			Expect(data.Transformation).To(BeNil())
 		})
+
+		It("should map Status.LmsIssuer to a pointer", func() {
+			obj := &agenticv1.AgenticExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "lms",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: agenticv1.AgenticExposureSpec{
+					BasePath:   "/mcp/v1/lms",
+					Visibility: agenticv1.VisibilityWorld,
+					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
+					Provider:   ctypes.ObjectRef{Name: "app"},
+					Variant:    agenticv1.AgenticVariantMCP,
+				},
+			}
+			obj.Status.LmsIssuer = "https://lms.example.com"
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.LmsIssuer).To(HaveValue(Equal("https://lms.example.com")))
+		})
+
+		It("should produce nil LmsIssuer when Status.LmsIssuer is empty", func() {
+			obj := &agenticv1.AgenticExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "lms",
+					Namespace: "prod--platform--narvi",
+				},
+				Spec: agenticv1.AgenticExposureSpec{
+					BasePath:   "/mcp/v1/lms",
+					Visibility: agenticv1.VisibilityWorld,
+					Approval:   agenticv1.Approval{Strategy: agenticv1.ApprovalStrategyAuto},
+					Provider:   ctypes.ObjectRef{Name: "app"},
+					Variant:    agenticv1.AgenticVariantMCP,
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.LmsIssuer).To(BeNil())
+		})
 	})
 
 	Describe("KeyFromObject", func() {

@@ -64,6 +64,15 @@ func (ApiExposure) Fields() []ent.Field {
 		field.Text("api_version").
 			Optional().
 			Nillable(),
+		// lms_issuer is the issuer of the Last-Mile-Security tokens that the primary
+		// exposure zone's gateway sends to the upstream.
+		field.Text("lms_issuer").
+			Optional().
+			Nillable(),
+		// failover_lms_issuers are the LMS issuers of the provider failover zones' gateways.
+		field.JSON("failover_lms_issuers", []model.FailoverLmsIssuer{}).
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 

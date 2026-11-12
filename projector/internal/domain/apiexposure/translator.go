@@ -112,6 +112,14 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 
 	features := mapFeatures(obj)
 
+	var lmsIssuer *string
+	if obj.Status.LmsIssuer != "" {
+		issuer := obj.Status.LmsIssuer
+		lmsIssuer = &issuer
+	}
+
+	failoverLmsIssuers := mapFailoverLmsIssuers(obj.Status.FailoverLmsIssuers)
+
 	return &APIExposureData{
 		Meta:          shared.NewMetadata(obj.Namespace, obj.Name, obj.Labels),
 		StatusPhase:   phase,
@@ -125,11 +133,13 @@ func (t *Translator) Translate(_ context.Context, obj *apiv1.ApiExposure) (*APIE
 			Strategy:     mapApprovalStrategy(string(obj.Spec.Approval.Strategy)),
 			TrustedTeams: obj.Spec.Approval.TrustedTeams,
 		},
-		APIVersion: nil,
-		AppName:    obj.Labels[applicationLabelKey],
-		TeamName:   shared.TeamNameFromNamespace(obj.Namespace),
-		Security:   security,
-		Traffic:    traffic,
+		APIVersion:         nil,
+		AppName:            obj.Labels[applicationLabelKey],
+		TeamName:           shared.TeamNameFromNamespace(obj.Namespace),
+		Security:           security,
+		Traffic:            traffic,
+		LmsIssuer:          lmsIssuer,
+		FailoverLmsIssuers: failoverLmsIssuers,
 	}, nil
 }
 
@@ -219,4 +229,16 @@ func mapApprovalStrategy(strategy string) string {
 	default:
 		return strings.ToUpper(strategy)
 	}
+}
+
+// mapFailoverLmsIssuers maps the failover LMS issuers in order, returning nil for an empty list.
+func mapFailoverLmsIssuers(issuers []apiv1.FailoverLmsIssuer) []model.FailoverLmsIssuer {
+	if len(issuers) == 0 {
+		return nil
+	}
+	result := make([]model.FailoverLmsIssuer, 0, len(issuers))
+	for _, issuer := range issuers {
+		result = append(result, model.FailoverLmsIssuer{Zone: issuer.Zone, Url: issuer.Url})
+	}
+	return result
 }

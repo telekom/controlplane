@@ -52,6 +52,8 @@ const (
 	FieldTraffic = "traffic"
 	// FieldTransformation holds the string denoting the transformation field in the database.
 	FieldTransformation = "transformation"
+	// FieldLmsIssuer holds the string denoting the lms_issuer field in the database.
+	FieldLmsIssuer = "lms_issuer"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeMcpServer holds the string denoting the mcp_server edge name in mutations.
@@ -110,6 +112,7 @@ var Columns = []string{
 	FieldSecurity,
 	FieldTraffic,
 	FieldTransformation,
+	FieldLmsIssuer,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "agentic_exposures"
@@ -296,6 +299,11 @@ func ByVariant(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
+}
+
+// ByLmsIssuer orders the results by the lms_issuer field.
+func ByLmsIssuer(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLmsIssuer, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

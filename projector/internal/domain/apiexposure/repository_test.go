@@ -433,6 +433,67 @@ var _ = Describe("ApiExposure Repository", func() {
 			Expect(errors.Is(err, dbErr)).To(BeTrue())
 		})
 
+		It("should set the LMS issuer and clear it when it is removed", func() {
+			lmsIssuer := "https://lms.example.com"
+			data := &apiexposure.APIExposureData{
+				Meta:           shared.NewMetadata("prod--platform--narvi", "lms-exp", nil),
+				StatusPhase:    "READY",
+				BasePath:       "/api/v1/lms",
+				Visibility:     "WORLD",
+				Features:       []string{},
+				Active:         true,
+				Upstreams:      []model.Upstream{{URL: "https://up.example.com", Weight: 100}},
+				ApprovalConfig: model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:        "my-app",
+				TeamName:       "platform--narvi",
+				LmsIssuer:      &lmsIssuer,
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().Where(entapiexposure.BasePathEQ("/api/v1/lms")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.LmsIssuer).To(HaveValue(Equal("https://lms.example.com")))
+
+			data.LmsIssuer = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().Where(entapiexposure.BasePathEQ("/api/v1/lms")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.LmsIssuer).To(BeNil())
+		})
+
+		It("should set the failover LMS issuers and clear them when they are removed", func() {
+			issuers := []model.FailoverLmsIssuer{
+				{Zone: "zone-b", Url: "https://lms.zone-b.example.com"},
+				{Zone: "zone-a", Url: "https://lms.zone-a.example.com"},
+			}
+			data := &apiexposure.APIExposureData{
+				Meta:               shared.NewMetadata("prod--platform--narvi", "failover-lms-exp", nil),
+				StatusPhase:        "READY",
+				BasePath:           "/api/v1/lms-failover",
+				Visibility:         "WORLD",
+				Features:           []string{},
+				Active:             true,
+				Upstreams:          []model.Upstream{{URL: "https://up.example.com", Weight: 100}},
+				ApprovalConfig:     model.ApprovalConfig{Strategy: "AUTO"},
+				AppName:            "my-app",
+				TeamName:           "platform--narvi",
+				FailoverLmsIssuers: issuers,
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err := client.ApiExposure.Query().Where(entapiexposure.BasePathEQ("/api/v1/lms-failover")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.FailoverLmsIssuers).To(Equal(issuers))
+
+			data.FailoverLmsIssuers = nil
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			exp, err = client.ApiExposure.Query().Where(entapiexposure.BasePathEQ("/api/v1/lms-failover")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exp.FailoverLmsIssuers).To(BeNil())
+		})
+
 		It("should update existing exposure on conflict with UpdateNewValues", func() {
 			data := &apiexposure.APIExposureData{
 				Meta:           shared.NewMetadata("prod--platform--narvi", "upd-exp", nil),

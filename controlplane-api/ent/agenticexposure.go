@@ -55,6 +55,8 @@ type AgenticExposure struct {
 	Traffic model.Traffic `json:"traffic,omitempty"`
 	// Transformation holds the value of the "transformation" field.
 	Transformation model.AgenticTransformation `json:"transformation,omitempty"`
+	// LmsIssuer holds the value of the "lms_issuer" field.
+	LmsIssuer *string `json:"lms_issuer,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AgenticExposureQuery when eager-loading is set.
 	Edges                        AgenticExposureEdges `json:"edges"`
@@ -136,7 +138,7 @@ func (*AgenticExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case agenticexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case agenticexposure.FieldStatusPhase, agenticexposure.FieldStatusMessage, agenticexposure.FieldEnvironment, agenticexposure.FieldNamespace, agenticexposure.FieldBasePath, agenticexposure.FieldVisibility, agenticexposure.FieldVariant:
+		case agenticexposure.FieldStatusPhase, agenticexposure.FieldStatusMessage, agenticexposure.FieldEnvironment, agenticexposure.FieldNamespace, agenticexposure.FieldBasePath, agenticexposure.FieldVisibility, agenticexposure.FieldVariant, agenticexposure.FieldLmsIssuer:
 			values[i] = new(sql.NullString)
 		case agenticexposure.FieldCreatedAt, agenticexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -271,6 +273,13 @@ func (_m *AgenticExposure) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field transformation: %w", err)
 				}
 			}
+		case agenticexposure.FieldLmsIssuer:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lms_issuer", values[i])
+			} else if value.Valid {
+				_m.LmsIssuer = new(string)
+				*_m.LmsIssuer = value.String
+			}
 		case agenticexposure.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field agent_card_exposures", value)
@@ -400,6 +409,11 @@ func (_m *AgenticExposure) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("transformation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Transformation))
+	builder.WriteString(", ")
+	if v := _m.LmsIssuer; v != nil {
+		builder.WriteString("lms_issuer=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

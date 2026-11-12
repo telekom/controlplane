@@ -205,6 +205,9 @@ models:
         resolver: true
       clientKey:
         resolver: true
+  FailoverLmsIssuer:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.FailoverLmsIssuer
 # Traffic
   Traffic:
     model:

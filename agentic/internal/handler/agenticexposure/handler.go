@@ -55,14 +55,19 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 	if err = validateBasicWithScopesPolicy(obj); err != nil {
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonValidationFailed, err.Error()))
 		obj.SetCondition(condition.NewBlockedCondition(err.Error()))
+		obj.Status.LmsIssuer = ""
 		return nil
 	}
 	if !validateExposureScopes(ctx, serverInfo, obj) {
+		obj.Status.LmsIssuer = ""
 		return nil
 	}
 
 	// 2. Check for competing exposures (oldest-wins)
 	if blocked, checkErr := checkCompetingExposures(ctx, obj); checkErr != nil || blocked {
+		if blocked {
+			obj.Status.LmsIssuer = ""
+		}
 		return checkErr
 	}
 
@@ -93,6 +98,7 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 
 	obj.Status.Route = nil
 	obj.Status.ProxyRoutes = nil
+	obj.Status.LmsIssuer = ""
 
 	// 6. Handle cross-zone proxy routes for subscriber zones and the Telecontext zone
 	crossZones, hasLocalSubs, err := util.FindCrossZoneAgenticSubscriptionZones(ctx, obj.Spec.BasePath, obj.Spec.Zone.Name)
@@ -161,11 +167,12 @@ func (h *AgenticExposureHandler) CreateOrUpdate(ctx context.Context, obj *agenti
 		telecontextConsumer = telecontextApp.Status.ClientId
 	}
 	hasLocalCallers := hasLocalSubs || telecontextConsumer != ""
-	route, err := util.CreateAgenticRoute(ctx, obj, zone, hasLocalCallers, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
+	route, lmsIssuer, err := util.CreateAgenticRoute(ctx, obj, zone, hasLocalCallers, isProxyTarget, telecontextConsumer, crossZoneLmsIssuers)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MCP Route")
 	}
 	obj.Status.Route = ctypes.ObjectRefFromObject(route)
+	obj.Status.LmsIssuer = lmsIssuer
 	logger.V(1).Info("MCP Route created/updated", "route", route.Name)
 
 	// 8. Cleanup stale routes
@@ -265,6 +272,7 @@ func cleanupServerRoutes(ctx context.Context, obj *agenticv1.AgenticExposure) er
 			return errors.Wrapf(cleanupErr, "failed to cleanup proxy Route after server not found")
 		}
 	}
+	obj.Status.LmsIssuer = ""
 	return nil
 }
 

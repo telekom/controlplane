@@ -42,6 +42,12 @@ var _ = Describe("Root query resolvers for agentic entities", func() {
 		Expect(subscription.Fields.ForName("gatewayURL").Type.String()).To(Equal("String"))
 	})
 
+	It("should expose the lmsIssuer field on agentic exposures but not on the reduced info type", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		Expect(schema.Types["AgenticExposure"].Fields.ForName("lmsIssuer").Type.String()).To(Equal("String"))
+		Expect(schema.Types["AgenticExposureInfo"].Fields.ForName("lmsIssuer")).To(BeNil())
+	})
+
 	It("should paginate mcpServers without panicking", func() {
 		ctx := testutil.AllowContext()
 		conn, err := r.Query().McpServers(ctx, nil, nil, nil, nil, nil, nil)
