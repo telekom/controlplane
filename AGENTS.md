@@ -8,6 +8,12 @@ SPDX-License-Identifier: CC0-1.0
 
 Go monorepo for Kubernetes controllers and REST APIs. Each component has its own `go.mod` with local `replace` directives.
 
+## Required Hook Setup
+
+Before implementing changes, run `pre-commit install` from the repository root in the active checkout or worktree. Verify that all three configured hooks (`pre-commit`, `commit-msg`, and `pre-push`) are installed and executable at the paths returned by `git rev-parse --git-path hooks/<hook>`.
+
+Installing the `pre-commit` tool or only the pre-push hook is not sufficient. If setup fails, stop and report the blocker before editing files. Follow [CONTRIBUTING.md](CONTRIBUTING.md#pre-commit-hooks) for prerequisites, and keep hooks enabled when committing and pushing.
+
 ## Build & Test
 
 Always use Makefile targets — never run `go build`, `go test`, `go vet`, or `golangci-lint` directly. The Makefiles ensure correct flags, code generation, coverage config, and envtest setup.
@@ -83,6 +89,14 @@ User-facing documentation lives in `docs/docs/` (Docusaurus). After any change t
 - `reference/` — API reference, JSON schemas
 
 Update docs in the same PR as the code change.
+
+## Auditing
+
+Before committing a finished feature, run the `code-auditor` skill. It checks the change against the ruleset in `.agents/rules` and writes receipts for the audited content.
+
+The pre-commit gate blocks on `CRITICAL` findings and on files that changed after the last audit; pre-push blocks on `HIGH`. Neither runs a model — they only verify receipts, so they cost about as much as `gitleaks`. See `.agents/ARCHITECTURE.md`.
+
+New rules are added with the `rule-writer` skill, and only on user request.
 
 ## Conventions
 

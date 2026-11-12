@@ -1,0 +1,25 @@
+# The judges an audit is allowed to dispatch to.
+#
+# A verdict is only reproducible if the thing that produced it is named
+# exactly, so a judge is a model *and* the effort it runs at - the same model
+# at a different effort is a different answer-producing function.
+#
+#   <complexity>: <provider>/<model>#<effort>
+#
+# The resolved pin is recorded in every cache and receipt key. Editing a line
+# here retires the entries it produced, which is the intended behaviour: those
+# verdicts were produced by something that no longer exists.
+#
+# 'default' names the complexity an audit dispatches to. Harness agent definitions
+# are generated from this file by sync_judges.py; if the two disagree, a
+# receipt would name a judge that never ran, so pre-commit refuses the commit.
+
+# 'fast' is the default because the fixtures say so, not because it is cheap:
+# selftest_rules.py --samples 3 scores 02-no-reconcile-loops 12/12 and
+# 04-over-technical-docs 9/9, both at 0% flake. Re-measure before changing it,
+# and treat a rule that only passes on 'careful' as a rule to rewrite first.
+
+default: fast
+
+fast: github-copilot/gpt-6-luna#low
+careful: github-copilot/gpt-6.1-sol#medium

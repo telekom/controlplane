@@ -55,6 +55,7 @@ plugins:
     enabled: true
 
 exclude_patterns:
+  - ".agents/" # agent tooling (code-auditor engine), not product code
   - "config/"
   - "db/"
   - "dist/"

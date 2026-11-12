@@ -26,3 +26,10 @@ allure-results
 debug-results
 *.log
 .superpowers/
+
+# local audit state (receipts, caches); audit ignores are committed
+.agents/.audit/
+
+# python bytecode
+__pycache__/
+*.pyc

@@ -1,0 +1,11 @@
+# Copyright 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The code-auditor engine is agent tooling, not product code. Marking it
+# vendored keeps its ~3.4k lines of Python out of the repository language
+# statistics without hiding it from review - unlike linguist-generated,
+# linguist-vendored leaves diffs expanded. Scoped to the engine only: the
+# rules and skill documents next to it stay fully visible.
+# See .agents/ARCHITECTURE.md.
+.agents/skills/code-auditor/scripts/** linguist-vendored
