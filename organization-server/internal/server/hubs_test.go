@@ -17,12 +17,14 @@ import (
 
 var _ = Describe("Hub Handlers", func() {
 	var (
-		app        *fiber.App
-		adminToken string
-		obfToken   string
+		app           *fiber.App
+		adminToken    string
+		obfToken      string
+		gqlOperations []string
 	)
 
 	BeforeEach(func() {
+		gqlOperations = nil
 		gqlServer := mockGraphQLServer(map[string]any{
 			"ListGroups": map[string]any{
 				"groups": []map[string]any{
@@ -82,7 +84,7 @@ var _ = Describe("Hub Handlers", func() {
 					"errors": []any{},
 				},
 			},
-		})
+		}, &gqlOperations)
 		DeferCleanup(gqlServer.Close)
 
 		roverServer := mockRoverServer(nil)
@@ -145,6 +147,7 @@ var _ = Describe("Hub Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs", http.NoBody)
 			resp, err := app.Test(req, -1)
 			expectStatus(resp, err, http.StatusUnauthorized)
+			Expect(gqlOperations).To(BeEmpty())
 		})
 
 		It("should reject cross-hub access for non-admin tokens", func() {
@@ -152,6 +155,7 @@ var _ = Describe("Hub Handlers", func() {
 			req := httptest.NewRequest(http.MethodGet, "/organization/v1/hubs/eni", http.NoBody)
 			resp, err := executeRequest(app, req, otherHubToken)
 			expectStatus(resp, err, http.StatusForbidden)
+			Expect(gqlOperations).To(BeEmpty())
 		})
 
 		DescribeTable("creation requires admin:all",
@@ -160,9 +164,14 @@ var _ = Describe("Hub Handlers", func() {
 				req := httptest.NewRequest(http.MethodPost, "/organization/v1/hubs", strings.NewReader(body))
 				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
 				expectStatus(resp, err, http.StatusForbidden)
+				Expect(gqlOperations).To(BeEmpty())
 			},
 			Entry("group cannot create hub", "tardis:group:all"),
+			Entry("team cannot create hub", "tardis:team:all"),
 			Entry("read-only admin cannot create hub", "tardis:admin:read"),
+			Entry("obfuscated admin cannot create hub", "tardis:admin:obfuscated"),
+			Entry("obfuscated group cannot create hub", "tardis:group:obfuscated"),
+			Entry("legacy hub cannot create hub", "tardis:hub:all"),
 		)
 
 		DescribeTable("group read scopes cannot mutate",
@@ -171,6 +180,7 @@ var _ = Describe("Hub Handlers", func() {
 				req := httptest.NewRequest(http.MethodPut, "/organization/v1/hubs/eni", strings.NewReader(body))
 				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
 				expectStatus(resp, err, http.StatusForbidden)
+				Expect(gqlOperations).To(BeEmpty())
 			},
 			Entry("canonical group scope", "tardis:group:read"),
 			Entry("legacy hub scope", "tardis:hub:read"),
@@ -182,6 +192,7 @@ var _ = Describe("Hub Handlers", func() {
 				req := httptest.NewRequest(method, "/organization/v1/hubs/eni", strings.NewReader(body))
 				resp, err := executeRequest(app, req, makeToken("eni", "myteam", []string{scope}))
 				expectStatus(resp, err, http.StatusForbidden)
+				Expect(gqlOperations).To(BeEmpty())
 			},
 			Entry("group cannot update", http.MethodPut, "tardis:group:all"),
 			Entry("group cannot delete", http.MethodDelete, "tardis:group:all"),
@@ -189,6 +200,12 @@ var _ = Describe("Hub Handlers", func() {
 			Entry("team cannot delete", http.MethodDelete, "tardis:team:all"),
 			Entry("read-only admin cannot update", http.MethodPut, "tardis:admin:read"),
 			Entry("read-only admin cannot delete", http.MethodDelete, "tardis:admin:read"),
+			Entry("obfuscated admin cannot update", http.MethodPut, "tardis:admin:obfuscated"),
+			Entry("obfuscated admin cannot delete", http.MethodDelete, "tardis:admin:obfuscated"),
+			Entry("obfuscated group cannot update", http.MethodPut, "tardis:group:obfuscated"),
+			Entry("obfuscated group cannot delete", http.MethodDelete, "tardis:group:obfuscated"),
+			Entry("legacy hub cannot update", http.MethodPut, "tardis:hub:all"),
+			Entry("legacy hub cannot delete", http.MethodDelete, "tardis:hub:all"),
 		)
 	})
 

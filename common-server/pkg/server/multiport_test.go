@@ -205,6 +205,27 @@ var _ = Describe("Guarded", func() {
 		Expect(calls).To(Equal([]string{"guard", "middleware", "handler"}))
 	})
 
+	It("stops the chain when a guard denies the request", func() {
+		var calls []string
+		app := fiber.New()
+		app.Get("/", server.Guarded([]fiber.Handler{func(c *fiber.Ctx) error {
+			calls = append(calls, "guard")
+			return c.SendStatus(http.StatusForbidden)
+		}}, func(c *fiber.Ctx) error {
+			calls = append(calls, "middleware")
+			return c.Next()
+		}, func(c *fiber.Ctx) error {
+			calls = append(calls, "handler")
+			return c.SendStatus(http.StatusOK)
+		})...)
+
+		resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(resp.Body.Close)
+		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		Expect(calls).To(Equal([]string{"guard"}))
+	})
+
 	It("returns independent handler chains", func() {
 		guard := make([]fiber.Handler, 1, 2)
 		guard[0] = h
