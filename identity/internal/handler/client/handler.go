@@ -15,13 +15,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
+	"github.com/telekom/controlplane/identity/internal/leader"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
@@ -30,6 +33,7 @@ var _ handler.Handler[*identityv1.Client] = &HandlerClient{}
 
 type HandlerClient struct {
 	ServiceFactory keycloak.ServiceFactory
+	PeerReader     ctrlclient.Reader
 }
 
 // NewHandlerClient creates a HandlerClient with the given ClientFactory.
@@ -61,6 +65,17 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
 	mapToClientStatus(&realm.Status, realm.Spec.AllowedOrigins, &client.Status)
+	client.Status.Leader = types.ObjectRefFromObject(client)
+	if h.PeerReader != nil {
+		elected, electErr := h.electLeader(ctx, realm, client)
+		if electErr != nil {
+			return electErr
+		}
+		client.Status.Leader = types.ObjectRefFromObject(elected)
+		if client.IsFollower() {
+			return h.follow(ctx, client, elected, resolvedSecret)
+		}
+	}
 
 	realmClient, release, err := h.ServiceFactory.ServiceFor(ctx, realm, realm.Status)
 	if err != nil {
@@ -219,6 +234,17 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 	logger := log.FromContext(ctx)
 	logger.Info("ClientHandler Delete", "client", obj)
 
+	if h.PeerReader != nil {
+		peer, shared, err := h.otherLivePeer(ctx, obj)
+		if err != nil {
+			return err
+		}
+		if shared {
+			logger.Info("Skipping Keycloak Client deletion because another Client is active", "peer", peer)
+			return nil
+		}
+	}
+
 	ready, realm, err := realmHandler.GetRealmByName(ctx, obj.Spec.Realm, true)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -262,4 +288,80 @@ func mapToClientStatus(realmStatus *identityv1.RealmStatus, allowedOrigins []str
 
 	clientStatus.IssuerUrl = realmStatus.IssuerUrl
 	clientStatus.AllowedOrigins = slices.Clone(allowedOrigins)
+}
+
+// electLeader returns the Client that manages the Keycloak client shared by identityClient's group.
+func (h *HandlerClient) electLeader(ctx context.Context, realm *identityv1.Realm, identityClient *identityv1.Client) (*identityv1.Client, error) {
+	peers, err := h.livePeers(ctx, realm, identityClient)
+	if err != nil {
+		return nil, err
+	}
+	elected := leader.ElectClient(peers)
+	if elected == nil {
+		return nil, ctrlerrors.BlockedErrorf("no live leader candidate found for Client %s/%s", identityClient.Namespace, identityClient.Name)
+	}
+	return elected, nil
+}
+
+// otherLivePeer reports another live Client that still uses obj's Keycloak client.
+func (h *HandlerClient) otherLivePeer(ctx context.Context, obj *identityv1.Client) (ctrlclient.ObjectKey, bool, error) {
+	realm := &identityv1.Realm{}
+	if err := h.PeerReader.Get(ctx, obj.Spec.Realm.K8s(), realm); err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrlclient.ObjectKey{}, false, nil
+		}
+		return ctrlclient.ObjectKey{}, false, fmt.Errorf("failed to get Realm before Client deletion: %w", err)
+	}
+	peers, err := h.livePeers(ctx, realm, obj)
+	if err != nil {
+		return ctrlclient.ObjectKey{}, false, err
+	}
+	self := ctrlclient.ObjectKeyFromObject(obj)
+	for i := range peers {
+		if key := ctrlclient.ObjectKeyFromObject(&peers[i]); key != self {
+			return key, true, nil
+		}
+	}
+	return ctrlclient.ObjectKey{}, false, nil
+}
+
+// livePeers returns the live Clients with identityClient's client ID in all realms shared with realm.
+func (h *HandlerClient) livePeers(ctx context.Context, realm *identityv1.Realm, identityClient *identityv1.Client) ([]identityv1.Client, error) {
+	realms, err := leader.RealmPeersForRealm(ctx, h.PeerReader, realm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find shared Realm peers: %w", err)
+	}
+	peers, err := leader.ClientsForRealmGroup(ctx, h.PeerReader, realms, identityClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find shared Client peers: %w", err)
+	}
+	return peers, nil
+}
+
+func (h *HandlerClient) follow(ctx context.Context, follower, elected *identityv1.Client, resolvedSecret string) error {
+	follower.Status.RotatedClientSecret = ""
+	follower.Status.RotatedSecretExpiresAt = nil
+	follower.Status.SecretExpiresAt = nil
+	meta.RemoveStatusCondition(&follower.Status.Conditions, identityv1.SecretRotationConditionType)
+	if err := condition.EnsureReady(elected); err != nil {
+		message := fmt.Sprintf("waiting for Client leader %s/%s to be ready", elected.Namespace, elected.Name)
+		follower.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, message))
+		return ctrlerrors.BlockedErrorf("%s", message)
+	}
+
+	leaderSecret, err := secrets.Get(ctx, elected.Spec.ClientSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get Client leader secret from secret-manager: %w", err)
+	}
+
+	follower.Status.ClientUid = elected.Status.ClientUid
+	if resolvedSecret != leaderSecret {
+		message := fmt.Sprintf("client secret differs from leader %s/%s", elected.Namespace, elected.Name)
+		follower.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, message))
+		return ctrlerrors.BlockedErrorf("%s", message)
+	}
+
+	follower.SetCondition(condition.NewDoneProcessingCondition("Mirrored Client from leader"))
+	follower.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Client is ready"))
+	return nil
 }

@@ -75,12 +75,12 @@ func (h *ZoneServiceConfigHandler) CreateOrUpdate(ctx context.Context, obj *file
 		}
 	}
 
-	_, err = createConsumer(ctx, obj, zone)
+	_, err = createConsumer(ctx, obj, zone, apiClient.Spec.ClientId)
 	if err != nil {
 		return err
 	}
 
-	route, err := createManagedRoute(ctx, zone, obj)
+	route, err := createManagedRoute(ctx, zone, obj, apiClient.Spec.ClientId)
 	if err != nil {
 		return err
 	}
@@ -175,6 +175,9 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 	}
 
 	cc := cclient.ClientFromContextOrDie(ctx)
+	env := contextutil.EnvFromContextOrDie(ctx)
+	// The SFTP API client lives in the internal realm, which Environments on the same Keycloak share.
+	clientID := identityv1.EnvironmentClientId(env, apiClient.Name)
 
 	clientSecretPath := fmt.Sprintf("zones/%s/file/clientSecret", zone.Name)
 
@@ -188,7 +191,7 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 		secretsapi.WithSecretValue(clientSecretPath, secretValue),
 	}
 
-	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, contextutil.EnvFromContextOrDie(ctx), options...)
+	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, env, options...)
 	if err != nil {
 		return fmt.Errorf("failed to onboard secrets for SFTP API Client: %w", err)
 	}
@@ -206,7 +209,7 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 
 		apiClient.Labels = util.DomainLabel()
 
-		apiClient.Spec.ClientId = apiClient.Name
+		apiClient.Spec.ClientId = clientID
 		apiClient.Spec.ClientSecret = ref
 		apiClient.Spec.Realm = zone.Status.InternalIdentityRealm
 
@@ -220,7 +223,7 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 	return nil
 }
 
-func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone) (*gatewayapi.Consumer, error) {
+func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *adminv1.Zone, clientID string) (*gatewayapi.Consumer, error) {
 	cc := cclient.ClientFromContextOrDie(ctx)
 	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI)
 	if err != nil {
@@ -250,7 +253,7 @@ func createConsumer(ctx context.Context, obj *filev1.ZoneServiceConfig, zone *ad
 
 		consumer.Spec = gatewayapi.ConsumerSpec{
 			Gateway: *presetStatus.GatewayRef,
-			Name:    consumerRef.Name,
+			Name:    clientID,
 		}
 
 		return nil
@@ -308,7 +311,8 @@ func tokenEndpointFromIssuer(rawIssuer string) (string, error) {
 }
 
 // createManagedRoute creates a single gateway route for a managed route configuration.
-func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.ZoneServiceConfig) (*gatewayapi.Route, error) {
+// The SFTP API client with clientID is its only default consumer.
+func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.ZoneServiceConfig, clientID string) (*gatewayapi.Route, error) {
 	cc := cclient.ClientFromContextOrDie(ctx)
 
 	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAPI)
@@ -365,7 +369,7 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 				DisableAccessControl: false,
 				TrustedIssuers:       []string{presetStatus.Links.InternalIssuer},
 				RealmName:            zone.Status.RealmName,
-				DefaultConsumers:     []string{util.GetChildResourceRef(obj).Name},
+				DefaultConsumers:     []string{clientID},
 			},
 		}
 

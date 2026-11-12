@@ -92,6 +92,18 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		create(cfg)
 		return cfg
 	}
+	setAdminClient := func(cfg *eventv1.EventConfig) {
+		clientID := cfg.Spec.Local.Admin.Client.ClientId
+		adminClient := &identityv1.Client{
+			ObjectMeta: metav1.ObjectMeta{Name: clientID, Namespace: cfg.Namespace, Labels: labels},
+			Spec: identityv1.ClientSpec{
+				ClientId: clientID,
+				Realm:    &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"},
+			},
+		}
+		create(adminClient)
+		cfg.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
+	}
 	makeZone := func(name string) {
 		idpAdminUrl := "https://idp-admin.example.com"
 		zone := &adminv1.Zone{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default", Labels: labels}, Spec: adminv1.ZoneSpec{
@@ -191,6 +203,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		realm.Status.IssuerUrl = "https://issuer.example.com"
 		store(realm)
 		// The proxy EventStore reads the target admin client configuration.
+		setAdminClient(backend)
 		ready(&backend.Status.Conditions, backend.Generation)
 		store(backend)
 
@@ -250,9 +263,10 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		store(realm)
 
 		// The admin Client pre-exists without the opt-out annotation.
+		adminClientID := identityv1.EnvironmentClientId(env, "horizon-quasar")
 		existing := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: "horizon-quasar", Namespace: namespace, Labels: labels, Annotations: map[string]string{"example.com/unrelated": "keep"}},
-			Spec:       identityv1.ClientSpec{Realm: &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"}, ClientId: "horizon-quasar", ClientSecret: "test-secret"},
+			ObjectMeta: metav1.ObjectMeta{Name: adminClientID, Namespace: namespace, Labels: labels, Annotations: map[string]string{"example.com/unrelated": "keep"}},
+			Spec:       identityv1.ClientSpec{Realm: &ctypes.ObjectRef{Name: "callback-realm", Namespace: "default"}, ClientId: adminClientID, ClientSecret: "test-secret"},
 		}
 		create(existing)
 
@@ -267,7 +281,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Expect(h.CreateOrUpdate(cclient.WithClient(contextutil.WithEnv(ctx, env), cclient.NewJanitorClient(cclient.NewScopedClient(indexedClient, env))), cfg)).To(Succeed())
 
 		admin := &identityv1.Client{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "horizon-quasar", Namespace: namespace}, admin)).To(Succeed())
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: adminClientID, Namespace: namespace}, admin)).To(Succeed())
 		Expect(admin.UID).To(Equal(existing.UID))
 		Expect(admin.Annotations).To(HaveKeyWithValue(identityv1.DisableSecretRotationAnnotation, "true"))
 		Expect(admin.Annotations).To(HaveKeyWithValue("example.com/unrelated", "keep"))
@@ -356,6 +370,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		create(realm)
 		realm.Status.IssuerUrl = "https://issuer.example.com"
 		store(realm)
+		setAdminClient(backend)
 		backend.Status.CallbackURL = "https://backend-clean.example.com/horizon-backend-clean/callback/v1"
 		backend.Status.ProxyCallbackURLs = map[string]string{"exposure-clean": "https://backend-clean.example.com/horizon-exposure-clean/callback/v1", "subscriber-clean": "https://backend-clean.example.com/horizon-subscriber-clean/callback/v1"}
 		ready(&backend.Status.Conditions, backend.Generation)
@@ -430,6 +445,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		create(realm)
 		realm.Status.IssuerUrl = "https://issuer.example.com"
 		store(realm)
+		setAdminClient(backend)
 		makeApp("callback-requestor")
 		makeApp("callback-provider")
 

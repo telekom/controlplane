@@ -38,6 +38,10 @@ If `realmName` differs from the environment name, set [`spec.overwriteEnvironmen
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
 :::
 
+:::warning
+The name `shared` is reserved for credentials shared across Environments and must not be used for an Environment. See [Sharing an identity provider across environments](#sharing-an-identity-provider-across-environments).
+:::
+
 ## Zones
 
 A Zone represents a physical or logical deployment target within an environment. Each zone has its own gateway and identity provider configuration, and the Control Plane creates a dedicated namespace for the zone's resources.
@@ -142,6 +146,24 @@ Without `issuerHostname`, the issuer is discovered by requesting `<base>/realms/
 
 :::note Upgrading
 Previously, World zones without `issuerHostname` got a `frontendUrl` derived from the host of `admin.url`. After the upgrade the Admin operator removes it from the Realm spec, and the Identity operator removes it from Keycloak only if it is listed in the Realm's `status.managedAttributes`. A `frontendUrl` configured directly in Keycloak and never managed by the controller is left unchanged and still determines the issuer. To keep the previous issuer, set `issuerHostname` explicitly to the former admin host.
+:::
+
+### Sharing an identity provider across environments
+
+Zones in separate Environments can use the same Keycloak instance. If their IdentityProviders use the same normalized `admin.url`, matching Realm names share the same Keycloak realms. The oldest live Realm resource manages each shared realm; if several were created at the same time, the alphabetically first namespace, then name, wins; other resources mirror its issuer and readiness without writing to Keycloak. Matching Client IDs in those realms use the same election. Newly added Realms always become followers. Leadership moves to the next-oldest resource only when the leader is deleted, and Keycloak resources are retained until their final live owner is removed.
+
+For the shared internal `rover` realm, every Zone whose IdentityProvider uses the same normalized `admin.url` shares the realm and its gateway admin client. That client's ID is always `rover`, so Keycloak holds one `rover` client for all of these Zones. With Secret-Manager enabled, the shared credential is stored at `shared:::zones/<zone>/admin/rover/clientSecret`; rotate it at this path, and the operators apply it on their next reconciliation. Existing environment-scoped rover references are migrated only when the shared and existing values match. If they differ, the existing value is retained and a warning is recorded. With Secret-Manager disabled, follower rover Clients adopt the leader's inline credential.
+
+:::warning Zones on one Keycloak must have the same name
+The shared rover credential is keyed by Zone name, while the `rover` client is shared by every Zone on the same Keycloak. Zones in different Environments that use one Keycloak must therefore have the same Zone name. Otherwise they resolve different secrets for the single `rover` client, and every follower rover Client stays blocked with `client secret differs from leader`.
+:::
+
+Clients that the File and Event domains create in the internal realm (the SFTP API client and the Event admin client) always use the client ID `<environment>--<clientId>`, so Environments sharing the realm never collide. The Event mesh client lives in the Zone's default realm and keeps its configured ID. Clients created with an unprefixed ID by earlier versions are not renamed by the operators; migrate them with an external script. Followers do not apply their own claims, Realm attributes, or secret-rotation policy. Tokens carry the leader's configured claims, including `originZone` and `originStargate`, so sharing may affect authorization boundaries.
+
+Sharing is detected by normalized admin URL. Different URLs that reach the same Keycloak are not grouped. Zones with the same name on different Keycloak instances also use the same shared rover secret path, so they receive the same credential. See [Shared Realms and Leader Election](../architecture/identity.mdx#shared-realms-and-leader-election) and [rover client lifecycle](../architecture/admin.mdx#identity-realms-and-the-rover-client).
+
+:::warning Reserved name `shared`
+Do not create an Environment named `shared`. The Admin operator stores the shared rover credentials in the Secret-Manager scope `shared` and, with the Kubernetes backend, in the namespace `shared`. An Environment with this name would share that scope and namespace, and its rover secret references would be treated as shared ones. This name is not rejected by admission, so it must be avoided by convention.
 :::
 
 ### Traffic Types
