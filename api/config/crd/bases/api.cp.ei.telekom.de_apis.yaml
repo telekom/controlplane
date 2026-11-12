@@ -26,6 +26,9 @@ spec:
       jsonPath: .status.active
       name: Active
       type: boolean
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date

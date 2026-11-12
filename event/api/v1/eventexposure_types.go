@@ -121,6 +121,8 @@ type EventExposureStatus struct {
 // +kubebuilder:printcolumn:name="EventType",type="string",JSONPath=".spec.eventType",description="The event type identifier"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is active"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // EventExposure is the Schema for the eventexposures API.
 // It represents a declaration that an application publishes events of a specific type,

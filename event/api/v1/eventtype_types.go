@@ -76,6 +76,8 @@ type EventTypeStatus struct {
 // +kubebuilder:printcolumn:name="Type",type="string",JSONPath=".spec.type",description="The event type identifier"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Indicates if this EventType is the active singleton"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // EventType is the Schema for the eventtypes API.
 // It represents a singleton registry entry for a known event type, serving as the
