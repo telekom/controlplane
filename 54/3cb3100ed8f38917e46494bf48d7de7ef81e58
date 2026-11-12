@@ -1,0 +1,96 @@
+.agents/rules/README.md
+  s_fcbd43e11bddb1::t_1f73445ce82c92 75-82
+.agents/tools/spec_field_docs.py
+  s_fcbd43e11bddb1::t_04ae87f735ad4b 13-14
+  s_fcbd43e11bddb1::t_16772fae8851b1 63,168,239
+.agents/rules/10-spec-field-doc-purpose.md
+  s_fcbd43e11bddb1::t_04ae87f735ad4b 38-39
+.agents/tools/journey_fences.py
+  s_fcbd43e11bddb1::t_16772fae8851b1 1-40
+.agents/skills/code-auditor/scripts/auditlib/detect.py
+  s_fcbd43e11bddb1::t_5658646891820c 44,47-56,83-92,98,129-131,165,177-178,182-190,202,205-211,213-214,226,238
+.agents/skills/code-auditor/scripts/create_audit_report.py
+  s_fcbd43e11bddb1::t_60cef1baf45cb7 60-65,74,86,108,201,235-239,251,262,287-289,294-297,300,314-316
+  s_fcbd43e11bddb1::t_870a16b731d0f6 77-78
+  s_fcbd43e11bddb1::t_2e33cad0ff74d0 45
+.agents/rules/13-environment-isolation.md
+  s_fcbd43e11bddb1::t_16772fae8851b1 45,55,75-78
+  s_b589fe2c8a8a58::t_12a6bc9a05ab9f 79-80
+.agents/rules/02-no-reconcile-loops.md
+  s_fcbd43e11bddb1::t_16772fae8851b1 38
+.agents/skills/code-auditor/scripts/process_audit_report.py
+  s_fcbd43e11bddb1::t_60cef1baf45cb7 32,53,60-61,121-122,124-125,156,175-180,210-211,222-225,234-237,249-252,259-260,346-351
+  s_b589fe2c8a8a58::t_ab4ebe85617619 261-262,345
+.agents/skills/code-auditor/scripts/selftest_rules.py
+  s_fcbd43e11bddb1::t_6983faa96569dd 25
+  s_fcbd43e11bddb1::t_b4f90574cee361 529
+  s_fcbd43e11bddb1::t_7d62e9a2c70f76 70-71,202,425-427,541
+CONTRIBUTING.md
+  s_fcbd43e11bddb1::t_1f73445ce82c92 21-23,72-76
+.agents/skills/code-auditor/SKILL.md
+  s_fcbd43e11bddb1::t_1f73445ce82c92 37-41
+.agents/rules/05-docs-no-code-blocks.md
+  s_fcbd43e11bddb1::t_16772fae8851b1 20-22,27-29
+.agents/skills/code-auditor/scripts/audit_gate.py
+  s_fcbd43e11bddb1::t_870a16b731d0f6 31,50-52,77,95-96,147-150
+  s_fcbd43e11bddb1::t_b3e58a3db74a73 34,39,48,69-76,87-89,93,98-102,123-128,135-136,140-143,146,151
+  s_fcbd43e11bddb1::t_2556b67e8c68bd 49
+.agents/skills/code-auditor/scripts/tests/test_review_regressions.py
+  s_fcbd43e11bddb1::t_c130e06cd519b9 11-12,200-234,348-389
+  s_fcbd43e11bddb1::t_43ec1d0c009628 1-10,13-19,21,23-26,28-35,37-124,126-127,255-296,306-333,345-347,390-434
+  s_fcbd43e11bddb1::t_6983faa96569dd 27,125
+  s_fcbd43e11bddb1::t_1971ece098d0cb 128-131,142-199,235-254,334-344
+  s_fcbd43e11bddb1::t_8bff4f099fad7c 132-141
+  s_fcbd43e11bddb1::t_27b1fc9a717fa9 20,22,36
+  s_fcbd43e11bddb1::t_a785ffd33ab6aa 297-305
+.agents/skills/code-auditor/scripts/README.md
+  s_fcbd43e11bddb1::t_1f73445ce82c92 16,20,22,61-96,106,109
+.agents/skills/code-auditor/scripts/tests/test_config_root.py
+  s_fcbd43e11bddb1::t_27b1fc9a717fa9 386-387,420
+.agents/skills/code-auditor/scripts/auditlib/changeset.py
+  s_fcbd43e11bddb1::t_870a16b731d0f6 7,16-19,24-25,30,66,71,132,161-164
+  s_fcbd43e11bddb1::t_5658646891820c 168-169
+  s_fcbd43e11bddb1::t_78645783b46d5f 27,29,31,68-70,74,82-86,93,108-110,124-127,134,136-138,144,158,170-173,181,194-204,206,209-232,234,237-251
+  s_fcbd43e11bddb1::t_6983faa96569dd 135,205,207-208,233,235-236
+  s_fcbd43e11bddb1::t_27b1fc9a717fa9 151,166-167
+.agents/skills/rule-writer/SKILL.md
+  s_fcbd43e11bddb1::t_04ae87f735ad4b 115-118
+.agents/ARCHITECTURE.md
+  s_fcbd43e11bddb1::t_1f73445ce82c92 21,28-29,50,90-92,95-106,133,141,154-158,170-171
+.agents/tools/tests/test_journey_fences.py
+  s_fcbd43e11bddb1::t_1971ece098d0cb 1-34
+.agents/rules/09-spec-field-doc-comment.md
+  s_fcbd43e11bddb1::t_04ae87f735ad4b 31-33
+.agents/skills/code-auditor/scripts/auditlib/__init__.py
+  s_fcbd43e11bddb1::t_16772fae8851b1 11
+.agents/skills/code-auditor/scripts/auditlib/store.py
+  s_b589fe2c8a8a58::t_2dfa687da1627a 49-51,55,67-78,89-92,94-97
+.agents/skills/code-auditor/scripts/show_work_unit.py
+  s_b589fe2c8a8a58::t_8b76b0aaf2baa4 53-58,62-64
+.pre-commit-config.yaml
+  s_b589fe2c8a8a58::t_a697a9309b6d56 8,64-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "543cb3100ed8f38917e46494bf48d7de7ef81e58",
+  "prompts": {},
+  "sessions": {
+    "s_b589fe2c8a8a58": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9a043156-c3a5-4959-b18f-c9e5a4a86c17",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

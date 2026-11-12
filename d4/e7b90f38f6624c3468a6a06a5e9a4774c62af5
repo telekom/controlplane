@@ -1,0 +1,59 @@
+controlplane-api/internal/service/services_k8s.go
+  s_bb53044765fe76::t_41bb9e2d2e0d2d 22,749-750,752-759
+controlplane-api/internal/service/mutation_error_test.go
+  s_bb53044765fe76::t_0aa1448dcfc962 14,22,24-26,31-33,35-47
+  s_bb53044765fe76::t_11b2374bb88cdf 1-13,15-21,23,27-30,34,48-49
+docs/docs/user-journey/features/secret-rotation.mdx
+  s_bb53044765fe76::t_ba2e41f4a468ae 71-74
+application/internal/webhook/v1/mutator/mutate_test.go
+  s_bb53044765fe76::t_730b9321b69240 15
+  s_b8db7f6617f9b3::t_b9ecedbe4a47c4 400
+  s_bb53044765fe76::t_36b5c97d81daf7 392
+  s_bb53044765fe76::t_6b4bb7101f3731 67,241,401-405,409
+  s_bb53044765fe76::t_579127e1d096b5 406-408
+  s_bb53044765fe76::t_41bb9e2d2e0d2d 9,25
+application/internal/webhook/v1/mutator/mutate.go
+  s_bb53044765fe76::t_36b5c97d81daf7 105,193,197,199-200
+  s_bb53044765fe76::t_6b4bb7101f3731 23,194-196,198,201-202
+  s_bb53044765fe76::t_b4e06855380f6c 203
+docs/docs/architecture/application.mdx
+  s_bb53044765fe76::t_ba2e41f4a468ae 32
+  s_bb53044765fe76::t_03812a7a789ffb 31
+docs/docs/architecture/controlplane-api.mdx
+  s_bb53044765fe76::t_03812a7a789ffb 160,162,164-166
+  s_bb53044765fe76::t_ba2e41f4a468ae 158-159,161,163,167
+common/pkg/errors/public.go
+  s_bb53044765fe76::t_6b4bb7101f3731 1-37
+controlplane-api/internal/resolvers/mutation_rotate_application_secret_test.go
+  s_b8db7f6617f9b3::t_aff71a51289ba8 1-16,18,20-26,31,36,38-41,45,47-61,63-65
+  s_bb53044765fe76::t_c2c0fd202b96fd 17,19,27-30,32-35,37,42-44,46,62
+controlplane-api/internal/service/export_test.go
+  s_bb53044765fe76::t_11b2374bb88cdf 1-8
+common/pkg/errors/public_test.go
+  s_bb53044765fe76::t_6b4bb7101f3731 1-24,28-40
+  s_bb53044765fe76::t_579127e1d096b5 25-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d4e7b90f38f6624c3468a6a06a5e9a4774c62af5",
+  "prompts": {},
+  "sessions": {
+    "s_b8db7f6617f9b3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3f891011ffeOcfQ962WAT6SNt",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_bb53044765fe76": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3f77c3f5ffelW4C3rxY2lZh76",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
