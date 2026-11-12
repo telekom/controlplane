@@ -1,3 +1,16 @@
+# [0.48.0](https://github.com/telekom/controlplane/compare/v0.47.0...v0.48.0) (2026-11-12)
+
+
+### Bug Fixes
+
+* **organization-server:** enforce hub and team mutation permissions ([#853](https://github.com/telekom/controlplane/issues/853)) ([7f9e19d](https://github.com/telekom/controlplane/commit/7f9e19d5e9f12e84eadf98311e4a35235e344848))
+
+
+### Features
+
+* **api,agentic,projector,controlplane-api:** expose LMS issuers of exposures ([#856](https://github.com/telekom/controlplane/issues/856)) ([2efe6f2](https://github.com/telekom/controlplane/commit/2efe6f252a4627ea9fbaedc885f4d40890bb9691))
+* **crd:** add Ready printer columns across resources ([#852](https://github.com/telekom/controlplane/issues/852)) ([6a8672b](https://github.com/telekom/controlplane/commit/6a8672b369dec90a5f4a3dcd71091b566756b7db))
+
 # [0.47.0](https://github.com/telekom/controlplane/compare/v0.46.0...v0.47.0) (2026-11-10)
 
 
