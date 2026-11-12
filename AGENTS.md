@@ -8,6 +8,12 @@ SPDX-License-Identifier: CC0-1.0
 
 Go monorepo for Kubernetes controllers and REST APIs. Each component has its own `go.mod` with local `replace` directives.
 
+## Required Hook Setup
+
+Before implementing changes, run `pre-commit install` from the repository root in the active checkout or worktree. Verify that all three configured hooks (`pre-commit`, `commit-msg`, and `pre-push`) are installed and executable at the paths returned by `git rev-parse --git-path hooks/<hook>`.
+
+Installing the `pre-commit` tool or only the pre-push hook is not sufficient. If setup fails, stop and report the blocker before editing files. Follow [CONTRIBUTING.md](CONTRIBUTING.md#pre-commit-hooks) for prerequisites, and keep hooks enabled when committing and pushing.
+
 ## Build & Test
 
 Always use Makefile targets — never run `go build`, `go test`, `go vet`, or `golangci-lint` directly. The Makefiles ensure correct flags, code generation, coverage config, and envtest setup.
