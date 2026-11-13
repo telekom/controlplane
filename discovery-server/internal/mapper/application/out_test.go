@@ -94,7 +94,7 @@ func TestMapResponse(t *testing.T) {
 					Team: "hyperion",
 					Zone: commonTypes.ObjectRef{Name: "dataplane1"},
 					ExternalIds: []applicationv1.ExternalId{
-						{Scheme: "icto", Id: "icto-12345"},
+						{Scheme: "icto", Id: "icto-42"},
 						{Scheme: "psi", Id: "PSI-123456"},
 					},
 				},
@@ -106,8 +106,8 @@ func TestMapResponse(t *testing.T) {
 			expectZone: "dataplane1",
 			assert: func(t *testing.T, resp api.ApplicationResponse) {
 				t.Helper()
-				if resp.Icto != "icto-12345" {
-					t.Fatalf("expected icto %q, got %q", "icto-12345", resp.Icto)
+				if resp.Icto != "icto-42" {
+					t.Fatalf("expected icto %q, got %q", "icto-42", resp.Icto)
 				}
 				if resp.Psiid != "PSI-123456" {
 					t.Fatalf("expected psiid %q, got %q", "PSI-123456", resp.Psiid)
