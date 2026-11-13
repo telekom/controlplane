@@ -47,9 +47,10 @@ const (
 )
 
 var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
+	cfg           *rest.Config
+	k8sClient     client.Client
+	managerClient client.Client
+	testEnv       *envtest.Environment
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -96,6 +97,7 @@ var _ = BeforeSuite(func() {
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
+	managerClient = k8sManager.GetClient()
 
 	// Register field indices needed by controllers
 	RegisterIndecesOrDie(ctx, k8sManager)

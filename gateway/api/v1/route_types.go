@@ -51,7 +51,7 @@ type RouteSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(h, !format.dns1123Subdomain().validate(h).hasValue())",message="each hostname must be a valid DNS-1123 subdomain"
 	Hostnames []string `json:"hostnames,omitempty"`
 
-	// Backend defines the backend for this route. Only one of Backend or Traffic can be set.
+	// Backend specifies the upstream targets to which the route forwards requests.
 	// +kubebuilder:validation:Required
 	Backend Backend `json:"backend"`
 

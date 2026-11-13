@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -85,13 +87,7 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 		return nil
 	}
 
-	// get the Route
-	route := &gatewayv1.Route{}
-	if err := r.Get(ctx, consumeRoute.Spec.Route.K8s(), route); err != nil {
-		return nil
-	}
-
-	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
+	return r.mapRouteReference(ctx, consumeRoute, consumeRoute.Spec.Route)
 }
 
 // NamePrefixChangedPredicate passes only updates of a Gateway that change spec.namePrefix.
@@ -114,9 +110,16 @@ func (r *RouteReconciler) mapGatewayToRoutes(ctx context.Context, obj client.Obj
 	if !ok {
 		return nil
 	}
+	environment := gateway.Labels[cconfig.EnvironmentLabelKey]
+	if environment == "" {
+		ctrllog.FromContext(ctx).V(1).Info("Skipping gateway without an environment label", "gateway", gateway.Name)
+		return nil
+	}
 
 	routes := &gatewayv1.RouteList{}
-	err := r.List(ctx, routes, client.MatchingFields{IndexFieldSpecGatewayRef: types.ObjectRefFromObject(gateway).String()})
+	err := r.List(ctx, routes,
+		client.MatchingFields{IndexFieldSpecGatewayRef: types.ObjectRefFromObject(gateway).String()},
+		client.MatchingLabels{cconfig.EnvironmentLabelKey: environment})
 	if err != nil {
 		ctrllog.FromContext(ctx).Error(err, "Failed to list routes of gateway", "gateway", gateway.Name)
 		return nil
@@ -136,9 +139,24 @@ func (r *RouteReconciler) mapRouteListenerToRoute(ctx context.Context, obj clien
 		return nil
 	}
 
-	// The RouteListener's spec.route references the Route it attaches to.
+	return r.mapRouteReference(ctx, routeListener, routeListener.Spec.Route)
+}
+
+func (r *RouteReconciler) mapRouteReference(ctx context.Context, source client.Object, ref types.ObjectRef) []reconcile.Request {
+	log := ctrllog.FromContext(ctx)
+	environment := source.GetLabels()[cconfig.EnvironmentLabelKey]
+	if environment == "" {
+		log.V(1).Info("Skipping route reference without an environment label", "source", client.ObjectKeyFromObject(source))
+		return nil
+	}
+
 	route := &gatewayv1.Route{}
-	if err := r.Get(ctx, routeListener.Spec.Route.K8s(), route); err != nil {
+	if err := cclient.NewScopedClient(r.Client, environment).Get(ctx, ref.K8s(), route); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.V(1).Info("Referenced route not found", "route", ref.String())
+		} else {
+			log.Error(err, "Failed to get referenced route", "route", ref.String())
+		}
 		return nil
 	}
 

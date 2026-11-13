@@ -59,8 +59,8 @@ spec:
                   type: string
                 type: array
               backend:
-                description: Backend defines the backend for this route. Only one
-                  of Backend or Traffic can be set.
+                description: Backend specifies the upstream targets to which the route
+                  forwards requests.
                 properties:
                   upstreams:
                     description: Upstreams defines the upstream targets for this route.
