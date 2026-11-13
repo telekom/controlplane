@@ -83,6 +83,64 @@ func TestMapResponse(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "maps external ids to icto and psiid",
+			in: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: "poc--eni--hyperion",
+				},
+				Spec: applicationv1.ApplicationSpec{
+					Team: "hyperion",
+					Zone: commonTypes.ObjectRef{Name: "dataplane1"},
+					ExternalIds: []applicationv1.ExternalId{
+						{Scheme: "icto", Id: "icto-42"},
+						{Scheme: "psi", Id: "PSI-123456"},
+					},
+				},
+			},
+			expectID:   "eni--hyperion--my-app",
+			expectName: "my-app",
+			expectHub:  "eni",
+			expectTeam: "hyperion",
+			expectZone: "dataplane1",
+			assert: func(t *testing.T, resp api.ApplicationResponse) {
+				t.Helper()
+				if resp.Icto != "icto-42" {
+					t.Fatalf("expected icto %q, got %q", "icto-42", resp.Icto)
+				}
+				if resp.Psiid != "PSI-123456" {
+					t.Fatalf("expected psiid %q, got %q", "PSI-123456", resp.Psiid)
+				}
+				if resp.Apid != "" {
+					t.Fatalf("expected empty apid, got %q", resp.Apid)
+				}
+			},
+		},
+		{
+			name: "without external ids leaves icto and psiid empty",
+			in: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: "poc--eni--hyperion",
+				},
+				Spec: applicationv1.ApplicationSpec{
+					Team: "hyperion",
+					Zone: commonTypes.ObjectRef{Name: "dataplane1"},
+				},
+			},
+			expectID:   "eni--hyperion--my-app",
+			expectName: "my-app",
+			expectHub:  "eni",
+			expectTeam: "hyperion",
+			expectZone: "dataplane1",
+			assert: func(t *testing.T, resp api.ApplicationResponse) {
+				t.Helper()
+				if resp.Icto != "" || resp.Psiid != "" {
+					t.Fatalf("expected empty icto/psiid, got %q/%q", resp.Icto, resp.Psiid)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

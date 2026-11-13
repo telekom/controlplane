@@ -176,6 +176,7 @@ func mapTeamAndApplication(ctx context.Context, in *apiv1.ApiSubscription, out *
 	}
 	out.Application = api.ApplicationRef{
 		Name: app.GetName(),
+		Icto: mapper.ExternalId(app.Spec.ExternalIds, mapper.IctoScheme),
 	}
 }
 

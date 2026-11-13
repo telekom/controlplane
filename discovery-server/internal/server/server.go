@@ -102,7 +102,7 @@ type Server struct {
 // RegisterRoutes sets up OpenAPI validation and all route handlers, attaching
 // the security family's per-route guard (nil = no per-route guard).
 func (s *Server) RegisterRoutes(router fiber.Router, guard []fiber.Handler) {
-	swagger, err := api.GetSwagger()
+	swagger, err := api.GetSpec()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to get swagger"))
 	}

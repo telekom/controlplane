@@ -4,3 +4,10 @@
 #
 # Audit ignores expire by construction: the item id contains the snippet, so
 # changing the code retires the audit ignore automatically. Only a human adds a line here.
+
+100aff9c5dbd4d0a: "ParseApplicationId constructs appInfo.Namespace using the authenticated security context's environment, so this exact-key store lookup is environment-scoped (stefan-ctrl, 2026-11-13)."
+3e77cdd7c8121965: "ParseResourceId builds the namespace from the security context's environment; the caller only supplies group/team/name, so this exact-key lookup is environment-scoped (stefan-ctrl, 2026-11-13)."
+b41b863c11764499: "ParseApplicationId builds appInfo.Namespace from the security context's environment, so this exact-key lookup is environment-scoped (stefan-ctrl, 2026-11-13)."
+ce9272476d1f6605: "Requestor.Application is set by Rover to its own Application in the subscription's environment (stefan-ctrl, 2026-11-13)."
+23834bb9d5b57419: "Spec.Provider is set by Rover to its own Application in the exposure's environment (stefan-ctrl, 2026-11-13)."
+def6902cf3133719: "Spec.Requestor is set by Rover to its own Application in the subscription's environment (stefan-ctrl, 2026-11-13)."

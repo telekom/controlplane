@@ -20,6 +20,10 @@
       "name": "dataplane1",
       "namespace": "poc"
     },
+    "externalIds": [
+      { "scheme": "icto", "id": "icto-12345" },
+      { "scheme": "psi", "id": "PSI-123456" }
+    ],
     "security": {
       "ipRestrictions": {
         "allow": ["10.0.0.0/8", "172.16.0.0/12"]

@@ -46,7 +46,14 @@ func (c *eventTypeController) Get(ctx context.Context, eventTypeId string) (api.
 }
 
 func (c *eventTypeController) GetAll(ctx context.Context, params api.GetAllEventTypesParams) (*api.EventTypeListResponse, error) {
+	bCtx, ok := security.FromContext(ctx)
+	if !ok || bCtx == nil || bCtx.Environment == "" {
+		return nil, problems.InternalServerError("Invalid Context", "Security context with an environment is required")
+	}
+
 	listOpts := store.NewListOpts()
+	// Namespace prefixes isolate the environment while allowing discovery across teams.
+	store.EnforcePrefix(bCtx.Environment+"--", &listOpts)
 
 	items, err := pagination.FetchAll(ctx, c.stores.EventTypeStore, listOpts)
 	if err != nil {

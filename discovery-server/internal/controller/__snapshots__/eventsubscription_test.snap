@@ -9,6 +9,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -50,6 +51,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -91,6 +93,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -125,6 +128,7 @@
 [EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes team scope - 1]
 {
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
@@ -152,6 +156,7 @@
 [EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes group scope - 1]
 {
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
@@ -179,6 +184,7 @@
 [EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes admin scope - 1]
 {
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
