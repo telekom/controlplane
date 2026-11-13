@@ -54,6 +54,10 @@ type ApiExposure struct {
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
 	// APIVersion holds the value of the "api_version" field.
 	APIVersion *string `json:"api_version,omitempty"`
+	// LmsIssuer holds the value of the "lms_issuer" field.
+	LmsIssuer *string `json:"lms_issuer,omitempty"`
+	// FailoverLmsIssuers holds the value of the "failover_lms_issuers" field.
+	FailoverLmsIssuers []model.FailoverLmsIssuer `json:"failover_lms_issuers,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiExposureQuery when eager-loading is set.
 	Edges                    ApiExposureEdges `json:"edges"`
@@ -115,13 +119,13 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apiexposure.FieldFeatures, apiexposure.FieldUpstreams, apiexposure.FieldSecurity, apiexposure.FieldTraffic, apiexposure.FieldApprovalConfig:
+		case apiexposure.FieldFeatures, apiexposure.FieldUpstreams, apiexposure.FieldSecurity, apiexposure.FieldTraffic, apiexposure.FieldApprovalConfig, apiexposure.FieldFailoverLmsIssuers:
 			values[i] = new([]byte)
 		case apiexposure.FieldActive:
 			values[i] = new(sql.NullBool)
 		case apiexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldEnvironment, apiexposure.FieldNamespace, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
+		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldEnvironment, apiexposure.FieldNamespace, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion, apiexposure.FieldLmsIssuer:
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -255,6 +259,21 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 				_m.APIVersion = new(string)
 				*_m.APIVersion = value.String
 			}
+		case apiexposure.FieldLmsIssuer:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lms_issuer", values[i])
+			} else if value.Valid {
+				_m.LmsIssuer = new(string)
+				*_m.LmsIssuer = value.String
+			}
+		case apiexposure.FieldFailoverLmsIssuers:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field failover_lms_issuers", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.FailoverLmsIssuers); err != nil {
+					return fmt.Errorf("unmarshal field failover_lms_issuers: %w", err)
+				}
+			}
 		case apiexposure.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field api_exposures", value)
@@ -374,6 +393,14 @@ func (_m *ApiExposure) String() string {
 		builder.WriteString("api_version=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	if v := _m.LmsIssuer; v != nil {
+		builder.WriteString("lms_issuer=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("failover_lms_issuers=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FailoverLmsIssuers))
 	builder.WriteByte(')')
 	return builder.String()
 }

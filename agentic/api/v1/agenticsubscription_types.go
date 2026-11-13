@@ -76,6 +76,7 @@ type AgenticSubscriptionStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="The subscriber zone"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // AgenticSubscription is the Schema for the agenticsubscriptions API.

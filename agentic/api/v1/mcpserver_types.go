@@ -79,6 +79,7 @@ type McpServerStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this server registration is active"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // McpServer is the Schema for the mcpservers API.

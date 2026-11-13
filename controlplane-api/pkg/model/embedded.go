@@ -162,6 +162,12 @@ type OAuth2ClientCredentials struct {
 	ClientKey    *string `json:"clientKey,omitempty"`    // optional/nillable
 }
 
+// FailoverLmsIssuer is the LMS issuer of a provider failover zone's gateway.
+type FailoverLmsIssuer struct {
+	Zone string `json:"zone"`
+	Url  string `json:"url"`
+}
+
 // Traffic
 type Traffic struct {
 	Failover  *Failover  `json:"failover,omitempty"`

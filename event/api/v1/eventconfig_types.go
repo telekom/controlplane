@@ -214,6 +214,8 @@ func NewObservedObjectRef(obj ctypes.Object) *ObservedObjectRef {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone.name",description="Zone"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // EventConfig is the Schema for the eventconfigs API.
 // It provides configuration for the event operator, including the configuration backend

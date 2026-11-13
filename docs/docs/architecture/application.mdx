@@ -28,6 +28,8 @@ When graceful secret rotation is enabled for the zone, the Application operator 
 
 The Application admission webhook rejects a rotation request with a `Forbidden` error when the Application has `needsClient: false`. Applications without a client have no secret to rotate. In that case, the webhook doesn't change any secrets.
 
+The error marks its message as public (status cause type `cp.ei.telekom.de/PublicMessage`), so the ControlPlane API shows it to callers. See [Mutation Errors](./controlplane-api.mdx#mutation-errors).
+
 See [Graceful Secret Rotation (User Guide)](../user-journey/features/secret-rotation.mdx) and [Secret Rotation (Admin Guide)](../admin-journey/features/secret-rotation.md) for details.
 
 ## Domain Interactions

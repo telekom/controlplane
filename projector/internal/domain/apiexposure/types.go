@@ -23,18 +23,20 @@ type APIExposureKey struct {
 
 // APIExposureData carries the transformed data for an ApiExposure entity.
 type APIExposureData struct {
-	Meta           shared.Metadata
-	StatusPhase    string // "READY", "PENDING", "ERROR", "UNKNOWN"
-	StatusMessage  string
-	BasePath       string
-	Visibility     string // "WORLD", "ZONE", "ENTERPRISE" (upper-cased)
-	Active         bool
-	Features       []string
-	Upstreams      []model.Upstream
-	ApprovalConfig model.ApprovalConfig
-	APIVersion     *string                    // optional/nillable — always nil from CR
-	AppName        string                     // resolved to owner Application FK
-	TeamName       string                     // used to resolve owner Application FK
-	Security       *model.ApiExposureSecurity // optional/nillable
-	Traffic        *model.Traffic             // optional/nillable
+	Meta               shared.Metadata
+	StatusPhase        string // "READY", "PENDING", "ERROR", "UNKNOWN"
+	StatusMessage      string
+	BasePath           string
+	Visibility         string // "WORLD", "ZONE", "ENTERPRISE" (upper-cased)
+	Active             bool
+	Features           []string
+	Upstreams          []model.Upstream
+	ApprovalConfig     model.ApprovalConfig
+	APIVersion         *string                    // optional/nillable — always nil from CR
+	AppName            string                     // resolved to owner Application FK
+	TeamName           string                     // used to resolve owner Application FK
+	Security           *model.ApiExposureSecurity // optional/nillable
+	Traffic            *model.Traffic             // optional/nillable
+	LmsIssuer          *string                    // optional/nillable — nil when Status.LmsIssuer is empty
+	FailoverLmsIssuers []model.FailoverLmsIssuer  // optional — nil when Status.FailoverLmsIssuers is empty
 }

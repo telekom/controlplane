@@ -65,6 +65,14 @@ After approval, an `AgenticSubscription` publishes the path-specific AI Gateway
 URL in its status. The Projector persists this value and exposes it as
 `gatewayURL` on the GraphQL `AgenticSubscription` type.
 
+When the primary route is provisioned, the operator writes `status.lmsIssuer` on the
+AgenticExposure. It is the issuer of the Last-Mile-Security (LMS) tokens that the AI
+Gateway of the exposure zone sends to the upstream, taken from the zone's AI gateway
+preset. Providers should configure their upstream to trust this issuer. The field is
+empty while the exposure is inactive, blocked, or its server is not found. The Projector
+persists the value, and the ControlPlane API exposes it as `lmsIssuer` on the GraphQL
+`AgenticExposure` type (not on the reduced `AgenticExposureInfo` type).
+
 ### Subscription Readiness
 
 `AgenticSubscription` uses the shared `Ready` condition reason vocabulary used by

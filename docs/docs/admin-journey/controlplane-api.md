@@ -134,6 +134,8 @@ stringData:
   url: postgres://user:password@your-db-host:5432/controlplane?sslmode=require
 ```
 
+By default, the database (`/controlplane` above) must already exist. To let the Projector create it on startup instead, set `DB_CREATE: "true"` in the optional `projector-env` ConfigMap. The database user then needs the `CREATEDB` permission and a database with the user's name.
+
 For development or testing, you can include the `database` component instead, which deploys an in-cluster PostgreSQL and creates the Secret automatically:
 
 ```yaml
@@ -252,6 +254,8 @@ When the `tardis:*` value (e.g. `tardis:admin:all`) is modeled as a Keycloak **c
 
 Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases for the corresponding `tardis:group:*` scopes.
 
+The Organization API's `POST /hubs/{hub}/teams` endpoint requires write access and accepts group or admin scopes. For compatibility, `tardis:hub:all` is accepted as the legacy alias of `tardis:group:all`; team scopes cannot create teams.
+
 #### Example JWT payload
 
 ```json
@@ -265,6 +269,128 @@ Legacy `tardis:hub:*` scopes remain accepted at runtime as deprecated aliases fo
   "scope": "tardis:admin:all"
 }
 ```
+
+## Running multiple environments in one cluster
+
+By default, one ControlPlane API and one Projector serve all environments from one database. To isolate environments, deploy one pair per environment, each with its own database:
+
+| Setting | Component | Purpose |
+|---|---|---|
+| `ENVIRONMENT_FILTER` | Projector | Projects only resources of this environment. |
+| `DATABASE_URL` | Both | The environment's database. |
+| `KUBERNETES_ENVIRONMENT` | ControlPlane API | The environment that mutations write to. |
+
+### Example
+
+Create a `controlplane-db-<environment>` Secret with a `url` key and one overlay per environment. Only the environment name (`qa`) changes between overlays:
+
+```yaml title="environments/qa/kustomization.yaml"
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+nameSuffix: -qa
+
+resources:
+  - https://github.com/telekom/controlplane//controlplane-api/config/default/?ref=<version>
+  - https://github.com/telekom/controlplane//projector/config/default/?ref=<version>
+
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/instance: qa
+    fields:
+      - path: spec/selector/matchLabels
+        create: true
+        kind: ServiceMonitor
+        group: monitoring.coreos.com
+
+# env/0 is DATABASE_URL in both Deployments.
+patches:
+  - target:
+      kind: Deployment
+      name: projector-controller-manager
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: controlplane-db-qa
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value: { name: ENVIRONMENT_FILTER, value: qa }
+  - target:
+      kind: Deployment
+      name: controlplane-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+        value: controlplane-db-qa
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value: { name: KUBERNETES_ENVIRONMENT, value: qa }
+  - target:
+      kind: Ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: controlplane-api-qa.example.com
+
+# nameSuffix does not rename the Certificate's DNS names or its Secret.
+replacements:
+  - source:
+      kind: Service
+      name: controlplane-api
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Certificate
+        fieldPaths:
+          - spec.dnsNames.0
+          - spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 0
+  - source:
+      kind: Certificate
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Certificate
+        fieldPaths:
+          - spec.secretName
+      - select:
+          kind: Deployment
+          name: controlplane-api
+        fieldPaths:
+          - spec.template.spec.volumes.[name=cert-volume].secret.secretName
+```
+
+Keep in mind:
+
+- Use this overlay for every environment, including the first. Otherwise Services, metrics, and certificates mix environments.
+- Provide the [API configuration](#controlplane-api-configuration) once per environment. The suffix renames the ConfigMap to `controlplane-api-config-<environment>`. Add one entry per environment; all can use the same file, because `KUBERNETES_ENVIRONMENT` overrides `kubernetes.environment`:
+
+  ```yaml title="kustomization.yaml (parent of environments/)"
+  resources:
+    - environments
+
+  configMapGenerator:
+    - name: controlplane-api-config-dev
+      namespace: controlplane-system
+      behavior: replace
+      files:
+        - config.yaml=controlplane-api.yaml
+    - name: controlplane-api-config-qa
+      namespace: controlplane-system
+      behavior: replace
+      files:
+        - config.yaml=controlplane-api.yaml
+  ```
+- Point in-cluster callers, such as the organization server (`CPAPI_ENDPOINT`), to their environment's Service, for example `https://controlplane-api-qa.controlplane-system.svc.cluster.local:9443/graphql/query`.
+- Set the token's `env` claim to the instance's environment (see [Keycloak integration](#keycloak-integration)). The zone realms that the Control Plane creates, including `rover`, do not add it (see [Token Claims](./environments-and-zones.md#token-claims)).
+
+:::warning
+The ControlPlane API does not check the token's `env` claim yet. Separate hostnames are **not** an authorization boundary.
+:::
+
 
 ## Verify the deployment
 
@@ -304,6 +430,9 @@ For local development with `mode: mock`, any JWT with valid claims works — the
 | ControlPlane API returns empty results | Projector not running, or JWT scoping | Confirm the Projector is syncing. Otherwise check that the caller's JWT has the expected team/group claims. |
 | GraphQL Playground not accessible | Playground disabled in config | Set `graphql.playgroundEnabled: true` in the ControlPlane API configuration. |
 | Playground queries return 401 | Missing or invalid Authorization header | Add `{ "Authorization": "Bearer <token>" }` in the Playground Headers tab. With `mode: mock`, any JWT with valid claims works. |
+| 403 `Missing field 'env'` | The token has no `env` claim | Add a hardcoded `env` claim to the client's realm. See [Keycloak integration](#keycloak-integration). |
+| 403 `No valid scope found` | The token's `scope` claim has no `tardis:<team\|group\|admin>:<read\|obfuscated\|all>` value | Add the client scope with **Include in token scope** enabled, and assign it as Default or request it in the token request. |
+| A Projector projects nothing | `ENVIRONMENT_FILTER` does not match the `cp.ei.telekom.de/environment` label | Fix the filter or the label. With a filter set, unlabeled resources are ignored. |
 
 ## Next steps
 

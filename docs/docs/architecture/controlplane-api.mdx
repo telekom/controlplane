@@ -146,14 +146,26 @@ All top-level queries support **cursor-based pagination** (Relay-style), **filte
 
 - `teams` — List teams with their applications and group membership
 - `applications` — List applications with their zone, exposures, and subscriptions
-- `apiExposures` — List exposed APIs with visibility, upstreams, and approval configuration
+- `apiExposures` — List exposed APIs with visibility, upstreams, and approval configuration. `lmsIssuer` is the issuer of the Last-Mile-Security tokens that the gateway of the exposure zone sends to the upstream (`null` until the primary route is provisioned). `failoverLmsIssuers` lists the LMS issuers (`{zone, url}`) of the provider failover zones, which the upstream must also trust.
 - `apiSubscriptions` — List subscriptions with their target exposure and approval state
 - `apis` / `eventTypes` — List registered APIs and event types. Other teams can register the same base path or event type. Only the oldest entry is active; the others are inactive. Filter on `active: true` to get one entry per base path or event type.
 - `mcpServers` / `agentCards` — List registered MCP servers and A2A agent cards in the catalogue (visible to all authenticated callers, like a shared catalogue). `name` is the resource name derived from the base path (for example `mcp-weather-v1`). As for `apis`, only the oldest entry for a base path is active. Filter on `active: true` to get one entry per base path. `displayName` is the title from the specification (for example `Weather Server`), or the resource name if the specification has no title. `hash` changes when the specification content changes, so clients can detect changes without downloading `specificationUrl`.
-- `agenticExposures` / `agenticSubscriptions` — List agentic exposures (MCP/A2A/Telecontext variants) and their subscriptions with approval state
+- `agenticExposures` / `agenticSubscriptions` — List agentic exposures (MCP/A2A/Telecontext variants) and their subscriptions with approval state. `lmsIssuer` on `AgenticExposure` is the issuer of the Last-Mile-Security tokens that the AI Gateway of the exposure zone sends to the upstream.
 - `approvals` / `approvalRequests` — List approval workflows and pending requests
 - `zones` — List all available zones (no pagination, visible to all users)
 - `node(id)` / `nodes(ids)` — Relay-compatible node lookups for any entity
+
+### Mutation Errors
+
+Mutations return HTTP 200 and report failures in the `errors` list of the payload. Each entry has a `code`, a `message`, and an optional `field`. The API derives the `code` from the Kubernetes error type and generally replaces raw Kubernetes messages with generic text. For example, a `Forbidden` response becomes `FORBIDDEN` with the message `operation forbidden by cluster policy`.
+
+`Invalid` errors are an existing exception: when there is no non-empty public message, the validation fallback includes each status cause's field and message in the mutation error. Ensure those validation causes are safe to show to users.
+
+A webhook or controller can explicitly provide a safe message by adding a status cause of type `cp.ei.telekom.de/PublicMessage` to the error, using `errors.WithPublicMessage` from `common/pkg/errors`. The API uses the first non-empty marked cause's `message` as the mutation error message without changing the `code`. This overrides the normal message, including the validation fallback for `Invalid` errors. If there is no non-empty public message, the normal classification fallback applies.
+
+:::warning
+Only put text into a public message that is safe to show to end users. Don't include internal host names, resource details, or confidential data.
+:::
 
 ### Subscription Scopes
 

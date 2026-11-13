@@ -116,6 +116,8 @@ type EventSubscriptionStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="EventType",type="string",JSONPath=".spec.eventType",description="The event type identifier"
 // +kubebuilder:printcolumn:name="CreatedAt",type="date",JSONPath=".metadata.creationTimestamp",description="Creation timestamp"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // EventSubscription is the Schema for the eventsubscriptions API.
 // It represents a declaration that an application subscribes to events of a specific type,

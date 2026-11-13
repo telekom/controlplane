@@ -262,6 +262,44 @@ func (_u *ApiExposureUpdate) ClearAPIVersion() *ApiExposureUpdate {
 	return _u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_u *ApiExposureUpdate) SetLmsIssuer(v string) *ApiExposureUpdate {
+	_u.mutation.SetLmsIssuer(v)
+	return _u
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableLmsIssuer(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetLmsIssuer(*v)
+	}
+	return _u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (_u *ApiExposureUpdate) ClearLmsIssuer() *ApiExposureUpdate {
+	_u.mutation.ClearLmsIssuer()
+	return _u
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdate) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpdate {
+	_u.mutation.SetFailoverLmsIssuers(v)
+	return _u
+}
+
+// AppendFailoverLmsIssuers appends value to the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdate) AppendFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpdate {
+	_u.mutation.AppendFailoverLmsIssuers(v)
+	return _u
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdate) ClearFailoverLmsIssuers() *ApiExposureUpdate {
+	_u.mutation.ClearFailoverLmsIssuers()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *ApiExposureUpdate) SetOwnerID(id int) *ApiExposureUpdate {
 	_u.mutation.SetOwnerID(id)
@@ -499,6 +537,23 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.APIVersionCleared() {
 		_spec.ClearField(apiexposure.FieldAPIVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.LmsIssuer(); ok {
+		_spec.SetField(apiexposure.FieldLmsIssuer, field.TypeString, value)
+	}
+	if _u.mutation.LmsIssuerCleared() {
+		_spec.ClearField(apiexposure.FieldLmsIssuer, field.TypeString)
+	}
+	if value, ok := _u.mutation.FailoverLmsIssuers(); ok {
+		_spec.SetField(apiexposure.FieldFailoverLmsIssuers, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedFailoverLmsIssuers(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apiexposure.FieldFailoverLmsIssuers, value)
+		})
+	}
+	if _u.mutation.FailoverLmsIssuersCleared() {
+		_spec.ClearField(apiexposure.FieldFailoverLmsIssuers, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -849,6 +904,44 @@ func (_u *ApiExposureUpdateOne) ClearAPIVersion() *ApiExposureUpdateOne {
 	return _u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_u *ApiExposureUpdateOne) SetLmsIssuer(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetLmsIssuer(v)
+	return _u
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableLmsIssuer(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetLmsIssuer(*v)
+	}
+	return _u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (_u *ApiExposureUpdateOne) ClearLmsIssuer() *ApiExposureUpdateOne {
+	_u.mutation.ClearLmsIssuer()
+	return _u
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdateOne) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpdateOne {
+	_u.mutation.SetFailoverLmsIssuers(v)
+	return _u
+}
+
+// AppendFailoverLmsIssuers appends value to the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdateOne) AppendFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpdateOne {
+	_u.mutation.AppendFailoverLmsIssuers(v)
+	return _u
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (_u *ApiExposureUpdateOne) ClearFailoverLmsIssuers() *ApiExposureUpdateOne {
+	_u.mutation.ClearFailoverLmsIssuers()
+	return _u
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_u *ApiExposureUpdateOne) SetOwnerID(id int) *ApiExposureUpdateOne {
 	_u.mutation.SetOwnerID(id)
@@ -1116,6 +1209,23 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	}
 	if _u.mutation.APIVersionCleared() {
 		_spec.ClearField(apiexposure.FieldAPIVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.LmsIssuer(); ok {
+		_spec.SetField(apiexposure.FieldLmsIssuer, field.TypeString, value)
+	}
+	if _u.mutation.LmsIssuerCleared() {
+		_spec.ClearField(apiexposure.FieldLmsIssuer, field.TypeString)
+	}
+	if value, ok := _u.mutation.FailoverLmsIssuers(); ok {
+		_spec.SetField(apiexposure.FieldFailoverLmsIssuers, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedFailoverLmsIssuers(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apiexposure.FieldFailoverLmsIssuers, value)
+		})
+	}
+	if _u.mutation.FailoverLmsIssuersCleared() {
+		_spec.ClearField(apiexposure.FieldFailoverLmsIssuers, field.TypeJSON)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

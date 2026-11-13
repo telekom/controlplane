@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var BasePathLabelKey = config.BuildLabelKey("basepath")
+var BasePathLabelKey = config.BasePathLabelKey
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
@@ -44,6 +44,7 @@ type ApiStatus struct {
 // Api is the Schema for the apis API
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version of the API"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Indicates if the API is active"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Api struct {
 	metav1.TypeMeta   `json:",inline"`

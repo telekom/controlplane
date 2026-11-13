@@ -29,12 +29,25 @@ FileType registered
     │
     └──▶ FileSubscription created by a consumer
             ├──▶ ApprovalRequest created from the active FileExposure approval strategy
+            ├──▶ Provider-zone SFTP endpoints published while approval is pending
             └──▶ Subscription-owned SFTP User synced after approval is granted
 ```
 
 FileExposure and FileSubscription resources reference a `FileType` by name with `spec.fileType`. SFTP-specific public keys are configured through `spec.sftp`, and `spec.zone` points at the ZoneServiceConfig used for provider-side SFTP access. ZoneServiceConfig resources hold the SFTP API managed-route configuration plus internal and external service endpoints, and they must have the same name and namespace as the corresponding admin Zone. The File operator reads the identity realm reference from that Zone, creates an identity client for the managed route, and projects the resolved endpoint, token endpoint, client ID, and client secret to the SFTP domain as an SFTPServiceConfig with the same name and namespace. The active FileExposure creates an SFTP Instance for that zone, and SFTP users reference that instance through `spec.instanceRef`.
 
 The SFTP API route and its gateway consumer use the Zone's selected `API` preset: the default API preset when present, otherwise the first API preset. The preset supplies the gateway reference, public URLs, and internal issuer used for the token endpoint. The route trusts that internal issuer and uses the owning Zone's realm name for gateway security.
+
+FileSubscription publishes `status.serviceUrl` and `status.serviceExternalUrl`
+from the active FileExposure's ZoneServiceConfig, even when the consumer is in
+another zone. These SFTP endpoints are available while approval is pending and
+do not depend on subscriber User readiness. Rover application info exposes them
+as optional `serviceUrl` and `serviceExternalUrl` fields; unavailable values are
+omitted. Endpoint visibility does not grant access: subscriber SFTP Users are
+provisioned only after approval is granted.
+
+Rover application info also exposes FileExposure status endpoints as optional
+`serviceUrl` and `serviceExternalUrl` fields on file exposures. Unavailable
+values are omitted.
 
 ## Domain Interactions
 

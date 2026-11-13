@@ -55,6 +55,7 @@ type RoverStatus struct {
 // Rover is the Schema for the rovers API
 // Rover resources define API exposures and subscriptions for applications
 // +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone",description="Zone the Rover belongs to"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Rover struct {
 	// Standard Kubernetes type metadata

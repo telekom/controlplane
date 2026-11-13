@@ -6,14 +6,54 @@ package security
 
 import (
 	"context"
+	"encoding/json"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/util"
+)
+
+var _ = DescribeTable("RequireClientTypes",
+	func(bCtx *BusinessContext, setContext bool, allowed []ClientType, status int) {
+		app := fiber.New()
+		called := false
+		app.Get("/", func(c *fiber.Ctx) error {
+			if setContext {
+				c.SetUserContext(ToContext(c.UserContext(), bCtx))
+			}
+			return c.Next()
+		}, RequireClientTypes(allowed...), func(c *fiber.Ctx) error {
+			called = true
+			return c.SendStatus(http.StatusNoContent)
+		})
+
+		resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(resp.Body.Close)
+		Expect(resp.StatusCode).To(Equal(status))
+		Expect(called).To(Equal(status == http.StatusNoContent))
+		if status == http.StatusForbidden {
+			Expect(resp.Header.Get("Content-Type")).To(Equal("application/problem+json"))
+			var problem map[string]any
+			Expect(json.NewDecoder(resp.Body).Decode(&problem)).To(Succeed())
+			Expect(problem["status"]).To(BeNumerically("==", http.StatusForbidden))
+			Expect(problem["detail"]).To(Equal("Access to requested resource not allowed"))
+		}
+	},
+	Entry("allows admin", &BusinessContext{ClientType: ClientTypeAdmin}, true, []ClientType{ClientTypeAdmin}, http.StatusNoContent),
+	Entry("allows another listed type", &BusinessContext{ClientType: ClientTypeGroup}, true, []ClientType{ClientTypeAdmin, ClientTypeGroup}, http.StatusNoContent),
+	Entry("rejects unlisted team", &BusinessContext{ClientType: ClientTypeTeam}, true, []ClientType{ClientTypeAdmin, ClientTypeGroup}, http.StatusForbidden),
+	Entry("rejects missing context", nil, false, []ClientType{ClientTypeAdmin}, http.StatusForbidden),
+	Entry("rejects nil context", nil, true, []ClientType{ClientTypeAdmin}, http.StatusForbidden),
+	Entry("rejects empty allowlist", &BusinessContext{ClientType: ClientTypeAdmin}, true, nil, http.StatusForbidden),
+	Entry("leaves access-type enforcement to the guard", &BusinessContext{ClientType: ClientTypeAdmin, AccessType: AccessTypeReadOnly}, true, []ClientType{ClientTypeAdmin}, http.StatusNoContent),
 )
 
 var handlerMock = func(c *fiber.Ctx) error {

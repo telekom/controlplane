@@ -116,6 +116,7 @@ type ComplexityRoot struct {
 		Environment    func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
+		LmsIssuer      func(childComplexity int) int
 		McpServer      func(childComplexity int) int
 		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
@@ -259,25 +260,27 @@ type ComplexityRoot struct {
 	}
 
 	ApiExposure struct {
-		API            func(childComplexity int) int
-		APIVersion     func(childComplexity int) int
-		Active         func(childComplexity int) int
-		ApprovalConfig func(childComplexity int) int
-		BasePath       func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Environment    func(childComplexity int) int
-		Features       func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Namespace      func(childComplexity int) int
-		Owner          func(childComplexity int) int
-		Security       func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int) int
-		Traffic        func(childComplexity int) int
-		Upstreams      func(childComplexity int) int
-		Visibility     func(childComplexity int) int
+		API                func(childComplexity int) int
+		APIVersion         func(childComplexity int) int
+		Active             func(childComplexity int) int
+		ApprovalConfig     func(childComplexity int) int
+		BasePath           func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Environment        func(childComplexity int) int
+		FailoverLmsIssuers func(childComplexity int) int
+		Features           func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastModifiedAt     func(childComplexity int) int
+		LmsIssuer          func(childComplexity int) int
+		Namespace          func(childComplexity int) int
+		Owner              func(childComplexity int) int
+		Security           func(childComplexity int) int
+		StatusMessage      func(childComplexity int) int
+		StatusPhase        func(childComplexity int) int
+		Subscriptions      func(childComplexity int) int
+		Traffic            func(childComplexity int) int
+		Upstreams          func(childComplexity int) int
+		Visibility         func(childComplexity int) int
 	}
 
 	ApiExposureConnection struct {
@@ -691,6 +694,11 @@ type ComplexityRoot struct {
 
 	Failover struct {
 		Zones func(childComplexity int) int
+	}
+
+	FailoverLmsIssuer struct {
+		Url  func(childComplexity int) int
+		Zone func(childComplexity int) int
 	}
 
 	FileExposure struct {
@@ -1335,6 +1343,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AgenticExposure.LastModifiedAt(childComplexity), true
+	case "AgenticExposure.lmsIssuer":
+		if e.ComplexityRoot.AgenticExposure.LmsIssuer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AgenticExposure.LmsIssuer(childComplexity), true
 	case "AgenticExposure.mcpServer":
 		if e.ComplexityRoot.AgenticExposure.McpServer == nil {
 			break
@@ -1912,6 +1926,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.Environment(childComplexity), true
+	case "ApiExposure.failoverLmsIssuers":
+		if e.ComplexityRoot.ApiExposure.FailoverLmsIssuers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.FailoverLmsIssuers(childComplexity), true
 	case "ApiExposure.features":
 		if e.ComplexityRoot.ApiExposure.Features == nil {
 			break
@@ -1930,6 +1950,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
+	case "ApiExposure.lmsIssuer":
+		if e.ComplexityRoot.ApiExposure.LmsIssuer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.LmsIssuer(childComplexity), true
 	case "ApiExposure.namespace":
 		if e.ComplexityRoot.ApiExposure.Namespace == nil {
 			break
@@ -3686,6 +3712,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Failover.Zones(childComplexity), true
+
+	case "FailoverLmsIssuer.url":
+		if e.ComplexityRoot.FailoverLmsIssuer.Url == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FailoverLmsIssuer.Url(childComplexity), true
+	case "FailoverLmsIssuer.zone":
+		if e.ComplexityRoot.FailoverLmsIssuer.Zone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FailoverLmsIssuer.Zone(childComplexity), true
 
 	case "FileExposure.active":
 		if e.ComplexityRoot.FileExposure.Active == nil {
@@ -5999,6 +6038,7 @@ type AgenticExposure implements Node {
   security: AgenticExposureSecurity
   traffic: Traffic
   transformation: AgenticTransformation
+  lmsIssuer: String
   owner: Application!
   mcpServer: McpServer
   agentCard: AgentCard
@@ -6217,6 +6257,24 @@ input AgenticExposureWhereInput {
   activeNEQ: Boolean
   activeIsNil: Boolean
   activeNotNil: Boolean
+  """
+  lms_issuer field predicates
+  """
+  lmsIssuer: String
+  lmsIssuerNEQ: String
+  lmsIssuerIn: [String!]
+  lmsIssuerNotIn: [String!]
+  lmsIssuerGT: String
+  lmsIssuerGTE: String
+  lmsIssuerLT: String
+  lmsIssuerLTE: String
+  lmsIssuerContains: String
+  lmsIssuerHasPrefix: String
+  lmsIssuerHasSuffix: String
+  lmsIssuerIsNil: Boolean
+  lmsIssuerNotNil: Boolean
+  lmsIssuerEqualFold: String
+  lmsIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -6559,6 +6617,8 @@ type ApiExposure implements Node {
   traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
+  lmsIssuer: String
+  failoverLmsIssuers: [FailoverLmsIssuer!]
   owner: Application!
   api: Api
 }
@@ -6779,6 +6839,24 @@ input ApiExposureWhereInput {
   apiVersionNotNil: Boolean
   apiVersionEqualFold: String
   apiVersionContainsFold: String
+  """
+  lms_issuer field predicates
+  """
+  lmsIssuer: String
+  lmsIssuerNEQ: String
+  lmsIssuerIn: [String!]
+  lmsIssuerNotIn: [String!]
+  lmsIssuerGT: String
+  lmsIssuerGTE: String
+  lmsIssuerLT: String
+  lmsIssuerLTE: String
+  lmsIssuerContains: String
+  lmsIssuerHasPrefix: String
+  lmsIssuerHasSuffix: String
+  lmsIssuerIsNil: Boolean
+  lmsIssuerNotNil: Boolean
+  lmsIssuerEqualFold: String
+  lmsIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -12457,6 +12535,12 @@ type Failover {
   zones: [String!]
 }
 
+"The LMS issuer of a provider failover zone's gateway."
+type FailoverLmsIssuer {
+  zone: String!
+  url: String!
+}
+
 type Traffic {
   failover: Failover
   rateLimit: RateLimit
@@ -12833,6 +12917,8 @@ func (ec *executionContext) childFields_AgenticExposure(ctx context.Context, fie
 		return ec.fieldContext_AgenticExposure_traffic(ctx, field)
 	case "transformation":
 		return ec.fieldContext_AgenticExposure_transformation(ctx, field)
+	case "lmsIssuer":
+		return ec.fieldContext_AgenticExposure_lmsIssuer(ctx, field)
 	case "owner":
 		return ec.fieldContext_AgenticExposure_owner(ctx, field)
 	case "mcpServer":
@@ -13135,6 +13221,10 @@ func (ec *executionContext) childFields_ApiExposure(ctx context.Context, field g
 		return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
 	case "apiVersion":
 		return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
+	case "lmsIssuer":
+		return ec.fieldContext_ApiExposure_lmsIssuer(ctx, field)
+	case "failoverLmsIssuers":
+		return ec.fieldContext_ApiExposure_failoverLmsIssuers(ctx, field)
 	case "owner":
 		return ec.fieldContext_ApiExposure_owner(ctx, field)
 	case "api":
@@ -13969,6 +14059,16 @@ func (ec *executionContext) childFields_Failover(ctx context.Context, field grap
 		return ec.fieldContext_Failover_zones(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Failover", field.Name)
+}
+
+func (ec *executionContext) childFields_FailoverLmsIssuer(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "zone":
+		return ec.fieldContext_FailoverLmsIssuer_zone(ctx, field)
+	case "url":
+		return ec.fieldContext_FailoverLmsIssuer_url(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FailoverLmsIssuer", field.Name)
 }
 
 func (ec *executionContext) childFields_FileExposure(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {

@@ -73,6 +73,17 @@ roverctl get-info
 
 The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.
 
+For local and cross-zone API subscriptions, the gateway URL is available while
+approval is pending, once the subscription prerequisites and zone configuration
+are valid. Kubernetes exposes it in `status.gatewayUrl`; Rover application info
+includes the existing `tardis.stargate.url.api...` variable. The URL uses the
+consumer zone's selected gateway preset, including consumer failover when
+configured. Cross-environment remote subscriptions are excluded.
+
+A displayed URL is endpoint metadata, not proof of access. New access is
+provisioned only after approval is granted, and the subscription remains not
+ready while approval is pending.
+
 Each application's `variables` array provides resolved connection values using the legacy variable names:
 
 | Variable | Value |
@@ -86,7 +97,7 @@ Each application's `variables` array provides resolved connection values using t
 | `tardis.stargate.url.api.<basePath>` | Resolved API or agentic subscription endpoint; `/` in the base path becomes `.`, preserving case |
 | `tardis.horizon.subscription.id.<eventType>` | Event subscription identifier, when available |
 | `tardis.horizon.subscription.url.<eventType>` | Server-sent-event subscription URL, when available |
-| `tardis.horizon.event.url` | Publish URL supplied by an event exposure, when available |
+| `tardis.horizon.event.url` | Event publish URL; same value as `stargatePublishEventUrl`. Uses the publish URL reported by the application's first event exposure that has one, otherwise the first non-hidden URL of the zone's selected Event gateway preset joined with `/horizon/events/v1`. Independent of `tardis.stargate.url`, which stays the API gateway URL |
 | `tardis.chevron.url`, `tardis.chevron.application` | Permission-query URL and application identifier, when configured |
 
 Variables whose source values are empty are omitted. The array is empty (`[]`) when no values are available; the Go implementation does not initialize fields with legacy placeholders. Legacy Cloudwalker and Raccoon variables are not generated from unsupported or unconfigured endpoints.

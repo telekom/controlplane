@@ -2641,6 +2641,14 @@ components:
               type: string
               enum:
                 - file
+            serviceUrl:
+              type: string
+              readOnly: true
+              description: Internal SFTP endpoint.
+            serviceExternalUrl:
+              type: string
+              readOnly: true
+              description: External SFTP endpoint.
     ExposureInfo:
       discriminator:
         propertyName: type
@@ -2693,6 +2701,13 @@ components:
           type: string
         stargatePublishEventUrl:
           type: string
+          description: >-
+            Event publish URL. Uses the publish URL reported by the application's first
+            event exposure that has one; otherwise the first non-hidden URL of the zone's
+            selected Event preset joined with `/horizon/events/v1`. Omitted when the selected
+            preset has no public URL. Failure to select an Event preset is a configuration
+            error. `stargateUrl` remains the API gateway URL (including failover).
+            Its presence does not imply publish authorization or readiness.
         observerUrl:
           type: string
         psiid:
@@ -3452,6 +3467,14 @@ components:
               type: string
               enum:
                 - file
+            serviceUrl:
+              type: string
+              readOnly: true
+              description: Internal SFTP endpoint. May be available before approval; its presence does not indicate access is granted.
+            serviceExternalUrl:
+              type: string
+              readOnly: true
+              description: External SFTP endpoint. May be available before approval; its presence does not indicate access is granted.
     SubscriptionInfo:
       readOnly: true
       discriminator:

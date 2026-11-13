@@ -1,3 +1,45 @@
+# [0.48.0](https://github.com/telekom/controlplane/compare/v0.47.0...v0.48.0) (2026-11-12)
+
+
+### Bug Fixes
+
+* **organization-server:** enforce hub and team mutation permissions ([#853](https://github.com/telekom/controlplane/issues/853)) ([7f9e19d](https://github.com/telekom/controlplane/commit/7f9e19d5e9f12e84eadf98311e4a35235e344848))
+
+
+### Features
+
+* **api,agentic,projector,controlplane-api:** expose LMS issuers of exposures ([#856](https://github.com/telekom/controlplane/issues/856)) ([2efe6f2](https://github.com/telekom/controlplane/commit/2efe6f252a4627ea9fbaedc885f4d40890bb9691))
+* **crd:** add Ready printer columns across resources ([#852](https://github.com/telekom/controlplane/issues/852)) ([6a8672b](https://github.com/telekom/controlplane/commit/6a8672b369dec90a5f4a3dcd71091b566756b7db))
+
+# [0.47.0](https://github.com/telekom/controlplane/compare/v0.46.0...v0.47.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* **controlplane-api,application:** propagate explicitly public webhook errors ([#848](https://github.com/telekom/controlplane/issues/848)) ([92c3cd3](https://github.com/telekom/controlplane/commit/92c3cd3e20d69bd7a32933944ad5197a4172d801))
+* **gateway:** delegate header removal to Jumper ([#849](https://github.com/telekom/controlplane/issues/849)) ([990e7ab](https://github.com/telekom/controlplane/commit/990e7ab844aa2ac8a046aa65a8a6b7ec7888c44f))
+* **rover-server:** provide event publish URL without exposures ([#836](https://github.com/telekom/controlplane/issues/836)) ([b1cc845](https://github.com/telekom/controlplane/commit/b1cc845dbb865952acb94eff7ac6e8d06822ec5c))
+
+
+### Features
+
+* **api,agentic:** shared basepath label ([#827](https://github.com/telekom/controlplane/issues/827)) ([1731ce1](https://github.com/telekom/controlplane/commit/1731ce12ecd27393896c518c1f39552a3dc7e4ec))
+* **common:** LabelKeyPrefix and derived FinalizerName are compile-time constants in common/pkg/config/config.go ([#847](https://github.com/telekom/controlplane/issues/847)) ([b53a2d9](https://github.com/telekom/controlplane/commit/b53a2d9cd068982d51d649a54bc547cfeb74beaf))
+* **controlplane-api, projector:** add environment filter to handle multiple environments in same cluster ([#815](https://github.com/telekom/controlplane/issues/815)) ([a920aa3](https://github.com/telekom/controlplane/commit/a920aa3bc49cc5b06d1cd4d588f21aa9702b1013))
+
+# [0.46.0](https://github.com/telekom/controlplane/compare/v0.45.1...v0.46.0) (2026-11-09)
+
+
+### Bug Fixes
+
+* **file:** add admin url for identity provider ([#845](https://github.com/telekom/controlplane/issues/845)) ([4a04b5a](https://github.com/telekom/controlplane/commit/4a04b5a69109d5e58c8a32877e0dbff0994f9134))
+
+
+### Features
+
+* **admin:** separate identity admin endpoint from public issuer ([#835](https://github.com/telekom/controlplane/issues/835)) ([b3a866d](https://github.com/telekom/controlplane/commit/b3a866d270699476a5c237fcfdb5d593cc18fe0e))
+* **subscriptions:** expose endpoint URLs while approval is pending ([#828](https://github.com/telekom/controlplane/issues/828)) ([a1f51b6](https://github.com/telekom/controlplane/commit/a1f51b6478cefda0001963779de385473ad3ee23))
+
 ## [0.45.1](https://github.com/telekom/controlplane/compare/v0.45.0...v0.45.1) (2026-11-04)
 
 

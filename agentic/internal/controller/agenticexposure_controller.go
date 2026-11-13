@@ -70,9 +70,11 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticExposure),
 			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
 		).
+		// Watch Zones with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
+		// because the LMS issuer comes from Zone status, which does not bump metadata.generation.
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
 		).
 		Watches(&agenticv1.AgenticSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticSubscriptionToAgenticExposure),
@@ -94,8 +96,8 @@ func (r *AgenticExposureReconciler) MapMcpServerToAgenticExposure(ctx context.Co
 
 	list := &agenticv1.AgenticExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       server.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(server.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: server.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(server.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
@@ -122,8 +124,8 @@ func (r *AgenticExposureReconciler) MapAgenticExposureToAgenticExposure(ctx cont
 
 	list := &agenticv1.AgenticExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       exposure.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: exposure.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(exposure.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}
@@ -149,15 +151,15 @@ func (r *AgenticExposureReconciler) MapRouteToAgenticExposure(ctx context.Contex
 		return nil
 	}
 
-	basePathLabel := route.GetLabels()[agenticv1.AgenticBasePathLabelKey]
+	basePathLabel := route.GetLabels()[agenticv1.BasePathLabelKey]
 	if basePathLabel == "" {
 		return nil
 	}
 
 	list := &agenticv1.AgenticExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       route.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: basePathLabel,
+		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  basePathLabel,
 	}); err != nil {
 		return nil
 	}
@@ -210,8 +212,8 @@ func (r *AgenticExposureReconciler) MapAgenticSubscriptionToAgenticExposure(ctx 
 
 	list := &agenticv1.AgenticExposureList{}
 	if err := r.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey:       sub.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.AgenticBasePathLabelKey: labelutil.NormalizeLabelValue(sub.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: sub.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(sub.Spec.BasePath),
 	}); err != nil {
 		return nil
 	}

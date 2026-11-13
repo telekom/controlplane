@@ -61,7 +61,10 @@ var _ = Describe("ApplicationInfo variables", func() {
 		appStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&applicationv1.Application{}, nil).Once()
 		zoneStore := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
 		zoneStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&adminv1.Zone{
-			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true}}},
+			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+				{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true},
+				{Name: "event", Type: adminv1.GatewayTypeEvent},
+			}},
 			Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{
 				Name: "default",
 			}}},
@@ -119,33 +122,68 @@ var _ = Describe("ApplicationInfo variables", func() {
 				{Name: "tardis.horizon.subscription.url.test.events.v1", Value: "https://sse.example.com/events"},
 				{Name: "tardis.stargate.url.api.mcp.Weather.v1", Value: "https://failover.example.com/resolved/path"},
 			}),
-		Entry("pending resources have no variables", "", "", "", eventv1.DeliveryTypeServerSentEvent, []api.Data{}),
+		Entry("unavailable endpoints have no variables", "", "", "", eventv1.DeliveryTypeServerSentEvent, []api.Data{}),
 		Entry("callback delivery does not advertise a stale SSE URL", "", "subscriber-id", "https://sse.example.com/stale", eventv1.DeliveryTypeCallback,
 			[]api.Data{{Name: "tardis.horizon.subscription.id.test.events.v1", Value: "subscriber-id"}}),
 	)
 
-	It("includes application, subscription, and event publish variables in the final response", func() {
+	It("includes application, subscription, and exposure-reported event publish variables in the final response", func() {
 		eventStore := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventStore.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&commonStore.ListResponse[*eventv1.EventExposure]{}, nil).Once()
 		eventStore.EXPECT().Get(mock.Anything, "test", "event").Return(&eventv1.EventExposure{
 			Status: eventv1.EventExposureStatus{PublishURL: "https://events.example.com/publish"},
-		}, nil).Once()
+		}, nil).Twice()
 		localStores := *stores
 		localStores.EventExposureStore = eventStore
 		resource := rover.DeepCopy()
 		resource.Status.EventExposures = []types.ObjectRef{{Namespace: "test", Name: "event"}}
 		info, err := MapApplicationInfo(ctx, resource, &localStores)
 		Expect(err).NotTo(HaveOccurred())
+		expectedURL := "https://events.example.com/publish"
+		Expect(info.StargatePublishEventUrl).To(Equal(expectedURL))
 		Expect(info.Variables).To(ContainElements(
 			api.Data{Name: "tardis.iris.client.id", Value: info.IrisClientId},
 			api.Data{Name: "tardis.iris.client.secret", Value: info.SecretInfo.ClientSecret},
 			api.Data{Name: "tardis.stargate.url", Value: info.StargateUrl},
-			api.Data{Name: "tardis.horizon.event.url", Value: "https://events.example.com/publish"},
+			api.Data{Name: "tardis.horizon.event.url", Value: expectedURL},
 			api.Data{Name: "tardis.horizon.subscription.id.de.telekom.eni.quickstart.v1", Value: "horizon-sub-456"},
 		))
+		count := 0
 		for _, variable := range info.Variables {
 			Expect(variable.Value).NotTo(BeEmpty())
+			if variable.Name == "tardis.horizon.event.url" {
+				count++
+			}
 		}
+		Expect(count).To(Equal(1))
+	})
+
+	It("publishes the Event preset URL on a distinct host and base path without exposures, subscriptions, readiness or Event status", func() {
+		appStore := mocks.NewMockObjectStore[*applicationv1.Application](GinkgoT())
+		appStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&applicationv1.Application{}, nil).Once()
+		zoneStore := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+		zoneStore.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&adminv1.Zone{
+			Spec: adminv1.ZoneSpec{Presets: []adminv1.Preset{
+				{Name: "default", Type: adminv1.GatewayTypeAPI, Default: true, Urls: []adminv1.UrlConfig{{Hostname: "stargate.example.com", BasePath: "/api"}}},
+				{Name: "event", Type: adminv1.GatewayTypeEvent, Urls: []adminv1.UrlConfig{{Hostname: "events.example.com", BasePath: "/pub"}}},
+			}},
+			// No Ready condition and no Event preset status: neither is a prerequisite.
+			Status: adminv1.ZoneStatus{Presets: []adminv1.PresetStatus{{Name: "default"}}},
+		}, nil).Once()
+		resource := &roverv1.Rover{Status: roverv1.RoverStatus{Application: rover.Status.Application}}
+		info, err := MapApplicationInfo(ctx, resource, &store.Stores{
+			ApplicationSecretStore: appStore, ZoneStore: zoneStore,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Exposures).To(BeEmpty())
+		Expect(info.Subscriptions).To(BeEmpty())
+		expectedURL := "https://events.example.com/pub/horizon/events/v1"
+		Expect(info.StargatePublishEventUrl).To(Equal(expectedURL))
+		Expect(info.StargateUrl).To(Equal("https://stargate.example.com/api"))
+		Expect(info.Variables).To(ContainElements(
+			api.Data{Name: "tardis.horizon.event.url", Value: expectedURL},
+			api.Data{Name: "tardis.stargate.url", Value: "https://stargate.example.com/api"},
+		))
 	})
 })

@@ -80,6 +80,7 @@ type AgentCardStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The agent base path"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this agent registration is active"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // AgentCard is the Schema for the agentcards API.

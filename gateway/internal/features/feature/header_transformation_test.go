@@ -109,7 +109,7 @@ var _ = Describe("HeaderTransformationFeature", func() {
 	Describe("Apply()", func() {
 		Context("happy path", func() {
 			Context("when transformation has headers to remove", func() {
-				It("adds each header to RTP Config.Remove", func() {
+				It("sets Jumper removeHeaders without changing other configuration or duplicating headers on reapplication", func() {
 					route := &gatewayv1.Route{
 						Spec: gatewayv1.RouteSpec{
 							Type: gatewayv1.RouteTypePrimary,
@@ -122,17 +122,20 @@ var _ = Describe("HeaderTransformationFeature", func() {
 							},
 						},
 					}
-					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
+					jumperConfig := plugin.NewJumperConfig()
+					jumperConfig.OAuth["consumer"] = plugin.OauthCredentials{ClientId: "client"}
 
 					builder.EXPECT().GetRoute().Return(route, true)
-					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
+					builder.EXPECT().JumperConfig().Return(jumperConfig)
 
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(rtpPlugin.Config.Remove.Headers.Contains("X-Custom-Header")).To(BeTrue())
-					Expect(rtpPlugin.Config.Remove.Headers.Contains("X-Internal-Token")).To(BeTrue())
-					Expect(rtpPlugin.Config.Remove.Headers.Size()).To(Equal(2))
+					Expect(jumperConfig.RemoveHeaders).To(Equal([]string{"X-Custom-Header", "X-Internal-Token"}))
+					Expect(jumperConfig.OAuth["consumer"]).To(Equal(plugin.OauthCredentials{ClientId: "client"}))
+
+					Expect(f.Apply(ctx, builder)).To(Succeed())
+					Expect(jumperConfig.RemoveHeaders).To(Equal([]string{"X-Custom-Header", "X-Internal-Token"}))
 				})
 			})
 		})
@@ -150,7 +153,7 @@ var _ = Describe("HeaderTransformationFeature", func() {
 
 		Context("edge cases", func() {
 			Context("when remove list is empty", func() {
-				It("does not add any headers to the plugin", func() {
+				It("does not initialize Jumper configuration or access the request transformer", func() {
 					route := &gatewayv1.Route{
 						Spec: gatewayv1.RouteSpec{
 							Type: gatewayv1.RouteTypePrimary,
@@ -163,15 +166,19 @@ var _ = Describe("HeaderTransformationFeature", func() {
 							},
 						},
 					}
-					rtpPlugin := plugin.RequestTransformerPluginFromRoute(route)
-
 					builder.EXPECT().GetRoute().Return(route, true)
-					builder.EXPECT().RequestTransformerPlugin().Return(rtpPlugin)
 
 					err := f.Apply(ctx, builder)
 					Expect(err).ToNot(HaveOccurred())
+				})
+			})
 
-					Expect(rtpPlugin.Config.Remove.Headers).To(BeNil())
+			Context("when transformation is nil", func() {
+				It("does not initialize Jumper configuration or access the request transformer", func() {
+					route := &gatewayv1.Route{}
+					builder.EXPECT().GetRoute().Return(route, true)
+
+					Expect(f.Apply(ctx, builder)).To(Succeed())
 				})
 			})
 		})

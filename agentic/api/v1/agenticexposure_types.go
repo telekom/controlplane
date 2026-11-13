@@ -72,6 +72,11 @@ type AgenticExposureStatus struct {
 	// ProxyRoutes references proxy gateway Route CRs for cross-zone MCP delivery.
 	// +optional
 	ProxyRoutes []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
+
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens that the exposure zone's
+	// AI gateway sends to the upstream. Empty until the primary route is provisioned.
+	// +optional
+	LmsIssuer string `json:"lmsIssuer,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -79,6 +84,7 @@ type AgenticExposureStatus struct {
 // +kubebuilder:printcolumn:name="BasePath",type="string",JSONPath=".spec.basePath",description="The MCP server base path"
 // +kubebuilder:printcolumn:name="Active",type="boolean",JSONPath=".status.active",description="Whether this exposure is active"
 // +kubebuilder:printcolumn:name="Variant",type="string",JSONPath=".spec.variant",description="The exposure variant"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // AgenticExposure is the Schema for the agenticexposures API.

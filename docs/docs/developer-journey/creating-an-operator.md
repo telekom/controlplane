@@ -52,6 +52,29 @@ Every CRD type must implement the `Object` interface. This extends the standard 
 
 Kubebuilder generates most of the boilerplate for you. You only need to add a `Conditions` field to your status struct and implement the two methods above.
 
+### Kubectl Printer Columns
+
+Resources with status conditions expose a **Ready** column in `kubectl get`
+output. Add these markers to the resource type, placing Ready before Age:
+
+```go
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+```
+
+Ready displays the stored `Ready` condition status (`True`, `False`, or `Unknown`).
+If the condition has not been set, the column remains empty. The printer does not
+calculate readiness or change reconciliation behavior.
+
+Preserve existing printer columns and keep an explicit Age column: Kubernetes
+does not provide its default Age column once custom columns are defined.
+Resources without status conditions, such as the external
+`pcp.ei.telekom.de` PermissionSet, do not expose Ready.
+
+Run `make manifests` from the operator's module directory after changing printer
+markers, and include the generated CRDs under `config/crd/bases/` with the API
+type changes.
+
 ### Handler Interface
 
 The `Handler` is the only interface your operator must implement. This is where all business logic lives:
@@ -195,6 +218,10 @@ The controller does not add a finalizer to a resource without this label, so the
 For more details on how virtual environments work, see the [Architecture Overview](../architecture/overview.md#virtual-environments).
 
 ## Configuration
+
+The label key prefix `cp.ei.telekom.de` and the finalizer name `cp.ei.telekom.de/finalizer` are compile-time constants. They cannot be overridden through Viper or environment variables; `label-key-prefix` and `LABEL_KEY_PREFIX` are ignored.
+
+`DefaultNamespace` and `DefaultEnvironment` are also compile-time constants, both set to `default`. The former Viper keys `default-namespace` and `default-environment` and environment variables `DEFAULT_NAMESPACE` and `DEFAULT_ENVIRONMENT` are ignored.
 
 The Common library uses [Viper](https://github.com/spf13/viper) for configuration. All settings can be overridden via environment variables:
 

@@ -92,6 +92,38 @@ var _ = Describe("Rover pagination", func() {
 		_, err := ctrl.GetApplicationsInfo(teamContext(), api.GetApplicationsInfoParams{Names: []string{"broken"}})
 		Expect(err).To(MatchError(context.Canceled))
 	})
+	Describe("application info mapping failures", func() {
+		unprocessedRover := func() *roverv1.Rover {
+			rover := mocks.GetRover(GinkgoT(), mocks.RoverFileName).DeepCopy()
+			rover.Status.Application = nil
+			return rover
+		}
+		expectGenericProblem := func(err error) {
+			var p problems.Problem
+			Expect(errors.As(err, &p)).To(BeTrue())
+			Expect(p.Code()).To(Equal(http.StatusInternalServerError))
+			Expect(p.Error()).NotTo(ContainSubstring("not processed"))
+			Expect(fmt.Sprintf("%+v", p)).NotTo(ContainSubstring("not processed"))
+		}
+
+		It("returns a generic problem for the list path", func() {
+			storeMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+			storeMock.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "unprocessed").Return(unprocessedRover(), nil).Once()
+			ctrl := NewRoverController(stores)
+			ctrl.Store = storeMock
+			_, err := ctrl.GetApplicationsInfo(teamContext(), api.GetApplicationsInfoParams{Names: []string{"unprocessed"}})
+			expectGenericProblem(err)
+		})
+
+		It("returns a generic problem for the single path", func() {
+			storeMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+			storeMock.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "unprocessed").Return(unprocessedRover(), nil).Once()
+			ctrl := NewRoverController(stores)
+			ctrl.SecretStore = storeMock
+			_, err := ctrl.GetApplicationInfo(teamContext(), "eni--hyperion--unprocessed", api.GetApplicationInfoParams{})
+			expectGenericProblem(err)
+		})
+	})
 	DescribeTable("lists one scoped page with the effective limit",
 		func(target string, limit int, cursor, self string) {
 			start := roverCallCount()
@@ -149,6 +181,22 @@ var _ = Describe("Rover pagination", func() {
 			{"poc--eni--hyperion", "rover-local-sub"}, {"poc--eni--hyperion", "zzz-missing"},
 		}))
 	})
+	DescribeTable("populates the zone publish event URL for shallow info requests",
+		func(target string) {
+			res := getAsTeam(target)
+			Expect(res.StatusCode).To(Equal(http.StatusOK))
+			var body api.RoverInfoResponse
+			Expect(json.NewDecoder(res.Body).Decode(&body)).To(Succeed())
+			Expect(body.Applications).NotTo(BeEmpty())
+			for _, app := range body.Applications {
+				Expect(app.StargatePublishEventUrl).To(Equal("https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1"))
+				Expect(app.StargateUrl).To(Equal("https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/"))
+				Expect(app.Variables).To(ContainElement(api.Data{Name: "tardis.horizon.event.url", Value: app.StargatePublishEventUrl}))
+			}
+		},
+		Entry("single application", "/rovers/eni--hyperion--rover-local-sub/info?shallowInfo=true"),
+		Entry("application list", "/rovers/info?names=rover-local-sub&shallowInfo=true"),
+	)
 	It("accepts 100 names", func() {
 		Expect(getAsTeam("/rovers/info?" + nameQuery(100)).StatusCode).To(Equal(http.StatusOK))
 	})

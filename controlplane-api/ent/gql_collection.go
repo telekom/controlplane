@@ -319,6 +319,11 @@ func (_q *AgenticExposureQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, agenticexposure.FieldTransformation)
 				fieldSeen[agenticexposure.FieldTransformation] = struct{}{}
 			}
+		case "lmsIssuer":
+			if _, ok := fieldSeen[agenticexposure.FieldLmsIssuer]; !ok {
+				selectedFields = append(selectedFields, agenticexposure.FieldLmsIssuer)
+				fieldSeen[agenticexposure.FieldLmsIssuer] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
@@ -822,6 +827,16 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 			if _, ok := fieldSeen[apiexposure.FieldAPIVersion]; !ok {
 				selectedFields = append(selectedFields, apiexposure.FieldAPIVersion)
 				fieldSeen[apiexposure.FieldAPIVersion] = struct{}{}
+			}
+		case "lmsIssuer":
+			if _, ok := fieldSeen[apiexposure.FieldLmsIssuer]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldLmsIssuer)
+				fieldSeen[apiexposure.FieldLmsIssuer] = struct{}{}
+			}
+		case "failoverLmsIssuers":
+			if _, ok := fieldSeen[apiexposure.FieldFailoverLmsIssuers]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldFailoverLmsIssuers)
+				fieldSeen[apiexposure.FieldFailoverLmsIssuers] = struct{}{}
 			}
 		case "id":
 		case "__typename":

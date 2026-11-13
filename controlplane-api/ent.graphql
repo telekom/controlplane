@@ -326,6 +326,7 @@ type AgenticExposure implements Node {
   security: AgenticExposureSecurity
   traffic: Traffic
   transformation: AgenticTransformation
+  lmsIssuer: String
   owner: Application!
   mcpServer: McpServer
   agentCard: AgentCard
@@ -544,6 +545,24 @@ input AgenticExposureWhereInput {
   activeNEQ: Boolean
   activeIsNil: Boolean
   activeNotNil: Boolean
+  """
+  lms_issuer field predicates
+  """
+  lmsIssuer: String
+  lmsIssuerNEQ: String
+  lmsIssuerIn: [String!]
+  lmsIssuerNotIn: [String!]
+  lmsIssuerGT: String
+  lmsIssuerGTE: String
+  lmsIssuerLT: String
+  lmsIssuerLTE: String
+  lmsIssuerContains: String
+  lmsIssuerHasPrefix: String
+  lmsIssuerHasSuffix: String
+  lmsIssuerIsNil: Boolean
+  lmsIssuerNotNil: Boolean
+  lmsIssuerEqualFold: String
+  lmsIssuerContainsFold: String
   """
   owner edge predicates
   """
@@ -886,6 +905,8 @@ type ApiExposure implements Node {
   traffic: Traffic
   approvalConfig: ApprovalConfig!
   apiVersion: String
+  lmsIssuer: String
+  failoverLmsIssuers: [FailoverLmsIssuer!]
   owner: Application!
   api: Api
 }
@@ -1106,6 +1127,24 @@ input ApiExposureWhereInput {
   apiVersionNotNil: Boolean
   apiVersionEqualFold: String
   apiVersionContainsFold: String
+  """
+  lms_issuer field predicates
+  """
+  lmsIssuer: String
+  lmsIssuerNEQ: String
+  lmsIssuerIn: [String!]
+  lmsIssuerNotIn: [String!]
+  lmsIssuerGT: String
+  lmsIssuerGTE: String
+  lmsIssuerLT: String
+  lmsIssuerLTE: String
+  lmsIssuerContains: String
+  lmsIssuerHasPrefix: String
+  lmsIssuerHasSuffix: String
+  lmsIssuerIsNil: Boolean
+  lmsIssuerNotNil: Boolean
+  lmsIssuerEqualFold: String
+  lmsIssuerContainsFold: String
   """
   owner edge predicates
   """

@@ -131,9 +131,15 @@ func (r *Repository) Upsert(ctx context.Context, data *APIExposureData) error {
 		create.SetNillableAPIID(apiID)
 	}
 
+	create.SetNillableLmsIssuer(data.LmsIssuer)
+	if data.FailoverLmsIssuers != nil {
+		create.SetFailoverLmsIssuers(data.FailoverLmsIssuers)
+	}
+
 	exposureID, upsertErr := create.
 		OnConflictColumns(apiexposure.FieldBasePath, apiexposure.OwnerColumn).
 		UpdateNewValues().
+		Update(clearRemoved(data)).
 		ID(ctx)
 	if upsertErr != nil {
 		return fmt.Errorf("upsert api_exposure %q (app %q, team %q): %w",
@@ -280,4 +286,17 @@ func (r *Repository) Delete(ctx context.Context, key APIExposureKey) error {
 		r.cache.Del(et, lk)
 	}
 	return nil
+}
+
+// clearRemoved clears the optional fields that were removed from the resource.
+// UpdateNewValues only updates the fields that are set on create.
+func clearRemoved(data *APIExposureData) func(*ent.ApiExposureUpsert) {
+	return func(u *ent.ApiExposureUpsert) {
+		if data.LmsIssuer == nil {
+			u.ClearLmsIssuer()
+		}
+		if data.FailoverLmsIssuers == nil {
+			u.ClearFailoverLmsIssuers()
+		}
+	}
 }

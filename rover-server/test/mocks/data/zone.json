@@ -16,6 +16,12 @@
       "gatewayRef": "default",
       "identityProviderRef": "default",
       "urls": [{"hostname": "stargate-distcp1-dataplane1.dev.dhei.telekom.de", "scheme": "https", "basePath": "/", "hidden": false}]
+    }, {
+      "name": "event",
+      "type": "Event",
+      "gatewayRef": "default",
+      "identityProviderRef": "default",
+      "urls": [{"hostname": "stargate-distcp1-dataplane1.dev.dhei.telekom.de", "scheme": "https", "basePath": "/", "hidden": false}]
     }]
   },
   "status": {

@@ -180,11 +180,11 @@ func closeListeners(listeners []net.Listener) error {
 	return errors.Join(closeErrs...)
 }
 
-// Guarded prepends the guard chain to h, so a route registration works
+// Guarded prepends the guard chain to handlers, so a route registration works
 // uniformly whether or not the family uses per-route guards. Servers use
 // it in their RegisterFunc: router.Add(method, path, Guarded(guard, h)...).
-func Guarded(guard []fiber.Handler, h fiber.Handler) []fiber.Handler {
-	return slices.Concat(guard, []fiber.Handler{h})
+func Guarded(guard []fiber.Handler, handlers ...fiber.Handler) []fiber.Handler {
+	return slices.Concat(guard, handlers)
 }
 
 // FamilyFromListenerConfig selects the family from the single present family

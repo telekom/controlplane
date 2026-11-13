@@ -6,6 +6,7 @@ package mutator
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -20,6 +21,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
+	cperrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
@@ -101,11 +103,7 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 	if isRotation && !app.Spec.NeedsClient {
 		eventRecorder.Eventf(app, nil, "Warning", "SecretRotationBlocked", "BlockRotation", "application does not need a client (spec.needsClient=false), blocking secret rotation request")
 
-		return errors.NewForbidden(
-			schema.GroupResource{Group: "application.cp.ei.telekom.de", Resource: "applications"},
-			app.GetName(),
-			fmt.Errorf("secret rotation is not supported because the application has no client (spec.needsClient is false)"),
-		)
+		return newRotationUnsupportedError(app.GetName())
 	}
 
 	// Guard: deny rotation if one is already in progress
@@ -192,4 +190,15 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 	}
 
 	return nil
+}
+
+var errRotationUnsupported = stderrors.New("secret rotation is not supported because the application has no client (spec.needsClient is false)")
+
+// newRotationUnsupportedError returns a Forbidden error whose message is marked public.
+func newRotationUnsupportedError(name string) *errors.StatusError {
+	return cperrors.WithPublicMessage(errors.NewForbidden(
+		schema.GroupResource{Group: applicationv1.GroupVersion.Group, Resource: "applications"},
+		name,
+		errRotationUnsupported,
+	), errRotationUnsupported.Error())
 }

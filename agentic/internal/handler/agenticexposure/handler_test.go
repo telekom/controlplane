@@ -285,6 +285,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 
 		It("should set Blocked and clean up Route when server disappears after Route was created", func() {
 			obj.Status.Route = &ctypes.ObjectRef{Name: "ai-gateway--mcp-weather-v1", Namespace: "default"}
+			obj.Status.LmsIssuer = "https://lms.ai.example.com"
 
 			mockListMcpServers([]agenticv1.McpServer{})
 			mockListAgentCards([]agenticv1.AgentCard{})
@@ -302,6 +303,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
 			Expect(readyCond.Reason).To(Equal("ServerNotFound"))
+			Expect(obj.Status.LmsIssuer).To(BeEmpty())
 		})
 
 		It("should return error when FindAgenticExposures fails", func() {
@@ -335,11 +337,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 				},
 			}
 			mockListAgenticExposures([]agenticv1.AgenticExposure{existingExposure})
+			obj.Status.LmsIssuer = "https://lms.ai.example.com"
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.Active).To(BeFalse())
+			Expect(obj.Status.LmsIssuer).To(BeEmpty())
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
 			Expect(readyCond).ToNot(BeNil())
@@ -420,6 +424,13 @@ var _ = Describe("AgenticExposureHandler", func() {
 		It("should create Route and set Active=true when all is well", func() {
 			server := makeReadyMcpServer("/mcp/weather/v1")
 			zone := makeReadyZoneWithAiGateway()
+			zone.Status.Presets[0].Links.LmsIssuer = "https://lms.ai.example.com"
+			// The API preset's LMS issuer must not be used for agentic exposures
+			zone.Status.Presets = append(zone.Status.Presets, adminv1.PresetStatus{
+				Name:       "api-default",
+				GatewayRef: &ctypes.ObjectRef{Name: "ai-gateway", Namespace: "default"},
+				Links:      adminv1.Links{LmsIssuer: "https://lms.api.example.com"},
+			})
 			mockListMcpServers([]agenticv1.McpServer{server})
 			mockListAgenticExposures([]agenticv1.AgenticExposure{})
 			mockGetZone(zone)
@@ -440,6 +451,7 @@ var _ = Describe("AgenticExposureHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(obj.Status.Active).To(BeTrue())
 			Expect(obj.Status.Route).ToNot(BeNil())
+			Expect(obj.Status.LmsIssuer).To(Equal("https://lms.ai.example.com"))
 			Expect(capturedRoute.Spec.Security.RealmName).To(Equal("provider-realm"))
 
 			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)

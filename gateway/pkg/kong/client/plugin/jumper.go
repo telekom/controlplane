@@ -77,6 +77,7 @@ type JumperConfig struct {
 	BasicAuth     map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
 	Claims        map[ConsumerId][]Claim              `json:"claims,omitempty"`
 	LoadBalancing *LoadBalancing                      `json:"loadBalancing,omitempty"`
+	RemoveHeaders []string                            `json:"removeHeaders,omitempty"`
 	// Mesh indicates whether the Jumper should operate in mesh mode.
 	Mesh          bool                              `json:"mesh,omitempty"`
 	RouteListener map[ConsumerId]RouteListenerEntry `json:"routeListener,omitempty"`

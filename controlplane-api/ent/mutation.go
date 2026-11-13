@@ -1480,6 +1480,7 @@ type AgenticExposureMutation struct {
 	security             *model.AgenticExposureSecurity
 	traffic              *model.Traffic
 	transformation       *model.AgenticTransformation
+	lms_issuer           *string
 	clearedFields        map[string]struct{}
 	owner                *int
 	clearedowner         bool
@@ -2239,6 +2240,55 @@ func (m *AgenticExposureMutation) ResetTransformation() {
 	delete(m.clearedFields, agenticexposure.FieldTransformation)
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (m *AgenticExposureMutation) SetLmsIssuer(s string) {
+	m.lms_issuer = &s
+}
+
+// LmsIssuer returns the value of the "lms_issuer" field in the mutation.
+func (m *AgenticExposureMutation) LmsIssuer() (r string, exists bool) {
+	v := m.lms_issuer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLmsIssuer returns the old "lms_issuer" field's value of the AgenticExposure entity.
+// If the AgenticExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AgenticExposureMutation) OldLmsIssuer(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLmsIssuer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLmsIssuer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLmsIssuer: %w", err)
+	}
+	return oldValue.LmsIssuer, nil
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (m *AgenticExposureMutation) ClearLmsIssuer() {
+	m.lms_issuer = nil
+	m.clearedFields[agenticexposure.FieldLmsIssuer] = struct{}{}
+}
+
+// LmsIssuerCleared returns if the "lms_issuer" field was cleared in this mutation.
+func (m *AgenticExposureMutation) LmsIssuerCleared() bool {
+	_, ok := m.clearedFields[agenticexposure.FieldLmsIssuer]
+	return ok
+}
+
+// ResetLmsIssuer resets all changes to the "lms_issuer" field.
+func (m *AgenticExposureMutation) ResetLmsIssuer() {
+	m.lms_issuer = nil
+	delete(m.clearedFields, agenticexposure.FieldLmsIssuer)
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by id.
 func (m *AgenticExposureMutation) SetOwnerID(id int) {
 	m.owner = &id
@@ -2444,7 +2494,7 @@ func (m *AgenticExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AgenticExposureMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, agenticexposure.FieldCreatedAt)
 	}
@@ -2490,6 +2540,9 @@ func (m *AgenticExposureMutation) Fields() []string {
 	if m.transformation != nil {
 		fields = append(fields, agenticexposure.FieldTransformation)
 	}
+	if m.lms_issuer != nil {
+		fields = append(fields, agenticexposure.FieldLmsIssuer)
+	}
 	return fields
 }
 
@@ -2528,6 +2581,8 @@ func (m *AgenticExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Traffic()
 	case agenticexposure.FieldTransformation:
 		return m.Transformation()
+	case agenticexposure.FieldLmsIssuer:
+		return m.LmsIssuer()
 	}
 	return nil, false
 }
@@ -2567,6 +2622,8 @@ func (m *AgenticExposureMutation) OldField(ctx context.Context, name string) (en
 		return m.OldTraffic(ctx)
 	case agenticexposure.FieldTransformation:
 		return m.OldTransformation(ctx)
+	case agenticexposure.FieldLmsIssuer:
+		return m.OldLmsIssuer(ctx)
 	}
 	return nil, fmt.Errorf("unknown AgenticExposure field %s", name)
 }
@@ -2681,6 +2738,13 @@ func (m *AgenticExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTransformation(v)
 		return nil
+	case agenticexposure.FieldLmsIssuer:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLmsIssuer(v)
+		return nil
 	}
 	return fmt.Errorf("unknown AgenticExposure field %s", name)
 }
@@ -2732,6 +2796,9 @@ func (m *AgenticExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(agenticexposure.FieldTransformation) {
 		fields = append(fields, agenticexposure.FieldTransformation)
 	}
+	if m.FieldCleared(agenticexposure.FieldLmsIssuer) {
+		fields = append(fields, agenticexposure.FieldLmsIssuer)
+	}
 	return fields
 }
 
@@ -2766,6 +2833,9 @@ func (m *AgenticExposureMutation) ClearField(name string) error {
 		return nil
 	case agenticexposure.FieldTransformation:
 		m.ClearTransformation()
+		return nil
+	case agenticexposure.FieldLmsIssuer:
+		m.ClearLmsIssuer()
 		return nil
 	}
 	return fmt.Errorf("unknown AgenticExposure nullable field %s", name)
@@ -2819,6 +2889,9 @@ func (m *AgenticExposureMutation) ResetField(name string) error {
 		return nil
 	case agenticexposure.FieldTransformation:
 		m.ResetTransformation()
+		return nil
+	case agenticexposure.FieldLmsIssuer:
+		m.ResetLmsIssuer()
 		return nil
 	}
 	return fmt.Errorf("unknown AgenticExposure field %s", name)
@@ -5585,37 +5658,40 @@ func (m *APIMutation) ResetEdge(name string) error {
 // ApiExposureMutation represents an operation that mutates the ApiExposure nodes in the graph.
 type ApiExposureMutation struct {
 	config
-	op                   Op
-	typ                  string
-	id                   *int
-	created_at           *time.Time
-	last_modified_at     *time.Time
-	status_phase         *apiexposure.StatusPhase
-	status_message       *string
-	environment          *string
-	namespace            *string
-	base_path            *string
-	visibility           *apiexposure.Visibility
-	active               *bool
-	features             *[]string
-	appendfeatures       []string
-	upstreams            *[]model.Upstream
-	appendupstreams      []model.Upstream
-	security             *model.ApiExposureSecurity
-	traffic              *model.Traffic
-	approval_config      *model.ApprovalConfig
-	api_version          *string
-	clearedFields        map[string]struct{}
-	owner                *int
-	clearedowner         bool
-	api                  *int
-	clearedapi           bool
-	subscriptions        map[int]struct{}
-	removedsubscriptions map[int]struct{}
-	clearedsubscriptions bool
-	done                 bool
-	oldValue             func(context.Context) (*ApiExposure, error)
-	predicates           []predicate.ApiExposure
+	op                         Op
+	typ                        string
+	id                         *int
+	created_at                 *time.Time
+	last_modified_at           *time.Time
+	status_phase               *apiexposure.StatusPhase
+	status_message             *string
+	environment                *string
+	namespace                  *string
+	base_path                  *string
+	visibility                 *apiexposure.Visibility
+	active                     *bool
+	features                   *[]string
+	appendfeatures             []string
+	upstreams                  *[]model.Upstream
+	appendupstreams            []model.Upstream
+	security                   *model.ApiExposureSecurity
+	traffic                    *model.Traffic
+	approval_config            *model.ApprovalConfig
+	api_version                *string
+	lms_issuer                 *string
+	failover_lms_issuers       *[]model.FailoverLmsIssuer
+	appendfailover_lms_issuers []model.FailoverLmsIssuer
+	clearedFields              map[string]struct{}
+	owner                      *int
+	clearedowner               bool
+	api                        *int
+	clearedapi                 bool
+	subscriptions              map[int]struct{}
+	removedsubscriptions       map[int]struct{}
+	clearedsubscriptions       bool
+	done                       bool
+	oldValue                   func(context.Context) (*ApiExposure, error)
+	predicates                 []predicate.ApiExposure
 }
 
 var _ ent.Mutation = (*ApiExposureMutation)(nil)
@@ -6377,6 +6453,120 @@ func (m *ApiExposureMutation) ResetAPIVersion() {
 	delete(m.clearedFields, apiexposure.FieldAPIVersion)
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (m *ApiExposureMutation) SetLmsIssuer(s string) {
+	m.lms_issuer = &s
+}
+
+// LmsIssuer returns the value of the "lms_issuer" field in the mutation.
+func (m *ApiExposureMutation) LmsIssuer() (r string, exists bool) {
+	v := m.lms_issuer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLmsIssuer returns the old "lms_issuer" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldLmsIssuer(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLmsIssuer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLmsIssuer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLmsIssuer: %w", err)
+	}
+	return oldValue.LmsIssuer, nil
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (m *ApiExposureMutation) ClearLmsIssuer() {
+	m.lms_issuer = nil
+	m.clearedFields[apiexposure.FieldLmsIssuer] = struct{}{}
+}
+
+// LmsIssuerCleared returns if the "lms_issuer" field was cleared in this mutation.
+func (m *ApiExposureMutation) LmsIssuerCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldLmsIssuer]
+	return ok
+}
+
+// ResetLmsIssuer resets all changes to the "lms_issuer" field.
+func (m *ApiExposureMutation) ResetLmsIssuer() {
+	m.lms_issuer = nil
+	delete(m.clearedFields, apiexposure.FieldLmsIssuer)
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (m *ApiExposureMutation) SetFailoverLmsIssuers(mli []model.FailoverLmsIssuer) {
+	m.failover_lms_issuers = &mli
+	m.appendfailover_lms_issuers = nil
+}
+
+// FailoverLmsIssuers returns the value of the "failover_lms_issuers" field in the mutation.
+func (m *ApiExposureMutation) FailoverLmsIssuers() (r []model.FailoverLmsIssuer, exists bool) {
+	v := m.failover_lms_issuers
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailoverLmsIssuers returns the old "failover_lms_issuers" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldFailoverLmsIssuers(ctx context.Context) (v []model.FailoverLmsIssuer, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailoverLmsIssuers is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailoverLmsIssuers requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailoverLmsIssuers: %w", err)
+	}
+	return oldValue.FailoverLmsIssuers, nil
+}
+
+// AppendFailoverLmsIssuers adds mli to the "failover_lms_issuers" field.
+func (m *ApiExposureMutation) AppendFailoverLmsIssuers(mli []model.FailoverLmsIssuer) {
+	m.appendfailover_lms_issuers = append(m.appendfailover_lms_issuers, mli...)
+}
+
+// AppendedFailoverLmsIssuers returns the list of values that were appended to the "failover_lms_issuers" field in this mutation.
+func (m *ApiExposureMutation) AppendedFailoverLmsIssuers() ([]model.FailoverLmsIssuer, bool) {
+	if len(m.appendfailover_lms_issuers) == 0 {
+		return nil, false
+	}
+	return m.appendfailover_lms_issuers, true
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (m *ApiExposureMutation) ClearFailoverLmsIssuers() {
+	m.failover_lms_issuers = nil
+	m.appendfailover_lms_issuers = nil
+	m.clearedFields[apiexposure.FieldFailoverLmsIssuers] = struct{}{}
+}
+
+// FailoverLmsIssuersCleared returns if the "failover_lms_issuers" field was cleared in this mutation.
+func (m *ApiExposureMutation) FailoverLmsIssuersCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldFailoverLmsIssuers]
+	return ok
+}
+
+// ResetFailoverLmsIssuers resets all changes to the "failover_lms_issuers" field.
+func (m *ApiExposureMutation) ResetFailoverLmsIssuers() {
+	m.failover_lms_issuers = nil
+	m.appendfailover_lms_issuers = nil
+	delete(m.clearedFields, apiexposure.FieldFailoverLmsIssuers)
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by id.
 func (m *ApiExposureMutation) SetOwnerID(id int) {
 	m.owner = &id
@@ -6543,7 +6733,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -6589,6 +6779,12 @@ func (m *ApiExposureMutation) Fields() []string {
 	if m.api_version != nil {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
+	if m.lms_issuer != nil {
+		fields = append(fields, apiexposure.FieldLmsIssuer)
+	}
+	if m.failover_lms_issuers != nil {
+		fields = append(fields, apiexposure.FieldFailoverLmsIssuers)
+	}
 	return fields
 }
 
@@ -6627,6 +6823,10 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.ApprovalConfig()
 	case apiexposure.FieldAPIVersion:
 		return m.APIVersion()
+	case apiexposure.FieldLmsIssuer:
+		return m.LmsIssuer()
+	case apiexposure.FieldFailoverLmsIssuers:
+		return m.FailoverLmsIssuers()
 	}
 	return nil, false
 }
@@ -6666,6 +6866,10 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldApprovalConfig(ctx)
 	case apiexposure.FieldAPIVersion:
 		return m.OldAPIVersion(ctx)
+	case apiexposure.FieldLmsIssuer:
+		return m.OldLmsIssuer(ctx)
+	case apiexposure.FieldFailoverLmsIssuers:
+		return m.OldFailoverLmsIssuers(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiExposure field %s", name)
 }
@@ -6780,6 +6984,20 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAPIVersion(v)
 		return nil
+	case apiexposure.FieldLmsIssuer:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLmsIssuer(v)
+		return nil
+	case apiexposure.FieldFailoverLmsIssuers:
+		v, ok := value.([]model.FailoverLmsIssuer)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailoverLmsIssuers(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure field %s", name)
 }
@@ -6831,6 +7049,12 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
+	if m.FieldCleared(apiexposure.FieldLmsIssuer) {
+		fields = append(fields, apiexposure.FieldLmsIssuer)
+	}
+	if m.FieldCleared(apiexposure.FieldFailoverLmsIssuers) {
+		fields = append(fields, apiexposure.FieldFailoverLmsIssuers)
+	}
 	return fields
 }
 
@@ -6865,6 +7089,12 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
+		return nil
+	case apiexposure.FieldLmsIssuer:
+		m.ClearLmsIssuer()
+		return nil
+	case apiexposure.FieldFailoverLmsIssuers:
+		m.ClearFailoverLmsIssuers()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure nullable field %s", name)
@@ -6918,6 +7148,12 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ResetAPIVersion()
+		return nil
+	case apiexposure.FieldLmsIssuer:
+		m.ResetLmsIssuer()
+		return nil
+	case apiexposure.FieldFailoverLmsIssuers:
+		m.ResetFailoverLmsIssuers()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure field %s", name)

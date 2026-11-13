@@ -27,6 +27,17 @@ When a Team is created, the Organization operator automatically provisions:
 - **Notification domain** — Creates notification channels and sends lifecycle notifications (onboarding, token rotation, member changes).
 - **Secret Manager** — Handles credential storage and rotation for team tokens.
 
+## Organization REST API Authorization
+
+Creating, updating, and deleting hubs requires admin write access.
+Creating teams requires group or admin write access; group clients are limited
+to their own hub. Read-only and obfuscated scopes cannot perform these mutations.
+
+Routes use the shared `security.RequireClientTypes` middleware after the
+security guard. It restricts client types only; the guard enforces resource
+ownership and read/write access. `server.Guarded(guard, middleware, handler)`
+combines these handlers in order without modifying the shared guard chain.
+
 ## Related Pages
 
 - [Admin Journey: Organizations & Teams](../admin-journey/organizations-and-teams.md)
