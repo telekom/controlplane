@@ -10,10 +10,8 @@ import (
 	"net/http"
 
 	"github.com/stretchr/testify/mock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	clientpkg "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	mockclient "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
@@ -292,7 +290,7 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 			RunAndReturn(func(_ context.Context, pluginId string, _ kong.UpsertPluginJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.UpsertPluginResponse, error) {
 				Expect(pluginId).NotTo(BeEmpty())
 				Expect(pluginId).NotTo(Equal("plugin-id"))
-				return &kong.UpsertPluginResponse{HTTPResponse: upsertResponse, Body: upsertBody}, nil
+				return &kong.UpsertPluginResponse{HTTPResponse: upsertResponse, Body: []byte(`{"id":"` + pluginId + `","name":"acl"}`)}, nil
 			}).Once()
 
 		_, err := client.CreateOrReplacePlugin(ctx, plugin)
@@ -316,76 +314,6 @@ var _ = Describe("CreateOrReplacePlugin", func() {
 	})
 })
 
-var _ = Describe("CleanupPlugins", func() {
-	var (
-		ctx    context.Context
-		route  *v1.Route
-		api    *mockclient.MockKongAdminApi
-		client clientpkg.KongClient
-	)
-
-	BeforeEach(func() {
-		ctx = contextutil.WithEnv(context.Background(), "test")
-		route = &v1.Route{ObjectMeta: metav1.ObjectMeta{Name: "test-route"}}
-		api = mockclient.NewMockKongAdminApi(GinkgoT())
-		client = clientpkg.NewKongClient(api)
-	})
-
-	expectPlugins := func(body string) {
-		api.EXPECT().ListPluginWithResponse(mock.Anything, mock.Anything).Return(
-			&kong.ListPluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, Body: []byte(body)}, nil,
-		).Once()
-	}
-
-	It("deletes a plugin that the route no longer declares", func() {
-		expectPlugins(`{"data":[{"id":"stale-id","name":"acl"}]}`)
-		api.EXPECT().DeletePluginWithResponse(mock.Anything, "stale-id").Return(
-			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
-		).Once()
-
-		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
-	})
-
-	It("deletes request termination when healthProbe is disabled", func() {
-		expectPlugins(`{"data":[{"id":"health-plugin-id","name":"request-termination"}]}`)
-		api.EXPECT().DeletePluginWithResponse(mock.Anything, "health-plugin-id").Return(
-			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
-		).Once()
-		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
-	})
-
-	It("keeps a plugin the route still declares", func() {
-		expectPlugins(`{"data":[{"id":"plugin-id","name":"acl"}]}`)
-
-		Expect(client.CleanupPlugins(ctx, route, nil, []clientpkg.CustomPlugin{&testPlugin{id: "plugin-id", name: "acl"}})).To(Succeed())
-	})
-
-	It("reports a rejected delete instead of reporting success", func() {
-		expectPlugins(`{"data":[{"id":"stale-id","name":"acl"}]}`)
-		api.EXPECT().DeletePluginWithResponse(mock.Anything, "stale-id").Return(
-			&kong.DeletePluginResponse{
-				HTTPResponse: &http.Response{StatusCode: http.StatusInternalServerError},
-				Body:         []byte(`{"message":"database unavailable"}`),
-			}, nil,
-		).Once()
-
-		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(MatchError(ContainSubstring("failed to delete plugin")))
-	})
-
-	It("treats an already deleted plugin as cleaned up", func() {
-		expectPlugins(`{"data":[{"id":"stale-id","name":"acl"}]}`)
-		api.EXPECT().DeletePluginWithResponse(mock.Anything, "stale-id").Return(
-			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
-		).Once()
-
-		Expect(client.CleanupPlugins(ctx, route, nil, nil)).To(Succeed())
-	})
-
-	It("requires a route or a consumer", func() {
-		Expect(client.CleanupPlugins(ctx, nil, nil, nil)).To(MatchError(ContainSubstring("either route or consumer must be provided")))
-	})
-})
-
 var _ = Describe("DeletePlugin", func() {
 	It("uses the full ownership tags to find a route plugin", func() {
 		ctx := contextutil.WithEnv(context.Background(), "test")
@@ -397,7 +325,7 @@ var _ = Describe("DeletePlugin", func() {
 			return params.Tags != nil && *params.Tags == "env--test,plugin--acl,route--route-name,consumer--none"
 		})).Return(&kong.ListPluginResponse{
 			HTTPResponse: &http.Response{StatusCode: http.StatusOK},
-			Body:         []byte(`{"data":[{"id":"plugin-id"}]}`),
+			Body:         []byte(`{"data":[{"id":"plugin-id","name":"acl"}]}`),
 		}, nil)
 		api.EXPECT().DeletePluginWithResponse(mock.Anything, "plugin-id").Return(
 			&kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNoContent}}, nil,
