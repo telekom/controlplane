@@ -5,6 +5,8 @@
 package client_test
 
 import (
+	"errors"
+
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	. "github.com/onsi/gomega"
@@ -48,4 +50,10 @@ func reconcileCount(entity, outcome string) float64 {
 		}
 	}
 	return 0
+}
+
+// isBlocked reports whether the error is classified as blocked.
+func isBlocked(err error) bool {
+	var blocked interface{ IsBlocked() bool }
+	return errors.As(err, &blocked) && blocked.IsBlocked()
 }

@@ -4,3 +4,5 @@
 #
 # Audit ignores expire by construction: the item id contains the snippet, so
 # changing the code retires the audit ignore automatically. Only a human adds a line here.
+
+8fe17c6fb41aa522: Accepted temporarily: immutability is enforced by the Environment webhook; CEL enforcement and comment alignment are deferred. (ron96g, 2026-11-13)

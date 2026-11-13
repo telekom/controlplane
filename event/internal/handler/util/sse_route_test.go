@@ -115,7 +115,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("sse--de-telekom-test-v1"))
+		Expect(route.Name).To(Equal("horizon-sse--de-telekom-test-v1"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels
@@ -316,7 +316,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata: created in subscriber zone's namespace
-		Expect(route.Name).To(Equal("sse--de-telekom-test-v1"))
+		Expect(route.Name).To(Equal("horizon-sse--de-telekom-test-v1"))
 		Expect(route.Namespace).To(Equal("zone-sub-ns"))
 
 		// Verify labels reference subscriber zone

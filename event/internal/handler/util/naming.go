@@ -23,7 +23,9 @@ const (
 	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
 	CallbackURLQueryParam = "callback"
 
-	// horizon is the leading path segment for secondary and mesh event routes.
+	// horizon is the leading segment of all event route paths and Route names.
+	// Route names must equal the legacy-compatible Kong base names, so do not
+	// change it without migrating the existing Kong entities.
 	horizon = "horizon"
 )
 
@@ -43,12 +45,12 @@ func horizonPrefix(zoneName string) string {
 }
 
 func makePublishRouteName() string {
-	return "publish"
+	return horizon + "-events"
 }
 
 // makePublishEventsRoutePath returns the main downstream path of the publish route.
 func makePublishEventsRoutePath() string {
-	return eventv1.HorizonPublishEventPathSuffix
+	return horizonPrefix("") + "/events/v1"
 }
 
 // makePublishRoutePath returns the secondary downstream path of the publish route.
@@ -58,7 +60,7 @@ func makePublishRoutePath() string {
 
 // makeSSERouteName returns the deterministic Route name for an SSE event type.
 func makeSSERouteName(eventType string) string {
-	return labelutil.NormalizeNameValue("sse--" + eventv1.MakeEventTypeName(eventType))
+	return labelutil.NormalizeNameValue(horizon + "-sse--" + eventv1.MakeEventTypeName(eventType))
 }
 
 // makeSSERoutePath returns the (zone-independent) SSE path for an event type,
@@ -68,7 +70,7 @@ func makeSSERoutePath(eventType string) string {
 }
 
 func makeCallbackRouteName(zoneName string) string {
-	return "callback--" + zoneName
+	return horizon + "-callback-" + zoneName
 }
 
 func makeCallbackRoutePath(zoneName string) string {
@@ -76,7 +78,7 @@ func makeCallbackRoutePath(zoneName string) string {
 }
 
 func makeVoyagerRouteName(zoneName string) string {
-	return "voyager--" + zoneName
+	return horizon + "-voyager-" + zoneName
 }
 
 func makeVoyagerRoutePath(zoneName string) string {

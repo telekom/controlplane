@@ -162,3 +162,26 @@ func expectDelete(api *mockclient.MockKongAdminApi, id string, status int, delet
 			return &kong.DeletePluginResponse{HTTPResponse: &http.Response{StatusCode: status}, Body: []byte(`{"message":"x"}`)}, nil
 		}).Once()
 }
+
+// expectSlot expects one request for a page of the plugins bound to the route with routeID.
+func expectSlot(api *mockclient.MockKongAdminApi, offset *string, body string) {
+	api.EXPECT().ListPluginsForRouteWithResponse(mock.Anything, routeID, mock.MatchedBy(func(params *kong.ListPluginsForRouteParams) bool {
+		if params.Tags != nil || params.Size == nil || *params.Size != 1000 {
+			return false
+		}
+		if offset == nil {
+			return params.Offset == nil
+		}
+		return params.Offset != nil && *params.Offset == *offset
+	})).Return(&kong.ListPluginsForRouteResponse{HTTPResponse: &http.Response{StatusCode: http.StatusOK}, Body: []byte(body)}, nil).Once()
+}
+
+// boundTestPlugin is a testPlugin bound by route ID with a name prefix.
+type boundTestPlugin struct {
+	testPlugin
+	routeId    string
+	namePrefix string
+}
+
+func (p *boundTestPlugin) GetRouteId() string    { return p.routeId }
+func (p *boundTestPlugin) GetNamePrefix() string { return p.namePrefix }

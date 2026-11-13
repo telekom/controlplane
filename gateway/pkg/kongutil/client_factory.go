@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -19,6 +20,7 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
 )
 
 type GatewayAdminConfig interface {
@@ -65,6 +67,22 @@ const (
 	profileName  = "gateway"
 	ownerKind    = "gateway.cp.ei.telekom.de/Gateway"
 )
+
+var (
+	migrator      legacy.Migrator = legacy.None()
+	migratorMutex sync.RWMutex
+)
+
+// SetMigrator sets the legacy Migrator injected into every Kong client created afterwards.
+// It is called once at startup; the factory caches HTTP transports, not Kong clients.
+func SetMigrator(m legacy.Migrator) {
+	migratorMutex.Lock()
+	defer migratorMutex.Unlock()
+	if m == nil {
+		m = legacy.None()
+	}
+	migrator = m
+}
 
 // profile holds the HTTP settings of all Gateway admin API clients.
 func profile() tlsclient.Profile {
@@ -138,7 +156,10 @@ func (f *ClientFactory) ClientFor(ctx context.Context, gw *gatewayv1.Gateway) (k
 		lease.Release()
 		return nil, nil, fmt.Errorf("creating kong client: %w", err)
 	}
-	return kongclient.NewKongClient(apiClient), lease.Release, nil
+	migratorMutex.RLock()
+	m := migrator
+	migratorMutex.RUnlock()
+	return kongclient.NewKongClient(apiClient, kongclient.WithMigrator(m)), lease.Release, nil
 }
 
 func (f *ClientFactory) acquire(ctx context.Context, gw *gatewayv1.Gateway) (*tlsclient.Lease, error) {

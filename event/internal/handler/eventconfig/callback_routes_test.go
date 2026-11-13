@@ -81,8 +81,8 @@ var _ = Describe("callback route issuers", func() {
 
 		Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, source, obj.Spec.Mesh, util.CallbackClientName)).To(Succeed())
 		Expect(obj.Status.ProxyCallbackRoutes).To(HaveLen(2))
-		Expect(obj.Status.ProxyCallbackRoutes[0].Name).To(Equal("callback--a-zone"))
-		Expect(obj.Status.ProxyCallbackRoutes[1].Name).To(Equal("callback--z-zone"))
+		Expect(obj.Status.ProxyCallbackRoutes[0].Name).To(Equal("horizon-callback-a-zone"))
+		Expect(obj.Status.ProxyCallbackRoutes[1].Name).To(Equal("horizon-callback-z-zone"))
 	})
 
 	It("replaces stale projected URLs when the backend or logical mesh changes", func() {

@@ -7,19 +7,26 @@ package controller
 import (
 	"context"
 	"errors"
+	"slices"
+	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
@@ -60,6 +67,9 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
+		Watches(&gatewayv1.Gateway{},
+			handler.EnqueueRequestsFromMapFunc(r.mapGatewayToRoutes),
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, NamePrefixChangedPredicate()))).
 		Watches(&gatewayv1.RouteListener{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteListenerToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
@@ -77,13 +87,50 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 		return nil
 	}
 
-	// get the Route
-	route := &gatewayv1.Route{}
-	if err := r.Get(ctx, consumeRoute.Spec.Route.K8s(), route); err != nil {
+	return r.mapRouteReference(ctx, consumeRoute, consumeRoute.Spec.Route)
+}
+
+// NamePrefixChangedPredicate passes only updates of a Gateway that change spec.namePrefix.
+func NamePrefixChangedPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc:  func(event.CreateEvent) bool { return false },
+		DeleteFunc:  func(event.DeleteEvent) bool { return false },
+		GenericFunc: func(event.GenericEvent) bool { return false },
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldGateway, okOld := e.ObjectOld.(*gatewayv1.Gateway)
+			newGateway, okNew := e.ObjectNew.(*gatewayv1.Gateway)
+			return okOld && okNew && oldGateway.Spec.NamePrefix != newGateway.Spec.NamePrefix
+		},
+	}
+}
+
+// mapGatewayToRoutes enqueues every Route that references the Gateway, sorted by key.
+func (r *RouteReconciler) mapGatewayToRoutes(ctx context.Context, obj client.Object) []reconcile.Request {
+	gateway, ok := obj.(*gatewayv1.Gateway)
+	if !ok {
+		return nil
+	}
+	environment := gateway.Labels[cconfig.EnvironmentLabelKey]
+	if environment == "" {
+		ctrllog.FromContext(ctx).V(1).Info("Skipping gateway without an environment label", "gateway", gateway.Name)
 		return nil
 	}
 
-	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: route.Name, Namespace: route.Namespace}}}
+	routes := &gatewayv1.RouteList{}
+	err := r.List(ctx, routes,
+		client.MatchingFields{IndexFieldSpecGatewayRef: types.ObjectRefFromObject(gateway).String()},
+		client.MatchingLabels{cconfig.EnvironmentLabelKey: environment})
+	if err != nil {
+		ctrllog.FromContext(ctx).Error(err, "Failed to list routes of gateway", "gateway", gateway.Name)
+		return nil
+	}
+
+	requests := make([]reconcile.Request, 0, len(routes.Items))
+	for i := range routes.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&routes.Items[i])})
+	}
+	slices.SortFunc(requests, func(a, b reconcile.Request) int { return strings.Compare(a.String(), b.String()) })
+	return requests
 }
 
 func (r *RouteReconciler) mapRouteListenerToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
@@ -92,9 +139,24 @@ func (r *RouteReconciler) mapRouteListenerToRoute(ctx context.Context, obj clien
 		return nil
 	}
 
-	// The RouteListener's spec.route references the Route it attaches to.
+	return r.mapRouteReference(ctx, routeListener, routeListener.Spec.Route)
+}
+
+func (r *RouteReconciler) mapRouteReference(ctx context.Context, source client.Object, ref types.ObjectRef) []reconcile.Request {
+	log := ctrllog.FromContext(ctx)
+	environment := source.GetLabels()[cconfig.EnvironmentLabelKey]
+	if environment == "" {
+		log.V(1).Info("Skipping route reference without an environment label", "source", client.ObjectKeyFromObject(source))
+		return nil
+	}
+
 	route := &gatewayv1.Route{}
-	if err := r.Get(ctx, routeListener.Spec.Route.K8s(), route); err != nil {
+	if err := cclient.NewScopedClient(r.Client, environment).Get(ctx, ref.K8s(), route); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.V(1).Info("Referenced route not found", "route", ref.String())
+		} else {
+			log.Error(err, "Failed to get referenced route", "route", ref.String())
+		}
 		return nil
 	}
 

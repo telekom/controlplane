@@ -323,7 +323,7 @@ var _ = Describe("RateLimitFeature", func() {
 					}
 
 					routePlugin := plugin.RateLimitPluginFromRoute(route)
-					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer)
+					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer, route)
 
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().RateLimitPluginRoute().Return(routePlugin)
@@ -378,7 +378,7 @@ var _ = Describe("RateLimitFeature", func() {
 						},
 					}
 
-					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer)
+					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer, route)
 
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().GetGateway().Return(gateway)
@@ -522,7 +522,7 @@ var _ = Describe("RateLimitFeature", func() {
 						},
 					}
 
-					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer)
+					consumerPlugin := plugin.RateLimitPluginFromConsumeRoute(consumer, route)
 
 					builder.EXPECT().GetRoute().Return(route, true)
 					builder.EXPECT().GetGateway().Return(gateway)

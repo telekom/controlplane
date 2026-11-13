@@ -1,0 +1,15 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Mounted into the operator and passed as --legacy-naming-config=/etc/gateway/legacy-naming.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-legacy-naming
+data:
+  legacy-naming.yaml: |
+    # Legacy naming, used only to find legacy Kong entities.
+    defaultRealm: default        # Legacy realm whose names carry no realm prefix
+    separator: "."               # legacyName = <legacyRealm><separator><baseName>
+    realmSuffixes: ["", "-ai"]   # Legacy realms tried for a Route with namePrefix P: P + suffix
