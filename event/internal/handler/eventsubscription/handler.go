@@ -444,7 +444,14 @@ func updateCallbackURL(ctx context.Context, sub *eventv1.EventSubscription, expo
 	}
 
 	// Use rawCallbackUrl as new callback URL and add actual callback URL as query parameter so that provider can use it for callbacks.
-	sub.Spec.Delivery.Callback = rawCallbackUrl + "?" + util.CallbackURLQueryParam + "=" + sub.Spec.Delivery.Callback
+	gatewayCallbackUrl, err := url.Parse(rawCallbackUrl)
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("cannot parse gateway callback URL %q: %s", rawCallbackUrl, err)
+	}
+	query := gatewayCallbackUrl.Query()
+	query.Set(util.CallbackURLQueryParam, sub.Spec.Delivery.Callback)
+	gatewayCallbackUrl.RawQuery = query.Encode()
+	sub.Spec.Delivery.Callback = gatewayCallbackUrl.String()
 	logger.V(1).Info("Updated callback URL for proxy scenario", "callback", sub.Spec.Delivery.Callback)
 
 	return nil

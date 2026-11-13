@@ -337,19 +337,12 @@ func createManagedRoute(ctx context.Context, zone *adminv1.Zone, obj *filev1.Zon
 			return fmt.Errorf("failed to set controller reference for route: %w", locErr)
 		}
 
-		upstreamUrl, locErr := url.Parse(routeConfig.Url)
+		upstream, locErr := gatewayapi.ParseUpstream(routeConfig.Url)
 		if locErr != nil {
 			return ctrlerrors.BlockedErrorf("cannot parse upstream url of internal route %s: %s", routeConfig.Url, locErr)
 		}
 
 		route.Labels = util.DomainLabel()
-
-		upstream := gatewayapi.Upstream{
-			Scheme:   upstreamUrl.Scheme,
-			Hostname: upstreamUrl.Hostname(),
-			Port:     gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
-			Path:     upstreamUrl.Path,
-		}
 
 		hostnames, paths := preset.ResolveHostnamesAndPaths(routeConfig.Path)
 

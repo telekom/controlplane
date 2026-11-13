@@ -675,7 +675,9 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			et := makeReadyEventType(testEventType)
 			exposure := makeReadyEventExposure(testEventType)
 			obj.Spec.Zone.Name = "sub-zone"
-			obj.Spec.Delivery.Callback = "https://my-callback.example.com"
+			obj.Spec.Delivery.Callback = "https://my-callback.example.com/events?tenant=a&mode=b"
+			expectedCallback := "https://expo-gateway.example.com/horizon-sub-zone/callback/v1" +
+				"?callback=https%3A%2F%2Fmy-callback.example.com%2Fevents%3Ftenant%3Da%26mode%3Db"
 
 			expoConfig := makeReadyEventConfig("expo-zone", false, []string{"sub-zone"})
 			expoConfig.Status.ProxyCallbackURLs["sub-zone"] = "https://expo-gateway.example.com/horizon-sub-zone/callback/v1"
@@ -698,8 +700,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
 				RunAndReturn(func(_ context.Context, child client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
 					Expect(mutate()).To(Succeed())
-					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(
-						"https://expo-gateway.example.com/horizon-sub-zone/callback/v1?callback=https://my-callback.example.com"))
+					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(expectedCallback))
 					return controllerutil.OperationResultCreated, nil
 				}).Once()
 			fakeClient.EXPECT().AllReady().Return(true).Once()
@@ -707,10 +708,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).ToNot(HaveOccurred())
-
-			// Verify callback URL was updated
-			Expect(obj.Spec.Delivery.Callback).To(HavePrefix("https://expo-gateway.example.com/horizon-sub-zone/callback/v1"))
-			Expect(obj.Spec.Delivery.Callback).To(ContainSubstring("callback=https://my-callback.example.com"))
+			Expect(obj.Spec.Delivery.Callback).To(Equal(expectedCallback))
 		})
 
 		DescribeTable("requires a ready subscriber-zone EventConfig and primary callback route before provisioning", func(state string) {
@@ -800,7 +798,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			fakeClient.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
 				RunAndReturn(func(_ context.Context, child client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
 					Expect(mutate()).To(Succeed())
-					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(expectedURL + "?callback=https://my-callback.example.com"))
+					Expect(child.(*pubsubv1.Subscriber).Spec.Delivery.Callback).To(Equal(expectedURL + "?callback=https%3A%2F%2Fmy-callback.example.com"))
 					return controllerutil.OperationResultCreated, nil
 				}).Once()
 			fakeClient.EXPECT().AllReady().Return(true).Once()

@@ -46,3 +46,20 @@ var _ = Describe("MapSubscriberSecurityToGateway", func() {
 		Entry("client_secret_post", agenticv1.TokenRequestClientSecretPost, gatewayapi.TokenRequestClientSecretPost),
 	)
 })
+
+var _ = Describe("MapUpstreamsToGateway", func() {
+	It("keeps the percent-encoding of the path and the weight", func() {
+		mapped, err := MapUpstreamsToGateway([]agenticv1.Upstream{
+			{Url: "https://provider.example.com/api/url%20encoded%20path", Weight: 40},
+		})
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mapped).To(Equal([]gatewayapi.Upstream{{
+			Scheme:   "https",
+			Hostname: "provider.example.com",
+			Port:     443,
+			Path:     "/api/url%20encoded%20path",
+			Weight:   40,
+		}}))
+	})
+})

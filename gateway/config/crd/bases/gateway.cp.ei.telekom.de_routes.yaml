@@ -71,6 +71,8 @@ spec:
                         hostname:
                           type: string
                         path:
+                          description: Path is the percent-encoded upstream path.
+                            The gateway forwards it verbatim.
                           type: string
                         port:
                           format: int32
@@ -583,6 +585,8 @@ spec:
                             hostname:
                               type: string
                             path:
+                              description: Path is the percent-encoded upstream path.
+                                The gateway forwards it verbatim.
                               type: string
                             port:
                               format: int32

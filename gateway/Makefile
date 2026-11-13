@@ -70,6 +70,7 @@ COVER_PACKAGES = ./internal/controller/...,./internal/features,./internal/featur
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
+	$(MAKE) -C api test
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.

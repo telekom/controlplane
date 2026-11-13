@@ -158,7 +158,7 @@ func createSpectreSSEPrimaryRoute(
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q for zone %q has no local backend", eventConfig.Name, zone.Name)
 	}
 
-	upstream, err := parseSSEUpstream(eventConfig.Spec.Local.ServerSendEventUrl)
+	upstream, err := gatewayv1.ParseUpstream(eventConfig.Spec.Local.ServerSendEventUrl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse ServerSendEventUrl %q", eventConfig.Spec.Local.ServerSendEventUrl)
 	}
@@ -379,7 +379,7 @@ func gatewayUpstream(preset *adminv1.Preset, path string) (gatewayv1.Upstream, e
 		}
 		full = joined
 	}
-	return parseSSEUpstream(full)
+	return gatewayv1.ParseUpstream(full)
 }
 
 // makeSpectreSSERouteName returns a deterministic Route name for a Spectre listener's SSE endpoint.
@@ -425,18 +425,4 @@ func dedupeOrdered(values []string) []string {
 		out = append(out, v)
 	}
 	return out
-}
-
-// parseSSEUpstream parses a raw URL into a gateway Upstream.
-func parseSSEUpstream(rawUrl string) (gatewayv1.Upstream, error) {
-	u, err := url.Parse(rawUrl)
-	if err != nil {
-		return gatewayv1.Upstream{}, errors.Wrapf(err, "failed to parse URL %q", rawUrl)
-	}
-	return gatewayv1.Upstream{
-		Scheme:   u.Scheme,
-		Hostname: u.Hostname(),
-		Port:     gatewayv1.GetPortOrDefaultFromScheme(u),
-		Path:     u.Path,
-	}, nil
 }
