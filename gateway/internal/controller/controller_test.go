@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -54,6 +56,103 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), gateway)
 			g.Expect(errors.IsNotFound(err)).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
+	})
+
+	Describe("Route watch environment isolation", func() {
+		var localRoute, foreignRoute *gatewayv1.Route
+		var reconciler *RouteReconciler
+
+		BeforeEach(func() {
+			reconciler = &RouteReconciler{Client: managerClient}
+			createRoute := func(environment string) *gatewayv1.Route {
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "watch-isolation-",
+						Namespace:    namespace,
+						Labels:       map[string]string{config.EnvironmentLabelKey: environment},
+					},
+					Spec: gatewayv1.RouteSpec{
+						GatewayRef: types.ObjectRef{Name: gatewayName, Namespace: namespace},
+						Type:       gatewayv1.RouteTypePrimary,
+						Backend: gatewayv1.Backend{
+							Upstreams: []gatewayv1.Upstream{{Scheme: "https", Hostname: "backend.example.com", Port: 443}},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, route)).To(Succeed())
+				DeferCleanup(func() {
+					Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, route))).To(Succeed())
+					Eventually(func(g Gomega) {
+						stored := &gatewayv1.Route{}
+						err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), stored)
+						if errors.IsNotFound(err) {
+							return
+						}
+						g.Expect(err).NotTo(HaveOccurred())
+						if controllerutil.RemoveFinalizer(stored, config.FinalizerName) {
+							g.Expect(k8sClient.Update(ctx, stored)).To(Succeed())
+						}
+						g.Expect(errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(route), stored))).To(BeTrue())
+					}, timeout, interval).Should(Succeed())
+				})
+				return route
+			}
+			localRoute = createRoute(testEnvironment)
+			foreignRoute = createRoute("other-environment")
+
+			Eventually(func(g Gomega) {
+				routes := &gatewayv1.RouteList{}
+				g.Expect(managerClient.List(ctx, routes, client.MatchingFields{
+					IndexFieldSpecGatewayRef: types.ObjectRefFromObject(gateway).String(),
+				})).To(Succeed())
+				names := make([]string, 0, len(routes.Items))
+				for _, route := range routes.Items {
+					names = append(names, route.Name)
+				}
+				g.Expect(names).To(ContainElements(localRoute.Name, foreignRoute.Name))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("maps a gateway only to routes in its environment", func() {
+			requests := reconciler.mapGatewayToRoutes(ctx, gateway)
+			Expect(requests).To(ContainElement(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(localRoute)}))
+			Expect(requests).NotTo(ContainElement(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(foreignRoute)}))
+
+			for _, labels := range []map[string]string{nil, {config.EnvironmentLabelKey: ""}} {
+				unlabelled := gateway.DeepCopy()
+				unlabelled.Labels = labels
+				Expect(reconciler.mapGatewayToRoutes(ctx, unlabelled)).To(BeEmpty())
+			}
+		})
+
+		DescribeTable("maps a route reference only within the source environment",
+			func(environment string, labels map[string]string, expected bool) {
+				ref := *types.ObjectRefFromObject(localRoute)
+				consumeRoute := &gatewayv1.ConsumeRoute{
+					ObjectMeta: metav1.ObjectMeta{Labels: labels},
+					Spec:       gatewayv1.ConsumeRouteSpec{Route: ref},
+				}
+				listener := &gatewayv1.RouteListener{
+					ObjectMeta: metav1.ObjectMeta{Labels: labels},
+					Spec:       gatewayv1.RouteListenerSpec{Route: ref},
+				}
+				request := reconcile.Request{NamespacedName: client.ObjectKeyFromObject(localRoute)}
+				for _, requests := range [][]reconcile.Request{
+					reconciler.mapConsumeRouteToRoute(ctx, consumeRoute),
+					reconciler.mapRouteListenerToRoute(ctx, listener),
+				} {
+					if expected {
+						Expect(requests).To(ConsistOf(request), "source environment: %s", environment)
+					} else {
+						Expect(requests).To(BeEmpty(), "source environment: %s", environment)
+					}
+				}
+			},
+			Entry("same environment", testEnvironment, map[string]string{config.EnvironmentLabelKey: testEnvironment}, true),
+			Entry("different environment", "other-environment", map[string]string{config.EnvironmentLabelKey: "other-environment"}, false),
+			Entry("missing environment", "missing", nil, false),
+			Entry("empty environment", "empty", map[string]string{config.EnvironmentLabelKey: ""}, false),
+		)
 	})
 
 	Describe("Additional route tag validation", func() {
