@@ -4,3 +4,4 @@
 #
 # Audit ignores expire by construction: the item id contains the snippet, so
 # changing the code retires the audit ignore automatically. Only a human adds a line here.
+964ac9b53d549997: "ObservedGeneration is stamped on all conditions by common/pkg/controller StampObservedGeneration before every status write (stefan-ctrl, 12.11.2026)"
