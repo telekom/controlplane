@@ -7,6 +7,8 @@ package mapper
 import (
 	"testing"
 
+	"github.com/onsi/gomega"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 )
 
@@ -33,9 +35,8 @@ func TestExternalId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := ExternalId(tt.ids, tt.scheme); got != tt.expect {
-				t.Fatalf("expected %q, got %q", tt.expect, got)
-			}
+			g := gomega.NewWithT(t)
+			g.Expect(ExternalId(tt.ids, tt.scheme)).To(gomega.Equal(tt.expect))
 		})
 	}
 }

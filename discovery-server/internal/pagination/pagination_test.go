@@ -4,7 +4,11 @@
 
 package pagination
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/onsi/gomega"
+)
 
 func TestPaginateLinks(t *testing.T) {
 	t.Parallel()
@@ -34,13 +38,10 @@ func TestPaginateLinks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			g := gomega.NewWithT(t)
 			res := Paginate(items, 2, 2, tt.basePath)
-			if res.Links.Self != tt.expectSelf {
-				t.Fatalf("expected self %q, got %q", tt.expectSelf, res.Links.Self)
-			}
-			if res.Links.Next != tt.expectNext {
-				t.Fatalf("expected next %q, got %q", tt.expectNext, res.Links.Next)
-			}
+			g.Expect(res.Links.Self).To(gomega.Equal(tt.expectSelf))
+			g.Expect(res.Links.Next).To(gomega.Equal(tt.expectNext))
 		})
 	}
 }
