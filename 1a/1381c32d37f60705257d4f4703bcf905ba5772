@@ -1,0 +1,30 @@
+event/internal/handler/util/callback_route.go
+  s_6168b13b24d7e0::t_af4320d4b62b3f 22
+  s_6168b13b24d7e0::t_6f1b7d636a2e68 27
+docs/docs/architecture/event.mdx
+  s_6168b13b24d7e0::t_19839c7b3eb698 122
+event/internal/handler/eventsubscription/handler_test.go
+  s_6168b13b24d7e0::t_f47aa186b7c43e 678-680
+  s_6168b13b24d7e0::t_32d6f63086bc58 703,711
+  s_6168b13b24d7e0::t_00bc0c97d1ead0 801
+event/internal/controller/callback_lifecycle_test.go
+  s_6168b13b24d7e0::t_265284343c54b3 496,514
+event/internal/handler/eventsubscription/handler.go
+  s_6168b13b24d7e0::t_341fc83d90fe9c 447-454
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "1a1381c32d37f60705257d4f4703bcf905ba5772",
+  "prompts": {},
+  "sessions": {
+    "s_6168b13b24d7e0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fc5a2a2ffeMAZaAQ04gEapFQ",
+        "model": "github-copilot/claude-opus-5.5-long"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

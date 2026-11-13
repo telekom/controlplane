@@ -1,0 +1,19 @@
+.gitignore
+  s_fcbd43e11bddb1::t_1b32393625b61b 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bd301229bc7b0fc54064e1146b0a96bf8e0e23c0",
+  "prompts": {},
+  "sessions": {
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+.agents/ARCHITECTURE.md
+  s_fcbd43e11bddb1::t_81055ed8df114a 91
+  s_fcbd43e11bddb1::t_915da9f935e60c 89,92,112-120
+.agents/skills/code-auditor/scripts/tests/test_followup_review.py
+  s_fcbd43e11bddb1::t_18814c67e41416 1-15,18-160,192-220,222-243
+  s_fcbd43e11bddb1::t_943a1e26d7d191 244-253
+  s_fcbd43e11bddb1::t_81055ed8df114a 17,161-191
+  s_fcbd43e11bddb1::t_6fcffe8a0959ff 16
+  s_fcbd43e11bddb1::t_1ff4e610fdd5ed 221
+.agents/skills/code-auditor/scripts/auditlib/__init__.py
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 11
+.agents/tools/spec_field_docs.py
+  s_fcbd43e11bddb1::t_f1e96151e51b1d 145-149
+  s_fcbd43e11bddb1::t_dd5b2e7eb7ffaa 190-196
+  s_fcbd43e11bddb1::t_bb160890f73e71 142-144
+  s_fcbd43e11bddb1::t_b2ba4bd1ca5c8c 150-152
+  s_fcbd43e11bddb1::t_170bd16656a6d8 120,126,140,153-154,171-172,174-177,182
+CONTRIBUTING.md
+  s_fcbd43e11bddb1::t_915da9f935e60c 60-64,74-75,85-94
+  s_fcbd43e11bddb1::t_38fa8161d4191c 95
+.agents/skills/code-auditor/scripts/auditlib/report.py
+  s_fcbd43e11bddb1::t_81055ed8df114a 27,29
+.agents/skills/code-auditor/scripts/create_audit_report.py
+  s_fcbd43e11bddb1::t_915da9f935e60c 74-77,84
+  s_fcbd43e11bddb1::t_ade7024848c8f7 32,91-92,97,100-101,104,116,184,235-236,298
+.agents/skills/code-auditor/scripts/process_audit_report.py
+  s_fcbd43e11bddb1::t_81055ed8df114a 66
+  s_fcbd43e11bddb1::t_982ac943df600f 130-140,181-182,212-221,240,275
+.agents/rules/13-environment-isolation.md
+  s_fcbd43e11bddb1::t_943a1e26d7d191 6,24-26
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 49
+  s_fcbd43e11bddb1::t_931b1d347e7dd7 27
+.agents/skills/code-auditor/scripts/README.md
+  s_fcbd43e11bddb1::t_915da9f935e60c 82-83,91-102,105-114,119,121-124,131,139-141
+.agents/skills/code-auditor/scripts/auditlib/context.py
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 25-27,62-80
+  s_b589fe2c8a8a58::t_9d75edbdf45d51 81-82
+.agents/skills/code-auditor/scripts/auditlib/detect.py
+  s_fcbd43e11bddb1::t_915da9f935e60c 42
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 40-41,43,254
+.agents/skills/code-auditor/SKILL.md
+  s_fcbd43e11bddb1::t_81055ed8df114a 53-58,82-85
+.agents/skills/code-auditor/scripts/auditlib/store.py
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 81-83,85,94,98-99
+.agents/tools/tests/test_spec_field_docs.py
+  s_fcbd43e11bddb1::t_f1e96151e51b1d 103-104,108-109,116-118,120-121,124-132
+  s_fcbd43e11bddb1::t_cf684b2455c151 102
+  s_fcbd43e11bddb1::t_5767aa54045c55 105-107
+  s_fcbd43e11bddb1::t_99589ce40a9e03 110-115
+  s_fcbd43e11bddb1::t_9488c789df8539 119
+  s_fcbd43e11bddb1::t_3507dfce3eb42d 122-123
+  s_fcbd43e11bddb1::t_7dee29add88d25 96
+.agents/skills/code-auditor/scripts/auditlib/changeset.py
+  s_fcbd43e11bddb1::t_2faa63d3c6941e 29,80,92-104,126-138,161,186,193-194,206,245-246,260-272,276-281,283-284,286-290,292-300,303-305,326,330-331
+  s_fcbd43e11bddb1::t_81055ed8df114a 273-275,282,285,291,301-302
+.agents/skills/code-auditor/scripts/tests/test_config_root.py
+  s_fcbd43e11bddb1::t_915da9f935e60c 353
+.agents/skills/code-auditor/scripts/audit_gate.py
+  s_b589fe2c8a8a58::t_ba3fe8183ceeeb 32,49-51,62-63,75-80,82-83,89-91,95,113-114,121,140,157
+.agents/skills/code-auditor/scripts/tests/test_review_regressions.py
+  s_b589fe2c8a8a58::t_5d5b0fc4c3d0b5 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "dc1376666859cf05a1dfcfd35af9a15e569928f4",
+  "prompts": {},
+  "sessions": {
+    "s_b589fe2c8a8a58": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9a043156-c3a5-4959-b18f-c9e5a4a86c17",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
