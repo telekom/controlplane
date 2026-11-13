@@ -1,0 +1,6 @@
+# Audit ignores in YAML, keyed by the item id the audit prints.
+#
+#   <item_id>: <reason> (<who>, <when>)
+#
+# Audit ignores expire by construction: the item id contains the snippet, so
+# changing the code retires the audit ignore automatically. Only a human adds a line here.

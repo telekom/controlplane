@@ -951,6 +951,23 @@ type AgenticExposureWhereInput struct {
 	ActiveIsNil  bool  `json:"activeIsNil,omitempty"`
 	ActiveNotNil bool  `json:"activeNotNil,omitempty"`
 
+	// "lms_issuer" field predicates.
+	LmsIssuer             *string  `json:"lmsIssuer,omitempty"`
+	LmsIssuerNEQ          *string  `json:"lmsIssuerNEQ,omitempty"`
+	LmsIssuerIn           []string `json:"lmsIssuerIn,omitempty"`
+	LmsIssuerNotIn        []string `json:"lmsIssuerNotIn,omitempty"`
+	LmsIssuerGT           *string  `json:"lmsIssuerGT,omitempty"`
+	LmsIssuerGTE          *string  `json:"lmsIssuerGTE,omitempty"`
+	LmsIssuerLT           *string  `json:"lmsIssuerLT,omitempty"`
+	LmsIssuerLTE          *string  `json:"lmsIssuerLTE,omitempty"`
+	LmsIssuerContains     *string  `json:"lmsIssuerContains,omitempty"`
+	LmsIssuerHasPrefix    *string  `json:"lmsIssuerHasPrefix,omitempty"`
+	LmsIssuerHasSuffix    *string  `json:"lmsIssuerHasSuffix,omitempty"`
+	LmsIssuerIsNil        bool     `json:"lmsIssuerIsNil,omitempty"`
+	LmsIssuerNotNil       bool     `json:"lmsIssuerNotNil,omitempty"`
+	LmsIssuerEqualFold    *string  `json:"lmsIssuerEqualFold,omitempty"`
+	LmsIssuerContainsFold *string  `json:"lmsIssuerContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -1332,6 +1349,51 @@ func (i *AgenticExposureWhereInput) P() (predicate.AgenticExposure, error) {
 	}
 	if i.ActiveNotNil {
 		predicates = append(predicates, agenticexposure.ActiveNotNil())
+	}
+	if i.LmsIssuer != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerEQ(*i.LmsIssuer))
+	}
+	if i.LmsIssuerNEQ != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerNEQ(*i.LmsIssuerNEQ))
+	}
+	if len(i.LmsIssuerIn) > 0 {
+		predicates = append(predicates, agenticexposure.LmsIssuerIn(i.LmsIssuerIn...))
+	}
+	if len(i.LmsIssuerNotIn) > 0 {
+		predicates = append(predicates, agenticexposure.LmsIssuerNotIn(i.LmsIssuerNotIn...))
+	}
+	if i.LmsIssuerGT != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerGT(*i.LmsIssuerGT))
+	}
+	if i.LmsIssuerGTE != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerGTE(*i.LmsIssuerGTE))
+	}
+	if i.LmsIssuerLT != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerLT(*i.LmsIssuerLT))
+	}
+	if i.LmsIssuerLTE != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerLTE(*i.LmsIssuerLTE))
+	}
+	if i.LmsIssuerContains != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerContains(*i.LmsIssuerContains))
+	}
+	if i.LmsIssuerHasPrefix != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerHasPrefix(*i.LmsIssuerHasPrefix))
+	}
+	if i.LmsIssuerHasSuffix != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerHasSuffix(*i.LmsIssuerHasSuffix))
+	}
+	if i.LmsIssuerIsNil {
+		predicates = append(predicates, agenticexposure.LmsIssuerIsNil())
+	}
+	if i.LmsIssuerNotNil {
+		predicates = append(predicates, agenticexposure.LmsIssuerNotNil())
+	}
+	if i.LmsIssuerEqualFold != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerEqualFold(*i.LmsIssuerEqualFold))
+	}
+	if i.LmsIssuerContainsFold != nil {
+		predicates = append(predicates, agenticexposure.LmsIssuerContainsFold(*i.LmsIssuerContainsFold))
 	}
 
 	if i.HasOwner != nil {
@@ -2838,6 +2900,23 @@ type ApiExposureWhereInput struct {
 	APIVersionEqualFold    *string  `json:"apiVersionEqualFold,omitempty"`
 	APIVersionContainsFold *string  `json:"apiVersionContainsFold,omitempty"`
 
+	// "lms_issuer" field predicates.
+	LmsIssuer             *string  `json:"lmsIssuer,omitempty"`
+	LmsIssuerNEQ          *string  `json:"lmsIssuerNEQ,omitempty"`
+	LmsIssuerIn           []string `json:"lmsIssuerIn,omitempty"`
+	LmsIssuerNotIn        []string `json:"lmsIssuerNotIn,omitempty"`
+	LmsIssuerGT           *string  `json:"lmsIssuerGT,omitempty"`
+	LmsIssuerGTE          *string  `json:"lmsIssuerGTE,omitempty"`
+	LmsIssuerLT           *string  `json:"lmsIssuerLT,omitempty"`
+	LmsIssuerLTE          *string  `json:"lmsIssuerLTE,omitempty"`
+	LmsIssuerContains     *string  `json:"lmsIssuerContains,omitempty"`
+	LmsIssuerHasPrefix    *string  `json:"lmsIssuerHasPrefix,omitempty"`
+	LmsIssuerHasSuffix    *string  `json:"lmsIssuerHasSuffix,omitempty"`
+	LmsIssuerIsNil        bool     `json:"lmsIssuerIsNil,omitempty"`
+	LmsIssuerNotNil       bool     `json:"lmsIssuerNotNil,omitempty"`
+	LmsIssuerEqualFold    *string  `json:"lmsIssuerEqualFold,omitempty"`
+	LmsIssuerContainsFold *string  `json:"lmsIssuerContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -3248,6 +3327,51 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	}
 	if i.APIVersionContainsFold != nil {
 		predicates = append(predicates, apiexposure.APIVersionContainsFold(*i.APIVersionContainsFold))
+	}
+	if i.LmsIssuer != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerEQ(*i.LmsIssuer))
+	}
+	if i.LmsIssuerNEQ != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerNEQ(*i.LmsIssuerNEQ))
+	}
+	if len(i.LmsIssuerIn) > 0 {
+		predicates = append(predicates, apiexposure.LmsIssuerIn(i.LmsIssuerIn...))
+	}
+	if len(i.LmsIssuerNotIn) > 0 {
+		predicates = append(predicates, apiexposure.LmsIssuerNotIn(i.LmsIssuerNotIn...))
+	}
+	if i.LmsIssuerGT != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerGT(*i.LmsIssuerGT))
+	}
+	if i.LmsIssuerGTE != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerGTE(*i.LmsIssuerGTE))
+	}
+	if i.LmsIssuerLT != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerLT(*i.LmsIssuerLT))
+	}
+	if i.LmsIssuerLTE != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerLTE(*i.LmsIssuerLTE))
+	}
+	if i.LmsIssuerContains != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerContains(*i.LmsIssuerContains))
+	}
+	if i.LmsIssuerHasPrefix != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerHasPrefix(*i.LmsIssuerHasPrefix))
+	}
+	if i.LmsIssuerHasSuffix != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerHasSuffix(*i.LmsIssuerHasSuffix))
+	}
+	if i.LmsIssuerIsNil {
+		predicates = append(predicates, apiexposure.LmsIssuerIsNil())
+	}
+	if i.LmsIssuerNotNil {
+		predicates = append(predicates, apiexposure.LmsIssuerNotNil())
+	}
+	if i.LmsIssuerEqualFold != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerEqualFold(*i.LmsIssuerEqualFold))
+	}
+	if i.LmsIssuerContainsFold != nil {
+		predicates = append(predicates, apiexposure.LmsIssuerContainsFold(*i.LmsIssuerContainsFold))
 	}
 
 	if i.HasOwner != nil {

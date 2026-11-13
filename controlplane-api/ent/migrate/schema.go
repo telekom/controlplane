@@ -70,6 +70,7 @@ var (
 		{Name: "security", Type: field.TypeJSON, Nullable: true},
 		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "transformation", Type: field.TypeJSON, Nullable: true},
+		{Name: "lms_issuer", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "agent_card_exposures", Type: field.TypeInt, Nullable: true},
 		{Name: "application_exposed_agentics", Type: field.TypeInt},
 		{Name: "mcp_server_exposures", Type: field.TypeInt, Nullable: true},
@@ -82,19 +83,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "agentic_exposures_agent_cards_exposures",
-				Columns:    []*schema.Column{AgenticExposuresColumns[16]},
+				Columns:    []*schema.Column{AgenticExposuresColumns[17]},
 				RefColumns: []*schema.Column{AgentCardsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "agentic_exposures_applications_exposed_agentics",
-				Columns:    []*schema.Column{AgenticExposuresColumns[17]},
+				Columns:    []*schema.Column{AgenticExposuresColumns[18]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "agentic_exposures_mcp_servers_exposures",
-				Columns:    []*schema.Column{AgenticExposuresColumns[18]},
+				Columns:    []*schema.Column{AgenticExposuresColumns[19]},
 				RefColumns: []*schema.Column{McpServersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -103,12 +104,12 @@ var (
 			{
 				Name:    "agenticexposure_base_path_application_exposed_agentics",
 				Unique:  true,
-				Columns: []*schema.Column{AgenticExposuresColumns[7], AgenticExposuresColumns[17]},
+				Columns: []*schema.Column{AgenticExposuresColumns[7], AgenticExposuresColumns[18]},
 			},
 			{
 				Name:    "agenticexposure_application_exposed_agentics",
 				Unique:  false,
-				Columns: []*schema.Column{AgenticExposuresColumns[17]},
+				Columns: []*schema.Column{AgenticExposuresColumns[18]},
 			},
 		},
 	}
@@ -229,6 +230,8 @@ var (
 		{Name: "traffic", Type: field.TypeJSON, Nullable: true},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "lms_issuer", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "failover_lms_issuers", Type: field.TypeJSON, Nullable: true},
 		{Name: "api_exposures", Type: field.TypeInt, Nullable: true},
 		{Name: "application_exposed_apis", Type: field.TypeInt},
 	}
@@ -240,13 +243,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_apis_exposures",
-				Columns:    []*schema.Column{APIExposuresColumns[16]},
+				Columns:    []*schema.Column{APIExposuresColumns[18]},
 				RefColumns: []*schema.Column{ApisColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[17]},
+				Columns:    []*schema.Column{APIExposuresColumns[19]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -255,12 +258,12 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[17]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[19]},
 			},
 			{
 				Name:    "apiexposure_application_exposed_apis",
 				Unique:  false,
-				Columns: []*schema.Column{APIExposuresColumns[17]},
+				Columns: []*schema.Column{APIExposuresColumns[19]},
 			},
 		},
 	}

@@ -28,6 +28,7 @@ const exposureVariantTagPrefix = "variant--"
 
 // CreateAgenticRoute creates the primary gateway Route for an MCP exposure.
 // The Route is created in the zone's namespace with buffering disabled for streaming.
+// It also returns the LMS issuer of the zone's AI Gateway preset, which signs the tokens sent to the upstream.
 // Follows the same preset-based routing pattern as the API domain's CreateRealRoute.
 // hasLocalCallers is true if consumers in the exposure zone call the Route directly.
 // telecontextConsumer is set only if Telecontext is in the exposure zone.
@@ -39,30 +40,30 @@ func CreateAgenticRoute(
 	isTargetOfProxy bool,
 	telecontextConsumer string,
 	crossZoneLmsIssuers []string,
-) (*gatewayapi.Route, error) {
+) (route *gatewayapi.Route, lmsIssuer string, err error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// 1. Get AI Gateway preset and gateway ref
 	preset, err := zone.Spec.SelectPreset(adminv1.GatewayTypeAI)
 	if err != nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway preset: %v", zone.Name, err)
+		return nil, "", ctrlerrors.BlockedErrorf("zone %q has no AI Gateway preset: %v", zone.Name, err)
 	}
 	presetStatus, err := zone.Status.GetPreset(preset.Name)
 	if err != nil || presetStatus.GatewayRef == nil {
-		return nil, ctrlerrors.BlockedErrorf("zone %q has no AI Gateway configured", zone.Name)
+		return nil, "", ctrlerrors.BlockedErrorf("zone %q has no AI Gateway configured", zone.Name)
 	}
 
 	// 2. Map upstreams
 	gatewayUpstreams, err := MapUpstreamsToGateway(exposure.Spec.Upstreams)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to map upstreams")
+		return nil, "", errors.Wrap(err, "failed to map upstreams")
 	}
 
 	// 3. Resolve hostnames and paths from preset
 	hostnames, paths := preset.ResolveHostnamesAndPaths(exposure.Spec.BasePath)
 
 	// 4. Create or update the Route
-	route := &gatewayapi.Route{
+	route = &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      MakeAgenticRouteName(exposure.Spec.BasePath),
 			Namespace: zone.Status.Namespace,
@@ -132,10 +133,10 @@ func CreateAgenticRoute(
 
 	_, err = c.CreateOrUpdate(ctx, route, mutator)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update MCP Route %s/%s", route.Namespace, route.Name)
+		return nil, "", errors.Wrapf(err, "failed to create or update MCP Route %s/%s", route.Namespace, route.Name)
 	}
 
-	return route, nil
+	return route, presetStatus.Links.LmsIssuer, nil
 }
 
 // CreateAgenticProxyRoute creates a cross-zone proxy Route for MCP delivery.

@@ -207,6 +207,26 @@ func (_c *ApiExposureCreate) SetNillableAPIVersion(v *string) *ApiExposureCreate
 	return _c
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (_c *ApiExposureCreate) SetLmsIssuer(v string) *ApiExposureCreate {
+	_c.mutation.SetLmsIssuer(v)
+	return _c
+}
+
+// SetNillableLmsIssuer sets the "lms_issuer" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableLmsIssuer(v *string) *ApiExposureCreate {
+	if v != nil {
+		_c.SetLmsIssuer(*v)
+	}
+	return _c
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (_c *ApiExposureCreate) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureCreate {
+	_c.mutation.SetFailoverLmsIssuers(v)
+	return _c
+}
+
 // SetOwnerID sets the "owner" edge to the Application entity by ID.
 func (_c *ApiExposureCreate) SetOwnerID(id int) *ApiExposureCreate {
 	_c.mutation.SetOwnerID(id)
@@ -461,6 +481,14 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.APIVersion(); ok {
 		_spec.SetField(apiexposure.FieldAPIVersion, field.TypeString, value)
 		_node.APIVersion = &value
+	}
+	if value, ok := _c.mutation.LmsIssuer(); ok {
+		_spec.SetField(apiexposure.FieldLmsIssuer, field.TypeString, value)
+		_node.LmsIssuer = &value
+	}
+	if value, ok := _c.mutation.FailoverLmsIssuers(); ok {
+		_spec.SetField(apiexposure.FieldFailoverLmsIssuers, field.TypeJSON, value)
+		_node.FailoverLmsIssuers = value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -774,6 +802,42 @@ func (u *ApiExposureUpsert) ClearAPIVersion() *ApiExposureUpsert {
 	return u
 }
 
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *ApiExposureUpsert) SetLmsIssuer(v string) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldLmsIssuer, v)
+	return u
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateLmsIssuer() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldLmsIssuer)
+	return u
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *ApiExposureUpsert) ClearLmsIssuer() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldLmsIssuer)
+	return u
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (u *ApiExposureUpsert) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldFailoverLmsIssuers, v)
+	return u
+}
+
+// UpdateFailoverLmsIssuers sets the "failover_lms_issuers" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateFailoverLmsIssuers() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldFailoverLmsIssuers)
+	return u
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (u *ApiExposureUpsert) ClearFailoverLmsIssuers() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldFailoverLmsIssuers)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1061,6 +1125,48 @@ func (u *ApiExposureUpsertOne) UpdateAPIVersion() *ApiExposureUpsertOne {
 func (u *ApiExposureUpsertOne) ClearAPIVersion() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.ClearAPIVersion()
+	})
+}
+
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *ApiExposureUpsertOne) SetLmsIssuer(v string) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetLmsIssuer(v)
+	})
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateLmsIssuer() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateLmsIssuer()
+	})
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *ApiExposureUpsertOne) ClearLmsIssuer() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearLmsIssuer()
+	})
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (u *ApiExposureUpsertOne) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetFailoverLmsIssuers(v)
+	})
+}
+
+// UpdateFailoverLmsIssuers sets the "failover_lms_issuers" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateFailoverLmsIssuers() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateFailoverLmsIssuers()
+	})
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (u *ApiExposureUpsertOne) ClearFailoverLmsIssuers() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearFailoverLmsIssuers()
 	})
 }
 
@@ -1517,6 +1623,48 @@ func (u *ApiExposureUpsertBulk) UpdateAPIVersion() *ApiExposureUpsertBulk {
 func (u *ApiExposureUpsertBulk) ClearAPIVersion() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.ClearAPIVersion()
+	})
+}
+
+// SetLmsIssuer sets the "lms_issuer" field.
+func (u *ApiExposureUpsertBulk) SetLmsIssuer(v string) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetLmsIssuer(v)
+	})
+}
+
+// UpdateLmsIssuer sets the "lms_issuer" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateLmsIssuer() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateLmsIssuer()
+	})
+}
+
+// ClearLmsIssuer clears the value of the "lms_issuer" field.
+func (u *ApiExposureUpsertBulk) ClearLmsIssuer() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearLmsIssuer()
+	})
+}
+
+// SetFailoverLmsIssuers sets the "failover_lms_issuers" field.
+func (u *ApiExposureUpsertBulk) SetFailoverLmsIssuers(v []model.FailoverLmsIssuer) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetFailoverLmsIssuers(v)
+	})
+}
+
+// UpdateFailoverLmsIssuers sets the "failover_lms_issuers" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateFailoverLmsIssuers() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateFailoverLmsIssuers()
+	})
+}
+
+// ClearFailoverLmsIssuers clears the value of the "failover_lms_issuers" field.
+func (u *ApiExposureUpsertBulk) ClearFailoverLmsIssuers() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearFailoverLmsIssuers()
 	})
 }
 

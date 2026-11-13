@@ -68,6 +68,11 @@ func (AgenticExposure) Fields() []ent.Field {
 		field.JSON("transformation", model.AgenticTransformation{}).
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		// lms_issuer is the issuer of the Last-Mile-Security tokens that the primary
+		// exposure zone's gateway sends to the upstream.
+		field.Text("lms_issuer").
+			Optional().
+			Nillable(),
 	}
 }
 

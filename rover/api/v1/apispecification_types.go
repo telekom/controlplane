@@ -102,6 +102,7 @@ type ApiSpecificationStatus struct {
 // ApiSpecification is the Schema for the apispecifications API
 // +kubebuilder:pruning:PreserveUnknownFields
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The version of the API specification"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ApiSpecification struct {
 	metav1.TypeMeta   `json:",inline"`

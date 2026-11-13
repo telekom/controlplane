@@ -99,6 +99,14 @@ type routingState struct {
 	// in other zones stamp an LMS token before forwarding traffic to the provider zone.
 	// This is a mesh concern, not a consumer failover concern.
 	crossZoneLmsIssuers map[types.ObjectRef]string
+
+	// -------------------------------------------------------------------------
+	// Produced by createRealRoute
+	// -------------------------------------------------------------------------
+
+	// exposureLmsIssuer is the LMS issuer of the exposure zone's default API preset,
+	// i.e. the issuer of the tokens the exposure zone's gateway sends to the upstream.
+	exposureLmsIssuer string
 }
 
 // CrossZoneLmsIssuers returns the cross-zone LMS issuers, optionally excluding

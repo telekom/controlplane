@@ -12,6 +12,7 @@ import (
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
@@ -698,6 +699,75 @@ var _ = Describe("ApiExposure Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(data.Traffic).To(BeNil())
+		})
+
+		It("should map Status.LmsIssuer to a pointer", func() {
+			obj := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "lms",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: "/api/v1/lms",
+					Visibility:  apiv1.VisibilityWorld,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				},
+			}
+			obj.Status.LmsIssuer = "https://lms.example.com"
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.LmsIssuer).To(HaveValue(Equal("https://lms.example.com")))
+		})
+
+		It("should map Status.FailoverLmsIssuers in order", func() {
+			obj := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "lms",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: "/api/v1/lms",
+					Visibility:  apiv1.VisibilityWorld,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				},
+			}
+			obj.Status.FailoverLmsIssuers = []apiv1.FailoverLmsIssuer{
+				{Zone: "zone-b", Url: "https://lms.zone-b.example.com"},
+				{Zone: "zone-a", Url: "https://lms.zone-a.example.com"},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.FailoverLmsIssuers).To(Equal([]model.FailoverLmsIssuer{
+				{Zone: "zone-b", Url: "https://lms.zone-b.example.com"},
+				{Zone: "zone-a", Url: "https://lms.zone-a.example.com"},
+			}))
+		})
+
+		It("should produce nil LmsIssuer when Status.LmsIssuer is empty", func() {
+			obj := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "lms",
+					Namespace: "prod--platform--narvi",
+					Labels:    map[string]string{"cp.ei.telekom.de/application": "app"},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: "/api/v1/lms",
+					Visibility:  apiv1.VisibilityWorld,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+				},
+			}
+
+			data, err := t.Translate(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(data.LmsIssuer).To(BeNil())
+			Expect(data.FailoverLmsIssuers).To(BeNil())
 		})
 	})
 

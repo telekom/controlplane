@@ -6,6 +6,7 @@ package resolvers_test
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 
@@ -368,5 +369,93 @@ var _ = Describe("ApiExposure.Features", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleared.Features).To(BeEmpty())
+	})
+})
+
+var _ = Describe("ApiExposure.LmsIssuer", func() {
+	var client *ent.Client
+	var s *testutil.SeedData
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should expose lmsIssuer on ApiExposure but not on the reduced info type", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		Expect(schema.Types["ApiExposure"].Fields.ForName("lmsIssuer").Type.String()).To(Equal("String"))
+		Expect(schema.Types["ApiExposureInfo"].Fields.ForName("lmsIssuer")).To(BeNil())
+	})
+
+	It("should store, return and clear lmsIssuer on ApiExposure", func() {
+		ctx := testutil.AllowContext()
+
+		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/api/v1/lms").
+			SetOwner(s.AppAlpha).
+			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
+			SetLmsIssuer("https://lms.example.com").
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.LmsIssuer).To(HaveValue(Equal("https://lms.example.com")))
+
+		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).ClearLmsIssuer().Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleared.LmsIssuer).To(BeNil())
+	})
+})
+
+var _ = Describe("ApiExposure.FailoverLmsIssuers", func() {
+	var client *ent.Client
+	var s *testutil.SeedData
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should expose failoverLmsIssuers on ApiExposure but not on the reduced info type", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		Expect(schema.Types["ApiExposure"].Fields.ForName("failoverLmsIssuers").Type.String()).To(Equal("[FailoverLmsIssuer!]"))
+		Expect(schema.Types["ApiExposureInfo"].Fields.ForName("failoverLmsIssuers")).To(BeNil())
+		Expect(schema.Types["FailoverLmsIssuer"].Fields.ForName("zone").Type.String()).To(Equal("String!"))
+		Expect(schema.Types["FailoverLmsIssuer"].Fields.ForName("url").Type.String()).To(Equal("String!"))
+	})
+
+	It("should store, return and clear failoverLmsIssuers on ApiExposure", func() {
+		ctx := testutil.AllowContext()
+		issuers := []model.FailoverLmsIssuer{
+			{Zone: "zone-b", Url: "https://lms.zone-b.example.com"},
+			{Zone: "zone-a", Url: "https://lms.zone-a.example.com"},
+		}
+
+		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
+			SetBasePath("/api/v1/failover-lms").
+			SetOwner(s.AppAlpha).
+			SetApprovalConfig(model.ApprovalConfig{Strategy: "AUTO"}).
+			SetFailoverLmsIssuers(issuers).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.FailoverLmsIssuers).To(Equal(issuers))
+
+		cleared, err := client.ApiExposure.UpdateOneID(exposure.ID).ClearFailoverLmsIssuers().Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleared.FailoverLmsIssuers).To(BeNil())
 	})
 })

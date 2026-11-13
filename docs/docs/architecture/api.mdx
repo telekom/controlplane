@@ -41,6 +41,14 @@ A matching **ConsumeRoute** is then created for each approved subscription to gr
 
 For the meaning of each route type and how they forward traffic, see [Gateway Domain: Route Types & Cross-Zone Meshing](./gateway.mdx#route-types--cross-zone-meshing).
 
+### LMS Issuer
+
+When the primary route is provisioned, the operator writes `status.lmsIssuer` on the ApiExposure. It is the issuer of the Last-Mile-Security (LMS) tokens that the gateway of the exposure zone sends to the upstream. The value comes from the default API gateway preset of the exposure zone. Providers should configure their upstream to trust this issuer. The field is empty while the exposure is inactive, blocked, or not yet provisioned.
+
+If provider failover is configured, the operator also writes `status.failoverLmsIssuers`: one `{zone, url}` entry per zone in `spec.traffic.failover.zones`, in spec order, holding the LMS issuer of that zone's default API gateway preset. When the exposure zone is unavailable, the gateways of these zones call the upstream directly, so the upstream must trust these issuers as well. Zones without an LMS issuer are skipped. The list is empty when no failover is configured and is cleared together with `status.lmsIssuer`.
+
+The Projector persists both values, and the ControlPlane API exposes them as `lmsIssuer` and `failoverLmsIssuers` on the GraphQL `ApiExposure` type (not on the reduced `ApiExposureInfo` type).
+
 ### Subscription Readiness
 
 An `ApiSubscription` reports `Ready=False / PreconditionNotMet` while the exposure

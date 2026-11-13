@@ -40,4 +40,5 @@ type AgenticExposureData struct {
 	Security       *model.AgenticExposureSecurity // optional/nillable
 	Traffic        *model.Traffic                 // optional/nillable
 	Transformation *model.AgenticTransformation   // optional/nillable
+	LmsIssuer      *string                        // optional/nillable — nil when Status.LmsIssuer is empty
 }
