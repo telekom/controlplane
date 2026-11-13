@@ -84,12 +84,7 @@ spec:
 
 Whether an identifier is *required* and the exact regex applied to its value are configured **per zone** by the platform administrator. If a zone has no policy for a scheme, supplying the field is optional and unvalidated. When a zone enforces a scheme, a Rover without that field (or with a malformed value) is rejected at admission time.
 
-The identifiers are propagated to the Application and are returned by the discovery API (`/application/v2`) as `icto` and `psiid` on application resources, and as `application.icto` on API/event subscriptions and event exposures. Applications can be filtered by exact value:
-
-```http
-GET /application/v2/applications?icto=icto-12345
-GET /application/v2/applications?psiid=PSI-103596
-```
+The discovery API (`/application/v2`) returns both identifiers as `icto` and `psiid` on applications. Subscriptions and event exposures show `application.icto`. To find applications by identifier, use `/applications?icto=icto-12345` or `/applications?psiid=PSI-103596`.
 
 ## Next Steps
 
