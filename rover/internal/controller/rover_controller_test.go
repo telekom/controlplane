@@ -45,6 +45,16 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		err := k8sClient.Create(ctx, team)
 		Expect(err).NotTo(HaveOccurred())
 
+		// The organization controller is not running in this suite; set the status it would
+		// populate, as MapTeamToRovers relies on it to enqueue Rovers on Team changes.
+		By("Setting the Team status namespace")
+		Eventually(func(g Gomega) {
+			current := &organizationv1.Team{}
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), current)).To(Succeed())
+			current.Status.Namespace = teamNamespace
+			g.Expect(k8sClient.Status().Update(ctx, current)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+
 		By("Creating the team Namespace")
 		createNamespace(teamNamespace)
 	})
@@ -722,7 +732,12 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			originalEmail := fetchedTeam.Spec.Email
 			DeferCleanup(func() {
 				restore := &organizationv1.Team{}
-				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, restore)).To(Succeed())
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, restore)
+				if errors.IsNotFound(err) {
+					// AfterAll already removed the Team (the Ordered container ends early on failure).
+					return
+				}
+				Expect(err).NotTo(HaveOccurred())
 				restore.Spec.Email = originalEmail
 				Expect(k8sClient.Update(ctx, restore)).To(Succeed())
 			})
