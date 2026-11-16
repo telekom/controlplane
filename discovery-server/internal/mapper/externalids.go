@@ -5,6 +5,8 @@
 package mapper
 
 import (
+	"fmt"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 )
 
@@ -23,4 +25,11 @@ func ExternalId(ids []applicationv1.ExternalId, scheme string) string {
 		}
 	}
 	return ""
+}
+
+// ExternalIdJsonPath returns the gjson path used in store.Filter to select the
+// id of an Application's external id with the given scheme. Schemes are unique
+// per Application (listMapKey=scheme), so the first match is the only one.
+func ExternalIdJsonPath(scheme string) string {
+	return fmt.Sprintf(`spec.externalIds.#(scheme==%q).id`, scheme)
 }

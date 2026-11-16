@@ -34,19 +34,16 @@ func NewApplicationController(stores *sstore.Stores) server.ApplicationControlle
 func (c *applicationController) GetAll(ctx context.Context, params api.GetAllApplicationsParams) (*api.ApplicationListResponse, error) {
 	listOpts := store.NewListOpts()
 	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
+	listOpts.Filters = externalIdFilters(&params)
 
 	items, err := pagination.FetchAll(ctx, c.stores.ApplicationStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	mapped := make([]api.ApplicationResponse, 0, len(items))
-	for _, item := range items {
-		resp := applicationmapper.MapResponse(item)
-		if !matchesExternalIdFilters(&resp, &params) {
-			continue
-		}
-		mapped = append(mapped, resp)
+	mapped := make([]api.ApplicationResponse, len(items))
+	for i, item := range items {
+		mapped[i] = applicationmapper.MapResponse(item)
 	}
 
 	basePath := "/applications"
@@ -90,16 +87,25 @@ func (c *applicationController) GetStatus(ctx context.Context, applicationId str
 	return statusmapper.MapResponse(app), nil
 }
 
-// matchesExternalIdFilters reports whether the application matches the
-// optional icto/psiid query filters (exact match). Empty filters match all.
-func matchesExternalIdFilters(app *api.ApplicationResponse, params *api.GetAllApplicationsParams) bool {
-	if params.Icto != "" && app.Icto != params.Icto {
-		return false
+// externalIdFilters translates the optional icto/psiid query filters into
+// exact-match store filters on spec.externalIds. Empty filters match all.
+func externalIdFilters(params *api.GetAllApplicationsParams) []store.Filter {
+	var filters []store.Filter
+	if params.Icto != "" {
+		filters = append(filters, store.Filter{
+			Path:  mapper.ExternalIdJsonPath(mapper.IctoScheme),
+			Op:    store.OpEqual,
+			Value: params.Icto,
+		})
 	}
-	if params.Psiid != "" && app.Psiid != params.Psiid {
-		return false
+	if params.Psiid != "" {
+		filters = append(filters, store.Filter{
+			Path:  mapper.ExternalIdJsonPath(mapper.PsiScheme),
+			Op:    store.OpEqual,
+			Value: params.Psiid,
+		})
 	}
-	return true
+	return filters
 }
 
 // externalIdFilterQuery encodes the active icto/psiid filters so that
