@@ -1,3 +1,11 @@
+## [0.48.1](https://github.com/telekom/controlplane/compare/v0.48.0...v0.48.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **api,common:** avoid cache sync timeouts at operator startup ([#863](https://github.com/telekom/controlplane/issues/863)) ([58fd1b2](https://github.com/telekom/controlplane/commit/58fd1b2b847f34a1d88c9efad5ac9fe1fca5b3fb))
+* **gateway:** discover and reuse legacy Kong plugins ([#805](https://github.com/telekom/controlplane/issues/805)) ([d82c122](https://github.com/telekom/controlplane/commit/d82c1226f8bb9d806507444b898829ffc5be0a05))
+
 # [0.48.0](https://github.com/telekom/controlplane/compare/v0.47.0...v0.48.0) (2026-11-12)
 
 
