@@ -1,0 +1,31 @@
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_0ca82193f57e20::t_98c2f6ac4237b4 100
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_gateways.yaml
+  s_0ca82193f57e20::t_e62985c47723a1 129-130
+gateway/internal/handler/route/handler_test.go
+  s_0ca82193f57e20::t_9b3b4527146c5f 143-151,163-164,172
+gateway/pkg/kong/client/realm_route_test.go
+  s_0ca82193f57e20::t_fa011af6c8df58 580,584-585
+gateway/pkg/kong/client/route.go
+  s_0ca82193f57e20::t_e9751942f5d03b 274
+gateway/pkg/kong/client/upstream_test.go
+  s_0ca82193f57e20::t_c6de9dbc5ca0f5 367,378,390-393
+gateway/pkg/kongutil/migrator_test.go
+  s_0ca82193f57e20::t_f9aeac7548dc4b 8-17,25-33,39-56,58-69,71-73,76,78-87,89-91,93-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4cb9e90202654cf65f653e4614a1b75d6b851820",
+  "prompts": {},
+  "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
