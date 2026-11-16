@@ -51,7 +51,7 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&apiapi.Api{}, builder.WithPredicates(cc.Count("api", cc.RoleFor))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApi),
-			builder.WithPredicates(cc.Count("api", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("api", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

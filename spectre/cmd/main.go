@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -20,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -130,6 +132,7 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
+		Controller:             crconfig.Controller{CacheSyncTimeout: cconfig.CacheSyncTimeout},
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,

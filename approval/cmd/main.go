@@ -15,6 +15,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
+	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -25,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/approval/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/approval/internal/webhook/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -100,6 +102,7 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
+		Controller:             crconfig.Controller{CacheSyncTimeout: cconfig.CacheSyncTimeout},
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,

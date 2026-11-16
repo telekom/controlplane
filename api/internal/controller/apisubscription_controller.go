@@ -72,23 +72,23 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&apiapi.RemoteApiSubscription{}, builder.WithPredicates(cc.Count("apisubscription", cc.RoleOwns))).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&apiapi.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&applicationapi.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&gatewayapi.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
-			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apisubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

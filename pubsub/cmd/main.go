@@ -11,6 +11,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -18,6 +19,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filemetrics "github.com/telekom/controlplane/file-manager/api/metrics"
 	"github.com/telekom/controlplane/pubsub/internal/controller"
 	"github.com/telekom/controlplane/pubsub/internal/index"
@@ -144,6 +146,7 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
+		Controller:             crconfig.Controller{CacheSyncTimeout: cconfig.CacheSyncTimeout},
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,

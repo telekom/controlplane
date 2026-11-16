@@ -18,6 +18,7 @@ const (
 	configKeyJitterFactor        = "jitter-factor"
 	configKeyMaxBackoff          = "max-backoff"
 	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
+	configKeyCacheSyncTimeout    = "cache-sync-timeout"
 )
 
 const (
@@ -41,6 +42,9 @@ var (
 	MaxBackoff = 5 * time.Minute
 	// MaxConcurrentReconciles is the maximum number of concurrent reconciles.
 	MaxConcurrentReconciles = 10
+	// CacheSyncTimeout is the time a controller waits for its watch caches to sync on startup.
+	// Defaults to the controller-runtime default.
+	CacheSyncTimeout = 2 * time.Minute
 )
 
 func init() {
@@ -56,6 +60,7 @@ func registerDefaults() {
 	viper.SetDefault(configKeyJitterFactor, JitterFactor)
 	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
+	viper.SetDefault(configKeyCacheSyncTimeout, CacheSyncTimeout)
 }
 
 func registerEnvs() {
@@ -70,6 +75,7 @@ func Parse() {
 	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
 	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
 	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
+	CacheSyncTimeout = viper.GetDuration(configKeyCacheSyncTimeout)
 
 	for f := range features {
 		features[f] = viper.GetBool(f.Path())

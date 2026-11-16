@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -220,7 +221,8 @@ func Run() error {
 
 func managerOptions(cfg *config.Config) ctrl.Options {
 	opts := ctrl.Options{
-		Scheme: scheme,
+		Scheme:     scheme,
+		Controller: crconfig.Controller{CacheSyncTimeout: cconfig.CacheSyncTimeout},
 		Metrics: metricsserver.Options{
 			BindAddress: cfg.MetricsBindAddress,
 		},
