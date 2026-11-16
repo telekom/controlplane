@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
@@ -63,12 +62,13 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&identityv1.Realm{}, builder.WithPredicates(cc.Count("realm", cc.RoleFor))).
 		Watches(&identityv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToRealm),
-			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			// avoid concurrent reconciles to prevent race conditions with shared resources
+			MaxConcurrentReconciles: 1,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)

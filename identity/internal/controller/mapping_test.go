@@ -48,7 +48,7 @@ var _ = Describe("shared leadership watch mappings", func() {
 		ctx = context.Background()
 
 		idpA = mappingIdentityProvider("env-a--zone", sharedURL)
-		idpB := mappingIdentityProvider("env-b--zone", "HTTPS://KEYCLOAK.example.com:443/auth/")
+		idpB := mappingIdentityProvider("env-b--zone", sharedURL)
 		idpOther := mappingIdentityProvider("env-c--zone", otherURL)
 
 		roverA = mappingRealm("env-a--zone", "rover", idpA)

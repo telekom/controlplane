@@ -148,6 +148,59 @@ var _ = Describe("KeycloakService", func() {
 			})
 		})
 
+		It("assigns the rover claims scope to newly created non-rover clients", func() {
+			client := newIdentityClient("my-app", "my-secret")
+			mockClient.EXPECT().
+				GetRealmClientsWithResponse(mock.Anything, "rover", mock.Anything).
+				Return(&api.GetRealmClientsResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &[]api.ClientRepresentation{},
+				}, nil)
+			mockClient.EXPECT().
+				PostRealmClientsWithResponse(mock.Anything, "rover", mock.Anything).
+				Return(&api.PostRealmClientsResponse{
+					HTTPResponse: httpRespWithLocation(201, "https://kc/admin/realms/rover/clients/new-uid"),
+				}, nil)
+			mockClient.EXPECT().
+				GetRealmClientScopesWithResponse(mock.Anything, "rover").
+				Return(scopeResp([]api.ClientScopeRepresentation{
+					managedScope("scope-123", []api.ProtocolMapperRepresentation{}),
+				}), nil)
+			mockClient.EXPECT().
+				GetRealmClientsIdDefaultClientScopesWithResponse(mock.Anything, "rover", "new-uid").
+				Return(clientDefaultScopesResp(nil), nil)
+			mockClient.EXPECT().
+				PutRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(mock.Anything, "rover", "new-uid", "scope-123").
+				Return(&api.PutRealmClientsIdDefaultClientScopesClientScopeIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+			Expect(svc.CreateOrReplaceClient(ctx, "rover", client, keycloak.ClientUpdateOptions{})).To(Succeed())
+		})
+
+		It("does not assign the rover claims scope to a newly created rover client", func() {
+			client := newIdentityClient("rover", "my-secret")
+			mockClient.EXPECT().
+				GetRealmClientsWithResponse(mock.Anything, "rover", mock.Anything).
+				Return(&api.GetRealmClientsResponse{
+					HTTPResponse: httpResp(200),
+					JSON2XX:      &[]api.ClientRepresentation{},
+				}, nil)
+			mockClient.EXPECT().
+				PostRealmClientsWithResponse(mock.Anything, "rover", mock.Anything).
+				Return(&api.PostRealmClientsResponse{
+					HTTPResponse: httpRespWithLocation(201, "https://kc/admin/realms/rover/clients/new-uid"),
+				}, nil)
+			mockClient.EXPECT().
+				GetRealmClientScopesWithResponse(mock.Anything, "rover").
+				Return(scopeResp([]api.ClientScopeRepresentation{
+					managedScope("scope-123", []api.ProtocolMapperRepresentation{}),
+				}), nil)
+			mockClient.EXPECT().
+				GetRealmClientsIdDefaultClientScopesWithResponse(mock.Anything, "rover", "new-uid").
+				Return(clientDefaultScopesResp(nil), nil)
+
+			Expect(svc.CreateOrReplaceClient(ctx, "rover", client, keycloak.ClientUpdateOptions{})).To(Succeed())
+		})
+
 		Context("when client exists (update path)", func() {
 			It("should update web origins without rotating the secret", func() {
 				client := newIdentityClient("my-app", "secret")

@@ -48,6 +48,13 @@ func emptyDefaultScopesResp() *api.GetRealmDefaultDefaultClientScopesResponse {
 	return defaultScopesResp([]api.ClientScopeRepresentation{})
 }
 
+func clientDefaultScopesResp(scopes []api.ClientScopeRepresentation) *api.GetRealmClientsIdDefaultClientScopesResponse {
+	return &api.GetRealmClientsIdDefaultClientScopesResponse{
+		HTTPResponse: httpResp(200),
+		JSON2XX:      &scopes,
+	}
+}
+
 // managedScope builds a ClientScopeRepresentation mimicking the managed scope
 // in Keycloak, with the given mappers and a Keycloak-assigned scope ID.
 //
@@ -174,6 +181,54 @@ var _ = Describe("ConfigureClientScopes", func() {
 
 			err := svc.ConfigureClientScopes(ctx, testRealm, claims)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		When("claims are configured in the rover realm", func() {
+			It("assigns the scope to other clients and removes it from the rover client", func() {
+				scopeID := "scope-123"
+				claims := []identityv1.ClaimConfig{{Name: "env", Value: "prod"}}
+
+				mockClient.EXPECT().
+					GetRealmClientScopesWithResponse(mock.Anything, "rover").
+					Return(scopeResp([]api.ClientScopeRepresentation{
+						managedScope(scopeID, []api.ProtocolMapperRepresentation{
+							mapperWithID("m1", "env", "prod"),
+						}),
+					}), nil)
+
+				mockClient.EXPECT().
+					GetRealmClientsWithResponse(mock.Anything, "rover", mock.MatchedBy(func(params *api.GetRealmClientsParams) bool {
+						return params.First != nil && *params.First == 0 &&
+							params.Max != nil && *params.Max == 100
+					})).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX: &[]api.ClientRepresentation{
+							{Id: ptr.To("rover-uid"), ClientId: ptr.To("rover")},
+							{Id: ptr.To("app-uid"), ClientId: ptr.To("app")},
+						},
+					}, nil)
+
+				mockClient.EXPECT().
+					GetRealmClientsIdDefaultClientScopesWithResponse(mock.Anything, "rover", "rover-uid").
+					Return(clientDefaultScopesResp([]api.ClientScopeRepresentation{{Id: ptr.To(scopeID)}}), nil)
+				mockClient.EXPECT().
+					DeleteRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(mock.Anything, "rover", "rover-uid", scopeID).
+					Return(&api.DeleteRealmClientsIdDefaultClientScopesClientScopeIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				mockClient.EXPECT().
+					GetRealmClientsIdDefaultClientScopesWithResponse(mock.Anything, "rover", "app-uid").
+					Return(clientDefaultScopesResp(nil), nil)
+				mockClient.EXPECT().
+					PutRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(mock.Anything, "rover", "app-uid", scopeID).
+					Return(&api.PutRealmClientsIdDefaultClientScopesClientScopeIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				mockClient.EXPECT().
+					DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(mock.Anything, "rover", scopeID).
+					Return(&api.DeleteRealmDefaultDefaultClientScopesClientScopeIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				Expect(svc.ConfigureClientScopes(ctx, "rover", claims)).To(Succeed())
+			})
 		})
 	})
 

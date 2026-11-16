@@ -19,6 +19,8 @@ const (
 	// AdminClientName is the name of the client used for administrative operations.
 	// This client must be configured in the configuration backend.
 	AdminClientName = "horizon-quasar"
+	// RoverRealmName is the shared internal realm used by Zones across Environments.
+	RoverRealmName = "rover"
 
 	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
 	CallbackURLQueryParam = "url"

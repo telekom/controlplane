@@ -64,7 +64,7 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&identityv1.Client{}, builder.WithPredicates(cc.Count("client", cc.RoleFor))).
 		Watches(&identityv1.Client{},
 			handler.EnqueueRequestsFromMapFunc(r.mapClientObjToIdentityClient),
-			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&identityv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToIdentityClient),
 			builder.WithPredicates(cc.Count("client", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
@@ -94,6 +94,7 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 	for i := range realms {
 		list := &identityv1.ClientList{}
 		ref := types.ObjectRefFromObject(&realms[i]).String()
+		// audit:ignore 13-environment-isolation/unscoped-list We need to list all Clients for the given realm to determine leadership.
 		if err := r.List(ctx, list, client.MatchingFields{IndexFieldSpecRealm: ref}); err != nil {
 			logger.Error(err, "failed to list Clients for Realm", "realm", ref)
 			continue
@@ -117,7 +118,9 @@ func (r *ClientReconciler) mapClientObjToIdentityClient(ctx context.Context, obj
 		logger.V(0).Info("object is not a Client with a Realm")
 		return nil
 	}
+
 	realm := &identityv1.Realm{}
+	// audit:ignore 13-environment-isolation/unscoped-get We need to get the shared Realm to determine leadership for the Client.
 	if err := r.Get(ctx, identityClient.Spec.Realm.K8s(), realm); err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			logger.Error(err, "failed to get Client Realm", "client", client.ObjectKeyFromObject(identityClient))

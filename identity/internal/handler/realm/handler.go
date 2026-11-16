@@ -146,6 +146,7 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 
 	if h.PeerReader != nil {
+		// audit:ignore 13-environment-isolation/unscoped-get We need to get the shared realm peers to determine if another Realm is active before deletion.
 		peers, err := leader.RealmPeersForRealm(ctx, h.PeerReader, realm)
 		if err != nil {
 			return fmt.Errorf("failed to find shared realm peers before deletion: %w", err)
@@ -218,7 +219,7 @@ func (h *HandlerRealm) follow(ctx context.Context, realm, elected *identityv1.Re
 	}
 
 	realm.Status.IssuerUrl = elected.Status.IssuerUrl
-	realm.Status.ManagedAttributes = nil
+	realm.Status.ManagedAttributes = elected.Status.ManagedAttributes
 	realm.SetCondition(condition.NewDoneProcessingCondition("Mirrored Realm from leader"))
 	realm.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Realm is ready"))
 	return nil

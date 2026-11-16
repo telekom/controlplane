@@ -150,20 +150,78 @@ Previously, World zones without `issuerHostname` got a `frontendUrl` derived fro
 
 ### Sharing an identity provider across environments
 
-Zones in separate Environments can use the same Keycloak instance. If their IdentityProviders use the same normalized `admin.url`, matching Realm names share the same Keycloak realms. The oldest live Realm resource manages each shared realm; if several were created at the same time, the alphabetically first namespace, then name, wins; other resources mirror its issuer and readiness without writing to Keycloak. Matching Client IDs in those realms use the same election. Newly added Realms always become followers. Leadership moves to the next-oldest resource only when the leader is deleted, and Keycloak resources are retained until their final live owner is removed.
+Zones in separate Environments can share a Keycloak instance when their IdentityProviders use the same exact `admin.url`. Matching Realm names then share a Keycloak realm. Clients with matching IDs in that realm use the same ownership rules.
 
-For the shared internal `rover` realm, every Zone whose IdentityProvider uses the same normalized `admin.url` shares the realm and its gateway admin client. That client's ID is always `rover`, so Keycloak holds one `rover` client for all of these Zones. With Secret-Manager enabled, the shared credential is stored at `shared:::zones/<zone>/admin/rover/clientSecret`; rotate it at this path, and the operators apply it on their next reconciliation. Existing environment-scoped rover references are migrated only when the shared and existing values match. If they differ, the existing value is retained and a warning is recorded. With Secret-Manager disabled, follower rover Clients adopt the leader's inline credential.
+```mermaid
+flowchart TD
+    A["IdentityProviders use the same exact admin.url"] --> B["Matching Realm names share a Keycloak realm"]
+    B --> C["Clients with matching IDs share a Keycloak client"]
+    C --> D{"Does a manager already exist?"}
+    D -->|No| E["The oldest live Realm or Client becomes manager"]
+    D -->|Yes| F["A newly added Realm joins as a follower"]
+    E --> G["The manager controls the shared Keycloak object"]
+    F --> G
+    G --> H["Realm followers mirror issuer and readiness; followers do not write to Keycloak"]
+    H --> I{"Is the manager deleted?"}
+    I -->|No| J["Keep the manager; retain the object while owners remain"]
+    I -->|Yes| K{"Are live followers left?"}
+    K -->|Yes| L["The oldest live follower becomes manager"]
+    L --> G
+    K -->|No| M["Remove the Keycloak object after its last live owner is removed"]
+```
+
+Zones configured with the exact same Keycloak Admin URL share the internal `rover` realm, its gateway admin client (`rover`), and its Event admin client (default ID `horizon-quasar`).
+
+```mermaid
+flowchart TD
+    A["Zones use the same Keycloak Admin URL"] --> B["Share the internal rover realm"]
+    B --> C["Share the gateway admin and Event admin clients"]
+    C --> D["Handle credentials for each client separately"]
+    D --> E{"Is Secret-Manager enabled?"}
+    E -->|No| F["One Zone supplies the credential; other Zones use it"]
+    E -->|Yes| G{"Does a shared credential already exist?"}
+    G -->|Yes| H{"Does an existing Zone credential differ?"}
+    H -->|Yes| I["Keep the existing credential and record a warning"]
+    H -->|No| J["Use the shared credential"]
+    G -->|No| K{"Does a Zone already have a credential?"}
+    K -->|Yes| L["Use its value for the shared credential"]
+    K -->|No| M["Create a shared credential"]
+    L --> N["Use the shared credential"]
+    M --> N
+```
+
+With Secret-Manager enabled, the shared credentials use these paths:
+
+- Gateway admin client: `shared:::zones/<zone>/admin/rover/clientSecret`
+- Event admin client: `shared:::zones/<zone>/event/admin/clientSecret`
+
+Mesh clients are unchanged: they keep their configured IDs and use the Zone's default realm.
 
 :::warning Zones on one Keycloak must have the same name
-The shared rover credential is keyed by Zone name, while the `rover` client is shared by every Zone on the same Keycloak. Zones in different Environments that use one Keycloak must therefore have the same Zone name. Otherwise they resolve different secrets for the single `rover` client, and every follower rover Client stays blocked with `client secret differs from leader`.
+Use the same Zone name in every Environment that shares a Keycloak. The shared rover and Event admin clients use credentials stored under that name. Different names point to different credentials, so the platform cannot keep the shared clients in sync.
 :::
 
-Clients that the File and Event domains create in the internal realm (the SFTP API client and the Event admin client) always use the client ID `<environment>--<clientId>`, so Environments sharing the realm never collide. The Event mesh client lives in the Zone's default realm and keeps its configured ID. Clients created with an unprefixed ID by earlier versions are not renamed by the operators; migrate them with an external script. Followers do not apply their own claims, Realm attributes, or secret-rotation policy. Tokens carry the leader's configured claims, including `originZone` and `originStargate`, so sharing may affect authorization boundaries.
+In the shared realm, SFTP API clients for same-named Zones across Environments use the same ID (`sftp-api-<zone>`). Their credentials are onboarded per Environment, so a follower may not become ready if its resolved secret differs from the leader's. Event admin clients share one ID across Environments. Event mesh clients keep their configured IDs in each Zone's default realm.
 
-Sharing is detected by normalized admin URL. Different URLs that reach the same Keycloak are not grouped. Zones with the same name on different Keycloak instances also use the same shared rover secret path, so they receive the same credential. See [Shared Realms and Leader Election](../architecture/identity.mdx#shared-realms-and-leader-election) and [rover client lifecycle](../architecture/admin.mdx#identity-realms-and-the-rover-client).
+The elected Realm owner supplies the shared settings. Those settings can affect access across Environments.
+
+#### Existing Event admin Clients
+
+Migrate existing unprefixed Event admin Clients before replacing them:
+
+```mermaid
+flowchart LR
+    Existing["Existing unprefixed Event admin Client"] --> Retain["Keep the existing Client, Keycloak identity, and assigned roles"]
+    Retain --> Migrate["Migrate externally"]
+    Migrate --> Replace["Replace with a prefixed Client"]
+```
+
+IdentityProviders share a leader-election group only when their admin URLs are identical character for character. Differences in letter case, port, whitespace, or trailing slash create separate groups, even if the URLs reach the same Keycloak instance. Set the same `admin.url` value on each IdentityProvider you want to share.
+
+Zones with the same name on different Keycloak instances also use the same shared rover secret path and receive the same credential. See [Shared Realms and Leader Election](../architecture/identity.mdx#shared-realms-and-leader-election) and [rover client lifecycle](../architecture/admin.mdx#identity-realms-and-the-rover-client).
 
 :::warning Reserved name `shared`
-Do not create an Environment named `shared`. The Admin operator stores the shared rover credentials in the Secret-Manager scope `shared` and, with the Kubernetes backend, in the namespace `shared`. An Environment with this name would share that scope and namespace, and its rover secret references would be treated as shared ones. This name is not rejected by admission, so it must be avoided by convention.
+Do not name an Environment `shared`. That name is reserved for rover credentials used across Environments. Using it for an Environment can cause its rover secret references to be treated as shared credentials. The platform does not prevent this name, so choose another one.
 :::
 
 ### Traffic Types

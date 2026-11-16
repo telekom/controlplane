@@ -292,8 +292,8 @@ var _ = Describe("ZoneServiceConfigHandler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k8smeta.IsStatusConditionFalse(obj.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 
-			By("prefixing the SFTP API client ID with the environment and using it at the gateway")
-			expectedClientID := testEnv + "--sftp-api-test-zsc"
+			By("using the shared SFTP API client ID at the gateway")
+			expectedClientID := "sftp-api-test-zsc"
 			Expect(createdClient.Name).To(Equal("sftp-api-test-zsc"))
 			Expect(createdClient.Spec.ClientId).To(Equal(expectedClientID))
 			Expect(createdConsumer.Spec.Name).To(Equal(expectedClientID))

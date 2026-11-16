@@ -176,6 +176,7 @@ func applyRoverClient(ctx context.Context, hc *HandlingContext, key client.Objec
 
 // migrateRoverSecret moves a rover Client from its legacy environment-scoped secret reference
 // to the shared one. It returns the reference to use and whether it replaces existingRef.
+// TODO: this function can be later deleted once all rover clients have migrated to the shared secret.
 func migrateRoverSecret(ctx context.Context, hc *HandlingContext, existingRef string) (string, bool, error) {
 	path := roverSecretManagerPath(hc.Zone.Name)
 	if !isEnvironmentSecretRef(existingRef, hc.Environment.Name, path) {
@@ -227,6 +228,7 @@ func isEnvironmentSecretRef(ref, envName, path string) bool {
 
 func ensureSharedNamespace(ctx context.Context, kubeClient client.Client) error {
 	namespace := &corev1.Namespace{}
+	// audit:ignore 13-environment-isolation/unscoped-get We need to get the shared namespace to ensure it exists.
 	err := kubeClient.Get(ctx, client.ObjectKey{Name: sharedSecretScope}, namespace)
 	if err == nil {
 		return nil

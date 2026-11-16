@@ -30,6 +30,7 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 const tokenUrlSuffix = "/protocol/openid-connect/token"
@@ -263,9 +264,7 @@ func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, ob
 		return nil, "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, joinErr)
 	}
 
-	// The admin client lives in the internal realm, which Environments on the same Keycloak share.
-	clientID := identityv1.EnvironmentClientId(contextutil.EnvFromContextOrDie(ctx), clientCfg.ClientId)
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientID)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientCfg.Realm.Name == util.RoverRealmName)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to create admin identity Client")
 	}
@@ -302,7 +301,7 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 		return nil, errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
 	}
 
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientCfg.ClientId)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create mesh identity Client")
 	}
@@ -310,13 +309,13 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 	return identityClient, nil
 }
 
-// createIdentityClient creates or updates the identity Client with clientID for the given EventConfig and ClientConfig.
-func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig, clientID string) (*identityv1.Client, error) {
+// createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
+func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig, sharedRoverAdmin bool) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeNameValue(clientID),
+			Name:      labelutil.NormalizeNameValue(clientCfg.ClientId),
 			Namespace: obj.Namespace,
 		},
 	}
@@ -336,17 +335,44 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 		}
 		identityClient.Annotations[identityv1.DisableSecretRotationAnnotation] = "true"
 
+		clientSecret := clientCfg.ClientSecret
+		if sharedRoverAdmin && !config.FeatureSecretManager.IsEnabled() {
+			switch {
+			case identityClient.IsFollower():
+				leader := &identityv1.Client{}
+				leaderRef := identityClient.Status.Leader
+				if err := c.Get(ctx, leaderRef.K8s(), leader); err != nil {
+					if apierrors.IsNotFound(errors.Cause(err)) {
+						return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s is not found", leaderRef.String())
+					}
+					return errors.Wrapf(err, "failed to get rover Event admin Client leader %s", leaderRef.String())
+				}
+				if secretsapi.IsRef(leader.Spec.ClientSecret) {
+					return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has a Secret-Manager reference while Secret-Manager is disabled", leaderRef.String())
+				}
+				if leader.Spec.ClientSecret == "" {
+					return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has no client secret", leaderRef.String())
+				}
+				clientSecret = leader.Spec.ClientSecret
+			case identityClient.Spec.ClientSecret != "":
+				clientSecret = identityClient.Spec.ClientSecret
+			}
+			if secretsapi.IsRef(clientSecret) {
+				return ctrlerrors.BlockedErrorf("rover Event admin Client has a Secret-Manager reference while Secret-Manager is disabled")
+			}
+		}
+
 		identityClient.Spec = identityv1.ClientSpec{
 			Realm:        &clientCfg.Realm,
-			ClientId:     clientID,
-			ClientSecret: clientCfg.ClientSecret,
+			ClientId:     clientCfg.ClientId,
+			ClientSecret: clientSecret,
 		}
 		return nil
 	}
 
 	_, err := c.CreateOrUpdate(ctx, identityClient, mutator)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientID)
+		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientCfg.ClientId)
 	}
 
 	return identityClient, nil
@@ -834,16 +860,6 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 	if err != nil {
 		return nil, err
 	}
-	targetAdminClient := &identityv1.Client{}
-	if targetCfg.Status.AdminClient == nil {
-		return nil, ctrlerrors.BlockedErrorf("target EventConfig %q has no admin Client status", targetCfg.Name)
-	}
-	if err := c.Get(ctx, targetCfg.Status.AdminClient.K8s(), targetAdminClient); err != nil {
-		if apierrors.IsNotFound(errors.Cause(err)) {
-			return nil, ctrlerrors.BlockedErrorf("target admin Client %q not found", targetCfg.Status.AdminClient.String())
-		}
-		return nil, errors.Wrap(err, "failed to get target admin Client")
-	}
 
 	eventStore := &pubsubv1.EventStore{
 		ObjectMeta: metav1.ObjectMeta{
@@ -861,7 +877,7 @@ func (h *EventConfigHandler) createProxyEventStore(ctx context.Context, obj *eve
 			OverwriteEnvironmentName: effectiveEnvironmentName(ctx, obj.Spec.OverwriteEnvironmentName),
 			Url:                      adminCfg.Url,
 			TokenUrl:                 tokenUrl,
-			ClientId:                 targetAdminClient.Spec.ClientId,
+			ClientId:                 adminCfg.Client.ClientId,
 			ClientSecret:             adminCfg.Client.ClientSecret,
 		}
 		return nil

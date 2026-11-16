@@ -34,6 +34,12 @@ type KeycloakClient interface {
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsResponse, error)
 	GetRealmClientsIdWithResponse(ctx context.Context, realm, id string,
 		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsIdResponse, error)
+	GetRealmClientsIdDefaultClientScopesWithResponse(ctx context.Context, realm, id string,
+		reqEditors ...api.RequestEditorFn) (*api.GetRealmClientsIdDefaultClientScopesResponse, error)
+	PutRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm, id, clientScopeId string,
+		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientsIdDefaultClientScopesClientScopeIdResponse, error)
+	DeleteRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(ctx context.Context, realm, id, clientScopeId string,
+		reqEditors ...api.RequestEditorFn) (*api.DeleteRealmClientsIdDefaultClientScopesClientScopeIdResponse, error)
 	PostRealmClientsWithResponse(ctx context.Context, realm string, body api.PostRealmClientsJSONRequestBody,
 		reqEditors ...api.RequestEditorFn) (*api.PostRealmClientsResponse, error)
 	PutRealmClientsIdWithResponse(ctx context.Context, realm, id string, body api.PutRealmClientsIdJSONRequestBody,
@@ -221,10 +227,40 @@ func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName s
 	}
 
 	if existing == nil {
-		return k.createClient(ctx, realmName, client)
+		err = k.createClient(ctx, realmName, client)
+	} else {
+		err = k.updateClient(ctx, realmName, existing, client, opts)
+	}
+	if err != nil {
+		return err
 	}
 
-	return k.updateClient(ctx, realmName, existing, client, opts)
+	return k.reconcileRoverClientClaimsScope(ctx, realmName, client)
+}
+
+func (k *keycloakService) reconcileRoverClientClaimsScope(ctx context.Context, realmName string, client *identityv1.Client) error {
+	if realmName != roverRealmName {
+		return nil
+	}
+
+	_, scopeID, err := k.findManagedClientScope(ctx, realmName)
+	if err != nil {
+		return fmt.Errorf("failed to find managed claims scope: %w", err)
+	}
+	if scopeID == "" {
+		return nil
+	}
+	if client.Status.ClientUid == "" {
+		return fmt.Errorf("client %q has no Keycloak ID for claims-scope assignment", client.Spec.ClientId)
+	}
+
+	return k.reconcileClientScopeAssignment(
+		ctx,
+		realmName,
+		client.Status.ClientUid,
+		scopeID,
+		client.Spec.ClientId != roverClientID,
+	)
 }
 
 func (k *keycloakService) createClient(ctx context.Context, realmName string, client *identityv1.Client) error {

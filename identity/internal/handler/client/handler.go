@@ -305,6 +305,7 @@ func (h *HandlerClient) electLeader(ctx context.Context, realm *identityv1.Realm
 // otherLivePeer reports another live Client that still uses obj's Keycloak client.
 func (h *HandlerClient) otherLivePeer(ctx context.Context, obj *identityv1.Client) (ctrlclient.ObjectKey, bool, error) {
 	realm := &identityv1.Realm{}
+	// audit:ignore 13-environment-isolation/unscoped-get We need to get the shared Realm to determine if another Client is active before deletion.
 	if err := h.PeerReader.Get(ctx, obj.Spec.Realm.K8s(), realm); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrlclient.ObjectKey{}, false, nil

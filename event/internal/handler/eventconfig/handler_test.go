@@ -24,6 +24,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -351,6 +352,65 @@ var _ = Describe("EventConfigHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
+		It("should adopt the leader's inline secret for a rover admin Client when Secret Manager is disabled", func() {
+			secretManagerWasEnabled := config.FeatureSecretManager.IsEnabled()
+			config.SetFeatureEnabled(config.FeatureSecretManager, false)
+			DeferCleanup(func() {
+				config.SetFeatureEnabled(config.FeatureSecretManager, secretManagerWasEnabled)
+			})
+
+			zone := makeReadyZone()
+			roverRealm := makeReadyRealm()
+			roverRealm.Name = "rover"
+			obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{Name: "rover", Namespace: "default"}
+			obj.Spec.Local.Admin.Client.ClientSecret = "local-secret"
+
+			mockScheme()
+			mockGetZone(zone, 1)
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "rover", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*identityv1.Realm) = *roverRealm
+				}).
+				Return(nil).Once()
+			mockGetRealm(makeReadyRealm(), 1)
+
+			var createdAdminClient *identityv1.Client
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					adminClient := obj.(*identityv1.Client)
+					adminClient.Status.Leader = &ctypes.ObjectRef{Name: "leader", Namespace: "default"}
+					Expect(mutate()).To(Succeed())
+					createdAdminClient = adminClient.DeepCopy()
+				}).
+				Return(controllerutil.OperationResultNone, nil).Once()
+			leader := &identityv1.Client{
+				ObjectMeta: metav1.ObjectMeta{Name: "leader", Namespace: "default"},
+				Spec:       identityv1.ClientSpec{ClientSecret: "shared-inline-secret"},
+			}
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "leader", Namespace: "default"}, mock.AnythingOfType("*v1.Client")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*identityv1.Client) = *leader
+				}).
+				Return(nil).Once()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 1)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
+			mockListEventConfigs([]eventv1.EventConfig{}, 3)
+			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
+			fakeClient.EXPECT().AllReady().Return(false).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(createdAdminClient).NotTo(BeNil())
+			Expect(createdAdminClient.Spec.ClientSecret).To(Equal("shared-inline-secret"))
+		})
+
 		It("should return BlockedError when Zone is not found", func() {
 			notFoundErr := apierrors.NewNotFound(
 				schema.GroupResource{Group: "admin.cp.ei.telekom.de", Resource: "zones"},
@@ -446,39 +506,6 @@ var _ = Describe("EventConfigHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create mesh identity Client"))
-		})
-
-		It("prefixes only the admin identity Client ID with the environment", func() {
-			mockRouteRenderingReachable()
-			zone := makeReadyZone()
-			realm := makeReadyRealm()
-			mockGetZone(zone, 1)
-			mockGetRealm(realm, 2)
-			obj.Spec.Local.Admin.Client.ClientId = "eventstore-admin"
-			obj.Spec.Mesh.Client.ClientId = "eventstore-mesh"
-
-			var created []*identityv1.Client
-			captureClient := func(result controllerutil.OperationResult, err error) {
-				fakeClient.EXPECT().
-					CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
-					Run(func(_ context.Context, clientObj client.Object, mutate controllerutil.MutateFn) {
-						Expect(mutate()).To(Succeed())
-						created = append(created, clientObj.(*identityv1.Client).DeepCopy())
-					}).
-					Return(result, err).Once()
-			}
-			captureClient(controllerutil.OperationResultCreated, nil)
-			// The mesh client fails to end the reconcile after both clients were built.
-			captureClient(controllerutil.OperationResultNone, fmt.Errorf("stop after mesh client"))
-
-			err := h.CreateOrUpdate(ctx, obj)
-
-			Expect(err).To(MatchError(ContainSubstring("failed to create mesh identity Client")))
-			Expect(created).To(HaveLen(2))
-			Expect(created[0].Name).To(Equal("test-env--eventstore-admin"))
-			Expect(created[0].Spec.ClientId).To(Equal("test-env--eventstore-admin"))
-			Expect(created[1].Name).To(Equal("eventstore-mesh"))
-			Expect(created[1].Spec.ClientId).To(Equal("eventstore-mesh"))
 		})
 
 		It("should return error when EventStore creation fails", func() {

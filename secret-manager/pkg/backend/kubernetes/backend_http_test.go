@@ -22,34 +22,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-var _ = Describe("Environment secret initialization", Ordered, func() {
+var _ = Describe("Environment secret initialization", func() {
 	var kubeClient client.Client
 	var app *fiber.App
-	var namespace string
 	ctx := context.Background()
 
-	BeforeAll(func() {
-		testEnv := &envtest.Environment{}
-		DeferCleanup(func() {
-			Expect(testEnv.Stop()).To(Succeed())
-		})
-		cfg, err := testEnv.Start()
-		Expect(err).NotTo(HaveOccurred())
-		kubeClient, err = client.New(cfg, client.Options{})
-		Expect(err).NotTo(HaveOccurred())
-
+	BeforeEach(func() {
+		kubeClient = NewMockK8sClient()
 		ctrl := controller.NewController(kubernetes.NewBackend(kubeClient), kubernetes.NewOnboarder(kubeClient))
 		app = fiber.New(fiber.Config{ErrorHandler: handler.ErrorHandler})
 		api.RegisterHandlers(app, api.NewStrictHandler(handler.NewHandler(ctrl), nil))
-	})
-
-	BeforeEach(func() {
-		ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "secret-test-"}}
-		Expect(kubeClient.Create(ctx, ns)).To(Succeed())
-		namespace = ns.Name
 	})
 
 	expectNotFound := func(id kubernetes.Id) {
@@ -70,7 +54,8 @@ var _ = Describe("Environment secret initialization", Ordered, func() {
 	})
 
 	It("returns HTTP 404 before an environment storage Secret exists", func() {
-		id := kubernetes.New(namespace, "", "", "zones/zone-a/admin/rover/clientSecret", "")
+		Expect(kubeClient.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "initialized"}})).To(Succeed())
+		id := kubernetes.New("initialized", "", "", "zones/zone-a/admin/rover/clientSecret", "")
 		expectNotFound(id)
 	})
 

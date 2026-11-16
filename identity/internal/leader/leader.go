@@ -8,8 +8,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"net"
-	"net/url"
 	"slices"
 	"strings"
 
@@ -20,74 +18,36 @@ import (
 )
 
 const (
-	IndexFieldSpecAdminURL         = "spec.normalizedAdminUrl"
+	IndexFieldSpecAdminURL         = "spec.adminUrl"
 	IndexFieldSpecIdentityProvider = "spec.identityProvider"
 	IndexFieldSpecRealm            = "spec.realm"
 )
 
-// NormalizeAdminURL returns a stable key for equivalent Keycloak admin URLs.
-func NormalizeAdminURL(raw string) (string, error) {
-	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil {
-		return "", fmt.Errorf("parsing Keycloak admin URL: %w", err)
-	}
-	if u.Scheme == "" || u.Hostname() == "" {
-		return "", fmt.Errorf("admin URL %q must have a scheme and host", raw)
-	}
-
-	u.Scheme = strings.ToLower(u.Scheme)
-	host := strings.ToLower(u.Hostname())
-	port := u.Port()
-	if (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
-		port = ""
-	}
-	switch {
-	case port != "":
-		u.Host = net.JoinHostPort(host, port)
-	case strings.Contains(host, ":"):
-		u.Host = "[" + host + "]"
-	default:
-		u.Host = host
-	}
-	u.Path = strings.TrimRight(u.Path, "/")
-	u.RawPath = ""
-	return u.String(), nil
-}
-
-// AdminURLIndexValue extracts the normalized admin URL of an IdentityProvider for the field index.
+// AdminURLIndexValue extracts the admin URL of an IdentityProvider for the field index.
 func AdminURLIndexValue(obj client.Object) []string {
 	idp, ok := obj.(*identityv1.IdentityProvider)
 	if !ok {
 		return nil
 	}
-	normalized, err := NormalizeAdminURL(idp.Spec.AdminUrl)
-	if err != nil {
+	if idp.Spec.AdminUrl == "" {
 		return nil
 	}
-	return []string{normalized}
+	return []string{idp.Spec.AdminUrl}
 }
 
-// RegisterAdminURLIndex installs the normalized IdentityProvider URL index.
+// RegisterAdminURLIndex installs the IdentityProvider URL index.
 func RegisterAdminURLIndex(ctx context.Context, indexer client.FieldIndexer) error {
 	return indexer.IndexField(ctx, &identityv1.IdentityProvider{}, IndexFieldSpecAdminURL, AdminURLIndexValue)
 }
 
 // RealmsForAdminURL returns live realms attached to any IdentityProvider using the same URL.
 func RealmsForAdminURL(ctx context.Context, reader client.Reader, idp *identityv1.IdentityProvider) ([]identityv1.Realm, error) {
-	normalized, err := NormalizeAdminURL(idp.Spec.AdminUrl)
-	if err != nil {
-		return nil, err
-	}
-	return liveRealmsForAdminURL(ctx, reader, normalized, "", types.ObjectRefFromObject(idp).String())
+	return liveRealmsForAdminURL(ctx, reader, idp.Spec.AdminUrl, "", types.ObjectRefFromObject(idp).String())
 }
 
 // RealmPeers returns the live members of a realm's leader-election group.
 func RealmPeers(ctx context.Context, reader client.Reader, realm *identityv1.Realm, idp *identityv1.IdentityProvider) ([]identityv1.Realm, error) {
-	normalized, err := NormalizeAdminURL(idp.Spec.AdminUrl)
-	if err != nil {
-		return nil, err
-	}
-	peers, err := liveRealmsForAdminURL(ctx, reader, normalized, realm.Name, types.ObjectRefFromObject(idp).String())
+	peers, err := liveRealmsForAdminURL(ctx, reader, idp.Spec.AdminUrl, realm.Name, types.ObjectRefFromObject(idp).String())
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +60,7 @@ func RealmPeersForRealm(ctx context.Context, reader client.Reader, realm *identi
 	peers := make([]identityv1.Realm, 0)
 	if realm.Spec.IdentityProvider != nil {
 		idp := &identityv1.IdentityProvider{}
+		// audit:ignore 13-environment-isolation/unscoped-get We need to get the IdentityProvider to determine leadership.
 		err := reader.Get(ctx, realm.Spec.IdentityProvider.K8s(), idp)
 		switch {
 		case err == nil:
@@ -114,11 +75,7 @@ func RealmPeersForRealm(ctx context.Context, reader client.Reader, realm *identi
 	}
 
 	if realm.Status.AdminUrl != "" {
-		normalized, err := NormalizeAdminURL(realm.Status.AdminUrl)
-		if err != nil {
-			return nil, err
-		}
-		previousPeers, err := liveRealmsForAdminURL(ctx, reader, normalized, realm.Name)
+		previousPeers, err := liveRealmsForAdminURL(ctx, reader, realm.Status.AdminUrl, realm.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -134,6 +91,7 @@ func ClientsForRealmGroup(ctx context.Context, reader client.Reader, realms []id
 	for i := range groupRealms {
 		ref := types.ObjectRefFromObject(&groupRealms[i]).String()
 		clients := &identityv1.ClientList{}
+		// audit:ignore 13-environment-isolation/unscoped-list We need to list all clients for the given realm to determine leadership.
 		if err := reader.List(ctx, clients, client.MatchingFields{IndexFieldSpecRealm: ref}); err != nil {
 			return nil, fmt.Errorf("listing Clients for Realm %s: %w", ref, err)
 		}
@@ -183,12 +141,13 @@ func compareCandidates(a, b client.Object) int {
 	)
 }
 
-// liveRealmsForAdminURL lists live realms of every IdentityProvider with the normalized admin URL
+// liveRealmsForAdminURL lists live realms of every IdentityProvider with the admin URL
 // and of extraIdpRefs. An empty realmName matches all realms.
-func liveRealmsForAdminURL(ctx context.Context, reader client.Reader, normalizedURL, realmName string, extraIdpRefs ...string) ([]identityv1.Realm, error) {
+func liveRealmsForAdminURL(ctx context.Context, reader client.Reader, adminURL, realmName string, extraIdpRefs ...string) ([]identityv1.Realm, error) {
 	idps := &identityv1.IdentityProviderList{}
-	if err := reader.List(ctx, idps, client.MatchingFields{IndexFieldSpecAdminURL: normalizedURL}); err != nil {
-		return nil, fmt.Errorf("listing IdentityProviders for admin URL %q: %w", normalizedURL, err)
+	// Shared Keycloak realms need one leader across all environments using this admin URL.
+	if err := reader.List(ctx, idps, client.MatchingFields{IndexFieldSpecAdminURL: adminURL}); err != nil {
+		return nil, fmt.Errorf("listing IdentityProviders for admin URL %q: %w", adminURL, err)
 	}
 	idpRefs := slices.Clone(extraIdpRefs)
 	for i := range idps.Items {

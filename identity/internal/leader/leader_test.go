@@ -27,21 +27,16 @@ func TestLeader(t *testing.T) {
 }
 
 var _ = Describe("leader election", func() {
-	It("normalizes equivalent admin URLs", func() {
-		normalized, err := NormalizeAdminURL(" HTTPS://KEYCLOAK.EXAMPLE.COM:443/auth/admin/realms/ ")
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(normalized).To(Equal("https://keycloak.example.com/auth/admin/realms"))
-	})
-
-	It("groups realms by normalized admin URL and realm name", func() {
-		idpA := identityProvider("env-a", "idp", "https://KEYCLOAK.example.com:443/auth/")
+	It("groups realms by exact admin URL and realm name", func() {
+		idpA := identityProvider("env-a", "idp", "https://keycloak.example.com/auth")
 		idpB := identityProvider("env-b", "idp", "https://keycloak.example.com/auth")
-		idpOther := identityProvider("env-c", "idp", "https://other.example.com/auth")
+		idpVariant := identityProvider("env-c", "idp", "https://KEYCLOAK.example.com:443/auth/")
+		idpOther := identityProvider("env-d", "idp", "https://other.example.com/auth")
 		realmA := realm("env-a--zone-a", idpA, time.Unix(1, 0))
 		realmB := realm("env-b--zone-b", idpB, time.Unix(2, 0))
-		realmOther := realm("env-c--zone-c", idpOther, time.Unix(0, 0))
-		reader := indexedReader(idpA, idpB, idpOther, realmA, realmB, realmOther)
+		realmVariant := realm("env-c--zone-c", idpVariant, time.Unix(0, 0))
+		realmOther := realm("env-d--zone-d", idpOther, time.Unix(0, 0))
+		reader := indexedReader(idpA, idpB, idpVariant, idpOther, realmA, realmB, realmVariant, realmOther)
 
 		peers, err := RealmPeers(context.Background(), reader, realmA, idpA)
 
@@ -96,7 +91,7 @@ var _ = Describe("leader election", func() {
 		idpNew := identityProvider("env-b", "idp", "https://new.example.com/auth")
 		oldPeer := realm("env-a--zone", idpOld, time.Unix(0, 0))
 		moved := realm("env-b--zone", idpNew, time.Unix(1, 0))
-		moved.Status.AdminUrl = "https://OLD.example.com:443/auth/"
+		moved.Status.AdminUrl = "https://old.example.com/auth"
 		reader := indexedReader(idpOld, idpNew, oldPeer, moved)
 
 		peers, err := RealmPeersForRealm(context.Background(), reader, moved)

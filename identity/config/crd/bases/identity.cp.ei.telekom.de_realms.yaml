@@ -83,15 +83,15 @@ spec:
                   rule: self.all(k, size(k) > 0)
               claims:
                 description: |-
-                  Claims defines claims that are added to all tokens issued for
-                  clients in this realm. Each claim can be a static value
-                  (HardcodedClaim) or derived from a Keycloak session note
-                  (SessionNote). The controller manages a dedicated Keycloak
-                  client scope with protocol mappers for each claim.
+                  Claims defines claims that are added to tokens issued for clients in
+                  this realm, except for the "rover" client in the "rover" realm. Each
+                  claim can be a static value (HardcodedClaim) or derived from a
+                  Keycloak session note (SessionNote). The controller manages a dedicated
+                  Keycloak client scope with protocol mappers for each claim.
                 items:
                   description: |-
-                    ClaimConfig defines a claim that is added to all tokens issued for
-                    clients in this realm.
+                    ClaimConfig defines a claim that is added to tokens issued for clients in
+                    this realm. Claims in the "rover" realm are not added to the "rover" client.
                   properties:
                     name:
                       description: Name is the claim name as it appears in the token
@@ -109,7 +109,7 @@ spec:
                       type: string
                     value:
                       description: |-
-                        Value is the static claim value written into every token.
+                        Value is the static claim value written into tokens for applicable clients.
                         Only used for HardcodedClaim; ignored for SessionNote (which
                         reads the value from the Keycloak session note keyed by Name).
                       type: string
