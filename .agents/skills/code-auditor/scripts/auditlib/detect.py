@@ -16,11 +16,13 @@ import re
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .changeset import ChangedFile
+from .prompt import context_budget
 from .rules import Matcher, Rule
+
 
 @dataclass(frozen=True)
 class Candidate:
@@ -77,13 +79,125 @@ def render_context(
     The marker matters: without it a model reading a whole file has no way to
     tell the work under review from the code that was already there.
     """
-    start = max(1, line - radius)
-    end = min(len(lines), line + radius)
+    return render_range(lines, max(1, line - radius), min(len(lines), line + radius), changed)
+
+
+def render_range(lines: list[str], start: int, end: int, changed: frozenset[int]) -> str:
+    """Render lines ``start..end`` (1-based, inclusive), numbered and marked."""
     width = len(str(end))
     return "\n".join(
         f"{'>' if number in changed else ' '}{number:>{width}} | {lines[number - 1]}"
         for number in range(start, end + 1)
     )
+
+
+def truncation_note(start: int, end: int, total: int) -> str:
+    return (
+        f"[truncated: showing lines {start}-{end} of {total}. "
+        "Read other lines with the viewer's --file and --lines options.]"
+    )
+
+
+def fit_ranges(
+    lines: list[str],
+    start: int,
+    end: int,
+    changed: frozenset[int],
+    budget: int,
+    anchor: int | None = None,
+) -> list[tuple[int, int, str]]:
+    """Fit lines ``start..end`` into ``budget`` bytes as contiguous ranges.
+
+    The range is returned unchanged when it fits. Otherwise it is cut to one
+    contiguous range around the changed lines it contains and ``anchor``, grown towards both
+    ends until the budget is full - near the top of a file that is simply
+    lines 1 to n. If the changed lines alone do not fit, they are split into
+    consecutive runs, one range each, so every changed line reaches a judge.
+
+    A truncated range starts with a note naming the lines shown and the file's
+    length, so the judge knows what it has not seen and can read it.
+    Returns ``(first, last, context)`` per range.
+    """
+    full = render_range(lines, start, end, changed)
+    if _fits(full, budget):
+        return [(start, end, full)]
+
+    total = len(lines)
+    width = len(str(total))
+    note = len(truncation_note(total, total, total).encode("utf-8")) + 1
+    cost = [
+        len(f"{'>'}{n:>{width}} | {lines[n - 1]}".encode("utf-8")) + 1
+        for n in range(1, total + 1)
+    ]
+
+    def size(first: int, last: int) -> int:
+        return note + sum(cost[first - 1:last])
+
+    required = sorted(
+        {n for n in range(start, end + 1) if n in changed}
+        | ({anchor} if anchor and start <= anchor <= end else set())
+    ) or [start]
+    runs: list[list[int]] = []
+    for number in required:
+        if runs and size(runs[-1][0], number) <= budget:
+            runs[-1].append(number)
+        else:
+            runs.append([number])
+
+    out = []
+    for run in runs:
+        first, last = run[0], run[-1]
+        used = size(first, last)
+        while True:
+            grew = False
+            if first > start and used + cost[first - 2] <= budget:
+                first -= 1
+                used += cost[first - 1]
+                grew = True
+            if last < end and used + cost[last] <= budget:
+                last += 1
+                used += cost[last - 1]
+                grew = True
+            if not grew:
+                break
+        text = render_range(lines, first, last, changed)
+        out.append((first, last, f"{truncation_note(first, last, total)}\n{text}"))
+    return out
+
+
+def _fits(text: str, budget: int) -> bool:
+    return len(text.encode("utf-8")) <= budget
+
+
+def _candidates_for(
+    candidate: Candidate,
+    lines: list[str],
+    start: int,
+    end: int,
+    changed: frozenset[int],
+    budget: int,
+) -> list[Candidate]:
+    """The candidate with its fitted context; one per range when it splits."""
+    start, end = max(1, start), min(len(lines), end)
+    if not lines or start > end:
+        return [candidate]
+    ranges = fit_ranges(lines, start, end, changed, budget, anchor=candidate.line)
+    if len(ranges) == 1:
+        return [replace(candidate, context=ranges[0][2])]
+    split = []
+    for index, (first, last, context) in enumerate(ranges, start=1):
+        line = candidate.line if first <= candidate.line <= last else next(
+            (n for n in range(first, last + 1) if n in changed), first
+        )
+        note = f"part {index} of {len(ranges)}: lines {first}-{last}"
+        split.append(replace(
+            candidate,
+            line=line,
+            anchor=candidate.anchor if line == candidate.line else lines[line - 1].strip(),
+            context=context,
+            detail=f"{candidate.detail}; {note}" if candidate.detail else note,
+        ))
+    return split
 
 
 def _scan_lines(rule: Rule, file: ChangedFile, total: int):
@@ -102,7 +216,9 @@ def _scan_lines(rule: Rule, file: ChangedFile, total: int):
     return file.touched_lines
 
 
-def _regex_candidates(rule: Rule, file: ChangedFile, content: str) -> list[Candidate]:
+def _regex_candidates(
+    rule: Rule, file: ChangedFile, content: str, budget: int
+) -> list[Candidate]:
     pattern = re.compile(rule.detector.pattern)
     lines = content.splitlines()
     changed = frozenset(file.touched_lines)
@@ -120,7 +236,7 @@ def _regex_candidates(rule: Rule, file: ChangedFile, content: str) -> list[Candi
                 file=file.path,
                 line=number,
                 anchor=text.strip(),
-                context=render_context(lines, number, rule.context_lines, changed),
+                context="",
             )
         )
 
@@ -130,23 +246,27 @@ def _regex_candidates(rule: Rule, file: ChangedFile, content: str) -> list[Candi
         # review rather than on whatever matched first in the file.
         head = next((c for c in found if c.line in changed), found[0])
         extra = ", ".join(f"line {c.line}" for c in found if c is not head)
-        return [
-            Candidate(
-                rule_id=rule.id,
-                file=file.path,
-                line=head.line,
-                anchor=head.anchor,
-                context=render_context(
-                    lines, 1, len(lines), changed
-                ),
-                detail=f"also matched at {extra}" if extra else "",
-            )
-        ]
-    return found
+        candidate = Candidate(
+            rule_id=rule.id,
+            file=file.path,
+            line=head.line,
+            anchor=head.anchor,
+            context="",
+            detail=f"also matched at {extra}" if extra else "",
+        )
+        return _candidates_for(candidate, lines, 1, len(lines), changed, budget)
+    radius = rule.context_lines
+    return [
+        part
+        for c in found
+        for part in _candidates_for(
+            c, lines, c.line - radius, c.line + radius, changed, budget
+        )
+    ]
 
 
 def _tool_candidates(
-    rule: Rule, files: list[ChangedFile], root: Path, contents: dict[str, str]
+    rule: Rule, files: list[ChangedFile], root: Path, contents: dict[str, str], budget: int
 ) -> list[Candidate]:
     argv = shlex.split(rule.detector.command)
     if not argv:
@@ -254,45 +374,46 @@ def _tool_candidates(
         if number not in changed and eligible.intersection(changed):
             number = min(eligible.intersection(changed))
         anchor = body[number - 1].strip() if 0 < number <= len(body) else ""
-        candidates.append(
-            Candidate(
-                rule_id=rule.id,
-                file=path,
-                line=number,
-                anchor=anchor,
-                context=render_context(body, number, rule.context_lines, changed)
-                if body
-                else "",
-                detail=detail,
-                span=(span_value[0], span_value[1]) if span_value else None,
+        candidate = Candidate(
+            rule_id=rule.id,
+            file=path,
+            line=number,
+            anchor=anchor,
+            context="",
+            detail=detail,
+            span=(span_value[0], span_value[1]) if span_value else None,
+        )
+        first, last = span_value or (number, number)
+        candidates.extend(
+            _candidates_for(
+                candidate,
+                body,
+                first - rule.context_lines,
+                last + rule.context_lines,
+                changed,
+                budget,
             )
         )
     return candidates
 
 
 def _whole_file_candidates(
-    rule: Rule, file: ChangedFile, content: str
+    rule: Rule, file: ChangedFile, content: str, budget: int
 ) -> list[Candidate]:
     lines = content.splitlines()
     if not lines:
         return []
     changed = frozenset(file.touched_lines)
     anchor_line = min(changed) if changed else 1
-    width = len(str(len(lines)))
-    numbered = "\n".join(
-        f"{'>' if number in changed else ' '}{number:>{width}} | {text}"
-        for number, text in enumerate(lines, start=1)
+    candidate = Candidate(
+        rule_id=rule.id,
+        file=file.path,
+        line=anchor_line,
+        anchor=f"{file.path}:{hashlib.sha256(content.encode('utf-8')).hexdigest()[:16]}",
+        context="",
+        detail=f"{len(changed)} changed line(s), marked '>' in the context",
     )
-    return [
-        Candidate(
-            rule_id=rule.id,
-            file=file.path,
-            line=anchor_line,
-            anchor=f"{file.path}:{hashlib.sha256(content.encode('utf-8')).hexdigest()[:16]}",
-            context=numbered,
-            detail=f"{len(changed)} changed line(s), marked '>' in the context",
-        )
-    ]
+    return _candidates_for(candidate, lines, 1, len(lines), changed, budget)
 
 
 def applicable_files(rule: Rule, files: list[ChangedFile]) -> list[ChangedFile]:
@@ -325,20 +446,21 @@ def run(
     scoped = applicable_files(rule, files)
     if not scoped:
         return []
+    budget = context_budget(rule)
 
     if rule.detector is None:
         candidates: list[Candidate] = []
         for file in scoped:
             candidates.extend(
-                _whole_file_candidates(rule, file, contents.get(file.path, ""))
+                _whole_file_candidates(rule, file, contents.get(file.path, ""), budget)
             )
     elif rule.detector.kind == "tool":
-        candidates = _tool_candidates(rule, scoped, root, contents)
+        candidates = _tool_candidates(rule, scoped, root, contents, budget)
     else:
         candidates = []
         for file in scoped:
             candidates.extend(
-                _regex_candidates(rule, file, contents.get(file.path, ""))
+                _regex_candidates(rule, file, contents.get(file.path, ""), budget)
             )
 
     return sorted(candidates, key=lambda c: (c.file, c.line, c.anchor))

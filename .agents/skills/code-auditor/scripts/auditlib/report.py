@@ -10,6 +10,7 @@ import hashlib
 from dataclasses import asdict, dataclass, field
 
 from . import SCHEMA_VERSION, SEVERITIES
+from .prompt import MAX_UNIT_BYTES, unit_bytes
 
 #: Work units are packed by *candidate*, because every check of one candidate
 #: shares the same frozen context. Packing by item instead would re-send that
@@ -20,6 +21,8 @@ CANDIDATES_PER_UNIT = {"CRITICAL": 2, "HIGH": 4, "LOW": 10}
 #: vary less, so the dial is set by severity: be precise where a wrong answer
 #: is expensive. A rule with many checks hits this cap before the other one.
 MAX_ITEMS_PER_UNIT = {"CRITICAL": 8, "HIGH": 20, "LOW": 40}
+
+#: Third cap, on the rendered size: see ``prompt.MAX_UNIT_BYTES``.
 
 SEVERITY_RANK = {name: rank for rank, name in enumerate(SEVERITIES)}
 
@@ -71,16 +74,23 @@ class WorkUnit:
     severity: str
     candidates: int = 0
     item_ids: list[str] = field(default_factory=list)
+    bytes: int = 0
 
 
-def build_work_units(items: list[Item]) -> list[WorkUnit]:
+def build_work_units(
+    items: list[Item], rule_prompts: dict[str, dict] | None = None
+) -> list[WorkUnit]:
     """Group pending items rule-major and candidate-major, then pack.
 
     Rule-major keeps one rule's criteria per prompt (no cross-rule
     contamination) and amortises the rule text. Candidate-major keeps every
     check about one snippet together, so its frozen context is sent once.
 
-    Packing order is (file, line, candidate id) and both caps are fixed, so
+    With ``rule_prompts`` a unit is also closed before its rendered prompt
+    would exceed ``MAX_UNIT_BYTES``; a single candidate that alone exceeds it
+    still gets a unit of its own, and ``bytes`` shows it.
+
+    Packing order is (file, line, candidate id) and every cap is fixed, so
     the same change always produces byte-identical prompts.
     """
     pending = [i for i in items if i.status == "pending"]
@@ -103,6 +113,15 @@ def build_work_units(items: list[Item]) -> list[WorkUnit]:
         bucket_candidates = 0
         index = 0
 
+        prompt = (rule_prompts or {}).get(rule_id)
+
+        def size(bucket_items: list[Item]) -> int:
+            if prompt is None:
+                return 0
+            return unit_bytes(
+                f"{rule_id}#{index:03d}", prompt, [asdict(i) for i in bucket_items]
+            )
+
         def flush():
             nonlocal bucket, bucket_candidates, index
             if not bucket:
@@ -114,6 +133,7 @@ def build_work_units(items: list[Item]) -> list[WorkUnit]:
                     severity=severity,
                     candidates=bucket_candidates,
                     item_ids=[i.item_id for i in bucket],
+                    bytes=size(bucket),
                 )
             )
             index += 1
@@ -123,7 +143,11 @@ def build_work_units(items: list[Item]) -> list[WorkUnit]:
             group = sorted(candidates[cid], key=lambda i: i.check_id)
             too_many_candidates = bucket_candidates + 1 > max_candidates
             too_many_items = len(bucket) + len(group) > max_items
-            if bucket and (too_many_candidates or too_many_items):
+            too_large = (
+                bool(bucket) and prompt is not None
+                and size(bucket + group) > MAX_UNIT_BYTES
+            )
+            if bucket and (too_many_candidates or too_many_items or too_large):
                 flush()
             bucket.extend(group)
             bucket_candidates += 1

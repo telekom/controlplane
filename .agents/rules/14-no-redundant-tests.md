@@ -37,9 +37,9 @@ A body that is identical except for the function name and literals is still
 a copy, even if the function differs: it belongs in one table.
 
 Only judge the tests the change adds or modifies, compared with the rest of
-the file. Decide from the context you are shown: if it contains no equivalent
-test, or no test of a different scope, answer `PASS` — do not answer
-`UNCLEAR` because such a test *might* exist outside the window.
+the file. The detail names the line of the near-twin; if the context does not
+show it, read it with the viewer's `--lines` before answering. Do not answer
+`UNCLEAR` because some other test *might* exist elsewhere in the file.
 
 ## Detect
 

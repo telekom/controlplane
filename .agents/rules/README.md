@@ -52,7 +52,15 @@ They are orthogonal and both matter.
 
 `scope` is how much of a file one candidate covers. `line` makes every match
 its own candidate (one typo, one finding). `file` collapses a file's matches
-into a single candidate judged as a whole.
+into a single candidate judged as a whole. A file whose full text does not fit
+the work-unit budget (`prompt.MAX_UNIT_BYTES`) is shown as one contiguous
+range around the changed lines instead, grown in both directions until the
+budget is full (near the top of a file that is lines 1 to n). The context then starts with a `[truncated: showing lines A-B of N]`
+note, and the judge can read other lines from the same frozen snapshot with
+the viewer's `--file`/`--lines`. When the changed lines alone exceed the
+budget, the candidate is split into parts that each show a consecutive run
+of them (`part 1 of 3: lines 1-410` in the detail), so every changed line
+still reaches a judge.
 
 `report_scope` is which lines are allowed to produce a finding:
 
@@ -73,7 +81,8 @@ into a single candidate judged as a whole.
 For judgments with `report_scope: changed`, `report_radius` controls how far
 evidence may sit from a touched line. Set it to `0` for marked-lines-only
 checks such as `04-over-technical-docs`. This is independent of the context
-shown to the judge: `scope: file` still supplies the complete file.
+shown to the judge: `scope: file` still supplies the complete file when it
+fits the work-unit budget.
 
 Findings outside the change are not discarded: they are reported as
 **advisory** and excluded from the gate.
@@ -82,7 +91,9 @@ Deletion boundaries are marked as touched. Judgment detectors also discover
 existing triggers within `context_lines` of a touched line; this catches
 removed guards or labels without scanning unrelated distant code. Evidence
 in that affected window may block. `scope: file` supplies the complete file
-to the judge rather than discarding distant matches after the first window.
+to the judge (or the truncated range above, which lists the distant matches
+under "also matched at" for the judge to read) rather than discarding distant
+matches after the first window.
 Tool detectors can append `[audit-span=START-END]` to a finding to associate
 a declaration with its comments; edits anywhere in that span count.
 
@@ -112,6 +123,8 @@ output_format: jsonl
 For `output_lines`, use `output_format: jsonl`: each output line is a JSON
 object with `file` (exact input path), `line` (positive integer) and `detail`
 (string), optionally `span: [start, end]` for declaration/comment coverage.
+The judge is shown the span (or the line) with `context_lines` around it,
+truncated the same way as `scope: file` when that exceeds the budget.
 JSON escaping preserves filenames containing colons, whitespace or newlines.
 Built-in detectors use this format. The spelling adapter feeds each file's
 bytes to codespell through stdin and attaches its original path to each result.
