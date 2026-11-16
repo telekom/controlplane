@@ -48,6 +48,7 @@ gateway/pkg/kong/legacy/testdata/java-routes/bond-api.yaml
 event/internal/handler/util/naming.go
   s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 27
   s_ce9ed7dc1f80ce::t_26f08de7e7962f 26,28,48,63,73,81
+  s_0ca82193f57e20::t_12ac710b51851d 53
 docs/docs/architecture/gateway.mdx
   s_ce9ed7dc1f80ce::t_72a32b62d0dfe9 172,193,207,261,266,309,312
 gateway/cmd/main.go
@@ -79,6 +80,14 @@ gateway/pkg/kong/client/route.go
   "base_commit_sha": "a82dd83c61703c19d9cc5807bc560c51b6df3bd6",
   "prompts": {},
   "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
     "s_6b83d9878a89bf": {
       "agent_id": {
         "tool": "opencode",
