@@ -18,6 +18,7 @@ gateway/internal/features/feature/circuit_breaker_test.go
   s_5d2034fbf81423::t_000d6bcc68043b 84
   s_5d2034fbf81423::t_e6c0aea7ea7e07 19
   s_5d2034fbf81423::t_4c050886321f91 57,60-63,73-74,82,85,88,90-93,96-101,105-107,109-110,112,116,118-120,123,128-132
+  s_0ca82193f57e20::t_10d80016d4d3c5 21,32,39-45,48-50,54-56,58-59,64-72,75-77,83,87,94-95,102-104,108,113-114,121-122,124-127,135,137,139,141-142,144-145,150,155-160,162,166-172,181-221
 gateway/pkg/kong/legacy/testdata/java-routes/default-api.yaml
   s_5d2034fbf81423::t_b21ec87f978d80 1-12,14-19,21-40
   s_5d2034fbf81423::t_49eb04ebfbfd00 13,20
@@ -26,11 +27,13 @@ gateway/pkg/kong/client/plugin/rtp.go
   s_5d2034fbf81423::t_86f5cd3600ae69 138-146
 gateway/pkg/kongutil/client_factory.go
   s_5d2034fbf81423::t_444e8dce29be60 23,78,81-84,85-86
+  s_0ca82193f57e20::t_10d80016d4d3c5 12,71-77,79-80,159-162
 gateway/pkg/kong/client/upstream.go
   s_5d2034fbf81423::t_29dd38bbef05c3 121,126
   s_5d2034fbf81423::t_ee971017406219 57,61,74-75,78,118-120,122-125,127-133,137-139,141,144,146-149
   s_5d2034fbf81423::t_fc6305b5b470ee 18-36,38,41,45,47-56,58-60,62-63,72-73,79-81,89-90,92-109,111-114,136
   s_e09ac076ea69d6::t_ae3d26f573d98e 142
+  s_0ca82193f57e20::t_10d80016d4d3c5 110,140,143,145,362-363
 gateway/internal/features/mock/mock_FeaturesBuilder.go
   s_5d2034fbf81423::t_528c51aa893582 602-648
 docs/design/gateway-realm.md
@@ -68,9 +71,11 @@ gateway/pkg/kong/client/plugin/util.go
   s_5d2034fbf81423::t_86f5cd3600ae69 8,19-33
 gateway/api/v1/gateway_types.go
   s_5d2034fbf81423::t_f96e7926041a72 35-42
+  s_0ca82193f57e20::t_10d80016d4d3c5 28-29,43
 gateway/internal/controller/route_controller.go
   s_e09ac076ea69d6::t_af294881e122d7 131
   s_5d2034fbf81423::t_b54bca90595b53 10-11,19,21,27,68-70,96-130
+  s_0ca82193f57e20::t_10d80016d4d3c5 132
 gateway/pkg/kong/client/plugin/jwt.go
   s_e09ac076ea69d6::t_af294881e122d7 94
   s_5d2034fbf81423::t_86f5cd3600ae69 85-93
@@ -280,6 +285,7 @@ gateway/internal/features/feature/circuit_breaker.go
   s_5d2034fbf81423::t_528c51aa893582 46-48,56,59,72-73,75-76,79-82,85,103-104,158-159,161-163
   s_5d2034fbf81423::t_7141aa120c7f03 105,138,142,149,153,166-169,171
   s_e09ac076ea69d6::t_c988085ead63f0 165
+  s_0ca82193f57e20::t_10d80016d4d3c5 83,97,100,160
 gateway/pkg/kong/client/plugin_helpers_test.go
   s_5d2034fbf81423::t_74d41e618bdf8f 165,169-187
   s_5d2034fbf81423::t_6216f4d4e8a483 166-168
@@ -298,6 +304,14 @@ gateway/pkg/kong/client/plugin.go
     }
   },
   "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
     "s_2e9e32cf75d013": {
       "agent_id": {
         "tool": "opencode",
