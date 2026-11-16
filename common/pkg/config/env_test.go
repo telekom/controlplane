@@ -22,6 +22,7 @@ var _ = Describe("Config Env Tests", func() {
 		origJitterFactor            float64
 		origMaxBackoff              time.Duration
 		origMaxConcurrentReconciles int
+		origCacheSyncTimeout        time.Duration
 
 		oldEnv map[string]string
 	)
@@ -33,6 +34,7 @@ var _ = Describe("Config Env Tests", func() {
 		origJitterFactor = JitterFactor
 		origMaxBackoff = MaxBackoff
 		origMaxConcurrentReconciles = MaxConcurrentReconciles
+		origCacheSyncTimeout = CacheSyncTimeout
 
 		// Reset viper for each test
 		viper.Reset()
@@ -47,6 +49,7 @@ var _ = Describe("Config Env Tests", func() {
 		JitterFactor = origJitterFactor
 		MaxBackoff = origMaxBackoff
 		MaxConcurrentReconciles = origMaxConcurrentReconciles
+		CacheSyncTimeout = origCacheSyncTimeout
 		viper.Reset()
 	})
 
@@ -98,6 +101,8 @@ var _ = Describe("Config Env Tests", func() {
 			Expect(JitterFactor).To(Equal(origJitterFactor))
 			Expect(MaxBackoff).To(Equal(origMaxBackoff))
 			Expect(MaxConcurrentReconciles).To(Equal(origMaxConcurrentReconciles))
+			Expect(CacheSyncTimeout).To(Equal(origCacheSyncTimeout))
+			Expect(CacheSyncTimeout).To(Equal(2 * time.Minute))
 		})
 
 		It("should load values from environment variables", func() {
@@ -108,6 +113,7 @@ var _ = Describe("Config Env Tests", func() {
 				"JITTER_FACTOR":             "0.6",
 				"MAX_BACKOFF":               "4m",
 				"MAX_CONCURRENT_RECONCILES": "7",
+				"CACHE_SYNC_TIMEOUT":        "5m",
 			}
 
 			// Initialize with environment variables
@@ -119,6 +125,7 @@ var _ = Describe("Config Env Tests", func() {
 			Expect(JitterFactor).To(Equal(0.6))
 			Expect(MaxBackoff).To(Equal(4 * time.Minute))
 			Expect(MaxConcurrentReconciles).To(Equal(7))
+			Expect(CacheSyncTimeout).To(Equal(5 * time.Minute))
 
 			cleanUpEnv(envVars)
 		})

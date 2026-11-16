@@ -231,6 +231,7 @@ The Common library uses [Viper](https://github.com/spf13/viper) for configuratio
 | `requeue-after-on-error` | `REQUEUE_AFTER_ON_ERROR` | `1s` | Requeue interval after a retryable error |
 | `jitter-factor` | `JITTER_FACTOR` | `0.7` | Randomisation factor applied to requeue intervals to avoid thundering herds |
 | `max-concurrent-reconciles` | `MAX_CONCURRENT_RECONCILES` | `10` | Maximum number of concurrent reconciliations per controller |
+| `cache-sync-timeout` | `CACHE_SYNC_TIMEOUT` | `2m` | Maximum time a controller waits for its watch caches to sync at startup before failing; applied to every operator's manager |
 
 ## Testing
 
