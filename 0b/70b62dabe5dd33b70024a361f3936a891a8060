@@ -1,0 +1,89 @@
+notification/cmd/main.go
+  s_2d959a2560c1e9::t_8ae1ef2157455e 26
+  s_2d959a2560c1e9::t_f2e10767a02520 19,187
+sftp/cmd/sftp-operator/main.go
+  s_2d959a2560c1e9::t_8ae1ef2157455e 20
+  s_2d959a2560c1e9::t_f2e10767a02520 86
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 14
+projector/internal/bootstrap/bootstrap.go
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 225
+  s_2d959a2560c1e9::t_f2e10767a02520 29,224
+common/pkg/controller/predicates_test.go
+  s_5b62afb56773f7::t_6a77ac07365716 28-43
+  s_5b62afb56773f7::t_9193dfe1695d06 8
+permission/cmd/main.go
+  s_2d959a2560c1e9::t_8ae1ef2157455e 20
+  s_2d959a2560c1e9::t_f2e10767a02520 120
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 14
+common/pkg/controller/predicates.go
+  s_5b62afb56773f7::t_8ca8d1eda46255 40-53
+common/pkg/config/config.go
+  s_2d959a2560c1e9::t_f51b5ca5507101 21,45-47,63,78
+api/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 16,25,123
+common/pkg/config/env_test.go
+  s_2d959a2560c1e9::t_f51b5ca5507101 25,37,52,104-105,116,128
+agentic/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 19,135
+application/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 18,29,151
+approval/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 18,29,105
+docs/docs/developer-journey/creating-an-operator.md
+  s_2d959a2560c1e9::t_05ed2d1f25cd88 234
+rover/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 24,163
+api/internal/controller/api_controller.go
+  s_5b62afb56773f7::t_44fbdc7fb51fad 54
+event/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 18,165
+pubsub/cmd/main.go
+  s_2d959a2560c1e9::t_8ae1ef2157455e 22
+  s_2d959a2560c1e9::t_f2e10767a02520 149
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 14
+admin/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 19,155
+file/cmd/file-operator/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 18,137
+identity/cmd/main.go
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 16
+  s_2d959a2560c1e9::t_8ae1ef2157455e 24
+  s_2d959a2560c1e9::t_f2e10767a02520 120
+organization/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 18,27,186
+gateway/cmd/main.go
+  s_2d959a2560c1e9::t_8ae1ef2157455e 28
+  s_2d959a2560c1e9::t_f2e10767a02520 121
+  s_2d959a2560c1e9::t_1863b2f6b78fbe 20
+api/internal/controller/apiexposure_controller.go
+  s_5b62afb56773f7::t_44fbdc7fb51fad 66,70,74,81,85,89
+api/internal/controller/apisubscription_controller.go
+  s_5b62afb56773f7::t_44fbdc7fb51fad 75,79,83,87,91
+spectre/cmd/main.go
+  s_2d959a2560c1e9::t_f2e10767a02520 16,135
+  s_2d959a2560c1e9::t_8ae1ef2157455e 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0b70b62dabe5dd33b70024a361f3936a891a8060",
+  "prompts": {},
+  "sessions": {
+    "s_2d959a2560c1e9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "3375f37f-c902-4468-9a1f-ae644839d69b",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_5b62afb56773f7": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "8d05478f-2a8d-42d4-9f59-a0183fdfcc89",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
