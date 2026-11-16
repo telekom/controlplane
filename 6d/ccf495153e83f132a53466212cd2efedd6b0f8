@@ -1,0 +1,21 @@
+.agents/rules/13-environment-isolation.md
+  s_ea61bf8377c4e2::t_d4dbcd520bb256 154-159
+  s_ea61bf8377c4e2::t_e7c6649520d8bb 3,48-72,81
+  s_ea61bf8377c4e2::t_5d6d41cd16b035 83,112-116,132-153,160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6dccf495153e83f132a53466212cd2efedd6b0f8",
+  "prompts": {},
+  "sessions": {
+    "s_ea61bf8377c4e2": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "354de4bb-d748-4019-b79b-eb1ac42ad31a",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
