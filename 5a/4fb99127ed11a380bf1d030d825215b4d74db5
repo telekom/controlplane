@@ -1,0 +1,39 @@
+event/api/v1/zz_generated.deepcopy.go
+  s_ad55457702a32b::t_9ef5e9885f1c20 209-212
+event/api/v1/eventconfig_types.go
+  s_ad55457702a32b::t_75640627ea8266 150-153
+event/config/crd/bases/event.cp.ei.telekom.de_eventconfigs.yaml
+  s_ad55457702a32b::t_9ef5e9885f1c20 280-297
+docs/docs/architecture/event.mdx
+  s_ad55457702a32b::t_f198d8eafb1552 139
+  s_ad55457702a32b::t_33180a2f721147 143
+  s_ad55457702a32b::t_f7bc462fd765e5 167
+event/internal/handler/eventconfig/handler.go
+  s_ad55457702a32b::t_cc7169fe4694e2 440,481
+  s_ad55457702a32b::t_4fee4d4ab5967c 393
+  s_ad55457702a32b::t_47dfa49ead596c 441,482-488
+event/internal/handler/eventconfig/callback_routes_test.go
+  s_ad55457702a32b::t_b3c287dba1ddeb 198
+  s_ad55457702a32b::t_371d540cac2ece 279,281-330,332-333,335-337
+  s_ad55457702a32b::t_2c353aa5d8dbad 280,331,334
+event/internal/controller/callback_lifecycle_test.go
+  s_ad55457702a32b::t_7e9f1c7c304a8b 211,228
+.agents/auditignore
+  s_ad55457702a32b::t_25d58e4bbe8348 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5a4fb99127ed11a380bf1d030d825215b4d74db5",
+  "prompts": {},
+  "sessions": {
+    "s_ad55457702a32b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d965aadd-bd37-4949-b1ac-9048dc48e32c",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
