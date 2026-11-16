@@ -3,6 +3,7 @@ docs/docs/architecture/admin.mdx
 admin/internal/handler/zone/gateway.go
   s_5d2034fbf81423::t_f856a8998282d5 85,112-118
   s_e09ac076ea69d6::t_4e0ca9006f89b8 119-120
+  s_0ca82193f57e20::t_4606af412203f5 86
 admin/internal/handler/zone/handler_test.go
   s_5d2034fbf81423::t_f856a8998282d5 31-40,102,104
 ---
@@ -12,6 +13,14 @@ admin/internal/handler/zone/handler_test.go
   "base_commit_sha": "86ecf9ed6991f9bbaf2014bbed03d3efe767e386",
   "prompts": {},
   "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
     "s_5d2034fbf81423": {
       "agent_id": {
         "tool": "opencode",
