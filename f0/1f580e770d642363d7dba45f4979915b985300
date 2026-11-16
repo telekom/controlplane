@@ -1,0 +1,41 @@
+spectre/internal/handler/listener_handler_test.go
+  s_cb99cb83df0ea0::t_8bff0eaecdd841 1828
+spectre/internal/handler/util/naming_test.go
+  s_cb99cb83df0ea0::t_8bff0eaecdd841 100
+event/internal/controller/callback_lifecycle_test.go
+  s_cb99cb83df0ea0::t_6e3854372630f1 496,514
+event/internal/handler/util/callback_route.go
+  s_cb99cb83df0ea0::t_35bf50e1afc950 22,27
+spectre/internal/handler/util/callback_test.go
+  s_cb99cb83df0ea0::t_8bff0eaecdd841 17,26,29,38,53,66
+event/internal/handler/util/callback_route_test.go
+  s_cb99cb83df0ea0::t_d15c2180aeffcd 188
+spectre/internal/handler/util/callback.go
+  s_cb99cb83df0ea0::t_621b8b4ec057b5 13-15,18
+event/internal/handler/eventsubscription/handler_test.go
+  s_cb99cb83df0ea0::t_6e3854372630f1 702,713,803
+event/internal/handler/util/naming_test.go
+  s_cb99cb83df0ea0::t_0c59e970a472ae 34
+spectre/internal/handler/spectreapplication_handler_test.go
+  s_cb99cb83df0ea0::t_8bff0eaecdd841 576
+docs/docs/architecture/event.mdx
+  s_cb99cb83df0ea0::t_6e3854372630f1 122,136
+event/internal/handler/util/naming.go
+  s_cb99cb83df0ea0::t_b99863fd353146 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f01f580e770d642363d7dba45f4979915b985300",
+  "prompts": {},
+  "sessions": {
+    "s_cb99cb83df0ea0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "76bae109-e991-4ea7-859d-a25119497676",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
