@@ -83,7 +83,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
 
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
-		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
+		conjurReadApi := conjur.NewRetryingReadAPI(conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie()))
 
 		conjurBackend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		conjurBackend.WithBouncer(bouncer.NewLocker("secret-write"))
