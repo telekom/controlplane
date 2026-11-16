@@ -1,0 +1,21 @@
+.agents/rules/02-no-reconcile-loops.md
+  s_0ca82193f57e20::t_53c3fb3aa25bef 32-39,88-91
+  s_0ca82193f57e20::t_fc52805f4b4cb9 57
+  s_0ca82193f57e20::t_8d93095a374eba 92-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a7c5f566526bc919b39078d44cb5792ccaf47f65",
+  "prompts": {},
+  "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
