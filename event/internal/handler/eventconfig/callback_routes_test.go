@@ -195,6 +195,7 @@ var _ = Describe("callback route issuers", func() {
 						Expect(route.Spec.Backend.Upstreams[0].Hostname).To(Equal("subscriber.example.com"))
 						Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf(util.CallbackClientName))
 					} else {
+						// The subscriber's mesh excludes exposure, so it is not trusted here.
 						Expect(route.Spec.Security.TrustedIssuers).To(Equal([]string{"https://exposure-idp"}))
 						Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf(util.CallbackClientName))
 					}
@@ -274,6 +275,65 @@ var _ = Describe("callback route issuers", func() {
 	},
 		Entry("local subscriber", false),
 		Entry("proxy subscriber", true),
+	)
+
+	DescribeTable("does not trust LMS issuers of proxy zones at the callback primary",
+		func(withInboundBackend bool, expectedIssuers, expectedConsumers []string) {
+			ctx := context.Background()
+			fc := fakeclient.NewMockJanitorClient(GinkgoT())
+			ctx = cclient.WithClient(ctx, fc)
+			subscriber := readyPeerZone("subscriber")
+			withEventPreset(subscriber, "subscriber-gateway", "subscriber.example.com", &adminv1.Links{Issuer: "https://subscriber-idp", LmsIssuer: "https://subscriber-lms"})
+			obj := &eventv1.EventConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "subscriber-config", Namespace: "default"},
+				Spec: eventv1.EventConfigSpec{
+					Zone: ctypes.ObjectRef{Name: "subscriber", Namespace: "default"},
+					Mesh: &eventv1.MeshConfig{ZoneNames: []string{"unrelated"}},
+				},
+			}
+
+			// The proxy peer meshes with the subscriber zone but never forwards callbacks.
+			peers := []eventv1.EventConfig{
+				peerEventConfig("proxy-config", "proxy", &eventv1.MeshConfig{ZoneNames: []string{"subscriber"}},
+					&eventv1.ProxyBackend{TargetZone: ctypes.ObjectRef{Name: "backend", Namespace: "default"}}),
+			}
+			zones := map[string]*adminv1.Zone{"proxy": readyPeerZone("proxy")}
+			withEventPreset(zones["proxy"], "proxy-gateway", "proxy.example.com", &adminv1.Links{Issuer: "https://proxy-idp", LmsIssuer: "https://proxy-lms"})
+			if withInboundBackend {
+				peers = append(peers, peerEventConfig("backend-config", "backend", &eventv1.MeshConfig{ZoneNames: []string{"subscriber"}}, nil))
+				zones["backend"] = readyPeerZone("backend")
+				withEventPreset(zones["backend"], "backend-gateway", "backend.example.com", &adminv1.Links{Issuer: "https://backend-idp", LmsIssuer: "https://backend-lms"})
+			}
+
+			fc.EXPECT().List(ctx, mock.AnythingOfType("*v1.EventConfigList")).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*eventv1.EventConfigList) = eventv1.EventConfigList{Items: peers}
+				}).Return(nil).Once()
+			for name, zone := range zones {
+				fc.EXPECT().Get(ctx, k8stypes.NamespacedName{Name: name, Namespace: "default"}, mock.AnythingOfType("*v1.Zone")).
+					Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+						*out.(*adminv1.Zone) = *zone
+					}).Return(nil).Once()
+			}
+			fc.EXPECT().Scheme().Return(buildSchemeForCallbackRoutes()).Maybe()
+			fc.EXPECT().CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+				RunAndReturn(func(_ context.Context, routeObj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+					Expect(mutate()).To(Succeed())
+					route := routeObj.(*gatewayv1.Route)
+					Expect(route.Spec.Type).To(Equal(gatewayv1.RouteTypePrimary))
+					Expect(route.Spec.Security.TrustedIssuers).To(Equal(expectedIssuers))
+					Expect(route.Spec.Security.DefaultConsumers).To(ConsistOf(expectedConsumers))
+					return controllerutil.OperationResultCreated, nil
+				}).Once()
+
+			Expect((&EventConfigHandler{}).createCallbackRoutes(ctx, obj, subscriber, obj.Spec.Mesh, util.CallbackClientName)).To(Succeed())
+		},
+		Entry("trusts only the backend's LMS issuer", true,
+			[]string{"https://backend-lms", "https://subscriber-idp"},
+			[]string{util.CallbackClientName, gatewayv1.GatewayConsumerName}),
+		Entry("trusts no LMS issuer and no gateway when only proxy zones exist", false,
+			[]string{"https://subscriber-idp"},
+			[]string{util.CallbackClientName}),
 	)
 })
 

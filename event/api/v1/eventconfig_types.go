@@ -147,6 +147,10 @@ type EventConfigStatus struct {
 	// +optional
 	MeshClient *ObservedObjectRef `json:"meshClient,omitempty"`
 
+	// CallbackConsumer references the gateway Consumer CR that registers the callback identity with the zone's gateway.
+	// +optional
+	CallbackConsumer *ctypes.ObjectRef `json:"callbackConsumer,omitempty"`
+
 	// PublishRoute references the Route CR created for the publish gateway.
 	// +optional
 	PublishRoute *ctypes.ObjectRef `json:"publishRoute,omitempty"`

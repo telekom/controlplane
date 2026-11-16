@@ -4,3 +4,4 @@
 #
 # Audit ignores expire by construction: the item id contains the snippet, so
 # changing the code retires the audit ignore automatically. Only a human adds a line here.
+35deed50b3ee617b: "False positive: collectPrimaryTrustedIssuers output is sorted and compacted by Options.applySecurity before it is stored on the Route (user request, 2026-11-16)"

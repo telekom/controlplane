@@ -390,6 +390,7 @@ func (h *EventConfigHandler) createCallbackConsumer(ctx context.Context, obj *ev
 	if _, err := c.CreateOrUpdate(ctx, consumer, mutator); err != nil {
 		return errors.Wrapf(err, "failed to create or update gateway Consumer %s", clientId)
 	}
+	obj.Status.CallbackConsumer = types.ObjectRefFromObject(consumer)
 	return nil
 }
 
@@ -436,8 +437,8 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	realmName := myZone.Status.RealmName
 
 	// The logical destination set includes proxy peers, but only a local backend
-	// materializes outbound Routes. Inbound trust is independent of route ownership.
-	_, otherZones, inboundZones, err := h.listMeshPeerZones(ctx, obj)
+	// materializes outbound Routes.
+	backendZones, otherZones, inboundZones, err := h.listMeshPeerZones(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -477,10 +478,14 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	}
 
 	// Local callbacks use this zone's normal issuer; incoming gateway hops use
-	// the sending peer's LMS issuer. Trust follows that peer's outbound permission
-	// to reach us, so callback delivery does not require a reverse mesh.
-	isProxyTarget := len(inboundZones) > 0
-	primaryTrustedIssuers, err := collectPrimaryTrustedIssuers(myZone, inboundZones, isProxyTarget)
+	// the sending backend's LMS issuer. Only non-proxy zones run Horizon and own
+	// outbound callback Routes, and only to zones in their mesh. Trust follows
+	// that backend's outbound permission, so no reverse mesh is required.
+	inboundBackends := slices.DeleteFunc(slices.Clone(inboundZones), func(z *adminv1.Zone) bool {
+		return !slices.ContainsFunc(backendZones, func(b *adminv1.Zone) bool { return types.Equals(b, z) })
+	})
+	isProxyTarget := len(inboundBackends) > 0
+	primaryTrustedIssuers, err := collectPrimaryTrustedIssuers(myZone, inboundBackends, isProxyTarget)
 	if err != nil {
 		return err
 	}
