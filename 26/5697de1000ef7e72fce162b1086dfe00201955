@@ -1,0 +1,28 @@
+gateway/internal/controller/suite_test.go
+  s_47778ce1ac5fcb::t_3ccc8004852196 50-53,100
+gateway/api/v1/route_types.go
+  s_47778ce1ac5fcb::t_b268c6c6dec062 54
+gateway/internal/controller/route_controller.go
+  s_47778ce1ac5fcb::t_3ccc8004852196 13,26,90,113-117,120-122,142-152,154-159
+gateway/internal/controller/controller_test.go
+  s_47778ce1ac5fcb::t_87141b71e63113 18-19,61-155
+  s_47778ce1ac5fcb::t_1e11ff6c7d5c37 156-157
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  s_47778ce1ac5fcb::t_2bd72bd898829e 62-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "265697de1000ef7e72fce162b1086dfe00201955",
+  "prompts": {},
+  "sessions": {
+    "s_47778ce1ac5fcb": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "73f78bb6-3397-4620-b927-5683f5c261ec",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
