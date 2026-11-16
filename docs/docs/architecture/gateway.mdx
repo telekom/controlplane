@@ -124,6 +124,51 @@ Route types are created by the **API domain**, not configured by hand. See [API 
 
 API and Agentic controllers use this field for traffic classification, with tags such as `variant--default` and `variant--mcp`.
 
+## Kong plugin ownership
+
+Every Kong plugin the Go operator manages is identified by a set of ownership tags: `env--<environment>`, `plugin--<name>`, `route--<route>` for route-bound plugins and `consumer--<consumer>` (or `consumer--none` when no consumer is bound). These tags allow the operator to rediscover a plugin even when its Kong ID is not available in Kubernetes status.
+
+### Lookup order
+
+For a plugin bound to a route, a consumer or both, the operator first resolves the Kong IDs of the route and consumer. A missing route or consumer is an error. It then looks the plugin up in this order:
+
+1. **Stored ID** — the ID from the status, if available. A `404` falls through; any other error stops reconciliation. The plugin found under the ID must have the expected plugin name, no service binding and exactly the expected Go ownership tags, or qualify as a legacy plugin as described below. A plugin owned by something else is an error, never a reason to create another plugin.
+2. **Go ownership tags** — a complete, paginated list of plugins with the expected tags. Candidates with the expected plugin name must have no service binding and exactly the expected ownership tags; conflicting ownership or more than one match is an error. Unrelated tags are allowed. When the full Go ownership tags prove ownership, the operator repairs drifted route or consumer bindings in place rather than rejecting the plugin.
+3. **Legacy tag** — a complete, paginated list of plugins carrying the exact literal `ei__telekom__de--realm---default`, defined by `LegacyPluginTag`. This is a fixed fallback, not an environment variable or Gateway field. Only plugins with the expected name, exactly the expected route and consumer bindings (including an absent binding where none is expected), and no service binding qualify. Any Go ownership tags already present must be a subset of the expected tags; a conflicting tag on an otherwise matching legacy plugin is an error. More than one qualifying match is an error.
+
+If none of the steps finds a plugin, the operator creates a new one under a new ID. New plugins never receive the legacy tag. Global plugins, bound to neither a route nor a consumer, keep the stored-ID and ownership-tag lookup without the legacy fallback.
+
+:::warning Ownership handoff
+Stop the legacy Java operator before the Go operator takes over the same Kong resources. The literal legacy tag covers the initial `default` migration scope; it is not general discovery for other legacy realms. This describes the implementation, not a confirmed live migration or proof of preserved IDs in a deployed environment.
+:::
+
+### Updates keep the plugin ID
+
+An existing route- or consumer-bound plugin is always updated in place under its Kong ID, never deleted and recreated. The update:
+
+- keeps every tag the plugin already carries and adds missing ownership tags, so an adopted legacy plugin keeps its legacy tag;
+- replaces the current configuration with the calculated desired configuration and sets the desired route and consumer bindings;
+- keeps the plugin's `protocols` and `instance_name`, including for plugins the operator created itself. Out-of-band changes to these fields are therefore not reverted.
+
+Configuration is not deep-merged with the existing plugin, and there is no separate reset policy for omitted fields. The comparison remains default-tolerant: `narrowToDesired` compares only keys present in the desired configuration, including nested keys, so extra values returned by Kong do not alone trigger a write. This comparison does not preserve those extra values in an update. Even a write triggered only by missing ownership tags sends the calculated configuration, not a tags-only patch.
+
+No Kong write is needed when the effective desired state already matches, including configuration, bindings, tags and enabled state. Newly created plugins use the desired settings, including `protocols: [http]` and no explicit `instance_name`. Global plugins also use the desired settings directly; the preservation of existing tags, protocols and instance name applies only to existing route- or consumer-bound plugins.
+
+### Plugin IDs and Kubernetes status
+
+After discovering or writing a plugin, the Kong client passes its ID back to the plugin object, even when no Kong write was needed. Route-wide and consumer-only plugin IDs are persisted through their owning Route or Consumer controller's normal status update.
+
+Combined route-and-consumer rate limiting is configured during Route reconciliation. Its `kongRateLimitingPluginId` is set only on the in-memory ConsumeRoute object; the Route handler does not persist that object's status. On a later reconciliation without a stored ID, the Go ownership tags rediscover the same Kong plugin and allow updates under the same ID. This is an existing persistence gap whose resolution is deferred. There is no cross-controller status writer or patch helper for this ID, and no additional watch for its persistence; the existing ConsumeRoute-to-Route watch remains in place.
+
+### Cleanup
+
+After configuring a Route or Consumer, the operator deletes plugins it no longer needs. Cleanup uses only Go ownership tags, not the legacy tag. It reads all pages matching the current environment and route or consumer tags and classifies the candidates before deleting anything. Missing desired plugin IDs or a list or classification error stop cleanup before deletion. Only plugins whose tags and actual bindings prove ownership are eligible: no service binding, exactly one distinct `env--` value for the current environment, exactly one distinct `plugin--` value matching the plugin name, and
+
+- for a route: exactly one distinct `route--` value and the route binding of this route, and exactly one distinct consumer value: either `consumer--none` without a consumer binding or a `consumer--` tag that resolves to the bound consumer;
+- for a consumer: exactly one distinct `consumer--` value and the consumer binding of this consumer, and no route tag or binding. Consumer cleanup therefore never deletes combined route-and-consumer plugins; those belong to route cleanup.
+
+Plugins without this proof, including legacy plugins that were never adopted, are skipped. Deleting a Route or Consumer in Kong still deletes all plugins bound to it, including adopted legacy plugins.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which gateway instance to use.
