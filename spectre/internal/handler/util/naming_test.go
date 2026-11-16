@@ -97,7 +97,7 @@ var _ = Describe("Naming helpers", func() {
 			result, err := util.BuildBridgeCallbackURL("https://gateway.example.com/horizon/callback/v1", "my-app")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(ContainSubstring("gateway.example.com"))
-			Expect(result).To(ContainSubstring("callback="))
+			Expect(result).To(ContainSubstring("?url="))
 			Expect(result).To(ContainSubstring("listener%3Dmy-app"))
 		})
 

@@ -119,7 +119,7 @@ sequenceDiagram
 
 Some subscribers prefer to be *called back*: instead of fetching events, they give the platform an address of their own and let each event be pushed there. The callback route makes this happen. The event backend sends every event to the callback route, which reads the subscriber's real address (carried along with the request) and forwards the event to it.
 
-Callback delivery starts in the **backend zone**, where Horizon runs. In this example, Horizon is configured with `https://dataplane1-gateway/horizon-dataplane3/callback/v1?callback=U`, where `U` represents the subscriber's URL. The hostname is illustrative; the actual address comes from the gateway preset. **Backend-local callback ingress means that gateway's advertised URL, not loopback or `localhost`.**
+Callback delivery starts in the **backend zone**, where Horizon runs. In this example, Horizon is configured with `https://dataplane1-gateway/horizon-dataplane3/callback/v1?url=U`, where `U` represents the subscriber's URL. The hostname is illustrative; the actual address comes from the gateway preset. **Backend-local callback ingress means that gateway's advertised URL, not loopback or `localhost`.**
 
 ```mermaid
 sequenceDiagram
@@ -133,7 +133,7 @@ sequenceDiagram
         participant S as Subscriber URL U
     end
     Note over H1,G1: Configured first hop is G1, never exposure gateway G2
-    H1->>G1: /horizon-dataplane3/callback/v1?callback=U<br/>dp1 normal issuer, dp1 backend callback client<br/>(default eventstore)
+    H1->>G1: /horizon-dataplane3/callback/v1?url=U<br/>dp1 normal issuer, dp1 backend callback client<br/>(default eventstore)
     Note over G1: Validate dp1 normal issuer<br/>Match dp1 EventConfig's Consumer and route ACL
     G1->>G3: Same callback path and query<br/>dp1 LMS issuer, gateway identity
     Note over G3: Trust inbound dp1 LMS issuer<br/>Allow gateway Consumer

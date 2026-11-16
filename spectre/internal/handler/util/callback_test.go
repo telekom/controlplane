@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("BuildGatewayCallbackURL", func() {
-	It("should set callback query parameter with bridge target", func() {
+	It("should set url query parameter with bridge target", func() {
 		result, err := util.BuildGatewayCallbackURL(
 			"https://gateway.example.com/horizon/callback/v1",
 			"http://localhost:8080/autoevent?listener=my-app",
@@ -23,10 +23,10 @@ var _ = Describe("BuildGatewayCallbackURL", func() {
 
 		parsed, parseErr := url.Parse(result)
 		Expect(parseErr).ToNot(HaveOccurred())
-		Expect(parsed.Query().Get("callback")).To(Equal("http://localhost:8080/autoevent?listener=my-app"))
+		Expect(parsed.Query().Get("url")).To(Equal("http://localhost:8080/autoevent?listener=my-app"))
 	})
 
-	It("should set callback query parameter with external customer target", func() {
+	It("should set url query parameter with external customer target", func() {
 		result, err := util.BuildGatewayCallbackURL(
 			"https://gateway.example.com/horizon/callback/v1",
 			"https://customer.example.com/webhook",
@@ -35,7 +35,7 @@ var _ = Describe("BuildGatewayCallbackURL", func() {
 
 		parsed, parseErr := url.Parse(result)
 		Expect(parseErr).ToNot(HaveOccurred())
-		Expect(parsed.Query().Get("callback")).To(Equal("https://customer.example.com/webhook"))
+		Expect(parsed.Query().Get("url")).To(Equal("https://customer.example.com/webhook"))
 		Expect(parsed.Scheme).To(Equal("https"))
 		Expect(parsed.Host).To(Equal("gateway.example.com"))
 	})
@@ -50,7 +50,7 @@ var _ = Describe("BuildGatewayCallbackURL", func() {
 		parsed, parseErr := url.Parse(result)
 		Expect(parseErr).ToNot(HaveOccurred())
 		Expect(parsed.Query().Get("existing")).To(Equal("value"))
-		Expect(parsed.Query().Get("callback")).To(Equal("https://customer.example.com/hook"))
+		Expect(parsed.Query().Get("url")).To(Equal("https://customer.example.com/hook"))
 	})
 
 	It("should preserve target query parameters with ampersand through round-trip", func() {
@@ -63,7 +63,7 @@ var _ = Describe("BuildGatewayCallbackURL", func() {
 
 		parsed, parseErr := url.Parse(result)
 		Expect(parseErr).ToNot(HaveOccurred())
-		Expect(parsed.Query().Get("callback")).To(Equal(target))
+		Expect(parsed.Query().Get("url")).To(Equal(target))
 	})
 
 	It("should return error for invalid gateway URL", func() {

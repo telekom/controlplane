@@ -10,11 +10,12 @@ import (
 )
 
 // CallbackQueryParam is the query parameter used to pass the original callback
-// target through the Gateway's dynamic-upstream feature.
-const CallbackQueryParam = "callback"
+// target through the Gateway's dynamic-upstream feature. It must match the
+// event domain's CallbackURLQueryParam, which configures the callback Route.
+const CallbackQueryParam = "url"
 
 // BuildGatewayCallbackURL constructs a gateway-mediated callback URL by parsing
-// gatewayURL, adding the target callback as the "callback" query parameter
+// gatewayURL, adding the target callback as the "url" query parameter
 // (preserving any existing query parameters on gatewayURL), and returning the
 // assembled URL string.
 //

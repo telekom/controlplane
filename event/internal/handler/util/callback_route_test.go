@@ -185,7 +185,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 
 		// Verify DynamicUpstream
 		Expect(route.Spec.Traffic.DynamicUpstream).ToNot(BeNil())
-		Expect(route.Spec.Traffic.DynamicUpstream.QueryParameter).To(Equal("callback"))
+		Expect(route.Spec.Traffic.DynamicUpstream.QueryParameter).To(Equal("url"))
 
 		// Verify Security: callback routes always trust the Horizon callback client,
 		// even when not a proxy target.
