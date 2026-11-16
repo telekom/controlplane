@@ -96,6 +96,8 @@ Before committing a finished feature, run the `code-auditor` skill. It checks th
 
 The pre-commit gate blocks on `CRITICAL` findings and on files that changed after the last audit; pre-push blocks on `HIGH`. Neither runs a model — they only verify receipts, so they cost about as much as `gitleaks`. See `.agents/ARCHITECTURE.md`.
 
+A false positive is ignored with an `audit:ignore <rule-id> <reason>` comment on or above the flagged line (see "Audit ignores" in `.agents/rules/README.md`). Only a human adds one — never add an `audit:ignore` comment or `.agents/auditignore` entry to get past a finding.
+
 New rules are added with the `rule-writer` skill, and only on user request.
 
 ## Conventions

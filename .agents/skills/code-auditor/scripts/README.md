@@ -27,7 +27,8 @@ check. Severity sets two caps, on candidates and on resulting questions.
 
 `auditlib/` holds the shared pieces: `yamlish` (frontmatter subset),
 `rules` (parse and index), `provenance` (example sources), `changeset`
-(git scope), `context` (config root and state location), `detect` (candidates), `report` (schema, item ids, batching) and
+(git scope), `context` (config root and state location), `detect` (candidates), `report` (schema, item ids, batching),
+`inline` (`audit:ignore` comment markers) and
 `store` (cache, receipts, audit ignores).
 
 Two things are re-anchored against real files, and both reject rather than
@@ -122,10 +123,17 @@ Judgment reuse includes the file path, numbered context, change markers and
 detector detail. Receipts additionally bind to the file's changed-line scope
 and complete dependency tree hash. Only applicable file/rule pairs receive
 receipts. Schema 4 invalidates older reports and receipts; regenerate them.
-Both deterministic checks and model judgments honor `auditignore`.
+Both deterministic checks and model judgments honor `auditignore` and inline
+`audit:ignore` markers.
 Finding IDs include the occurrence's line and detector detail; document-level
 candidates also include a content fingerprint. An audit ignore covers one occurrence
 in that content, rather than every matching line or every future document edit.
+Markers are read from the same frozen snapshot as the code. A candidate that
+pinpoints one line (or a tool-reported span) is settled by a marker before
+judgment; any other finding is matched by its evidence line when the audit
+settles. The cache stores the judge's raw verdict, so the marker is applied
+again on every reuse. The marker syntax is documented under "Audit ignores"
+in `.agents/rules/README.md`.
 Cached findings recalculate scope from their evidence just like fresh answers.
 For judgments, `report_radius` controls the affected evidence window separately
 from prompt context. The documentation rule uses zero: only touched lines can
@@ -172,7 +180,9 @@ deleting it only costs re-judging.
 
 `.agents/auditignore` is the one piece of state that *is* committed. Despite
 its extensionless name, it is YAML: each finding's item id maps to a reason,
-not a file pattern. Quote reasons that contain YAML punctuation.
+not a file pattern. Quote reasons that contain YAML punctuation. Prefer an
+inline `audit:ignore` comment; this file is for findings where no comment can
+go.
 
 ## Shared configuration
 

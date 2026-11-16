@@ -12,7 +12,9 @@ Nothing an agent writes is trusted until it survives this script:
 * every quote must still be present in the file it cites, at or near the line
   it cites, which makes an invented finding mechanically unable to get through
 
-Only then are receipts and cache entries written.
+Only then are receipts and cache entries written. A finding whose cited line
+carries an ``audit:ignore`` marker for its check passes; the cache keeps the
+judge's raw verdict.
 
 Usage::
 
@@ -31,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from auditlib import SCHEMA_VERSION, VERDICTS, changeset, detect, rules as rulelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
+from auditlib.inline import InlineIgnores, hint  # noqa: E402
 from auditlib.report import SEVERITY_RANK, worst  # noqa: E402
 from auditlib.store import (  # noqa: E402
     ReceiptStore,
@@ -192,7 +195,7 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
                 f"item {item['item_id']}: cluster {item['cluster_id']} has no "
                 f"answered representative"
             )
-        item["verdict"] = rep["verdict"]
+        item["verdict"] = (rep.get("inline_ignore") or {}).get("verdict", rep["verdict"])
         item["evidence"] = {
             "file": item["file"],
             "line": item["line"],
@@ -206,7 +209,41 @@ def merge(root: Path, report: dict, verdicts: dict) -> list[dict]:
             item["line"],
         )
 
+    # After clustering, so every member is judged by its own line's markers.
+    markers: dict[str, InlineIgnores] = {}
+    for item in items:
+        _apply_inline_ignore(root, item, blobs, markers)
+
     return items
+
+
+def _apply_inline_ignore(
+    root: Path, item: dict, blobs: dict, markers: dict[str, InlineIgnores],
+) -> None:
+    """Ignore a finding whose cited line carries a marker for its check.
+
+    The raw verdict is kept beside the marker: the cache must remember what
+    the judge said, not what a comment that may later disappear turned it into.
+    """
+    if item["verdict"] == "PASS":
+        return
+    path = item["file"]
+    if path not in markers:
+        try:
+            markers[path] = InlineIgnores(
+                changeset.git(root, "cat-file", "-p", blobs[path])
+            )
+        except changeset.GitError as exc:
+            raise RejectedReport(f"{path}: cannot read cited file: {exc}") from exc
+    line = (item.get("evidence") or {}).get("line", item["line"])
+    marker = markers[path].find(item["rule_id"], item["check_id"], (line,))
+    if marker is None:
+        return
+    item["inline_ignore"] = marker.describe()
+    if marker.problem:
+        return
+    item["inline_ignore"]["verdict"] = item["verdict"]
+    item["verdict"] = "PASS"
 
 
 def _finding_in_scope(
@@ -230,6 +267,7 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
 
     for item in items:
         if item["source"] == "agent":
+            raw = (item.get("inline_ignore") or {}).get("verdict", item["verdict"])
             cache.put(
                 verdict_key(
                     hashes[item["rule_id"]],
@@ -240,7 +278,7 @@ def persist(directory: Path, report: dict, items: list[dict]) -> None:
                     model,
                     report["config_hash"],
                 ),
-                item["verdict"],
+                raw,
                 item["evidence"],
                 item["rule_id"],
             )
@@ -329,6 +367,14 @@ def summarise(items: list[dict], fail_on: str) -> tuple[list[dict], list[dict], 
     return findings, advisory, worst(scoped) if scoped else "PASS"
 
 
+def ignored_inline(items: list[dict]) -> list[dict]:
+    """Items a marker ignored, listed so every ignore stays visible."""
+    return sorted(
+        (i for i in items if (i.get("inline_ignore") or {}).get("reason")),
+        key=lambda i: (i["file"], i["line"], i["rule_id"], i["check_id"]),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, default=None)
@@ -386,11 +432,15 @@ def main() -> int:
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     findings, advisory, overall = summarise(items, args.fail_on)
+    ignored = ignored_inline(items)
 
     if args.json:
         print(
             json.dumps(
-                {"overall": overall, "findings": findings, "advisory": advisory},
+                {
+                    "overall": overall, "findings": findings,
+                    "advisory": advisory, "ignored": ignored,
+                },
                 indent=2,
             )
         )
@@ -414,6 +464,13 @@ def main() -> int:
             if quote:
                 print(f"    > {quote.strip()}")
             print(f"    {evidence.get('reason', '')}")
+            marker = entry.get("inline_ignore") or {}
+            if marker.get("problem"):
+                print(
+                    f"    inline ignore at line {marker['line']} not applied: "
+                    f"{marker['problem']}"
+                )
+            print(f"    ignore inline: {hint(entry['file'], entry['rule_id'], entry['check_id'])}")
             print(f"    audit ignore id: {entry['item_id']}")
             print()
 
@@ -429,6 +486,15 @@ def main() -> int:
             f"(not blocking, not your regression):\n"
         )
         render(advisory)
+
+    if ignored:
+        print(f"{len(ignored)} item(s) ignored inline:\n")
+        for entry in ignored:
+            marker = entry["inline_ignore"]
+            print(f"  [{entry['severity']}] {entry['rule_id']}/{entry['check_id']}")
+            print(f"    {entry['file']}:{entry['line']} (marker on line {marker['line']})")
+            print(f"    {marker['reason']}")
+            print()
 
     return 1 if findings else 0
 

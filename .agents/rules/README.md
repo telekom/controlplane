@@ -254,7 +254,55 @@ Get the revision with `git rev-parse --short HEAD`.
 
 ## Audit ignores
 
-An accepted finding is recorded in `.agents/auditignore` as a YAML mapping,
+A finding that is wrong, or accepted on purpose, is ignored where it occurs:
+with an `audit:ignore` comment next to the code. Only a human adds one.
+
+```go
+sort.Sort(byAge(items)) // audit:ignore 01-prefer-slices-sort byAge satisfies a third-party sort.Interface
+```
+
+The comment names the rule and gives a reason; the reason is required. Narrow
+it to one check with `rule-id/check`, and separate several targets with
+commas: `audit:ignore 03-spelling,07-normalize-label-values <reason>`.
+
+Use the comment syntax of the file. The audit prints the exact marker for
+every finding, ready to paste:
+
+| File | Marker |
+| --- | --- |
+| `.go` | `// audit:ignore <rule-id> <reason>` |
+| `.yaml`, `.yml` | `# audit:ignore <rule-id> <reason>` |
+| `.md`, `.mdx` | `<!-- audit:ignore <rule-id> <reason> -->` |
+
+Where a marker applies:
+
+- `audit:ignore` must directly follow a comment opener (`//`, `/*`, `#` or
+  `<!--`). Prose that merely mentions it is inert.
+- A trailing marker covers its own line. A marker alone on its line also
+  covers the next line, so it can sit directly above the code. Stacked marker
+  lines all cover the first line below them.
+- A marker ignores the finding on the line it covers, nothing else. For a
+  line candidate — complexity 0, or a detector reporting single lines — the
+  engine settles the candidate without asking a model. A tool-reported
+  declaration span counts as covered when any of its lines is. A file-wide
+  candidate is still judged in full, and only a finding whose evidence lands
+  on a covered line is ignored.
+- A marker with no reason or an unparsable target is not honored. The
+  finding stays and the audit says why.
+- Every applied marker is listed under "ignored inline" in the audit output.
+
+A marker moves with its code, so unrelated edits above it do not retire it.
+It also outlives edits to its own line: the diff that touches the line shows
+the marker, and review is where it gets challenged. Write a reason specific
+enough to challenge.
+
+Never put a marker inside a CRD field's doc comment, which becomes the
+generated schema description. Put it at the end of the field line instead.
+
+### `.agents/auditignore`
+
+Where no comment can go — inside a fenced block of a rendered page, for
+example — record the finding in `.agents/auditignore` as a YAML mapping,
 keyed by the item id the audit prints. Values are human-written reasons, not
 file patterns:
 
@@ -262,7 +310,7 @@ file patterns:
 a1b2c3d4e5f6a7b8: Reverse sort has no slices equivalent. (ron, 2026-11-09)
 ```
 
-Audit ignores expire by construction — the id contains the snippet, so changing
-the code retires the audit ignore automatically.
+These entries expire by construction — the id contains the snippet and its
+line, so changing the code, or moving it, retires the entry automatically.
 Each reason must be a nonempty string; empty values, lists, booleans and
 numbers are rejected. Quote numeric-looking reasons if they are intended as text.

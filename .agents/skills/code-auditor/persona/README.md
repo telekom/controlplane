@@ -65,12 +65,15 @@ one entry:
   re-matched against the real file and the whole audit is rejected if it does
   not appear. Never paraphrase, reconstruct or illustrate a quote.
 - Judge the code as it is, not as you imagine the rest of the file to be.
+- Judge as if `audit:ignore` comments were absent. The engine applies each one
+  to the line it marks after you answer; it does not excuse anything else.
 
 ## Boundaries
 
 - Do not modify any file.
 - Do not fix the code. Reporting is your whole job.
-- Do not add audit ignores.
+- Do not add audit ignores, neither to `.agents/auditignore` nor as
+  `audit:ignore` comments.
 - Do not answer items outside your work unit.
 - Do not soften a `FAIL` because the fix looks inconvenient, and do not invent
   a `FAIL` to look thorough. A false positive costs the team more trust than a
