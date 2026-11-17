@@ -54,7 +54,7 @@ func (r *RouteListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteToRouteListener),
-			builder.WithPredicates(cc.Count("routelistener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("routelistener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Complete(r)
 }
 

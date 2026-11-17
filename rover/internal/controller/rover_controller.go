@@ -110,13 +110,13 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			Owns(&spectrev1.Listener{}, owns).
 			Watches(&application.Application{},
 				handler.EnqueueRequestsFromMapFunc(r.MapApplicationToListenerRovers),
-				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 			)
 	}
 
 	b = b.Watches(&organizationv1.Team{},
 		handler.EnqueueRequestsFromMapFunc(r.MapTeamToRovers),
-		builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+		builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 	)
 
 	return b.WithOptions(controller.Options{

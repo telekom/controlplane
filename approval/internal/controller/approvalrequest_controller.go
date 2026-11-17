@@ -60,7 +60,7 @@ func (r *ApprovalRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&approvalv1.Approval{},
 			handler.EnqueueRequestsFromMapFunc(r.mapScopedApprovalToRequests),
 			builder.WithPredicates(cc.Count("approvalrequest", cc.RoleWatches,
-				predicate.NewPredicateFuncs(isScopedApproval), predicate.GenerationChangedPredicate{}, ignoreDelete)),
+				predicate.NewPredicateFuncs(isScopedApproval), predicate.GenerationChangedPredicate{}, ignoreDelete, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

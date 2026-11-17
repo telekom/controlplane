@@ -7,8 +7,8 @@ package controller
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -44,7 +44,7 @@ func (r *ZoneReconciler) mapConfigMapToZones(ctx context.Context, obj client.Obj
 	zones := &adminv1.ZoneList{}
 	err := r.List(ctx, zones, client.InNamespace(obj.GetNamespace()), client.MatchingFields{IndexFieldCAConfigMapName: obj.GetName()})
 	if err != nil {
-		logr.FromContextOrDiscard(ctx).Error(err, "Failed to list zones referencing ConfigMap", "configMap", client.ObjectKeyFromObject(obj).String())
+		log.FromContext(ctx).Error(err, "Failed to list zones referencing ConfigMap", "configMap", client.ObjectKeyFromObject(obj).String())
 		return requests
 	}
 	for i := range zones.Items {

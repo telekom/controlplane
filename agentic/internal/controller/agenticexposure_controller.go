@@ -60,25 +60,25 @@ func (r *AgenticExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&agenticv1.AgenticExposure{}, builder.WithPredicates(cc.Count("agenticexposure", cc.RoleFor))).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, LabelPredicate)),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, LabelPredicate, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&agenticv1.McpServer{},
 			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&agenticv1.AgenticExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Watch Zones with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
 		// because the LMS issuer comes from Zone status, which does not bump metadata.generation.
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&agenticv1.AgenticSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticSubscriptionToAgenticExposure),
-			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

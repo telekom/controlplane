@@ -90,69 +90,69 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&spectrev1.SpectreApplication{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapSpectreApplicationToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Owner-labelled RouteListeners (readiness changes update parent readiness).
 		Watches(
 			&gatewayv1.RouteListener{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToListener),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Owner-labelled bridge Subscribers (readiness changes update parent readiness).
 		Watches(
 			&pubsubv1.Subscriber{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToListener),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Target Routes — creation after a Listener block, or mode changes (pass-through/failover).
 		Watches(
 			&gatewayv1.Route{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapRouteToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Consumer, provider, and observer (A) Applications.
 		Watches(
 			&applicationv1.Application{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapApplicationToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Zones — readiness changes affect blocked Listeners. Status-only
 		// updates pass ResourceVersionChangedPredicate.
 		Watches(
 			&adminv1.Zone{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapZoneToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// EventConfigs — readiness or CallbackURL/ProxyCallbackURLs changes.
 		// Status-only updates pass ResourceVersionChangedPredicate.
 		Watches(
 			&eventv1.EventConfig{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventConfigToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Realms — IssuerUrl changes affect RouteListener gateway credentials.
 		Watches(
 			&identityv1.Realm{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapRealmToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// EventStores — readiness changes unblock parents.
 		Watches(
 			&pubsubv1.EventStore{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventStoreToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Shared generic Publisher — readiness changes unblock Listeners waiting for it.
 		Watches(
 			&pubsubv1.Publisher{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapGenericPublisherToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// ApiExposures — activation/deactivation or application label changes.
 		Watches(
 			&apiv1.ApiExposure{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapApiExposureToListeners),
-			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

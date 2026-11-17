@@ -65,11 +65,11 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&identityv1.Client{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleOwns, LabelPredicate))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventConfig),
-			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventConfig),
-			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventconfig", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

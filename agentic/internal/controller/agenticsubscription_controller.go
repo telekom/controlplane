@@ -66,7 +66,7 @@ func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Owns(&approvalv1.ApprovalRequest{}, builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleOwns))).
 		Watches(&agenticv1.AgenticExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgenticExposureToAgenticSubscription),
-			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&approvalv1.Approval{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApprovalToAgenticSubscription),
@@ -74,15 +74,15 @@ func (r *AgenticSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToAgenticSubscription),
-			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToAgenticSubscription),
-			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{})),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, cc.DeleteOnlyPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToAgenticSubscription),
-			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("agenticsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
