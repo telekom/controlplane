@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -207,6 +208,12 @@ func ExpectStatusOk(response *http.Response, err error, matchers ...match.JSONMa
 func expectNoError(err error) {
 	Expect(err).To(BeNil())
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func mustJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	Expect(err).ToNot(HaveOccurred())
+	return b
 }
 
 func expectResponseWithStatus(response *http.Response, statusCode int, contentType string) {

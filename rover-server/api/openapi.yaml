@@ -3542,6 +3542,7 @@ components:
             swagger (deprecated) format
           type: object
           additionalProperties: true
+          x-go-type: json.RawMessage
     ApiSpecificationListResponse:
       type: object
       required:
@@ -3571,6 +3572,7 @@ components:
             swagger (deprecated) format
           type: object
           additionalProperties: true
+          x-go-type: json.RawMessage
         id:
           description: >-
             Unique id of this resource. Can be used to directly address this

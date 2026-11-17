@@ -89,13 +89,13 @@ var _ = Describe("fetchApiCategories", func() {
 		})
 
 		newUpdateRequest := func(category string) api.ApiSpecification {
-			return api.ApiSpecification{Specification: map[string]any{
+			return api.ApiSpecification{Specification: mustJSON(map[string]any{
 				"openapi": "3.0.0",
 				"info": map[string]any{
 					"title": "Test API", "version": "1.0.0", "x-api-category": category,
 				},
 				"servers": []any{map[string]any{"url": "http://example.com/eni/api/v1"}},
-			}}
+			})}
 		}
 
 		newCategoryStore := func() *mocks.MockObjectStore[*apiv1.ApiCategory] {

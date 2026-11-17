@@ -5,6 +5,7 @@
 package in
 
 import (
+	"encoding/json"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,18 +17,11 @@ import (
 
 var (
 	apiSpecification = &api.ApiSpecificationUpdateRequest{
-		Specification: map[string]interface{}{
+		Specification: json.RawMessage(`{
 			"openapi": "3.0.0",
-			"info": map[string]interface{}{
-				"title":   "Rover API",
-				"version": "1.0.0",
-			},
-			"servers": []interface{}{
-				map[string]interface{}{
-					"url": "http://rover-api.com/eni/distr/v1",
-				},
-			},
-		},
+			"info": {"title": "Rover API", "version": "1.0.0"},
+			"servers": [{"url": "http://rover-api.com/eni/distr/v1"}]
+		}`),
 	}
 
 	resourceIdInfo = mapper.ResourceIdInfo{

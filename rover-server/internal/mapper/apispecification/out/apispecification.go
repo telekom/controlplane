@@ -6,6 +6,7 @@ package out
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -15,7 +16,7 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile map[string]any, stores *store.Stores) (res api.ApiSpecificationResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile json.RawMessage, stores *store.Stores) (res api.ApiSpecificationResponse, err error) {
 	if in == nil {
 		return res, errors.New("input api specification crd is nil")
 	}

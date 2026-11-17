@@ -65,7 +65,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 
 	newUpdateRequest := func() api.ApiSpecification {
 		return api.ApiSpecification{
-			Specification: map[string]interface{}{
+			Specification: mustJSON(map[string]interface{}{
 				"openapi": "3.0.0",
 				"info": map[string]interface{}{
 					"title":          "Test API",
@@ -75,7 +75,7 @@ var _ = Describe("Linter unreachable error propagation to user", func() {
 				"servers": []interface{}{
 					map[string]interface{}{"url": "http://example.com/test/api/v1"},
 				},
-			},
+			}),
 		}
 	}
 

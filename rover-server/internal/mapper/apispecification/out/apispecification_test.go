@@ -5,6 +5,8 @@
 package out
 
 import (
+	"encoding/json"
+
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,7 +15,10 @@ import (
 var _ = Describe("ApiSpecificationResponse Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a ApiSpecification to an ApiSpecificationResponse correctly", func() {
-			output, err := MapResponse(ctx, apiSpecification, *openapi, stores)
+			specification, err := json.Marshal(*openapi)
+			Expect(err).To(BeNil())
+
+			output, err := MapResponse(ctx, apiSpecification, specification, stores)
 
 			Expect(err).To(BeNil())
 
