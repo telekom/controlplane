@@ -493,7 +493,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		reconcileSub()
 		Eventually(func(g Gomega) {
 			g.Expect(k8sClient.Get(ctx, childKey, child)).To(Succeed())
-			g.Expect(child.Spec.Delivery.Callback).To(Equal(backend.Status.ProxyCallbackURLs["subscriber"] + "?callback=https://consumer.example.com/events"))
+			g.Expect(child.Spec.Delivery.Callback).To(Equal(backend.Status.ProxyCallbackURLs["subscriber"] + "?url=https://consumer.example.com/events"))
 		}, 5*time.Second, 100*time.Millisecond).Should(Succeed())
 
 		oldScalar := proxy.Status.CallbackURL
@@ -511,7 +511,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Eventually(func() []reconcile.Request { return r.MapEventConfigToEventSubscription(ctx, proxy) }, 5*time.Second, 100*time.Millisecond).Should(ContainElement(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(sub)}))
 		reconcileSub()
 		Expect(k8sClient.Get(ctx, childKey, child)).To(Succeed())
-		Expect(child.Spec.Delivery.Callback).To(Equal(backend.Status.ProxyCallbackURLs["subscriber"] + "?callback=https://consumer.example.com/events"))
+		Expect(child.Spec.Delivery.Callback).To(Equal(backend.Status.ProxyCallbackURLs["subscriber"] + "?url=https://consumer.example.com/events"))
 
 		proxy.Spec.Mesh.ZoneNames = []string{"backend"}
 		Expect(k8sClient.Update(ctx, proxy)).To(Succeed())

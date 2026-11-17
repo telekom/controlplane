@@ -31,7 +31,7 @@ func TestNamingConstants(t *testing.T) {
 		{
 			name:     "CallbackURLQueryParam",
 			got:      CallbackURLQueryParam,
-			expected: "callback",
+			expected: "url",
 		},
 	}
 

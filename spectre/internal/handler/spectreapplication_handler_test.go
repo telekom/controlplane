@@ -573,7 +573,7 @@ var _ = Describe("SpectreApplicationHandler", func() {
 				Expect(capturedSubscriber.Spec.Delivery.Type).To(Equal(pubsubv1.DeliveryTypeCallback))
 				// The callback must route through the Gateway, not use the raw customer URL.
 				Expect(capturedSubscriber.Spec.Delivery.Callback).To(ContainSubstring(testGatewayCallbackURL))
-				Expect(capturedSubscriber.Spec.Delivery.Callback).To(ContainSubstring("callback="))
+				Expect(capturedSubscriber.Spec.Delivery.Callback).To(ContainSubstring("?url="))
 				Expect(capturedSubscriber.Spec.Delivery.Callback).ToNot(Equal(testCustomerCallbackURL))
 			})
 		})
