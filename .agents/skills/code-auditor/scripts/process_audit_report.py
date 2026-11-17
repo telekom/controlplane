@@ -470,7 +470,10 @@ def main() -> int:
                     f"    inline ignore at line {marker['line']} not applied: "
                     f"{marker['problem']}"
                 )
-            print(f"    ignore inline: {hint(entry['file'], entry['rule_id'], entry['check_id'])}")
+            print(
+                "    ignore inline (line above): "
+                + hint(entry["file"], entry["rule_id"], entry["check_id"])
+            )
             print(f"    audit ignore id: {entry['item_id']}")
             print()
 

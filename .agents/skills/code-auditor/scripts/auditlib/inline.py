@@ -5,13 +5,19 @@
 """Inline audit ignores: a human marks a false positive next to the code.
 
 A marker is a comment that starts with ``audit:ignore``, names the rules (and
-optionally the checks) it ignores, and says why::
+optionally the checks) it ignores, and says why. It normally sits on its own
+line above the code, so the code line does not grow::
 
-    sort.Sort(byAge(items)) // audit:ignore 01-prefer-slices-sort third-party sort.Interface
-    # audit:ignore 03-spelling,07-normalize-label-values/selector upstream spelling
+    // audit:ignore 01-prefer-slices-sort byAge satisfies a third-party
+    // sort.Interface that the vendor library requires.
+    sort.Sort(byAge(items))
 
-A marker covers its own line. A marker alone on its line also covers the next
-line that is not itself a marker, so markers can be stacked above the code.
+A marker alone on its line covers itself, the comment lines directly below it
+that use the same comment opener (stacked markers, a wrapped reason), and the
+first line after them. A marker at the end of a code line covers that line
+only::
+
+    x := BAD // audit:ignore 03-spelling,07-normalize-label-values short reason
 
 Unlike ``.agents/auditignore`` a marker moves with the code it annotates, so
 unrelated edits above it do not retire it. It is as visible in review as the
@@ -62,7 +68,8 @@ class InlineIgnore:
         return {"line": self.line, "reason": self.reason}
 
 
-def _parse(number: int, text: str) -> tuple[InlineIgnore, bool] | None:
+def _parse(number: int, text: str) -> tuple[InlineIgnore, str] | None:
+    """The marker on a line, plus its comment opener if it stands alone."""
     match = _MARKER.search(text)
     if match is None:
         return None
@@ -89,7 +96,8 @@ def _parse(number: int, text: str) -> tuple[InlineIgnore, bool] | None:
         problem = f"{MARKER} {token} needs a reason"
 
     standalone = text[:match.start()].strip() in ("", "{")
-    return InlineIgnore(number, tuple(targets), reason, problem), standalone
+    opener = match["opener"] if standalone else ""
+    return InlineIgnore(number, tuple(targets), reason, problem), opener
 
 
 class InlineIgnores:
@@ -105,12 +113,18 @@ class InlineIgnores:
             for number, line in enumerate(lines, start=1)
             if (found := _parse(number, line)) is not None
         }
-        for number, (marker, standalone) in parsed.items():
+        for number, (marker, opener) in parsed.items():
             self._covering.setdefault(number, []).append(marker)
-            if not standalone:
+            if not opener:
                 continue
+            # A marker above the code reaches past the comment lines below
+            # it (stacked markers, a wrapped reason) to the first other line.
             target = number + 1
-            while target in parsed and parsed[target][1]:
+            while target <= len(lines) and (
+                (target in parsed and parsed[target][1])
+                or lines[target - 1].lstrip().startswith(opener)
+            ):
+                self._covering.setdefault(target, []).append(marker)
                 target += 1
             if target <= len(lines):
                 self._covering.setdefault(target, []).append(marker)

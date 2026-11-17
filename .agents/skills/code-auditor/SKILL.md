@@ -167,8 +167,8 @@ the rejection.
 Print the findings exactly as the script rendered them: severity, rule, file,
 line, quote, reason, the `ignore inline` marker and audit ignore id. Then
 offer to fix them. If a finding is a false positive, the human ignores it by
-pasting the printed marker on or above the cited line with a reason; see
-"Audit ignores" in `.agents/rules/README.md`.
+pasting the printed marker with a reason on the line above the cited line
+(or, if short, at its end); see "Audit ignores" in `.agents/rules/README.md`.
 
 Mention anything listed under **ignored inline** once, so every applied marker
 stays visible.

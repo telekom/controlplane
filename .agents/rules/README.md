@@ -256,14 +256,24 @@ Get the revision with `git rev-parse --short HEAD`.
 
 A finding that is wrong, or accepted on purpose, is ignored where it occurs:
 with an `audit:ignore` comment next to the code. Only a human adds one.
+Put it on the line above, so the code line does not grow:
 
 ```go
-sort.Sort(byAge(items)) // audit:ignore 01-prefer-slices-sort byAge satisfies a third-party sort.Interface
+// audit:ignore 01-prefer-slices-sort byAge satisfies a third-party
+// sort.Interface that the vendor library requires.
+sort.Sort(byAge(items))
 ```
 
-The comment names the rule and gives a reason; the reason is required. Narrow
-it to one check with `rule-id/check`, and separate several targets with
-commas: `audit:ignore 03-spelling,07-normalize-label-values <reason>`.
+A short marker can also trail the line itself:
+
+```go
+sort.Sort(byAge(items)) // audit:ignore 01-prefer-slices-sort vendor sort.Interface
+```
+
+The comment names the rule and gives a reason; the reason is required and
+must start on the marker line. Narrow it to one check with `rule-id/check`,
+and separate several targets with commas:
+`audit:ignore 03-spelling,07-normalize-label-values <reason>`.
 
 Use the comment syntax of the file. The audit prints the exact marker for
 every finding, ready to paste:
@@ -278,9 +288,11 @@ Where a marker applies:
 
 - `audit:ignore` must directly follow a comment opener (`//`, `/*`, `#` or
   `<!--`). Prose that merely mentions it is inert.
-- A trailing marker covers its own line. A marker alone on its line also
-  covers the next line, so it can sit directly above the code. Stacked marker
-  lines all cover the first line below them.
+- A marker alone on its line covers the first line below it that is not a
+  comment with the same opener. The comment lines in between — a wrapped
+  reason, further markers — are covered too. A blank line ends the reach, so
+  keep the marker directly above its code.
+- A trailing marker covers its own line only.
 - A marker ignores the finding on the line it covers, nothing else. For a
   line candidate — complexity 0, or a detector reporting single lines — the
   engine settles the candidate without asking a model. A tool-reported
@@ -296,8 +308,9 @@ It also outlives edits to its own line: the diff that touches the line shows
 the marker, and review is where it gets challenged. Write a reason specific
 enough to challenge.
 
-Never put a marker inside a CRD field's doc comment, which becomes the
-generated schema description. Put it at the end of the field line instead.
+Never put a marker inside or directly above a CRD field's doc comment: Go
+joins it into the doc comment, which becomes the generated schema
+description. Put it at the end of the field line instead.
 
 ### `.agents/auditignore`
 

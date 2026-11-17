@@ -63,6 +63,24 @@ class MarkerParsingTest(unittest.TestCase):
         self.assertIsNone(markers.find("01-x", "violation", [5]))
         self.assertEqual(markers.find("05-v", "violation", [7]).reason, "html reason")
 
+    def test_marker_above_reaches_past_its_comment_block(self):
+        markers = InlineIgnores(
+            "\t// audit:ignore 01-x a reason that is long enough\n"
+            "\t// to wrap onto a second comment line\n"
+            "\tcode()\n"
+            "\tmore()\n"
+            "# audit:ignore 02-y yaml reason\n"
+            "// not the same opener\n"
+            "\n"
+            "after_blank()\n"
+        )
+        self.assertEqual(markers.find("01-x", "violation", [3]).line, 1)
+        self.assertEqual(markers.find("01-x", "violation", [2]).line, 1)
+        self.assertIsNone(markers.find("01-x", "violation", [4]))
+        self.assertEqual(markers.find("02-y", "violation", [6]).line, 5)
+        self.assertIsNone(markers.find("02-y", "violation", [7]))
+        self.assertIsNone(markers.find("02-y", "violation", [8]))
+
     def test_malformed_marker_never_ignores(self):
         markers = InlineIgnores(
             "a() // audit:ignore 01-x\n"
@@ -132,7 +150,7 @@ class InlineIgnoreAuditTest(unittest.TestCase):
             "inline ignore at line 2 not applied: audit:ignore 01-no-bad needs a reason",
             finding,
         )
-        self.assertIn("ignore inline: // audit:ignore 01-no-bad <reason>", finding)
+        self.assertIn("ignore inline (line above): // audit:ignore 01-no-bad <reason>", finding)
         self.assertIn("a.go:1 (marker on line 1)", ignored)
         self.assertIn("upstream fixture name", ignored)
 
