@@ -58,43 +58,43 @@ func (r *SpectreApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		Watches(
 			&pubsubv1.Publisher{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToSpectreApplication),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Owner-labelled Subscribers (readiness changes update parent readiness).
 		Watches(
 			&pubsubv1.Subscriber{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToSpectreApplication),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Owner-labelled Routes (readiness changes update parent readiness).
 		Watches(
 			&gatewayv1.Route{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapOwnedChildToSpectreApplication),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Referenced Application changes.
 		Watches(
 			&applicationv1.Application{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapApplicationToSpectreApplications),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Zone changes via the Application dependency chain.
 		Watches(
 			&adminv1.Zone{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapZoneToSpectreApplications),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// EventConfig changes via the zone dependency chain.
 		Watches(
 			&eventv1.EventConfig{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventConfigToSpectreApplications),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// EventStore readiness changes.
 		Watches(
 			&pubsubv1.EventStore{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapEventStoreToSpectreApplications),
-			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("spectreapplication", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

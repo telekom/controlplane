@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,32 +81,32 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&adminv1.Zone{}, builder.WithPredicates(cc.Count("zone", cc.RoleFor))).
 		Watches(&adminv1.Environment{},
 			handler.EnqueueRequestsFromMapFunc(r.mapEnvironmentToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&corev1.ConfigMap{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToZones),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&corev1.Namespace{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&identityv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&identityv1.Client{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.Gateway{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.Consumer{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
-			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate))).
+			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -121,7 +123,11 @@ func (r *ZoneReconciler) mapSubResourceToZone(ctx context.Context, obj client.Ob
 	}
 
 	zone := &adminv1.Zone{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: environment, Name: zoneName}, zone); err != nil {
+	key := client.ObjectKey{Namespace: environment, Name: zoneName}
+	if err := r.Get(ctx, key, zone); err != nil {
+		if !apierrors.IsNotFound(err) {
+			logr.FromContextOrDiscard(ctx).Error(err, "Failed to get Zone for managed resource", "zone", key.String())
+		}
 		return nil
 	}
 	return []reconcile.Request{{NamespacedName: client.ObjectKeyFromObject(zone)}}
@@ -136,6 +142,7 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	list := &adminv1.ZoneList{}
 	err := r.List(ctx, list, client.MatchingLabels{cconfig.EnvironmentLabelKey: environment.GetName()})
 	if err != nil {
+		logr.FromContextOrDiscard(ctx).Error(err, "Failed to list Zones for Environment", "environment", environment.GetName())
 		return nil
 	}
 

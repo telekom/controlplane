@@ -52,7 +52,7 @@ func (r *AgentCardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&agenticv1.AgentCard{}).
 		Watches(&agenticv1.AgentCard{},
 			handler.EnqueueRequestsFromMapFunc(r.MapAgentCardToAgentCard),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(cc.Count("agentcard", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

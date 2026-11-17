@@ -52,7 +52,7 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&agenticv1.McpServer{}, builder.WithPredicates(cc.Count("mcpserver", cc.RoleFor))).
 		Watches(&agenticv1.McpServer{},
 			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToMcpServer),
-			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

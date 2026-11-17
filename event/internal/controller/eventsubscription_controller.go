@@ -69,19 +69,19 @@ func (r *EventSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&pubsubv1.Subscriber{}, builder.WithPredicates(cc.Count("eventsubscription", cc.RoleOwns))).
 		Watches(&eventv1.EventExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventExposureToEventSubscription),
-			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&eventv1.EventConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventConfigToEventSubscription),
-			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventSubscription),
-			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventSubscription),
-			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("eventsubscription", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

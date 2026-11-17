@@ -85,7 +85,7 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&gateway.Consumer{}, builder.WithPredicates(cc.Count("application", cc.RoleOwns))).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApplication),
-			builder.WithPredicates(cc.Count("application", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("application", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Complete(r)
 }
