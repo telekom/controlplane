@@ -150,7 +150,7 @@ servers:
 		It("should return StatusNotImplemented", func() {
 			// Create a request with a JSON body
 			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
-				Specification: map[string]interface{}{},
+				Specification: json.RawMessage(`{}`),
 			})
 			req := httptest.NewRequest(http.MethodPost, "/apispecifications", bytes.NewReader(apiSpecification))
 			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
@@ -161,7 +161,7 @@ servers:
 	Context("Update ApiSpecification resource", func() {
 		It("should update the ApiSpecification successfully", func() {
 			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
-				Specification: map[string]interface{}{
+				Specification: mustJSON(map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
 						"title":          "Rover API",
@@ -174,7 +174,7 @@ servers:
 							"url": "http://rover-api.com/eni/distr/v1",
 						},
 					},
-				},
+				}),
 			})
 
 			mockFileManager.EXPECT().UploadFile(mock.Anything, apiSpecFileId, mock.Anything, mock.Anything).Return(
@@ -202,7 +202,7 @@ servers:
 
 		It("should fail to update an ApiSpecification from a different team", func() {
 			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
-				Specification: map[string]interface{}{
+				Specification: mustJSON(map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
 						"title":          "Rover API",
@@ -215,7 +215,7 @@ servers:
 							"url": "http://rover-api/eni/distr-other/v1",
 						},
 					},
-				},
+				}),
 			})
 			req := httptest.NewRequest(http.MethodPut, "/apispecifications/other--team--eni-distr-other-v1",
 				bytes.NewReader(apiSpecification))
@@ -284,7 +284,7 @@ var _ = Describe("ApiSpecification Controller file-manager handling", func() {
 			apiStore.EXPECT().Get(mock.Anything, namespace, name).
 				RunAndReturn(func(context.Context, string, string) (*roverv1.ApiSpecification, error) { return stored, nil }).Once()
 
-			res, err := ctrl.Update(apiCtx, resourceId, api.ApiSpecification{Specification: specMap})
+			res, err := ctrl.Update(apiCtx, resourceId, api.ApiSpecification{Specification: mustJSON(specMap)})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res.Id).To(Equal(resourceId))
 			Expect(res.Specification).To(BeEmpty())
@@ -306,6 +306,69 @@ var _ = Describe("ApiSpecification Controller file-manager handling", func() {
 	})
 
 	Context("file-manager enabled", func() {
+		It("should store the specification as YAML in the order of the request", func() {
+			spec := json.RawMessage(`{"openapi":"3.0.0","info":{"version":"1.0.0","title":"Rover API","x-api-category":"other",` +
+				`"x-custom":{"limit":1000000,"id":9007199254740993}},"servers":[{"url":"http://rover-api.com/eni/distr/v1"}],` +
+				`"paths":{},"x-not-in-openapi":["yes"]}`)
+
+			var stored *roverv1.ApiSpecification
+			var uploaded []byte
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(nil, problems.NotFound(name)).Twice()
+			apiFiles.EXPECT().UploadFile(mock.Anything, mock.Anything, "application/yaml", mock.Anything).
+				RunAndReturn(func(_ context.Context, id, _ string, r io.Reader) (*fileApi.FileUploadResponse, error) {
+					var err error
+					uploaded, err = io.ReadAll(r)
+					return &fileApi.FileUploadResponse{FileId: id, FileHash: computeHash(uploaded)}, err
+				}).Once()
+			apiStore.EXPECT().CreateOrReplace(mock.Anything, mock.Anything).
+				RunAndReturn(func(_ context.Context, obj *roverv1.ApiSpecification) error {
+					stored = obj
+					return nil
+				}).Once()
+			apiStore.EXPECT().Get(mock.Anything, namespace, name).
+				RunAndReturn(func(context.Context, string, string) (*roverv1.ApiSpecification, error) { return stored, nil }).Once()
+			apiFiles.EXPECT().DownloadFile(mock.Anything, mock.Anything, mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+					_, err := w.Write(uploaded)
+					return &fileApi.FileDownloadResponse{}, err
+				}).Once()
+
+			res, err := ctrl.Update(apiCtx, resourceId, api.ApiSpecification{Specification: spec})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(string(uploaded)).To(Equal(`openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Rover API
+  x-api-category: other
+  x-custom:
+    limit: 1000000
+    id: 9007199254740993
+servers:
+  - url: http://rover-api.com/eni/distr/v1
+paths: {}
+x-not-in-openapi:
+  - "yes"
+`))
+			Expect(stored.Spec.Hash).To(Equal(computeHash(uploaded)))
+			Expect(string(res.Specification)).To(Equal(string(spec)))
+		})
+
+		DescribeTable("should reject an invalid specification with a bad request",
+			func(spec string, detail string) {
+				_, err := ctrl.Update(apiCtx, resourceId, api.ApiSpecification{Specification: json.RawMessage(spec)})
+
+				var problem problems.Problem
+				Expect(errors.As(err, &problem)).To(BeTrue())
+				Expect(problem.Code()).To(Equal(400))
+				Expect(err.Error()).To(ContainSubstring(detail))
+			},
+			Entry("missing", ``, "spec is empty"),
+			Entry("null", `null`, "spec is empty"),
+			Entry("not an object", `["openapi"]`, "specification must be an object"),
+			Entry("duplicate key", `{"openapi":"3.0.0","info":{"title":"a","version":"1.0.0","title":"b"},`+
+				`"servers":[{"url":"http://rover-api.com/eni/distr/v1"}],"paths":{}}`, `mapping key "title" already defined`),
+		)
 		It("should skip the download for an ApiSpecification created while the file-manager was disabled", func() {
 			apiStore.EXPECT().Get(mock.Anything, namespace, name).Return(&roverv1.ApiSpecification{
 				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},

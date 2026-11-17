@@ -97,3 +97,53 @@ var _ = Describe("resolveFileId", func() {
 		Expect(parsed.Version()).To(Equal(uuid.Version(7)))
 	})
 })
+
+var _ = Describe("specToYAML", func() {
+	It("keeps the key order and integers and quotes only where needed", func() {
+		out, err := specToYAML([]byte(`{"b":9007199254740993,"a":{"z":1000000,"y":1.50},` +
+			`"c":["yes","true","2024-01-01","plain","a: b"],"d":"line \u003cb\u003e\nline 2\n"}`))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(out)).To(Equal(`b: 9007199254740993
+a:
+  z: 1000000
+  "y": 1.5
+c:
+  - "yes"
+  - "true"
+  - "2024-01-01"
+  - plain
+  - "a: b"
+d: |
+  line <b>
+  line 2
+`))
+	})
+
+	DescribeTable("rejects invalid specifications",
+		func(spec, expected string) {
+			_, err := specToYAML([]byte(spec))
+			Expect(err).To(MatchError(ContainSubstring(expected)))
+		},
+		Entry("empty", ``, "spec is empty"),
+		Entry("null", `null`, "spec is empty"),
+		Entry("not an object", `["openapi"]`, "specification must be an object"),
+		Entry("duplicate key", `{"servers":[{"url":"b","url":"c"}]}`, `mapping key "url" already defined`),
+	)
+})
+
+var _ = Describe("specToJSON", func() {
+	It("returns the stored document in its order", func() {
+		spec := `{"openapi":"3.0.0","info":{"version":"1.0.0","title":"T <b>"},"x":[9007199254740993,1.5,"yes",null,true,{},[]]}`
+		stored, err := specToYAML([]byte(spec))
+		Expect(err).NotTo(HaveOccurred())
+
+		out, err := specToJSON(stored)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(out)).To(Equal(spec))
+	})
+
+	It("rejects a document without a JSON representation", func() {
+		_, err := specToJSON([]byte("a: .inf\n"))
+		Expect(err).To(MatchError(ContainSubstring("converting specification to JSON")))
+	})
+})

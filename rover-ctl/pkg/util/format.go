@@ -16,7 +16,8 @@ import (
 func FormatOutput(obj any, format string) (string, error) {
 	switch strings.ToLower(format) {
 	case "yaml", "yml":
-		bytes, err := yaml.MarshalWithOptions(obj, yaml.Indent(2))
+		// json.RawMessage values keep their key order
+		bytes, err := yaml.MarshalWithOptions(obj, yaml.Indent(2), yaml.UseJSONMarshaler())
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal to YAML")
 		}

@@ -225,21 +225,31 @@ func (p *ObjectParser) parseFile(filePath string) error {
 }
 
 func (p *ObjectParser) parseYAML(r io.Reader, filename string) error {
-	var decodeOpts []yaml.DecodeOption
-	if p.validator != nil {
-		decodeOpts = append(decodeOpts, yaml.Strict(), yaml.Validator(p.validator))
-	}
-	decoder := yaml.NewDecoder(r, decodeOpts...)
+	// The ordered decode keeps the key order of the source, with anchors, aliases
+	// and merge keys resolved; the map content is derived from it.
+	decoder := yaml.NewDecoder(r, yaml.UseOrderedMap())
 	for {
-		obj := new(types.UnstructuredObject)
-		obj.SetProperty("filename", filename)
-
-		err := decoder.Decode(obj)
+		var document any
+		err := decoder.Decode(&document)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 			return errors.Wrap(err, "failed to parse YAML")
+		}
+		ordered, ok := types.Ordered(document).(yaml.MapSlice)
+		if !ok {
+			return errors.Errorf("failed to parse YAML: %T was used where mapping is expected", document)
+		}
+
+		obj := &types.UnstructuredObject{Content: types.ToMap(ordered)}
+		obj.SetProperty("filename", filename)
+		obj.SetProperty(types.PropertyOrderedContent, ordered)
+
+		if p.validator != nil {
+			if err := p.validator.Struct(obj); err != nil {
+				return errors.Wrap(err, "object validation failed")
+			}
 		}
 
 		if err := p.RunHooks(HookAfterParse, obj); err != nil {
@@ -249,13 +259,16 @@ func (p *ObjectParser) parseYAML(r io.Reader, filename string) error {
 		p.objects = append(p.objects, obj)
 	}
 	return nil
-
 }
 
 func (p *ObjectParser) parseJSON(r io.Reader, filename string) error {
+	var raw json.RawMessage
+	if err := json.NewDecoder(r).Decode(&raw); err != nil {
+		return errors.Wrap(err, "failed to parse JSON")
+	}
+
 	content := make(map[string]any)
-	err := json.NewDecoder(r).Decode(&content)
-	if err != nil {
+	if err := json.Unmarshal(raw, &content); err != nil {
 		return errors.Wrap(err, "failed to parse JSON")
 	}
 
@@ -263,6 +276,7 @@ func (p *ObjectParser) parseJSON(r io.Reader, filename string) error {
 		Content: content,
 	}
 	obj.SetProperty("filename", filename)
+	obj.SetProperty(types.PropertyOrderedContent, raw)
 
 	if p.validator != nil {
 		if err := p.validator.Struct(obj); err != nil {

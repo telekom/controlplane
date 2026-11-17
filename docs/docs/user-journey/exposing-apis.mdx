@@ -38,7 +38,14 @@ paths:
 
 For OpenAPI 3.x, the base path is the path of the **first** entry in `servers`; other entries are ignored. For Swagger 2.0, it is the `basePath` field.
 
-Only the path of the server URL is used. Scheme, host, port, query and fragment are ignored, so [server variables](https://spec.openapis.org/oas/v3.0.3#server-variable-object) in the host or port (for example `https://{host}:{port}/eni/api/v1`) are allowed and need no declaration. Server variables in the **path** (for example `/eni/{version}`) are not supported and the specification is rejected. The path is used exactly as written and must be a valid URI path: letters, digits, `/`, `-._~!$&'()*+,;=:@` and well-formed percent-encodings such as `%20`, which stay encoded. Whitespace, braces and other characters are rejected. Existing platform restrictions on base paths and the derived resource name still apply, so a valid URI path is not necessarily accepted. The uploaded specification is stored unchanged.
+Only the path of the server URL is used. Scheme, host, port, query and fragment are ignored.
+
+- [Server variables](https://spec.openapis.org/oas/v3.0.3#server-variable-object) in the host or port need no declaration, for example `https://{host}:{port}/eni/api/v1`.
+- Server variables in the **path** are not supported, for example `/eni/{version}`. Such a specification is rejected.
+- The path is used exactly as written and must be a valid URI path. Allowed are letters, digits, `/`, `-._~!$&'()*+,;=:@` and well-formed percent-encodings such as `%20`, which stay encoded.
+- Whitespace, braces and other characters are rejected.
+
+Existing platform restrictions on base paths and the derived resource name still apply. So a valid URI path is not necessarily accepted. The server URL in the stored specification is not rewritten.
 
 Apply the specification:
 
@@ -49,6 +56,17 @@ roverctl apply -f checkout-spec.yaml
 ### What Happens
 
 The ApiSpecification handler processes your specification and creates an **Api** resource. This resource stores the API's metadata — including its base path, version, and category — and makes the API discoverable in the platform. The specification content is stored in the **File Manager** for later retrieval.
+
+#### How the specification is stored
+
+The specification is always stored as YAML, whether you apply a YAML or a JSON file. Its content is kept, but its formatting is normalized:
+
+- Keys keep the order in which you wrote them, and no fields are removed.
+- Integers keep their exact value. Decimal numbers are written in their shortest form, for example `1.50` becomes `1.5`.
+- Comments are removed. Anchors, aliases and merge keys (`<<`) are resolved by Rover-CTL before upload; a key written after a merge key overrides the merged value.
+- The YAML is indented with two spaces. Strings are only quoted when needed, including values such as `yes`, `no`, `on` and `off` that older YAML parsers would read as booleans.
+
+`${VARIABLE}` placeholders are replaced with environment variable values before upload, as in Rover files. A specification that contains the same key twice in one object is rejected. Reading the specification back, through the Rover Server API or `roverctl resource get`, returns it in the stored key order.
 
 ## Step 2: Expose the API in Your Rover
 

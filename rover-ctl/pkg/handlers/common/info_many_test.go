@@ -112,7 +112,7 @@ var _ = Describe("InfoMany pagination", func() {
 		}
 		items, err := handler.List(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(items).To(Equal([]any{app("a"), app("b")}))
+		Expect(items).To(Equal([]any{json.RawMessage(`{"name":"a"}`), json.RawMessage(`{"name":"b"}`)}))
 		Expect(recorded()).To(HaveLen(2))
 		Expect(recorded()[1].Get("limit")).To(Equal("2"))
 		_, err = handler.ListWithCursor(ctx, "p2")

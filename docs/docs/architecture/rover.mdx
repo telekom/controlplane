@@ -20,6 +20,16 @@ Users interact with the Rover domain through three paths:
 | **Rover Server** | REST API. Validates the configuration, uploads specifications to the File Manager, obfuscates secrets through the Secret Manager, and creates the Rover resource in Kubernetes. |
 | **Direct kubectl** | Apply a Rover resource directly to the Kubernetes API (for advanced users or automation). |
 
+### API Specification Format
+
+An OpenAPI or Swagger document travels from Rover-CTL to the File Manager in three steps:
+
+1. Rover-CTL parses the YAML or JSON file with goccy/go-yaml in ordered mode, which resolves anchors, aliases and merge keys, and sends the document as JSON in the key order of the source. JSON files are forwarded as written.
+2. Rover Server receives the specification as raw JSON and converts it into YAML with goccy/go-yaml, which keeps the key order and integers, indents with two spaces, quotes strings only where needed (including `yes` and `no`) and rejects duplicate keys. Hashing, linting and the File Manager upload use this YAML, and libopenapi reads the ApiSpecification metadata from it.
+3. Reading an ApiSpecification converts the stored YAML back into JSON in the stored key order. `roverctl resource get` and `resource list` keep the order of the response in their JSON and YAML output.
+
+The stored document is the specification that downstream consumers download through the `specificationUrl` of the Control Plane API.
+
 ### Resource Names and Labels
 
 The Rover Server accepts resource names between 2 and 90 characters. Names longer than 63 characters retain their full resource name, while the `cp.ei.telekom.de/application` label is shortened to fit Kubernetes' 63-character label-value limit. The shortened value retains the beginning and end of the name, with a deterministic hash in the middle.

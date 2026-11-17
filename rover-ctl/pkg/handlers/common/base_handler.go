@@ -245,7 +245,7 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	}
 
 	// Parse response
-	var result map[string]any
+	var result json.RawMessage
 	if err := DecodeResponse(h.Resource, resp.Body, &result); err != nil {
 		return nil, err
 	}
@@ -265,7 +265,9 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, resp.Items...)
+		for _, item := range resp.Items {
+			items = append(items, item)
+		}
 		if resp.Links.Next == "" {
 			h.logger.V(1).Info("No more items to list", "resource", h.Resource)
 			break

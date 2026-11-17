@@ -5,17 +5,27 @@
 package parser_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 )
+
+// sentSpecification returns the specification as rover-ctl sends it to the server.
+func sentSpecification(obj types.Object) string {
+	Expect(v0.PatchApiSpecificationRequest(context.Background(), obj)).To(Succeed())
+	b, err := json.Marshal(obj.GetContent()["specification"])
+	Expect(err).NotTo(HaveOccurred())
+	return string(b)
+}
 
 var _ = Describe("Parser", func() {
 	// Test for removeUnknownObjects function
@@ -206,6 +216,67 @@ var _ = Describe("Parser", func() {
 			Expect(objects).To(HaveLen(2))
 			Expect(objects[0].GetName()).To(Equal("test-rover-1"))
 			Expect(objects[1].GetName()).To(Equal("test-rover-2"))
+		})
+
+		It("should keep the source order of each YAML document with anchors resolved", func() {
+			filePath := filepath.Join(GinkgoT().TempDir(), "spec.yaml")
+			Expect(os.WriteFile(filePath, []byte(`# comment
+openapi: 3.0.3
+info: {version: 1.0.0, title: T}
+servers: [{url: "https://x/eni/order/v1"}]
+paths:
+  /b:
+    get:
+      responses:
+        200: &ok
+          description: "OK <b>\ttab"
+          x-limit: 1000000
+          x-price: 1.50
+        404:
+          <<: *ok
+          description: Not found
+  /a: {post: {responses: {"201": *ok}}}
+---
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata: {name: second}
+`), 0o600)).To(Succeed())
+
+			objParser := parser.NewObjectParser(parser.Opts...)
+			Expect(objParser.Parse(filePath)).To(Succeed())
+			objects := objParser.Objects()
+			Expect(objects).To(HaveLen(2))
+			Expect(objects[0].GetKind()).To(Equal("ApiSpecification"))
+			Expect(objects[1].GetProperty(types.PropertyOrderedContent)).NotTo(BeNil())
+
+			Expect(sentSpecification(objects[0])).To(Equal(`{"openapi":"3.0.3","info":{"version":"1.0.0","title":"T"},` +
+				`"servers":[{"url":"https://x/eni/order/v1"}],"paths":{"/b":{"get":{"responses":{` +
+				`"200":{"description":"OK \u003cb\u003e\ttab","x-limit":1000000,"x-price":1.5},` +
+				`"404":{"description":"Not found","x-limit":1000000,"x-price":1.5}}}},` +
+				`"/a":{"post":{"responses":{"201":{"description":"OK \u003cb\u003e\ttab","x-limit":1000000,"x-price":1.5}}}}}}`))
+		})
+
+		It("should reject a YAML document that is not a mapping", func() {
+			filePath := filepath.Join(GinkgoT().TempDir(), "list.yaml")
+			Expect(os.WriteFile(filePath, []byte("- openapi\n"), 0o600)).To(Succeed())
+
+			err := parser.NewObjectParser(parser.Opts...).Parse(filePath)
+			Expect(err).To(MatchError(ContainSubstring("[]interface {} was used where mapping is expected")))
+		})
+
+		It("should keep the raw JSON document", func() {
+			filePath := filepath.Join(GinkgoT().TempDir(), "spec.json")
+			Expect(os.WriteFile(filePath, []byte(`{
+  "swagger": "2.0", "info": {"version": "1.0.0", "title": "T"},
+  "basePath": "/eni/order/v1", "paths": {}, "x-big": 9007199254740993
+}`), 0o600)).To(Succeed())
+
+			objParser := parser.NewObjectParser(parser.Opts...)
+			Expect(objParser.Parse(filePath)).To(Succeed())
+			Expect(objParser.Objects()).To(HaveLen(1))
+
+			Expect(sentSpecification(objParser.Objects()[0])).To(Equal(`{"swagger":"2.0","info":{"version":"1.0.0","title":"T"},` +
+				`"basePath":"/eni/order/v1","paths":{},"x-big":9007199254740993}`))
 		})
 	})
 

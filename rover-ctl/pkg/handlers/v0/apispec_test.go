@@ -6,7 +6,9 @@ package v0_test
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/goccy/go-yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
@@ -93,6 +95,21 @@ var _ = Describe("ApiSpec Handler", func() {
 				// Verify the original content is now inside the specification field
 				specContent := patchedContent["specification"]
 				Expect(specContent).To(Equal(originalContent))
+			})
+
+			It("should send the ordered document when the parser provided one", func() {
+				obj := &types.UnstructuredObject{
+					Content: map[string]any{"openapi": "3.0.3", "info": map[string]any{"title": "T"}},
+				}
+				obj.SetProperty(types.PropertyOrderedContent, yaml.MapSlice{
+					{Key: "openapi", Value: "3.0.3"},
+					{Key: "info", Value: yaml.MapSlice{{Key: "title", Value: "T"}, {Key: "200", Value: []any{1.5}}}},
+				})
+
+				Expect(v0.PatchApiSpecificationRequest(context.Background(), obj)).To(Succeed())
+				body, err := json.Marshal(obj.GetContent())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(body)).To(Equal(`{"specification":{"openapi":"3.0.3","info":{"title":"T","200":[1.5]}}}`))
 			})
 		})
 	})

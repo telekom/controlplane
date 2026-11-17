@@ -204,11 +204,11 @@ var _ = Describe("Request failure diagnostics", func() {
 		Entry("get", func(h *common.BaseHandler) error {
 			_, err := h.Get(tokenCtx(), "test-resource")
 			return err
-		}, `{"a":1e`+numericMarker+`}`),
+		}, `{"a":`+numericMarker),
 		Entry("list", func(h *common.BaseHandler) error {
 			_, err := h.List(tokenCtx())
 			return err
-		}, `{"items":[1e`+numericMarker+`]}`),
+		}, `{"items":[`+numericMarker),
 		Entry("status", func(h *common.BaseHandler) error {
 			_, err := h.Status(tokenCtx(), "test-resource")
 			return err
@@ -217,7 +217,7 @@ var _ = Describe("Request failure diagnostics", func() {
 			h.SupportsInfo = true
 			_, err := h.Info(tokenCtx(), "test-resource")
 			return err
-		}, `{"a":1e`+numericMarker+`}`),
+		}, `{"a":`+numericMarker),
 	)
 
 	DescribeTable("forwards the shallowInfo query parameter only when requested",

@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
 )
 
@@ -468,7 +469,7 @@ var _ = Describe("BaseHandler", func() {
 							"apiVersion": "v1",
 							"kind": "Test",
 							"metadata": {"name": "test-resource"},
-							"spec": {"foo": "bar"},
+							"spec": {"zeta": "z", "foo": "bar"},
 							"status": {"state": "ready"}
 						}`)),
 						Header: make(http.Header),
@@ -481,6 +482,14 @@ var _ = Describe("BaseHandler", func() {
 				// Verify results
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
+
+				// The output keeps the order of the response
+				asJSON, err := util.FormatOutput(result, "json")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(asJSON).To(ContainSubstring("\"spec\": {\n    \"zeta\": \"z\",\n    \"foo\": \"bar\"\n  }"))
+				asYAML, err := util.FormatOutput(result, "yaml")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(asYAML).To(ContainSubstring("spec:\n  zeta: z\n  foo: bar\n"))
 
 				// With mockery, we validate requests through mock expectations
 				mockClient.AssertExpectations(GinkgoT())

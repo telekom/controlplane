@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -159,7 +159,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	specMarshaled, err := yaml.Marshal(req.Specification)
+	specMarshaled, err := specToYAML(req.Specification)
 	if err != nil {
 		return res, problems.BadRequest(err.Error())
 	} else if len(specMarshaled) == 0 {
@@ -384,7 +384,7 @@ func computeHash(data []byte) string {
 	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }
 
-func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (map[string]any, error) {
+func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (json.RawMessage, error) {
 	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil, nil
 	}
@@ -403,10 +403,9 @@ func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId st
 		return nil, errors.New("api specification response is empty")
 	}
 
-	res := map[string]any{}
-	err = yaml.NewDecoder(&b).Decode(&res)
+	res, err := specToJSON(b.Bytes())
 	if err != nil {
-		return res, problems.InternalServerError("Failed to unmarshal api specification", err.Error())
+		return nil, problems.InternalServerError("Failed to unmarshal api specification", err.Error())
 	}
 
 	return res, nil
