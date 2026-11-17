@@ -31,6 +31,7 @@ from auditlib import changeset, detect, rules as rulelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
+from auditlib.inline import InlineIgnores  # noqa: E402
 from auditlib.report import SEVERITY_RANK  # noqa: E402
 from auditlib.report import item_id  # noqa: E402
 from auditlib.store import (  # noqa: E402
@@ -125,6 +126,7 @@ def check(
     if audit_ignores.errors:
         print("\n".join(audit_ignores.errors), file=sys.stderr)
         return 2
+    markers = {path: InlineIgnores(text) for path, text in contents.items()}
 
     threshold = SEVERITY_RANK[args.fail_on]
     try:
@@ -150,6 +152,11 @@ def check(
                         rule.id, "violation", candidate.file, candidate.occurrence_anchor
                     )
                     if audit_ignores.get(ident):
+                        continue
+                    marker = markers[candidate.file].find(
+                        rule.id, "violation", candidate.lines
+                    )
+                    if marker and not marker.problem:
                         continue
                     if SEVERITY_RANK[rule.severity] >= threshold:
                         complexity0.append(

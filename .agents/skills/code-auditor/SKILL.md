@@ -15,7 +15,8 @@ cannot, and every answer you give is machine-verified before it counts.
 - Never edit `.agents/.audit/report.json`. Write answers to `verdicts.json`.
 - Never guess a verdict. `UNCLEAR` is a valid answer and is always better than
   an invented one.
-- Never add an audit ignore yourself. Only a human may ignore a finding.
+- Never add an audit ignore yourself, neither an `audit:ignore` comment nor an
+  `.agents/auditignore` entry. Only a human may ignore a finding.
 - Never fix code during the audit. Audit first, report, then fix.
 
 ## Auditing a submodule
@@ -164,7 +165,13 @@ the rejection.
 ### 5. Report to the user
 
 Print the findings exactly as the script rendered them: severity, rule, file,
-line, quote, reason, audit ignore id. Then offer to fix them.
+line, quote, reason, the `ignore inline` marker and audit ignore id. Then
+offer to fix them. If a finding is a false positive, the human ignores it by
+pasting the printed marker with a reason on the line above the cited line
+(or, if short, at its end); see "Audit ignores" in `.agents/rules/README.md`.
+
+Mention anything listed under **ignored inline** once, so every applied marker
+stays visible.
 
 Anything printed under **advisory** sits outside the change — it is real, but
 it is not this change's regression and it does not block. Mention it once; do
