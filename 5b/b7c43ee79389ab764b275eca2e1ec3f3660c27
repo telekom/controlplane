@@ -1,0 +1,67 @@
+.agents/skills/code-auditor/scripts/audit_gate.py
+  s_10d95221900e83::t_94faa6d8315865 34,129,156-159
+  s_10d95221900e83::t_6920661f333e51 160
+.agents/ARCHITECTURE.md
+  s_10d95221900e83::t_06fd99ea1457d7 45-46,54-55,129-136,175-176
+  s_10d95221900e83::t_8e772f9e34ae4d 171
+.agents/skills/code-auditor/scripts/auditlib/detect.py
+  s_10d95221900e83::t_bd9130ce90bdc5 303-317
+  s_10d95221900e83::t_d0f6b3bb9db0e2 33-40,267
+.agents/rules/README.md
+  s_10d95221900e83::t_b6077e36b70560 290
+  s_10d95221900e83::t_1904c4a6be378e 257-289,291-305,313-314
+.agents/skills/code-auditor/scripts/create_audit_report.py
+  s_10d95221900e83::t_bcd72f53c1a46b 35
+  s_10d95221900e83::t_4df573b9eab543 10-12
+  s_10d95221900e83::t_7c1d6bf8db5ec1 9
+  s_10d95221900e83::t_fdea29b47a2228 120-125,186,212-217,223-232
+.agents/skills/code-auditor/scripts/auditlib/inline.py
+  s_10d95221900e83::t_e2c1806ab5b9f5 1-46,48-121,123-143
+  s_10d95221900e83::t_7c1d6bf8db5ec1 47,122
+.agents/skills/code-auditor/scripts/README.md
+  s_10d95221900e83::t_c4f8576dcab3be 30-31,126-127,131-134,183-185
+  s_10d95221900e83::t_bac24f33ae35ff 135-136
+.agents/skills/code-auditor/scripts/tests/test_inline_ignores.py
+  s_10d95221900e83::t_79ba9819731906 1-22,38-100,102-139,146,148-166,168-201
+  s_10d95221900e83::t_eabe65437ce8bf 23-37,101,140-145,147,167
+.agents/skills/code-auditor/scripts/auditlib/report.py
+  s_10d95221900e83::t_b89f7751c6256f 62-64
+.opencode/agents/audit-judge-careful.md
+  s_10d95221900e83::t_3f8c82e7ad438a 79-80,86-87
+.opencode/agents/audit-judge-fast.md
+  s_10d95221900e83::t_3f8c82e7ad438a 79-80,86-87
+.agents/skills/code-auditor/scripts/process_audit_report.py
+  s_10d95221900e83::t_7ee503ac09e1bb 198
+  s_10d95221900e83::t_21b62f01766720 36,212-216,220-248,270,281
+  s_10d95221900e83::t_c4018273712460 15-17
+  s_10d95221900e83::t_7cc9832323ab2a 370-377,435,440-443,467-473,490-497
+  s_10d95221900e83::t_2245465f39d704 498
+AGENTS.md
+  s_10d95221900e83::t_3eaa3a4c5262f8 99-100
+.github/agents/audit-judge-fast.agent.md
+  s_10d95221900e83::t_3f8c82e7ad438a 75-76,82-83
+.agents/skills/code-auditor/persona/README.md
+  s_10d95221900e83::t_60f709c32935b2 68-69,75-76
+.agents/skills/code-auditor/SKILL.md
+  s_10d95221900e83::t_d0edebd2db18fd 18-19,168-174
+.agents/auditignore
+  s_10d95221900e83::t_f4e984d42da9eb 5-8
+.github/agents/audit-judge-careful.agent.md
+  s_10d95221900e83::t_3f8c82e7ad438a 75-76,82-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5bb7c43ee79389ab764b275eca2e1ec3f3660c27",
+  "prompts": {},
+  "sessions": {
+    "s_10d95221900e83": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "ed8c258b-5a51-402d-ae83-24b026e44e47",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

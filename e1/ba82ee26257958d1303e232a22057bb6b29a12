@@ -1,0 +1,20 @@
+.agents/rules/16-skip-initial-list-on-watches.md
+  s_de1bf9457581f9::t_78621579236533 1-61,69-73
+  s_de1bf9457581f9::t_7ee410493d645f 62-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e1ba82ee26257958d1303e232a22057bb6b29a12",
+  "prompts": {},
+  "sessions": {
+    "s_de1bf9457581f9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "1c1dcf1d-cef9-4dfd-acde-11388b0686ea",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

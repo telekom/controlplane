@@ -1,0 +1,25 @@
+discovery-server/internal/mapper/externalids.go
+  s_ea61bf8377c4e2::t_3c4284b53bdd9d 35
+  s_ea61bf8377c4e2::t_b645072f7cb161 8-9,29-34
+discovery-server/internal/controller/application.go
+  s_ea61bf8377c4e2::t_15ce8515103312 37,44-46,90-99,101-106,108
+discovery-server/internal/controller/application_test.go
+  s_ea61bf8377c4e2::t_e42c387b0cb618 33
+  s_ea61bf8377c4e2::t_cce202471463b3 8,15,17-18,20-21,27-32,34-54,97-100,109-111,113-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "44eefde2adf270e820146588ab53270e79ed2bae",
+  "prompts": {},
+  "sessions": {
+    "s_ea61bf8377c4e2": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "354de4bb-d748-4019-b79b-eb1ac42ad31a",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

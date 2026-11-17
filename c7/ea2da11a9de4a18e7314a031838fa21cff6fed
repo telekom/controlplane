@@ -1,0 +1,30 @@
+gateway/internal/controller/route_controller.go
+  s_fa0ccb94425479::t_0ae405574c672c 72
+gateway/internal/handler/route/handler_test.go
+  s_fa0ccb94425479::t_4a75b0064941c3 9,21
+  s_fa0ccb94425479::t_6c9d1fd21f6788 439-442,446-448
+  s_fa0ccb94425479::t_1668572e97b7bc 443-445
+gateway/internal/features/builder.go
+  s_fa0ccb94425479::t_9310f925b00c90 299,365
+gateway/internal/features/builder_test.go
+  s_fa0ccb94425479::t_d49f49fe796cbc 204,206,593,595
+gateway/internal/handler/route/handler.go
+  s_fa0ccb94425479::t_b899a9e0987992 134,138-139
+  s_fa0ccb94425479::t_05b552b51a4d1d 140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c7ea2da11a9de4a18e7314a031838fa21cff6fed",
+  "prompts": {},
+  "sessions": {
+    "s_fa0ccb94425479": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7ec22eb2-53f0-49ef-8512-bd61fbb889bd",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
