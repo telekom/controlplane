@@ -20,6 +20,7 @@ import (
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	application_handler "github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	spectre_handler "github.com/telekom/controlplane/rover/internal/handler/rover/spectre"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
@@ -72,6 +73,11 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventSubscription{})
 		if err != nil {
 			ctrl.Log.Error(err, "unable to create ownerIndex for EventSubscription")
+			os.Exit(1)
+		}
+		err = mgr.GetFieldIndexer().IndexField(ctx, &roverv1.Rover{}, application_handler.AdditionalPublisherIndexKey, application_handler.IndexAdditionalPublisherIds)
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create additional publisher index for Rover")
 			os.Exit(1)
 		}
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventType{})

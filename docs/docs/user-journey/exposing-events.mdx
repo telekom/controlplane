@@ -128,6 +128,10 @@ Send events to the publish URL provided for your zone (`/horizon/events/v1`; `/h
 
 The application info (`get-info`) returns this URL as `stargatePublishEventUrl` and as the `tardis.horizon.event.url` variable. When one of your event exposures reports a publish URL, the first such URL is used; otherwise it is the first non-hidden URL of the zone's selected Event gateway preset joined with `/horizon/events/v1`. The Event gateway may use a different hostname and base path than the API gateway; `stargateUrl` remains the API gateway URL (including failover). This fallback requires neither readiness nor Event preset status, and is returned in shallow responses and for applications without any event exposure. If the zone offers no Event gateway preset, or the selected Event preset has no public URL, both values are omitted; an API endpoint is never advertised in their place. If an Event preset cannot be selected for other reasons (for example, several default Event presets), info generation fails with a generic `500 Internal Server Error` problem response; details are only logged server-side. The URL's presence does not mean that your application is authorized to publish a given event type or that your exposure is ready; publishing is still subject to the event type's exposure and publisher configuration.
 
+:::note Additional publishers
+Applications listed in an event exposure's `additionalPublisherIds` (same environment) automatically receive a client and client secret, so they can publish this event type through Horizon. Removing the ID reverts this unless the application needs a client for other reasons. See [Event Filtering](./features/event-filtering.mdx).
+:::
+
 ## API & Event Features
 
 Beyond the basic event exposure, you can customize your event type with additional features such as publisher scopes and additional publisher IDs.

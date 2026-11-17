@@ -398,3 +398,5 @@ exposures:
 | Field | Description |
 | ----- | ----------- |
 | `additionalPublisherIds` | A list of application IDs that are allowed to publish events to this event type, in addition to the owning application. Each ID must be unique. |
+
+An application that is listed as an additional publisher by another Rover in the same environment automatically gets its own identity client and client secret, so it can authenticate and publish through Horizon even if it has no exposures, listeners or subscriptions of its own. If the ID is removed (or the owning Rover is deleted) and the application has no other need for a client, the client is removed again.
