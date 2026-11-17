@@ -6,6 +6,7 @@ package route_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
@@ -17,6 +18,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -432,6 +434,16 @@ var _ = Describe("RouteHandler", func() {
 				err := handler.Delete(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to get gateway"))
+			})
+
+			It("blocks when the gateway is not ready", func() {
+				setupNotReadyGatewayGet()
+
+				err := handler.Delete(ctx, route)
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("is not ready"))
 			})
 
 			It("returns error when kong client DeleteRoute fails", func() {

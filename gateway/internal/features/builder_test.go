@@ -201,13 +201,9 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when route is nil", func() {
-			It("panics due to nil dereference before the guard check", func() {
-				// NOTE: Build() accesses b.Route.Name for logging before the nil check,
-				// so a nil route causes a panic rather than returning ErrNoRoute.
+			It("returns ErrNoRoute", func() {
 				builder := features.NewFeatureBuilder(mockKC, nil, nil, gateway)
-				Expect(func() {
-					_ = builder.Build(ctx)
-				}).To(Panic())
+				Expect(builder.Build(ctx)).To(MatchError(features.ErrNoRoute))
 			})
 		})
 
@@ -594,13 +590,9 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when consumer is nil", func() {
-			It("panics due to nil dereference before the guard check", func() {
-				// NOTE: BuildForConsumer() accesses b.Consumer.Name for logging
-				// before the nil check, so a nil consumer causes a panic.
+			It("returns ErrNoConsumer", func() {
 				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
-				Expect(func() {
-					_ = builder.BuildForConsumer(ctx)
-				}).To(Panic())
+				Expect(builder.BuildForConsumer(ctx)).To(MatchError(features.ErrNoConsumer))
 			})
 		})
 

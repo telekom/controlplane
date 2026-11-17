@@ -293,10 +293,10 @@ func (b *Builder) GetUpstream() client.Upstream {
 }
 
 func (b *Builder) Build(ctx context.Context) (err error) {
-	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Route.Name)
 	if b.Route == nil {
 		return ErrNoRoute
 	}
+	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Route.Name)
 
 	// The Kong client discovers the entities by the IDs recorded before the properties are rebuilt.
 	b.Route.CaptureStoredIds()
@@ -359,10 +359,10 @@ func (b *Builder) Build(ctx context.Context) (err error) {
 }
 
 func (b *Builder) BuildForConsumer(ctx context.Context) error {
-	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("consumer", b.Consumer.Name)
 	if b.Consumer == nil {
 		return ErrNoConsumer
 	}
+	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("consumer", b.Consumer.Name)
 
 	for _, f := range sortFeatures(toSlice(b.Features)) {
 		if f.IsUsed(ctx, b) {

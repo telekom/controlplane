@@ -69,7 +69,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.Gateway{},
 			handler.EnqueueRequestsFromMapFunc(r.mapGatewayToRoutes),
-			builder.WithPredicates(cc.Count("route", cc.RoleWatches, NamePrefixChangedPredicate()))).
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, NamePrefixChangedPredicate(), cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.RouteListener{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteListenerToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).

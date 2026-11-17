@@ -131,9 +131,12 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 }
 
 func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error {
-	_, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
+	ready, gateway, err := gatewayhandler.GetGatewayByRef(ctx, route.Spec.GatewayRef, true)
 	if err != nil {
 		return err
+	}
+	if !ready {
+		return ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
 	route.SetNamePrefix(gateway.Spec.NamePrefix)
 
