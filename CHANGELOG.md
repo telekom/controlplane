@@ -1,3 +1,10 @@
+## [0.48.2](https://github.com/telekom/controlplane/compare/v0.48.1...v0.48.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **controllers:** skip initial list events in watch predicates ([#869](https://github.com/telekom/controlplane/issues/869)) ([1717ecf](https://github.com/telekom/controlplane/commit/1717ecf4585d5f04997ef05f2622f63f3a8deb31))
+
 ## [0.48.1](https://github.com/telekom/controlplane/compare/v0.48.0...v0.48.1) (2026-11-16)
 
 
