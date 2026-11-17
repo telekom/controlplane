@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -126,7 +126,7 @@ func (r *ZoneReconciler) mapSubResourceToZone(ctx context.Context, obj client.Ob
 	key := client.ObjectKey{Namespace: environment, Name: zoneName}
 	if err := r.Get(ctx, key, zone); err != nil {
 		if !apierrors.IsNotFound(err) {
-			logr.FromContextOrDiscard(ctx).Error(err, "Failed to get Zone for managed resource", "zone", key.String())
+			log.FromContext(ctx).Error(err, "Failed to get Zone for managed resource", "zone", key.String())
 		}
 		return nil
 	}
@@ -142,7 +142,7 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	list := &adminv1.ZoneList{}
 	err := r.List(ctx, list, client.MatchingLabels{cconfig.EnvironmentLabelKey: environment.GetName()})
 	if err != nil {
-		logr.FromContextOrDiscard(ctx).Error(err, "Failed to list Zones for Environment", "environment", environment.GetName())
+		log.FromContext(ctx).Error(err, "Failed to list Zones for Environment", "environment", environment.GetName())
 		return nil
 	}
 
