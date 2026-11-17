@@ -1,0 +1,115 @@
+rover-server/internal/controller/util.go
+  s_b7556bbc82ffc5::t_3672da2bea3ee8 66-67,70,73-74,76,79-81
+  s_b7556bbc82ffc5::t_b9c1364c260ed0 13,51-52,54-55,58-61,63,68-69,71-72,75,77-78
+  s_b7556bbc82ffc5::t_548927c7d05dfc 8,10,15,50,53,56-57,62,64-65
+rover-ctl/pkg/parser/parser.go
+  s_b7556bbc82ffc5::t_00329f689a3b8b 247
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 240
+  s_b7556bbc82ffc5::t_afd3253aaa9205 265-269,271,279
+  s_b7556bbc82ffc5::t_140b8f8bc4da8b 228-230,232-233,241-246,249-253
+  s_b7556bbc82ffc5::t_8c40556d7627b7 248
+rover-server/internal/mapper/apispecification/out/apispecification_test.go
+  s_b7556bbc82ffc5::t_458329b2ff10a3 8-9,18-21
+rover-ctl/pkg/handlers/common/listresponse.go
+  s_b7556bbc82ffc5::t_e3d0f32b3d5512 7-8,16
+  s_b7556bbc82ffc5::t_cf2d9ae66a5ee6 15
+rover-ctl/pkg/types/unstructured.go
+  s_b7556bbc82ffc5::t_140b8f8bc4da8b 7-12,100,105-106,120-122,148-152
+  s_b7556bbc82ffc5::t_2318edcd6cc5a1 101-103,117
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 104,107-116,118-119,123,131-135,137,140,143,147
+  s_b7556bbc82ffc5::t_c349f4fd569f38 124-130,136,138-139,141-142,144-146,153
+  s_b7556bbc82ffc5::t_00329f689a3b8b 15-17
+  s_b7556bbc82ffc5::t_527e68c80f31c5 18-19
+rover-server/internal/api/server.gen.go
+  s_b7556bbc82ffc5::t_451f28044da141 7,12,955,961,2832-2835,2837,3033-3036,3038-3039,3043,3045-3049,3057,3075-3080,3106-3124
+  s_b7556bbc82ffc5::t_322edcd1387542 986-987,2877-3032
+  s_b7556bbc82ffc5::t_1484e788edb6d3 2838-2876
+rover-server/api/openapi.yaml
+  s_b7556bbc82ffc5::t_487bdac539c5e7 3545
+  s_b7556bbc82ffc5::t_322edcd1387542 3575
+rover-ctl/pkg/parser/parser_test.go
+  s_b7556bbc82ffc5::t_5e3dd23382c7cc 8,15,22-29,234,250,252,278
+  s_b7556bbc82ffc5::t_1244114fe9065b 220,222-231,233,235-249,251,253,257-258,267-277,279-280
+  s_b7556bbc82ffc5::t_b0ad89604db40b 221,232,254-256
+  s_b7556bbc82ffc5::t_dab32857cdf659 259-266
+rover-ctl/pkg/handlers/common/request_safety_test.go
+  s_b7556bbc82ffc5::t_2318edcd6cc5a1 207,211,220
+rover-server/internal/controller/apispecification_categories_test.go
+  s_b7556bbc82ffc5::t_51f835d1abc5de 92,98
+rover-server/go.mod
+  s_b7556bbc82ffc5::t_b9c1364c260ed0 44
+docs/docs/architecture/rover.mdx
+  s_b7556bbc82ffc5::t_649537ea56a00e 23-24,26,30-32
+  s_b7556bbc82ffc5::t_b59d10f09d52a3 25
+  s_b7556bbc82ffc5::t_6ae98c43089910 29
+  s_b7556bbc82ffc5::t_4b19be12e8c953 27-28
+rover-server/internal/controller/apispecification_test.go
+  s_b7556bbc82ffc5::t_2698fb0c76af5b 368
+  s_b7556bbc82ffc5::t_eb09d75563ede3 370
+  s_b7556bbc82ffc5::t_610354b17d9be8 309-353,355-367,369,371
+  s_b7556bbc82ffc5::t_51526471f066ab 153,164,177,205,218,287
+  s_b7556bbc82ffc5::t_458329b2ff10a3 354
+rover-server/internal/mapper/apispecification/in/apispecification_test.go
+  s_b7556bbc82ffc5::t_2698fb0c76af5b 34
+rover-server/internal/mapper/apispecification/out/apispecification.go
+  s_b7556bbc82ffc5::t_458329b2ff10a3 9,19
+rover-server/internal/controller/apispecification.go
+  s_b7556bbc82ffc5::t_c7f2e434508eb6 162
+  s_b7556bbc82ffc5::t_458329b2ff10a3 12,387,406,408
+rover-server/internal/controller/util_test.go
+  s_b7556bbc82ffc5::t_e9f3fac1adff12 100-101,105,110-114,116-121,132
+  s_b7556bbc82ffc5::t_bcb9d33a581723 102-103,106-109,115,122-131,135-137,142,145-147
+  s_b7556bbc82ffc5::t_eb09d75563ede3 104
+  s_b7556bbc82ffc5::t_0c6fc0ca01f7c1 133-134,138-141,143-144,148-149
+rover-ctl/pkg/util/format.go
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 19-20
+rover-server/internal/mapper/apispecification/in/suite_apispec_in_test.go
+  s_b7556bbc82ffc5::t_c22a83caf00998 8,20,22-24
+rover-ctl/pkg/handlers/v0/apispec.go
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 9-10,12,37-45
+  s_b7556bbc82ffc5::t_90609bee272a7a 31
+  s_b7556bbc82ffc5::t_d5953dd59b27d3 36,46,48
+docs/docs/user-journey/exposing-apis.mdx
+  s_b7556bbc82ffc5::t_4b19be12e8c953 65
+  s_b7556bbc82ffc5::t_b59d10f09d52a3 66
+  s_b7556bbc82ffc5::t_6ae98c43089910 69
+  s_b7556bbc82ffc5::t_a94b2e1eb9b20a 41-48
+  s_b7556bbc82ffc5::t_4b15579da6d92e 60-64,67-68
+  s_b7556bbc82ffc5::t_6f80f1f9ee3fc7 70
+rover-server/internal/controller/apispecification_lint_test.go
+  s_b7556bbc82ffc5::t_3a83ed44a75a0d 68,78
+rover-ctl/pkg/handlers/v0/apispec_test.go
+  s_b7556bbc82ffc5::t_b0ad89604db40b 104-105,107,110-112
+  s_b7556bbc82ffc5::t_2318edcd6cc5a1 106
+  s_b7556bbc82ffc5::t_3192e2b00d01e1 11
+  s_b7556bbc82ffc5::t_f6b6fcaf670a9f 9,99-103,108-109
+  s_b7556bbc82ffc5::t_fb5e932a2d417e 113
+rover-ctl/pkg/handlers/common/info_many_test.go
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 115
+rover-ctl/pkg/handlers/common/base_handler_test.go
+  s_b7556bbc82ffc5::t_f1d1d047fcdaf4 472,486-492
+  s_b7556bbc82ffc5::t_ee7fc2f9ab2c64 21
+  s_b7556bbc82ffc5::t_667a432da41dd3 493
+rover-server/internal/controller/suite_controller_test.go
+  s_b7556bbc82ffc5::t_b02e9013c195c4 9,213-216
+  s_b7556bbc82ffc5::t_e7e40fb73f92bb 217-218
+rover-ctl/pkg/handlers/common/base_handler.go
+  s_b7556bbc82ffc5::t_e3d0f32b3d5512 269-270
+  s_b7556bbc82ffc5::t_61bfdc8f6be911 248,268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "12f73682e8f87c60a7695a0a046e6f6d8e8cfe8b",
+  "prompts": {},
+  "sessions": {
+    "s_b7556bbc82ffc5": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "92592c8a-cc90-44b2-9983-414b37506126",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
