@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -33,6 +34,7 @@ func NewApplicationController(stores *sstore.Stores) server.ApplicationControlle
 func (c *applicationController) GetAll(ctx context.Context, params api.GetAllApplicationsParams) (*api.ApplicationListResponse, error) {
 	listOpts := store.NewListOpts()
 	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
+	listOpts.Filters = externalIdFilters(&params)
 
 	items, err := pagination.FetchAll(ctx, c.stores.ApplicationStore, listOpts)
 	if err != nil {
@@ -45,6 +47,9 @@ func (c *applicationController) GetAll(ctx context.Context, params api.GetAllApp
 	}
 
 	basePath := "/applications"
+	if q := externalIdFilterQuery(&params); q != "" {
+		basePath += "?" + q
+	}
 	result := pagination.Paginate(mapped, params.Offset, params.Limit, basePath)
 
 	return &api.ApplicationListResponse{
@@ -80,4 +85,38 @@ func (c *applicationController) GetStatus(ctx context.Context, applicationId str
 	}
 
 	return statusmapper.MapResponse(app), nil
+}
+
+// externalIdFilters translates the optional icto/psiid query filters into
+// exact-match store filters on spec.externalIds. Empty filters match all.
+func externalIdFilters(params *api.GetAllApplicationsParams) []store.Filter {
+	var filters []store.Filter
+	if params.Icto != "" {
+		filters = append(filters, store.Filter{
+			Path:  mapper.ExternalIdJsonPath(mapper.IctoScheme),
+			Op:    store.OpEqual,
+			Value: params.Icto,
+		})
+	}
+	if params.Psiid != "" {
+		filters = append(filters, store.Filter{
+			Path:  mapper.ExternalIdJsonPath(mapper.PsiScheme),
+			Op:    store.OpEqual,
+			Value: params.Psiid,
+		})
+	}
+	return filters
+}
+
+// externalIdFilterQuery encodes the active icto/psiid filters so that
+// pagination links keep them.
+func externalIdFilterQuery(params *api.GetAllApplicationsParams) string {
+	q := url.Values{}
+	if params.Icto != "" {
+		q.Set("icto", params.Icto)
+	}
+	if params.Psiid != "" {
+		q.Set("psiid", params.Psiid)
+	}
+	return q.Encode()
 }

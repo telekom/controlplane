@@ -10,6 +10,7 @@
   {
    "active": true,
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -47,6 +48,7 @@
   {
    "active": true,
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -84,6 +86,7 @@
   {
    "active": true,
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -114,6 +117,7 @@
 {
  "active": true,
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
@@ -137,6 +141,7 @@
 {
  "active": true,
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
@@ -160,6 +165,7 @@
 {
  "active": true,
  "application": {
+  "icto": "icto-12345",
   "name": "my-app"
  },
  "approval": {
@@ -219,6 +225,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -260,6 +267,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {
@@ -301,6 +309,7 @@
  "items": [
   {
    "application": {
+    "icto": "icto-12345",
     "name": "my-app"
    },
    "approval": {

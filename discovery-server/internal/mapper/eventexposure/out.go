@@ -84,6 +84,7 @@ func mapTeamAndApplication(ctx context.Context, in *eventv1.EventExposure, out *
 	}
 	out.Application = api.ApplicationRef{
 		Name: app.GetName(),
+		Icto: mapper.ExternalId(app.Spec.ExternalIds, mapper.IctoScheme),
 	}
 }
 
