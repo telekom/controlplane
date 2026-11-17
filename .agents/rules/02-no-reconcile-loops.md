@@ -29,6 +29,14 @@ A write is safe when repeating it with the same input produces no further
 event: the value is unchanged, the write is guarded by `ObservedGeneration`,
 or the data is derived deterministically from the spec.
 
+Handlers implementing `handler.Handler[T]` run under the common controller
+(`common/pkg/controller`). It stamps `ObservedGeneration` on every condition
+and writes the status only when it changed. A handler that sets a condition
+built by `common/pkg/condition` (`NewReadyCondition`, `NewBlockedCondition`,
+`NewProcessingCondition`, `NewDoneProcessingCondition`,
+`NewNotReadyCondition`, …) via `SetCondition` and does not write the status
+itself therefore needs no stamping of its own.
+
 ## Detect
 
 The rule-level detector must stay at least as broad as the union of the
@@ -46,7 +54,7 @@ with the reason recorded — asking a model to confirm that a string is missing
 is pure cost.
 
 - [self-trigger] when=`(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx)` Does this change write to a resource the same controller watches, without a guard that makes the write stop once the desired state is reached?
-- [observed-generation] when=`(SetCondition|SetStatusCondition|ObservedGeneration)` If a status condition is written, is `ObservedGeneration` stamped so an unchanged generation does not re-trigger work?
+- [observed-generation] when=`(SetCondition|SetStatusCondition|ObservedGeneration)` If a status condition is set, is `ObservedGeneration` stamped, either by the code itself or by the common controller (`common/pkg/controller`) that runs `Handler[T]` handlers and stamps every condition before its status write?
 - [unstable-ordering] when=`(\.List\(|\.Items\b)` Is any collection derived from a `List` call stored in a spec or status without being sorted first, so cached ordering can flip between reconciles?
 - [fixed-requeue] when=`(RequeueAfter|Requeue:)` Does the change requeue on a fixed interval instead of a jittered one?
 - [cross-resource-cycle] when=`(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx)` Does the change introduce a write chain across resources (A updates B, B updates A) that can cycle?
@@ -75,6 +83,12 @@ return ctrl.Result{RequeueAfter: 30 * time.Second}, r.Status().Update(ctx, obj)
 // Guarded: once the generation is observed, the work is skipped entirely.
 cond := meta.FindStatusCondition(client.GetConditions(), identityv1.SecretRotationConditionType)
 return cond != nil && cond.ObservedGeneration == client.Generation
+```
+
+```go source=admin/internal/handler/environment/handler.go:20@d82c1226
+// Handler under the common controller: it stamps ObservedGeneration and writes the status.
+obj.SetCondition(condition.NewReadyCondition("EnvironmentProvided", "Environment has been provided"))
+obj.SetCondition(condition.NewDoneProcessingCondition("Environment has been provided"))
 ```
 
 ```go source=projector/internal/runtime/reconciler.go:180@b53a2d9c

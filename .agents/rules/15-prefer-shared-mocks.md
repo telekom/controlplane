@@ -47,7 +47,7 @@ because a shared mock *might* exist elsewhere.
 
 ## Checks
 
-- [duplicates-shared-mock] Does the marked type implement an interface (secret manager, janitor/scoped client, file manager, recorder, Keycloak, Kong, or another interface with a mock in a `mock`/`fake`/`test/mocks` package) that already has a shared mock?
+- [duplicates-shared-mock] Does the marked type implement an interface for credential storage, cleanup, scoped clients, file management, event recording, identity, gateways, or other services that already has a shared mock in a `mock`, `fake`, or `test/mocks` package?
 
 ## Examples
 
