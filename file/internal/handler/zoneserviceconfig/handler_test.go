@@ -604,6 +604,27 @@ var _ = Describe("tokenEndpointFromIssuer", func() {
 	})
 })
 
+var _ = Describe("createManagedRoute", func() {
+	It("keeps the percent-encoding of the upstream path", func() {
+		obj := testZoneServiceConfig()
+		obj.Spec.API.Url = "https://sftp-api.internal/api/url%20encoded%20path"
+		ctx, mockClient := newTestContext()
+
+		mockClient.EXPECT().Scheme().Return(buildScheme()).Maybe()
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				return controllerutil.OperationResultCreated, mutate()
+			}).Once()
+
+		route, err := createManagedRoute(ctx, testReadyZone(), obj)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/api/url%20encoded%20path"))
+	})
+})
+
 var _ = Describe("sftpAPIEndpointFromManagedRoute", func() {
 	It("returns an error when the route has no hostnames", func() {
 		route := &gatewayapi.Route{Spec: gatewayapi.RouteSpec{Paths: []string{testAPIPath}}}

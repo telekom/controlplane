@@ -83,7 +83,7 @@ func FromURL(parsedURL *url.URL) (Upstream, error) {
 		Scheme: parsedURL.Scheme,
 		Host:   parsedURL.Hostname(),
 		Port:   intPort,
-		Path:   parsedURL.Path,
+		Path:   parsedURL.EscapedPath(),
 	}, err
 }
 

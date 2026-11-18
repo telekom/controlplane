@@ -340,7 +340,7 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 					ApprovalState: approvalapi.ApprovalStateGranted.String(),
 					Message:       "Test-Message",
 				},
-				GatewayUrl: "http://ger.gateway.pol:8080/ger",
+				GatewayUrl: "http://ger.gateway.pol:8080/ger/url%20encoded%20path",
 			}
 			remoteApiSubscription.SetCondition(condition.NewReadyCondition("RemoteApiSubscriptionReady", "Trust me, I am ready"))
 
@@ -359,6 +359,8 @@ var _ = Describe("RemoteApiSubscription Controller - Consumer Scenario", Ordered
 				g.Expect(k8sClient.Get(ctx, remoteApiSubscription.Status.Route.K8s(), route)).To(Succeed())
 				g.Expect(route.Spec.AdditionalTags).To(Equal([]string{"variant--default"}))
 				g.Expect(route.Spec.Security.RealmName).To(Equal("remoteapisub-test-cons-realm"))
+				g.Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+				g.Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/ger/url%20encoded%20path"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

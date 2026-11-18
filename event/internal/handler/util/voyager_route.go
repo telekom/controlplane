@@ -57,7 +57,7 @@ func CreateVoyagerRoute(
 		return nil, err
 	}
 
-	upstream, err := parseUpstream(eventConfig.Spec.Local.VoyagerApiUrl)
+	upstream, err := gatewayapi.ParseUpstream(eventConfig.Spec.Local.VoyagerApiUrl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse voyagerApiUrl %q", eventConfig.Spec.Local.VoyagerApiUrl)
 	}

@@ -185,6 +185,23 @@ var _ = Describe("CreatePublishRoute", func() {
 		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/api/publish"))
 	})
 
+	It("should keep the percent-encoding of the upstream path", func() {
+		zone := makeZone("zone-a", "zone-a-ns")
+		eventConfig.Spec.Local.PublishEventUrl = "http://publish-service:8080/api/url%20encoded%20path"
+
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			RunAndReturn(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+				err := mutate()
+				return controllerutil.OperationResultCreated, err
+			})
+
+		route, err := util.CreatePublishRoute(ctx, zone, eventConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(route.Spec.Backend.Upstreams).To(HaveLen(1))
+		Expect(route.Spec.Backend.Upstreams[0].Path).To(Equal("/api/url%20encoded%20path"))
+	})
+
 	It("should return error when CreateOrUpdate fails", func() {
 		zone := makeZone("zone-a", "zone-a-ns")
 
