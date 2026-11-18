@@ -1,0 +1,35 @@
+identity/internal/handler/client/handler.go
+  s_82befa2bec583b::t_ea9cc23234c33f 128,134
+identity/pkg/keycloak/keycloak_service_test.go
+  s_82befa2bec583b::t_9d1634da78ab37 179-183,187-206
+  s_82befa2bec583b::t_cf4bb2f84cda09 184-186
+identity/pkg/keycloak/util/client.go
+  s_82befa2bec583b::t_e4c1e465857e6d 39-60,134-163,209,212,215-230
+identity/internal/handler/client/handler_test.go
+  s_82befa2bec583b::t_2cdecafc053842 1092,1119
+docs/docs/admin-journey/features/secret-rotation.md
+  s_82befa2bec583b::t_5b9c5b2dce96db 117
+  s_82befa2bec583b::t_661b2c135fb2cf 118-123
+identity/pkg/keycloak/util/client_test.go
+  s_82befa2bec583b::t_75228f36a9c87f 159,163-169,180-196,201-226
+identity/pkg/keycloak/graceful_secrets.go
+  s_82befa2bec583b::t_8161082a462792 47-50
+docs/docs/architecture/identity.mdx
+  s_82befa2bec583b::t_1513212a418f29 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7adbbd627c625685c95060d8aacc0b8932dd1145",
+  "prompts": {},
+  "sessions": {
+    "s_82befa2bec583b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d9863d56-c076-45fd-84d9-f44b1ef06757",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
