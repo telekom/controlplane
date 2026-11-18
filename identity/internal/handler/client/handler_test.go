@@ -1089,6 +1089,7 @@ var _ = Describe("HandlerClient", func() {
 			// Simulate a client that previously had rotation enabled and has stale status fields.
 			cl.Status.RotatedClientSecret = "stale-old-secret"
 			cl.Status.RotatedSecretExpiresAt = &metav1.Time{Time: time.Now()}
+			cl.SetCondition(identityv1.NewSecretRotatedCondition(time.Now()))
 			realm := newValidRealm()
 
 			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
@@ -1115,6 +1116,7 @@ var _ = Describe("HandlerClient", func() {
 			Expect(cl.Status.RotatedClientSecret).To(BeEmpty())
 			Expect(cl.Status.RotatedSecretExpiresAt).To(BeNil())
 			Expect(cl.Status.SecretExpiresAt).To(BeNil())
+			Expect(meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)).To(BeNil())
 		})
 	})
 
