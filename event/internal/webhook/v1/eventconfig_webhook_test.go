@@ -433,7 +433,6 @@ var _ = Describe("EventConfig Webhook", func() {
 			fakeKubeClient = clientfake.NewClientBuilder().WithScheme(kubeScheme).Build()
 			defaulter = EventConfigCustomDefaulter{
 				reader:        fakeKubeClient,
-				kubeClient:    fakeKubeClient,
 				secretManager: secretManagerMock,
 			}
 		})
@@ -682,8 +681,6 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
-			namespace := &corev1.Namespace{}
-			Expect(fakeKubeClient.Get(ctx, client.ObjectKey{Name: "shared"}, namespace)).To(Succeed())
 		})
 
 		It("should retain a legacy rover secret when the shared value differs", func() {
@@ -750,8 +747,6 @@ var _ = Describe("EventConfig Webhook", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
-			namespace := &corev1.Namespace{}
-			Expect(fakeKubeClient.Get(ctx, client.ObjectKey{Name: "shared"}, namespace)).To(Succeed())
 		})
 
 		It("should not share admin secrets for non-rover realms", func() {

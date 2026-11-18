@@ -12,7 +12,7 @@ This backend stores the secrets in Kubernetes Secret (K8S-Secret) resources (`co
 
 ### Environment
 
-When onboarding an environment, it will create a new K8S-Secret with the name `Secrets` in the namespace of the environment `${envId}`.
+When onboarding an environment, it creates the namespace `${envId}` if it does not exist, then creates a K8S-Secret named `Secrets` in that namespace.
 
 ### Team
 

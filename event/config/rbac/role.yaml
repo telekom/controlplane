@@ -15,13 +15,6 @@ rules:
   - create
   - patch
 - apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - create
-  - get
-- apiGroups:
   - admin.cp.ei.telekom.de
   resources:
   - zones

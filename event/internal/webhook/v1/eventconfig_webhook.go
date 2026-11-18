@@ -12,9 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	admissionv1 "k8s.io/api/admission/v1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,7 +38,6 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 		WithValidator(&EventConfigCustomValidator{}).
 		WithDefaulter(&EventConfigCustomDefaulter{
 			reader:        mgr.GetClient(),
-			kubeClient:    mgr.GetClient(),
 			secretManager: secretManager,
 		}).
 		Complete()
@@ -48,7 +45,6 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;create
 // +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
 
 // EventConfigCustomDefaulter struct is responsible for setting default values on the custom resource of the
@@ -58,7 +54,6 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 // as it is used only for temporary operations and does not need to be deeply copied.
 type EventConfigCustomDefaulter struct {
 	reader        client.Reader
-	kubeClient    client.Client
 	secretManager secretsapi.SecretManager
 }
 
@@ -205,9 +200,6 @@ func (d *EventConfigCustomDefaulter) onboardRoverAdminSecret(ctx context.Context
 	if err != nil {
 		return errors.Wrap(err, "failed to determine rover Event admin client secret")
 	}
-	if err := d.ensureSharedNamespace(ctx); err != nil {
-		return err
-	}
 	if _, err := d.secretManager.UpsertEnvironment(ctx, sharedSecretScope,
 		secretsapi.WithMergeStrategy(),
 		secretsapi.WithSecretValue(path, secretValue)); err != nil {
@@ -237,36 +229,12 @@ func (d *EventConfigCustomDefaulter) migrateRoverAdminSecret(ctx context.Context
 		return errors.Wrap(err, "failed to read shared rover Event admin client secret")
 	}
 
-	if err := d.ensureSharedNamespace(ctx); err != nil {
-		return err
-	}
 	if _, err := d.secretManager.UpsertEnvironment(ctx, sharedSecretScope,
 		secretsapi.WithMergeStrategy(),
 		secretsapi.WithSecretValue(path, legacyValue)); err != nil {
 		return errors.Wrap(err, "failed to seed shared rover Event admin client secret")
 	}
 	*secret = sharedRef
-	return nil
-}
-
-func (d *EventConfigCustomDefaulter) ensureSharedNamespace(ctx context.Context) error {
-	if d.kubeClient == nil {
-		return errors.New("Kubernetes client is not configured for shared Secret-Manager scope")
-	}
-	namespace := &corev1.Namespace{}
-	// audit:ignore 13-environment-isolation/unscoped-get Isolated access to the shared Secret-Manager namespace is required to ensure it exists.
-	err := d.kubeClient.Get(ctx, client.ObjectKey{Name: sharedSecretScope}, namespace)
-	if err == nil {
-		return nil
-	}
-	if !apierrors.IsNotFound(err) {
-		return errors.Wrap(err, "failed to read shared Secret-Manager namespace")
-	}
-	if err := d.kubeClient.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: sharedSecretScope},
-	}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return errors.Wrap(err, "failed to create shared Secret-Manager namespace")
-	}
 	return nil
 }
 
