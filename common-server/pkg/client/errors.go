@@ -82,9 +82,11 @@ func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	switch httpStatus {
 	case 400, 403, 405:
 		return BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
-	case 409, 500, 502, 504:
+	// 503 means the server is unavailable, not that the caller is too fast:
+	// no fixed delay, so callers back off exponentially.
+	case 409, 500, 502, 503, 504:
 		httpErr = RetryableErrorf("server error (%d): %s", httpStatus, msg)
-	case 429, 503:
+	case 429:
 		httpErr = RetryableWithDelayErrorf(RetryDelay, "rate limit error (%d): %s", httpStatus, msg)
 	default:
 		httpErr = &HttpError{
