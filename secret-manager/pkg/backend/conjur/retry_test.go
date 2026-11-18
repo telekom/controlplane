@@ -19,6 +19,7 @@ import (
 	"github.com/cyberark/conjur-api-go/conjurapi/response"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type retryTestClient struct {
@@ -57,9 +58,31 @@ func (c *retryTestClient) LoadPolicy(conjurapi.PolicyMode, string, io.Reader) (*
 	return nil, c.writeErr
 }
 
+func retryAttemptCounts() map[string]float64 {
+	GinkgoHelper()
+	const metricName = "secret_manager_conjur_read_retry_attempts_total"
+	families, err := prometheus.DefaultGatherer.Gather()
+	Expect(err).NotTo(HaveOccurred())
+	counts := make(map[string]float64)
+	for _, family := range families {
+		if family.GetName() != metricName {
+			continue
+		}
+		for _, metric := range family.GetMetric() {
+			labels := metric.GetLabel()
+			Expect(labels).To(HaveLen(1))
+			Expect(labels[0].GetName()).To(Equal("method"))
+			Expect(metric.GetCounter()).NotTo(BeNil())
+			counts[labels[0].GetValue()] = metric.GetCounter().GetValue()
+		}
+	}
+	Expect(counts).To(HaveLen(3), "method series for %s", metricName)
+	return counts
+}
+
 var _ = Describe("Conjur read retries", func() {
 	DescribeTable("retries reads",
-		func(read func(ConjurAPI) (any, error), expected any) {
+		func(method string, read func(ConjurAPI) (any, error), expected any) {
 			client := &retryTestClient{}
 			api := NewRetryingReadAPI(client).(*retryingReadAPI)
 			var calls int
@@ -72,6 +95,7 @@ var _ = Describe("Conjur read retries", func() {
 				}
 				return nil
 			}
+			retries := retryAttemptCounts()
 			result, err := read(api)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(expected))
@@ -81,14 +105,16 @@ var _ = Describe("Conjur read retries", func() {
 			Expect(waits[0]).To(BeNumerically("<=", 120*time.Millisecond))
 			Expect(waits[1]).To(BeNumerically(">=", 200*time.Millisecond))
 			Expect(waits[1]).To(BeNumerically("<=", 240*time.Millisecond))
+			retries[method] += 2
+			Expect(retryAttemptCounts()).To(Equal(retries))
 		},
-		Entry("single secret", func(api ConjurAPI) (any, error) {
+		Entry("single secret", "RetrieveSecret", func(api ConjurAPI) (any, error) {
 			return api.RetrieveSecret("id")
 		}, []byte("value")),
-		Entry("batch secrets", func(api ConjurAPI) (any, error) {
+		Entry("batch secrets", "RetrieveBatchSecrets", func(api ConjurAPI) (any, error) {
 			return api.RetrieveBatchSecrets([]string{"id"})
 		}, map[string][]byte{"id": []byte("value")}),
-		Entry("versioned secret", func(api ConjurAPI) (any, error) {
+		Entry("versioned secret", "RetrieveSecretWithVersion", func(api ConjurAPI) (any, error) {
 			return api.RetrieveSecretWithVersion("id", 1)
 		}, []byte("value")),
 	)
@@ -103,10 +129,21 @@ var _ = Describe("Conjur read retries", func() {
 		}}
 		api := NewRetryingReadAPI(client).(*retryingReadAPI)
 		api.sleep = func(duration time.Duration) { waits = append(waits, duration) }
+		retries := retryAttemptCounts()
 		_, err := api.RetrieveSecret("id")
 		Expect(err).To(BeIdenticalTo(lastErr))
 		Expect(calls).To(Equal(3))
 		Expect(waits).To(HaveLen(2))
+		retries["RetrieveSecret"] += 2
+		Expect(retryAttemptCounts()).To(Equal(retries))
+	})
+
+	It("does not count reads that succeed on the first attempt", func() {
+		api := NewRetryingReadAPI(&retryTestClient{read: func() error { return nil }})
+		retries := retryAttemptCounts()
+		_, err := api.RetrieveSecret("id")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(retryAttemptCounts()).To(Equal(retries))
 	})
 
 	It("does not retry permanent errors", func() {
@@ -119,10 +156,12 @@ var _ = Describe("Conjur read retries", func() {
 		}}
 		api := NewRetryingReadAPI(client).(*retryingReadAPI)
 		api.sleep = func(time.Duration) { waits++ }
+		retries := retryAttemptCounts()
 		_, err := api.RetrieveSecret("id")
 		Expect(err).To(BeIdenticalTo(notFound))
 		Expect(calls).To(Equal(1))
 		Expect(waits).To(Equal(0))
+		Expect(retryAttemptCounts()).To(Equal(retries))
 	})
 
 	It("does not retry server errors", func() {

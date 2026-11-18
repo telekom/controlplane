@@ -35,24 +35,24 @@ func NewRetryingReadAPI(client ConjurAPI) ConjurAPI {
 }
 
 func (c *retryingReadAPI) RetrieveSecret(variableID string) ([]byte, error) {
-	return retryRead(c.sleep, func() ([]byte, error) {
+	return retryRead(retrieveSecretMethod, c.sleep, func() ([]byte, error) {
 		return c.ConjurAPI.RetrieveSecret(variableID)
 	})
 }
 
 func (c *retryingReadAPI) RetrieveBatchSecrets(variableIDs []string) (map[string][]byte, error) {
-	return retryRead(c.sleep, func() (map[string][]byte, error) {
+	return retryRead(retrieveBatchSecretsMethod, c.sleep, func() (map[string][]byte, error) {
 		return c.ConjurAPI.RetrieveBatchSecrets(variableIDs)
 	})
 }
 
 func (c *retryingReadAPI) RetrieveSecretWithVersion(variableID string, version int) ([]byte, error) {
-	return retryRead(c.sleep, func() ([]byte, error) {
+	return retryRead(retrieveSecretWithVersionMethod, c.sleep, func() ([]byte, error) {
 		return c.ConjurAPI.RetrieveSecretWithVersion(variableID, version)
 	})
 }
 
-func retryRead[T any](sleep func(time.Duration), read func() (T, error)) (T, error) {
+func retryRead[T any](method string, sleep func(time.Duration), read func() (T, error)) (T, error) {
 	backoff := wait.Backoff{
 		Duration: readRetryInitial,
 		Factor:   readRetryMultiplier,
@@ -61,6 +61,9 @@ func retryRead[T any](sleep func(time.Duration), read func() (T, error)) (T, err
 		Cap:      readRetryMaximum,
 	}
 	for attempt := 1; ; attempt++ {
+		if attempt > 1 {
+			readRetryAttempts.WithLabelValues(method).Inc()
+		}
 		result, err := read()
 		if err == nil || attempt == readAttempts || !isRetryableReadError(err) {
 			return result, err
