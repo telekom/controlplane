@@ -105,7 +105,7 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 // - nil → nil
 // - Already an *apiError (e.g. from CheckStatusCode) → returned as-is
 // - context.Canceled / context.DeadlineExceeded → returned as-is (controller framework handles these)
-// - oauth2.RetrieveError → classified by the token endpoint's HTTP status (429/5xx retryable, 4xx blocked)
+// - oauth2.RetrieveError → see classifyTokenError
 // - net.Error (connection refused, DNS, TLS, timeout) → wrapped as a retryable apiError
 // - Anything else → returned as-is
 func HandleClientError(err error) error {
@@ -123,10 +123,8 @@ func HandleClientError(err error) error {
 		return err
 	}
 
-	// OAuth2 token endpoint errors from clientcredentials — classify by
-	// the token endpoint's HTTP status so 429/5xx retry and 4xx block.
 	if oauth2Err, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
-		return client.HandleError(oauth2Err.Response.StatusCode, fmt.Sprintf("OAuth2 token endpoint error: %s", oauth2Err.Error()))
+		return classifyTokenError(oauth2Err)
 	}
 
 	// ponytail: net.Error covers all transient transport failures (timeout,
@@ -141,4 +139,20 @@ func HandleClientError(err error) error {
 	}
 
 	return err
+}
+
+// classifyTokenError blocks on 4xx token endpoint responses other than 429.
+// Every other failure is retryable without a fixed delay, so the controller
+// backs off exponentially while the identity provider is unavailable.
+func classifyTokenError(err *oauth2.RetrieveError) error {
+	msg := fmt.Sprintf("OAuth2 token endpoint error: %s", err.Error())
+	statusCode := err.Response.StatusCode
+	if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError && statusCode != http.StatusTooManyRequests {
+		return client.HandleError(statusCode, msg)
+	}
+	return &apiError{
+		statusCode:   statusCode,
+		message:      msg,
+		retryAllowed: true,
+	}
 }

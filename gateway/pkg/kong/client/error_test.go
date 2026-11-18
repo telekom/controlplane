@@ -7,8 +7,12 @@ package client
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -163,4 +167,45 @@ var _ = Describe("Duck-typing through error chain", func() {
 		Expect(errors.As(wrapped2, &re)).To(BeTrue())
 		Expect(re.IsRetryable()).To(BeTrue())
 	})
+})
+
+var _ = Describe("HandleClientError for OAuth2 token endpoint errors", func() {
+	tokenError := func(status int) error {
+		retrieveErr := &oauth2.RetrieveError{
+			Response: &http.Response{StatusCode: status, Status: http.StatusText(status)},
+			Body:     []byte("404 page not found"),
+		}
+		// the HTTP client reports transport failures as *url.Error
+		return &url.Error{Op: "Get", URL: "https://kong.example/admin-api/routes", Err: retrieveErr}
+	}
+
+	DescribeTable("retries without a fixed delay so the controller backs off",
+		func(status int) {
+			err := fmt.Errorf("failed to get route: %w", HandleClientError(tokenError(status)))
+
+			var rde retryableWithDelayError
+			Expect(errors.As(err, &rde)).To(BeTrue())
+			Expect(rde.IsRetryable()).To(BeTrue())
+			Expect(rde.RetryDelay()).To(BeZero())
+
+			var be blockedError
+			Expect(errors.As(err, &be)).To(BeTrue())
+			Expect(be.IsBlocked()).To(BeFalse())
+			Expect(err).To(MatchError(ContainSubstring("OAuth2 token endpoint error")))
+		},
+		Entry("service unavailable", http.StatusServiceUnavailable),
+		Entry("internal server error", http.StatusInternalServerError),
+		Entry("bad gateway", http.StatusBadGateway),
+		Entry("too many requests", http.StatusTooManyRequests),
+	)
+
+	DescribeTable("blocks on rejected client credentials",
+		func(status int) {
+			var be blockedError
+			Expect(errors.As(HandleClientError(tokenError(status)), &be)).To(BeTrue())
+			Expect(be.IsBlocked()).To(BeTrue())
+		},
+		Entry("bad request", http.StatusBadRequest),
+		Entry("forbidden", http.StatusForbidden),
+	)
 })
