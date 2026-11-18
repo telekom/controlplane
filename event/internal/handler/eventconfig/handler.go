@@ -340,7 +340,7 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 			switch {
 			case identityClient.IsFollower():
 				leader := &identityv1.Client{}
-				leaderRef := identityClient.Status.Leader
+				leaderRef := identityClient.Status.LeaderRef
 				if err := c.Get(ctx, leaderRef.K8s(), leader); err != nil {
 					if apierrors.IsNotFound(errors.Cause(err)) {
 						return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s is not found", leaderRef.String())

@@ -71,7 +71,7 @@ var _ = Describe("shared Realm leadership", func() {
 		handler.PeerReader = realmPeerReader(idp, sharedIDP, follower, leaderRealm)
 
 		Expect(handler.CreateOrUpdate(ctx, follower)).To(Succeed())
-		Expect(follower.Status.Leader).To(Equal(types.ObjectRefFromObject(leaderRealm)))
+		Expect(follower.Status.LeaderRef).To(Equal(types.ObjectRefFromObject(leaderRealm)))
 		Expect(follower.Status.IssuerUrl).To(Equal(leaderRealm.Status.IssuerUrl))
 		Expect(follower.Status.ManagedAttributes).To(BeNil())
 		Expect(meta.IsStatusConditionTrue(follower.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
@@ -105,7 +105,7 @@ var _ = Describe("shared Realm leadership", func() {
 		err := handler.CreateOrUpdate(ctx, follower)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("waiting for Realm leader"))
-		Expect(follower.Status.Leader).To(Equal(types.ObjectRefFromObject(leaderRealm)))
+		Expect(follower.Status.LeaderRef).To(Equal(types.ObjectRefFromObject(leaderRealm)))
 		Expect(meta.IsStatusConditionFalse(follower.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 	})
 

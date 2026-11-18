@@ -380,7 +380,7 @@ var _ = Describe("EventConfigHandler", func() {
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
 				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 					adminClient := obj.(*identityv1.Client)
-					adminClient.Status.Leader = &ctypes.ObjectRef{Name: "leader", Namespace: "default"}
+					adminClient.Status.LeaderRef = &ctypes.ObjectRef{Name: "leader", Namespace: "default"}
 					Expect(mutate()).To(Succeed())
 					createdAdminClient = adminClient.DeepCopy()
 				}).

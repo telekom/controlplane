@@ -24,9 +24,9 @@ type ClientSpec struct {
 
 // ClientStatus defines the observed state of Client
 type ClientStatus struct {
-	// Leader identifies the Client that manages this Keycloak client.
+	// LeaderRef identifies the Client that manages this Keycloak client.
 	// +optional
-	Leader *types.ObjectRef `json:"leader,omitempty"`
+	LeaderRef *types.ObjectRef `json:"leaderRef,omitempty"`
 	// ClientUid is the unique identifier of the client in Keycloak. It is immutable and assigned by Keycloak upon client creation.
 	ClientUid string `json:"clientUid,omitempty"`
 
@@ -64,8 +64,8 @@ type ClientStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leader.name"
-// +kubebuilder:printcolumn:name="Leader Namespace",type=string,JSONPath=".status.leader.namespace"
+// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leaderRef.name"
+// +kubebuilder:printcolumn:name="Leader Namespace",type=string,JSONPath=".status.leaderRef.namespace"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
@@ -89,7 +89,7 @@ func (c *Client) SupportsSecretRotation() bool {
 
 // IsFollower reports whether another Client manages this Keycloak client.
 func (c *Client) IsFollower() bool {
-	return c.Status.Leader != nil && !c.Status.Leader.Equals(c)
+	return c.Status.LeaderRef != nil && !c.Status.LeaderRef.Equals(c)
 }
 
 // EnvironmentClientId prefixes clientID with the environment name. Clients in the internal

@@ -140,9 +140,9 @@ type RealmConnectionTLS struct {
 
 // RealmStatus defines the observed state of Realm
 type RealmStatus struct {
-	// Leader identifies the Realm that manages this Keycloak realm.
+	// LeaderRef identifies the Realm that manages this Keycloak realm.
 	// +optional
-	Leader        *types.ObjectRef `json:"leader,omitempty"`
+	LeaderRef     *types.ObjectRef `json:"leaderRef,omitempty"`
 	IssuerUrl     string           `json:"issuerUrl"`
 	AdminClientId string           `json:"adminClientId"`
 	AdminUserName string           `json:"adminUserName"`
@@ -170,8 +170,8 @@ type RealmStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leader.name"
-// +kubebuilder:printcolumn:name="Leader Namespace",type=string,JSONPath=".status.leader.namespace"
+// +kubebuilder:printcolumn:name="Leader",type=string,JSONPath=".status.leaderRef.name"
+// +kubebuilder:printcolumn:name="Leader Namespace",type=string,JSONPath=".status.leaderRef.namespace"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
@@ -200,7 +200,7 @@ func (e *Realm) SupportsGracefulSecretRotation() bool {
 
 // IsFollower reports whether another Realm manages this Keycloak realm.
 func (e *Realm) IsFollower() bool {
-	return e.Status.Leader != nil && !e.Status.Leader.Equals(e)
+	return e.Status.LeaderRef != nil && !e.Status.LeaderRef.Equals(e)
 }
 
 // +kubebuilder:object:root=true

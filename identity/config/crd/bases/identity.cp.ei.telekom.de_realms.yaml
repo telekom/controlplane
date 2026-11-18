@@ -18,10 +18,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.leader.name
+    - jsonPath: .status.leaderRef.name
       name: Leader
       type: string
-    - jsonPath: .status.leader.namespace
+    - jsonPath: .status.leaderRef.namespace
       name: Leader Namespace
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -313,8 +313,8 @@ spec:
                 type: object
               issuerUrl:
                 type: string
-              leader:
-                description: Leader identifies the Realm that manages this Keycloak
+              leaderRef:
+                description: LeaderRef identifies the Realm that manages this Keycloak
                   realm.
                 properties:
                   name:

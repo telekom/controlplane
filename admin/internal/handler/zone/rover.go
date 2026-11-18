@@ -86,7 +86,7 @@ func existingRoverSecret(ctx context.Context, hc *HandlingContext, existing *ide
 		return existing.Spec.ClientSecret, false, nil
 	}
 
-	leaderRef := existing.Status.Leader
+	leaderRef := existing.Status.LeaderRef
 	leaderClient := &identityapi.Client{}
 	if err := hc.KubeClient.Get(ctx, leaderRef.K8s(), leaderClient); err != nil {
 		if apierrors.IsNotFound(err) {

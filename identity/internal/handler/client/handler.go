@@ -65,13 +65,13 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
 	mapToClientStatus(&realm.Status, realm.Spec.AllowedOrigins, &client.Status)
-	client.Status.Leader = types.ObjectRefFromObject(client)
+	client.Status.LeaderRef = types.ObjectRefFromObject(client)
 	if h.PeerReader != nil {
 		elected, electErr := h.electLeader(ctx, realm, client)
 		if electErr != nil {
 			return electErr
 		}
-		client.Status.Leader = types.ObjectRefFromObject(elected)
+		client.Status.LeaderRef = types.ObjectRefFromObject(elected)
 		if client.IsFollower() {
 			return h.follow(ctx, client, elected, resolvedSecret)
 		}

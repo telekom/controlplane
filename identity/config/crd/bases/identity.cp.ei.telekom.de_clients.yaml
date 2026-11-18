@@ -18,10 +18,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.leader.name
+    - jsonPath: .status.leaderRef.name
       name: Leader
       type: string
-    - jsonPath: .status.leader.namespace
+    - jsonPath: .status.leaderRef.namespace
       name: Leader Namespace
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
@@ -159,8 +159,8 @@ spec:
                 description: IssuerUrl is the URL of the Keycloak realm's OpenID Connect
                   issuer, which clients can use for authentication and token retrieval.
                 type: string
-              leader:
-                description: Leader identifies the Client that manages this Keycloak
+              leaderRef:
+                description: LeaderRef identifies the Client that manages this Keycloak
                   client.
                 properties:
                   name:

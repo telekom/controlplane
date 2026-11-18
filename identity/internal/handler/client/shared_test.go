@@ -67,7 +67,7 @@ var _ = Describe("shared Client leadership", func() {
 		handler.PeerReader = clientPeerReader(realm, leaderClient, follower)
 
 		Expect(handler.CreateOrUpdate(ctx, follower)).To(Succeed())
-		Expect(follower.Status.Leader).To(Equal(types.ObjectRefFromObject(leaderClient)))
+		Expect(follower.Status.LeaderRef).To(Equal(types.ObjectRefFromObject(leaderClient)))
 		Expect(follower.Status.ClientUid).To(Equal("keycloak-client-uid"))
 		Expect(follower.Status.RotatedClientSecret).To(BeEmpty())
 		Expect(follower.Status.SecretExpiresAt).To(BeNil())
@@ -98,7 +98,7 @@ var _ = Describe("shared Client leadership", func() {
 		err := handler.CreateOrUpdate(ctx, follower)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("client secret differs from leader"))
-		Expect(follower.Status.Leader).To(Equal(types.ObjectRefFromObject(leaderClient)))
+		Expect(follower.Status.LeaderRef).To(Equal(types.ObjectRefFromObject(leaderClient)))
 		Expect(meta.IsStatusConditionFalse(follower.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 	})
 

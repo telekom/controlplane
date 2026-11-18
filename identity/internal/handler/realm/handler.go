@@ -68,13 +68,13 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
 	}
 
-	realm.Status.Leader = types.ObjectRefFromObject(realm)
+	realm.Status.LeaderRef = types.ObjectRefFromObject(realm)
 	if h.PeerReader != nil {
 		elected, electErr := h.electLeader(ctx, realm, identityProvider)
 		if electErr != nil {
 			return electErr
 		}
-		realm.Status.Leader = types.ObjectRefFromObject(elected)
+		realm.Status.LeaderRef = types.ObjectRefFromObject(elected)
 		if realm.IsFollower() {
 			return h.follow(ctx, realm, elected)
 		}
