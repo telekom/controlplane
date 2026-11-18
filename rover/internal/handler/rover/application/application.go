@@ -8,9 +8,11 @@ import (
 	"context"
 	"slices"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -47,6 +49,12 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	needsClient := isClientNeeded(owner)
+	if !needsClient {
+		needsClient, err = isListedAsAdditionalPublisher(ctx, c, owner, team.Name)
+		if err != nil {
+			return errors.Wrap(err, "failed to check additional publisher listing")
+		}
+	}
 
 	var hasAnySubscriptionFailoverEnabled bool
 	if needsClient {
@@ -142,4 +150,60 @@ func isClientNeeded(owner *roverv1.Rover) bool {
 		return sub.Type() != roverv1.TypeFile
 	})
 	return hasNonFileSubscriptions || hasAnyEventExposures
+}
+
+// AdditionalPublisherIndexKey indexes Rovers by the publisher IDs listed in the
+// additionalPublisherIds of their event exposures.
+const AdditionalPublisherIndexKey = "spec.exposures.event.additionalPublisherIds"
+
+// IndexAdditionalPublisherIds is the field indexer for AdditionalPublisherIndexKey.
+func IndexAdditionalPublisherIds(obj ctrlclient.Object) []string {
+	r, ok := obj.(*roverv1.Rover)
+	if !ok {
+		return nil
+	}
+	return ListedPublisherIds(r)
+}
+
+// ListedPublisherIds returns the sorted, deduplicated publisher IDs listed in the
+// event exposures of the given Rover.
+func ListedPublisherIds(r *roverv1.Rover) []string {
+	var ids []string
+	for _, ex := range r.Spec.Exposures {
+		if ex.Event == nil {
+			continue
+		}
+		ids = append(ids, ex.Event.AdditionalPublisherIds...)
+	}
+	slices.Sort(ids)
+	return slices.Compact(ids)
+}
+
+// PublisherId returns the ID under which the Rover publishes: <team.Name>--<rover.Name>.
+func PublisherId(teamName, roverName string) string {
+	return teamName + "--" + roverName
+}
+
+// isListedAsAdditionalPublisher reports whether another Rover in the same
+// environment lists this Rover's publisher ID. IDs are compared as whole strings.
+func isListedAsAdditionalPublisher(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover, teamName string) (bool, error) {
+	if !config.FeaturePubSub.IsEnabled() {
+		return false, nil
+	}
+	environment := contextutil.EnvFromContextOrDie(ctx)
+	list := &roverv1.RoverList{}
+	err := c.List(ctx, list,
+		ctrlclient.MatchingFields{AdditionalPublisherIndexKey: PublisherId(teamName, owner.Name)},
+		ctrlclient.MatchingLabels{config.EnvironmentLabelKey: environment},
+	)
+	if err != nil {
+		return false, err
+	}
+	for i := range list.Items {
+		if list.Items[i].Name != owner.Name || list.Items[i].Namespace != owner.Namespace {
+			logr.FromContextOrDiscard(ctx).V(1).Info("Rover listed as additional publisher", "publisherId", PublisherId(teamName, owner.Name), "needsClient", true)
+			return true, nil
+		}
+	}
+	return false, nil
 }
