@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	cstore "github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -84,6 +85,49 @@ var _ = Describe("Rover pagination", func() {
 		Entry("exactly limit", 2),
 		Entry("more than limit", 3),
 	)
+	It("returns redacted secrets in the rover list without resolving them", func() {
+		rover := mocks.GetRover(GinkgoT(), mocks.RoverFileName).DeepCopy()
+		rover.Spec.Subscriptions[0].Api.Security = &roverv1.SubscriberSecurity{M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+			Client: &roverv1.OAuth2ClientCredentials{ClientId: "sub-client", ClientSecret: "$<sub-secret-ref>"},
+		}}
+		rover.Spec.Exposures[0].Api.Security = &roverv1.Security{M2M: &roverv1.Machine2MachineAuthentication{
+			Basic: &roverv1.BasicAuthCredentials{Username: "exp-user", Password: "$<exp-password-ref>"},
+		}}
+		listMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+		listMock.EXPECT().List(mock.Anything, mock.Anything).Return(&cstore.ListResponse[*roverv1.Rover]{
+			Items: []*roverv1.Rover{rover},
+		}, nil).Once()
+		ctrl := NewRoverController(stores)
+		ctrl.RedactedStore = secrets.WrapStore[*roverv1.Rover](listMock, []string{
+			"spec.subscriptions.#.api.security.m2m.client.clientSecret",
+			"spec.exposures.#.api.security.m2m.basic.password",
+		}, secrets.NewObfuscator())
+		// No expectations: any call on the resolving store fails the test.
+		ctrl.SecretStore = mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
+
+		res, err := ctrl.GetAll(teamContext(), api.GetAllRoversParams{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res.Items).To(HaveLen(1))
+
+		body, err := json.Marshal(res)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(body)).NotTo(ContainSubstring("secret-ref"))
+		Expect(string(body)).NotTo(ContainSubstring("password-ref"))
+
+		apiSub, err := res.Items[0].Subscriptions[0].AsApiSubscription()
+		Expect(err).NotTo(HaveOccurred())
+		oauth2, err := apiSub.Security.AsOauth2()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(oauth2.ClientId).To(Equal("sub-client"))
+		Expect(oauth2.ClientSecret).To(Equal("**********"))
+
+		apiExp, err := res.Items[0].Exposures[0].AsApiExposure()
+		Expect(err).NotTo(HaveOccurred())
+		basic, err := apiExp.Security.AsBasicAuth()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(basic.Username).To(Equal("exp-user"))
+		Expect(basic.Password).To(Equal("**********"))
+	})
 	It("propagates named lookup errors other than not found", func() {
 		storeMock := mocks.NewMockObjectStore[*roverv1.Rover](GinkgoT())
 		storeMock.EXPECT().Get(mock.Anything, "poc--eni--hyperion", "broken").Return(nil, context.Canceled).Once()
