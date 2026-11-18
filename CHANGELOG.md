@@ -1,3 +1,17 @@
+## [0.48.3](https://github.com/telekom/controlplane/compare/v0.48.2...v0.48.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* **api,event,gateway:** preserve encoded upstream paths in gateway routes ([#837](https://github.com/telekom/controlplane/issues/837)) ([551f3be](https://github.com/telekom/controlplane/commit/551f3be5a8234125fdb09da1aa533dbb22fc4a39))
+* **discovery-server:** expose icto and psiid of applications ([#858](https://github.com/telekom/controlplane/issues/858)) ([1237c46](https://github.com/telekom/controlplane/commit/1237c46efb3a9642b6a38220cf83bbf59ad4fdbc))
+* **rover,event:** additional publishers get a client ([#872](https://github.com/telekom/controlplane/issues/872)) ([af3d8e2](https://github.com/telekom/controlplane/commit/af3d8e2f70b49c87727245a0888a10ded8c1c0f1))
+
+
+### Performance Improvements
+
+* **rover-server:** stop resolving secrets when listing rovers ([#870](https://github.com/telekom/controlplane/issues/870)) ([50a5f62](https://github.com/telekom/controlplane/commit/50a5f6235558247e80a59e8bd69a420028273cd1))
+
 ## [0.48.2](https://github.com/telekom/controlplane/compare/v0.48.1...v0.48.2) (2026-11-17)
 
 
