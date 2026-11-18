@@ -59,6 +59,9 @@ class Item:
     evidence: dict | None = None
     detail: str = ""
     context: str = ""
+    #: The inline marker that ignored this item, or a malformed one that
+    #: could not: ``{"line", "reason"}`` or ``{"line", "problem"}``.
+    inline_ignore: dict | None = None
 
 
 @dataclass

@@ -2,5 +2,9 @@
 #
 #   <item_id>: <reason> (<who>, <when>)
 #
+# Prefer an inline `audit:ignore <rule-id> <reason>` comment on or above the
+# flagged line; it moves with the code. Use this file only where no comment
+# can go. See "Audit ignores" in .agents/rules/README.md.
+#
 # Audit ignores expire by construction: the item id contains the snippet, so
 # changing the code retires the audit ignore automatically. Only a human adds a line here.

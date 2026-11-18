@@ -65,6 +65,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 
 		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
 		stores.RoverSecretStore = stores.RoverStore
+		stores.RoverRedactedStore = stores.RoverStore
 		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
 		stores.RoadmapStore = mocks.NewRoadmapStoreMock(GinkgoT())
 		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())

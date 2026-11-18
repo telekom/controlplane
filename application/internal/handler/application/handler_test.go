@@ -951,3 +951,35 @@ var _ = Describe("consumerGateways", func() {
 		Expect(err).NotTo(MatchError(adminv1.ErrNoMatchingPreset))
 	})
 })
+
+var _ = Describe("ApplicationHandler - needsClient revert", func() {
+	It("creates no client or consumer, cleans up owned ones and sets NOT_NEEDED", func() {
+		ctx := contextutil.WithEnv(context.Background(), "test-env")
+		app := newTestApp()
+		app.Spec.NeedsClient = false
+		app.Spec.NeedsConsumer = false
+		app.Status.ClientSecret = "previous"
+		zone := newZone()
+
+		mockClient := fake.NewMockJanitorClient(GinkgoT())
+		ctx = client.WithClient(ctx, mockClient)
+		mockClient.EXPECT().AddKnownTypeToState(mock.Anything).Maybe()
+		mockClient.EXPECT().
+			Get(mock.Anything, types.NamespacedName{Name: zone.Name, Namespace: zone.Namespace}, mock.AnythingOfType("*v1.Zone"), mock.Anything).
+			Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+				*obj.(*adminv1.Zone) = *zone
+			}).
+			Return(nil)
+		mockClient.EXPECT().Scheme().Return(newScheme()).Maybe()
+		mockClient.EXPECT().CleanupAll(mock.Anything, mock.Anything).Return(2, nil).Once()
+		mockClient.EXPECT().AnyChanged().Return(false)
+		mockClient.EXPECT().
+			List(mock.Anything, mock.AnythingOfType("*v1.NotificationChannelList"), mock.Anything).
+			Return(nil).Maybe()
+
+		Expect((&ApplicationHandler{}).CreateOrUpdate(ctx, app)).To(Succeed())
+		Expect(app.Status.ClientSecret).To(Equal("NOT_NEEDED"))
+		Expect(app.Status.Clients).To(BeEmpty())
+		Expect(app.Status.Consumers).To(BeEmpty())
+	})
+})

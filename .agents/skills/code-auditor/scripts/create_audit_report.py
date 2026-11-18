@@ -6,9 +6,10 @@
 """Generate the audit report for the current change.
 
 This script does all of the deterministic work: resolve the changeset, filter
-rules by glob, run detectors, settle complexity 0 rules outright, reuse cached
-verdicts, cluster identical snippets and batch whatever is left into work
-units. A model is only ever asked about items that survive all of that.
+rules by glob, run detectors, settle complexity 0 rules outright, honor audit
+ignores, reuse cached verdicts, cluster identical snippets and batch whatever
+is left into work units. A model is only ever asked about items that survive
+all of that.
 
 Usage::
 
@@ -31,6 +32,7 @@ from auditlib import judges as judgelib  # noqa: E402
 from auditlib.context import AuditContext, ConfigError, add_argument, resolve  # noqa: E402
 from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
+from auditlib.inline import InlineIgnores  # noqa: E402
 from auditlib.store import (  # noqa: E402
     VerdictCache,
     AuditIgnores,
@@ -115,6 +117,12 @@ def _build(
 
     cache = VerdictCache(context.audit_dir)
     audit_ignores = AuditIgnores(config)
+    inline: dict[str, InlineIgnores] = {}
+
+    def markers(path: str) -> InlineIgnores:
+        if path not in inline:
+            inline[path] = InlineIgnores(contents.get(path, ""))
+        return inline[path]
 
     items: list[reportlib.Item] = []
     rules_summary: list[dict] = []
@@ -175,6 +183,7 @@ def _build(
             continue
 
         checks = rule.checks or (rulelib.Check(slug="violation", question=""),)
+        locates = detect.locates_findings(rule)
         for candidate in candidates:
             cluster = candidate.cluster_key(rule)
             cand_id = reportlib.candidate_id(
@@ -200,11 +209,27 @@ def _build(
                 )
 
                 audit_ignore = audit_ignores.get(ident)
+                # Malformed markers are reported by the processor, on the
+                # finding they failed to ignore.
+                marker = (
+                    markers(candidate.file).find(rule.id, check.slug, candidate.lines)
+                    if locates else None
+                )
                 if audit_ignore:
                     item.status = "resolved"
                     item.source = "audit_ignore"
                     item.verdict = "PASS"
                     item.evidence = {"reason": f"ignored: {audit_ignore.reason}"}
+                elif marker and not marker.problem:
+                    item.status = "resolved"
+                    item.source = "inline_ignore"
+                    item.verdict = "PASS"
+                    item.inline_ignore = marker.describe()
+                    item.evidence = {
+                        "file": candidate.file,
+                        "line": candidate.line,
+                        "reason": f"ignored inline at line {marker.line}: {marker.reason}",
+                    }
                 elif not check.applies_to_context(candidate.context):
                     # The check declares a trigger and nothing in the window
                     # matches it. Answer it here rather than paying a model to

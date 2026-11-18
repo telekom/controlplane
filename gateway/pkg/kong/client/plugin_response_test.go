@@ -34,7 +34,7 @@ var _ = Describe("Plugin response decoding regression", func() {
 			var body string
 			switch key {
 			case "GET /plugins/plugin-id":
-				body = `{"id":"plugin-id","name":"rate-limiting","enabled":false}`
+				body = `{"id":"plugin-id","name":"rate-limiting","enabled":false,"route":{"id":"route-id"},"consumer":{"id":"consumer-id"},"tags":["env--test","plugin--rate-limiting","route--route-name","consumer--consumer-name"]}`
 			case "GET /consumers/consumer-name":
 				body = `{"id":"consumer-id"}`
 			case "GET /routes/route-name":
@@ -64,9 +64,9 @@ var _ = Describe("Plugin response decoding regression", func() {
 
 		written, err := clientpkg.NewKongClient(api).CreateOrReplacePlugin(contextutil.WithEnv(context.Background(), "test"), plugin)
 		Expect(requests).To(Equal([]string{
-			"GET /plugins/plugin-id",
 			"GET /consumers/consumer-name",
 			"GET /routes/route-name",
+			"GET /plugins/plugin-id",
 			"PUT /consumers/consumer-name/plugins/plugin-id",
 		}))
 		Expect(err).NotTo(HaveOccurred())

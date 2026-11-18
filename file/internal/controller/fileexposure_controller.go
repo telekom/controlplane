@@ -59,11 +59,11 @@ func (r *FileExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&sftpv1.User{}).
 		Watches(&filev1.FileType{},
 			handler.EnqueueRequestsFromMapFunc(r.MapFileTypeToFileExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("fileexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&filev1.ZoneServiceConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneServiceConfigToFileExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("fileexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

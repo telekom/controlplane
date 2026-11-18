@@ -45,6 +45,16 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		err := k8sClient.Create(ctx, team)
 		Expect(err).NotTo(HaveOccurred())
 
+		// The organization controller is not running in this suite; set the status it would
+		// populate, as MapTeamToRovers relies on it to enqueue Rovers on Team changes.
+		By("Setting the Team status namespace")
+		Eventually(func(g Gomega) {
+			current := &organizationv1.Team{}
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), current)).To(Succeed())
+			current.Status.Namespace = teamNamespace
+			g.Expect(k8sClient.Status().Update(ctx, current)).To(Succeed())
+		}, timeout, interval).Should(Succeed())
+
 		By("Creating the team Namespace")
 		createNamespace(teamNamespace)
 	})
@@ -722,7 +732,12 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			originalEmail := fetchedTeam.Spec.Email
 			DeferCleanup(func() {
 				restore := &organizationv1.Team{}
-				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, restore)).To(Succeed())
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, restore)
+				if errors.IsNotFound(err) {
+					// AfterAll already removed the Team (the Ordered container ends early on failure).
+					return
+				}
+				Expect(err).NotTo(HaveOccurred())
 				restore.Spec.Email = originalEmail
 				Expect(k8sClient.Update(ctx, restore)).To(Succeed())
 			})
@@ -739,6 +754,35 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, application)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(application.Spec.TeamEmail).To(Equal("updated-team@mail.de"))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("Application secret across a needsClient flip", func() {
+		It("preserves the existing Application secret when needsClient flips (AC-5)", func() {
+			rover := createRover(&roverv1.RoverSpec{Zone: testEnvironment, ClientSecret: "topsecret"})
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			appKey := client.ObjectKey{Name: resourceName, Namespace: teamNamespace}
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				g.Expect(k8sClient.Get(ctx, appKey, application)).To(Succeed())
+				g.Expect(application.Spec.NeedsClient).To(BeFalse())
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
+			}, timeout, interval).Should(Succeed())
+
+			By("changing the Rover so that it needs a client and a different bootstrap secret")
+			fetched := &roverv1.Rover{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+			fetched.Spec.ClientSecret = "other"
+			fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
+			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				g.Expect(k8sClient.Get(ctx, appKey, application)).To(Succeed())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

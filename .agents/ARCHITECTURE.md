@@ -42,8 +42,8 @@ flowchart TD
     C -->|no candidates| P2[PASS, machine-written]
     C -->|candidates| D{complexity 0?}
     D -->|yes| V1[verdict from the detector]
-    D -->|no| E{ignored?}
-    E -->|yes| P3[PASS, audit ignore recorded]
+    D -->|no| E{ignored?<br/>auditignore or marker}
+    E -->|yes| P3[PASS, ignore recorded]
     E -->|no| F{in verdict cache?}
     F -->|hit| V2[verdict reused]
     F -->|miss| G{identical snippet<br/>already queued?}
@@ -51,6 +51,8 @@ flowchart TD
     G -->|no| H[pending item]
     H --> I[work units, rule-major]
     I --> J[subagents, one per unit]
+    V1 & V2 & J --> K{finding on a<br/>marked line?}
+    K -->|yes| P4[PASS, marker recorded]
 ```
 
 Measured on this repository, on a 34-file change against 5 rules that planted
@@ -124,8 +126,14 @@ This single decision buys four properties at once:
 - **caching** — unchanged snippet, unchanged rule, same answer
 - **incrementality** — editing a rule invalidates only that rule's entries
 - **commit receipts** — see below
-- **self-expiring audit ignores** — the id contains the snippet, so changing the code
-  retires the audit ignore automatically
+- **self-expiring `auditignore` entries** — the id contains the snippet, so
+  changing the code retires the entry automatically
+
+Inline `audit:ignore` markers are the exception, deliberately: they live in
+the audited content itself, so they move with the code and need no identity.
+Adding or removing one changes the blob, and with it every receipt for the
+file. Judgments are cached without the marker applied; it is re-applied each
+time the audit settles, so a removed marker cannot leave a cached pass behind.
 
 ## Gates
 
@@ -160,11 +168,12 @@ first week never recovers, so commit-time stays cheap and narrow.
 
 ## Escape hatches
 
-Deliberate, visible, and all three leave a trace.
+Deliberate, visible, and every one leaves a trace.
 
 | Situation | Mechanism |
 | --- | --- |
-| Finding is wrong or accepted | `.agents/auditignore`, keyed by item id, expires when the code changes |
+| Finding is wrong or accepted | `audit:ignore` comment on or above the line, moves with the code, listed in every audit |
+| No comment can go there | `.agents/auditignore`, keyed by item id, expires when the code changes |
 | Work in progress | `AUDIT_GATE=off git commit` |
 | Emergency | `git commit --no-verify`; a normal push still runs Gate 3 |
 

@@ -21,7 +21,7 @@ const (
 	AdminClientName = "horizon-quasar"
 
 	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
-	CallbackURLQueryParam = "callback"
+	CallbackURLQueryParam = "url"
 
 	// horizon is the leading path segment for secondary and mesh event routes.
 	horizon = "horizon"

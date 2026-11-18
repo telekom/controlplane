@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -161,5 +162,22 @@ var _ = Describe("Rover secret paths", func() {
 		Expect(agenticIdp.Basic.Password).To(Equal(obfuscated))
 
 		Expect(result.Spec.Exposures[2].Agentic.Security.M2M.Basic.Password).To(Equal(obfuscated))
+	})
+
+	It("redacts secrets regardless of the caller's access type", func() {
+		ctx = security.ToContext(ctx, &security.BusinessContext{AccessType: security.AccessTypeReadWrite})
+		mockStore.EXPECT().List(ctx, mock.Anything).Return(&cstore.ListResponse[*roverv1.Rover]{
+			Items: []*roverv1.Rover{newRoverWithSecretRefs()},
+		}, nil)
+
+		result, err := newRedactedStore(mockStore, secretsForKinds["Rover"]).List(ctx, cstore.NewListOpts())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Items).To(HaveLen(1))
+
+		rover := result.Items[0]
+		Expect(rover.Spec.Subscriptions[0].Api.Security.M2M.Client.ClientKey).To(Equal(obfuscated))
+		Expect(rover.Spec.Subscriptions[1].Agentic.Security.M2M.Client.ClientSecret).To(Equal(obfuscated))
+		Expect(rover.Spec.Exposures[1].Agentic.Security.M2M.ExternalIDP.Basic.Password).To(Equal(obfuscated))
+		Expect(rover.Spec.Exposures[2].Agentic.Security.M2M.Basic.Password).To(Equal(obfuscated))
 	})
 })

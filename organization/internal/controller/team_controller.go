@@ -64,10 +64,10 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(cc.Count("team", cc.RoleOwns, predicate.GenerationChangedPredicate{}))).
 		Watches(&notificationv1.NotificationChannel{},
 			handler.EnqueueRequestsFromMapFunc(r.mapNotificationChannelToTeam),
-			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&organizationv1.Group{},
 			handler.EnqueueRequestsFromMapFunc(r.mapGroupToTeam),
-			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}))).
+			builder.WithPredicates(cc.Count("team", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

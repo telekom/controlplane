@@ -28,7 +28,9 @@ func MapResponse(in *applicationv1.Application) api.ApplicationResponse {
 		},
 		Zone:   in.Spec.Zone.Name,
 		Status: status.MapStatus(in.GetConditions(), in.GetGeneration()),
-		// icto, apid, psiid: left empty (deferred — not in CRD)
+		Icto:   mapper.ExternalId(in.Spec.ExternalIds, mapper.IctoScheme),
+		Psiid:  mapper.ExternalId(in.Spec.ExternalIds, mapper.PsiScheme),
+		// apid: left empty (deferred — not in CRD)
 	}
 
 	mapSecurity(in, &resp)

@@ -63,30 +63,30 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&apiv1.ApiExposure{}, builder.WithPredicates(cc.Count("apiexposure", cc.RoleFor))).
 		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
-			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&apiv1.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
-			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		// Watch ApiSubscription with ResourceVersionChangedPredicate (not GenerationChangedPredicate)
 		// because we need to react to approval status changes, which update Status (not Spec).
 		// When a subscription is approved, ApiExposure needs to reconcile to create/update proxy routes.
 		Watches(&apiv1.ApiSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiSubscriptionToApiExposure),
-			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
-			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiExposure),
-			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("apiexposure", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

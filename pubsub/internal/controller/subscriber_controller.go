@@ -51,7 +51,7 @@ func (r *SubscriberReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&pubsubv1.Subscriber{}, builder.WithPredicates(cc.Count("subscriber", cc.RoleFor))).
 		Watches(&pubsubv1.Publisher{},
 			handler.EnqueueRequestsFromMapFunc(r.MapPublisherToSubscriber),
-			builder.WithPredicates(cc.Count("subscriber", cc.RoleWatches)),
+			builder.WithPredicates(cc.Count("subscriber", cc.RoleWatches, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

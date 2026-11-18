@@ -30,6 +30,14 @@ class Candidate:
     anchor: str
     context: str
     detail: str = ""
+    #: Declaration/comment span a tool reported, inclusive.
+    span: tuple[int, int] | None = None
+
+    @property
+    def lines(self) -> range:
+        """Every line a finding on this candidate stands for."""
+        start, end = self.span or (self.line, self.line)
+        return range(start, end + 1)
 
     @property
     def normalized_anchor(self) -> str:
@@ -256,6 +264,7 @@ def _tool_candidates(
                 if body
                 else "",
                 detail=detail,
+                span=(span_value[0], span_value[1]) if span_value else None,
             )
         )
     return candidates
@@ -289,6 +298,21 @@ def _whole_file_candidates(
 def applicable_files(rule: Rule, files: list[ChangedFile]) -> list[ChangedFile]:
     matcher = Matcher(rule.applies_to, rule.exclude)
     return [f for f in files if matcher.matches(f.path)]
+
+
+def locates_findings(rule: Rule) -> bool:
+    """Whether each candidate is one finding's location, not a whole file.
+
+    Only then can a marker on the candidate settle it before judgment; a
+    file-wide candidate is settled by where its finding lands instead.
+    """
+    if rule.complexity == 0:
+        return True
+    if rule.detector is None:
+        return False
+    if rule.detector.kind == "tool":
+        return rule.detector.violation_when == "output_lines"
+    return rule.scope != "file"
 
 
 def run(

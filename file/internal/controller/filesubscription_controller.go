@@ -66,11 +66,11 @@ func (r *FileSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&sftpv1.User{}).
 		Watches(&filev1.FileType{},
 			handler.EnqueueRequestsFromMapFunc(r.MapFileTypeToFileSubscription),
-			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToFileSubscription),
-			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{})),
+			builder.WithPredicates(cc.Count("filesubscription", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,

@@ -8,8 +8,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -44,8 +46,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -80,8 +84,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -116,8 +122,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -148,8 +156,10 @@
 
 [Application Controller GET /applications/:applicationId should return an application with different scopes team scope - 1]
 {
+ "icto": "icto-12345",
  "id": "eni--hyperion--my-app",
  "name": "my-app",
+ "psiid": "PSI-123456",
  "security": {
   "ipRestrictions": {
    "allow": [
@@ -170,8 +180,10 @@
 
 [Application Controller GET /applications/:applicationId should return an application with different scopes group scope - 1]
 {
+ "icto": "icto-12345",
  "id": "eni--hyperion--my-app",
  "name": "my-app",
+ "psiid": "PSI-123456",
  "security": {
   "ipRestrictions": {
    "allow": [
@@ -192,8 +204,10 @@
 
 [Application Controller GET /applications/:applicationId should return an application with different scopes admin scope - 1]
 {
+ "icto": "icto-12345",
  "id": "eni--hyperion--my-app",
  "name": "my-app",
+ "psiid": "PSI-123456",
  "security": {
   "ipRestrictions": {
    "allow": [
@@ -251,8 +265,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -329,8 +345,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [
@@ -368,8 +386,10 @@
  },
  "items": [
   {
+   "icto": "icto-12345",
    "id": "eni--hyperion--my-app",
    "name": "my-app",
+   "psiid": "PSI-123456",
    "security": {
     "ipRestrictions": {
      "allow": [

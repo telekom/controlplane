@@ -52,7 +52,6 @@ func (c *eventExposureController) Get(ctx context.Context, applicationId, eventE
 	return eventexposuremapper.MapResponse(ctx, exposure, c.stores), nil
 }
 
-//nolint:dupl // type-specific list methods share structure but differ in types and stores
 func (c *eventExposureController) GetAll(ctx context.Context, applicationId string, params api.GetAllEventExposuresParams) (*api.EventExposureListResponse, error) {
 	appInfo, err := mapper.ParseApplicationId(ctx, applicationId)
 	if err != nil {

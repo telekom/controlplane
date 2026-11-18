@@ -350,7 +350,7 @@ components:
           example: aws
         icto:
           type: string
-          pattern: icto-[0-9]{5}
+          description: ICTO identifier (format defined by the zone's externalIds policy)
           example: icto-12345
         apid:
           type: string

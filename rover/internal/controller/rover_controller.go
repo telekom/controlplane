@@ -6,6 +6,10 @@ package controller
 
 import (
 	"context"
+	"slices"
+	"strings"
+
+	"k8s.io/client-go/util/workqueue"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -13,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -29,6 +34,7 @@ import (
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	rover_handler "github.com/telekom/controlplane/rover/internal/handler/rover"
+	application_handler "github.com/telekom/controlplane/rover/internal/handler/rover/application"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 )
 
@@ -88,7 +94,9 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		b = b.Owns(&eventv1.EventExposure{}, owns).
-			Owns(&eventv1.EventSubscription{}, owns)
+			Owns(&eventv1.EventSubscription{}, owns).
+			Watches(&rover.Rover{}, r.publisherRoverHandler(),
+				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})))
 	}
 
 	if cconfig.FeaturePermission.IsEnabled() {
@@ -110,13 +118,13 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			Owns(&spectrev1.Listener{}, owns).
 			Watches(&application.Application{},
 				handler.EnqueueRequestsFromMapFunc(r.MapApplicationToListenerRovers),
-				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+				builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 			)
 	}
 
 	b = b.Watches(&organizationv1.Team{},
 		handler.EnqueueRequestsFromMapFunc(r.MapTeamToRovers),
-		builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{})),
+		builder.WithPredicates(cc.Count("rover", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 	)
 
 	return b.WithOptions(controller.Options{
@@ -174,5 +182,65 @@ func (r *RoverReconciler) MapApplicationToListenerRovers(ctx context.Context, ob
 		})
 	}
 
+	return reqs
+}
+
+// publisherRoverHandler requeues the Rovers that are listed as additional
+// publishers by an owner Rover. On update both the old and the new object are
+// mapped, so removed IDs are reconciled too.
+func (r *RoverReconciler) publisherRoverHandler() handler.EventHandler {
+	enqueue := func(ctx context.Context, q workqueue.TypedRateLimitingInterface[reconcile.Request], objs ...client.Object) {
+		var ids []string
+		var env string
+		for _, o := range objs {
+			ro, ok := o.(*rover.Rover)
+			if !ok {
+				continue
+			}
+			env = ro.GetLabels()[cconfig.EnvironmentLabelKey]
+			ids = append(ids, application_handler.ListedPublisherIds(ro)...)
+		}
+		slices.Sort(ids)
+		ids = slices.Compact(ids)
+		for _, req := range r.MapPublisherIdsToRovers(ctx, env, ids) {
+			q.Add(req)
+		}
+	}
+	return handler.Funcs{
+		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+			enqueue(ctx, q, e.Object)
+		},
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+			enqueue(ctx, q, e.ObjectOld, e.ObjectNew)
+		},
+		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+			enqueue(ctx, q, e.Object)
+		},
+	}
+}
+
+// MapPublisherIdsToRovers resolves publisher IDs (<team.Name>--<rover.Name>) to
+// Rover requests via the Applications' Status.ClientId in the given environment.
+// Unresolved IDs are ignored.
+func (r *RoverReconciler) MapPublisherIdsToRovers(ctx context.Context, env string, ids []string) []reconcile.Request {
+	if len(ids) == 0 {
+		return nil
+	}
+	logger := log.FromContext(ctx)
+	appList := &application.ApplicationList{}
+	if err := r.List(ctx, appList, client.MatchingLabels{cconfig.EnvironmentLabelKey: env}); err != nil {
+		logger.Error(err, "Failed to list Applications for additional publishers")
+		return nil
+	}
+	reqs := make([]reconcile.Request, 0, len(ids))
+	for i := range appList.Items {
+		app := &appList.Items[i]
+		if slices.Contains(ids, app.Status.ClientId) {
+			reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(app)})
+		}
+	}
+	slices.SortFunc(reqs, func(a, b reconcile.Request) int {
+		return strings.Compare(a.String(), b.String())
+	})
 	return reqs
 }
