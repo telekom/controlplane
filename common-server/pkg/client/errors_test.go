@@ -28,7 +28,7 @@ var _ = Describe("HandleError", func() {
 		Expect(HandleError(http.StatusOK, "msg")).To(Succeed())
 	})
 
-	DescribeTable("retries server errors without a fixed delay",
+	DescribeTable("retries without a fixed delay",
 		func(status int) {
 			err := httpError(status)
 			Expect(err.IsRetryable()).To(BeTrue())
@@ -37,17 +37,12 @@ var _ = Describe("HandleError", func() {
 			Expect(err.StatusCode()).To(Equal(status))
 		},
 		Entry("conflict", http.StatusConflict),
+		Entry("too many requests", http.StatusTooManyRequests),
 		Entry("internal server error", http.StatusInternalServerError),
 		Entry("bad gateway", http.StatusBadGateway),
 		Entry("service unavailable", http.StatusServiceUnavailable),
 		Entry("gateway timeout", http.StatusGatewayTimeout),
 	)
-
-	It("retries a rate limit after a fixed delay", func() {
-		err := httpError(http.StatusTooManyRequests)
-		Expect(err.IsRetryable()).To(BeTrue())
-		Expect(err.RetryDelay()).To(Equal(RetryDelay))
-	})
 
 	It("blocks a bad request", func() {
 		Expect(HandleError(http.StatusBadRequest, "msg")).To(Satisfy(func(err error) bool {

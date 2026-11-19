@@ -59,8 +59,8 @@ var _ = Describe("CheckStatusCode", func() {
 			Expect(apiErr.IsBlocked()).To(BeFalse())
 		})
 
-		It("has a retry delay", func() {
-			Expect(apiErr.RetryDelay()).To(Equal(3 * time.Second))
+		It("has no retry delay so the controller backs off", func() {
+			Expect(apiErr.RetryDelay()).To(BeZero())
 		})
 
 		It("includes status code in message", func() {
@@ -148,16 +148,6 @@ var _ = Describe("Duck-typing through error chain", func() {
 		Expect(re.IsRetryable()).To(BeTrue())
 	})
 
-	It("preserves RetryDelay through fmt.Errorf %%w for 429", func() {
-		apiErr := CheckStatusCode(&fakeResponse{code: 429}, 200)
-		wrapped := fmt.Errorf("failed to create route: %w", apiErr)
-
-		var rde retryableWithDelayError
-		Expect(errors.As(wrapped, &rde)).To(BeTrue())
-		Expect(rde.IsRetryable()).To(BeTrue())
-		Expect(rde.RetryDelay()).To(Equal(3 * time.Second))
-	})
-
 	It("preserves interfaces through multiple layers of wrapping", func() {
 		apiErr := CheckStatusCode(&fakeResponse{code: 502}, 200)
 		wrapped1 := fmt.Errorf("inner: %w", apiErr)
@@ -208,4 +198,15 @@ var _ = Describe("HandleClientError for OAuth2 token endpoint errors", func() {
 		Entry("bad request", http.StatusBadRequest),
 		Entry("forbidden", http.StatusForbidden),
 	)
+
+	It("retries without panicking when the error carries no response", func() {
+		retrieveErr := &oauth2.RetrieveError{}
+		err := HandleClientError(&url.Error{Op: "Get", URL: "https://kong.example/admin-api/routes", Err: retrieveErr})
+
+		var rde retryableWithDelayError
+		Expect(errors.As(err, &rde)).To(BeTrue())
+		Expect(rde.IsRetryable()).To(BeTrue())
+		Expect(rde.RetryDelay()).To(BeZero())
+		Expect(err).To(MatchError(ContainSubstring("OAuth2 token endpoint error")))
+	})
 })
