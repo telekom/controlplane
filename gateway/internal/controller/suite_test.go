@@ -47,6 +47,8 @@ const (
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
+	// mgrClient is the manager's cached client, as used by the reconcilers and their map functions.
+	mgrClient client.Client
 	testEnv   *envtest.Environment
 
 	ctx    context.Context
@@ -94,6 +96,7 @@ var _ = BeforeSuite(func() {
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
+	mgrClient = k8sManager.GetClient()
 
 	// Register field indices needed by controllers
 	RegisterIndecesOrDie(ctx, k8sManager)

@@ -169,6 +169,17 @@ After configuring a Route or Consumer, the operator deletes plugins it no longer
 
 Plugins without this proof, including legacy plugins that were never adopted, are skipped. Deleting a Route or Consumer in Kong still deletes all plugins bound to it, including adopted legacy plugins.
 
+## Consumer changes across zones
+
+A cross-zone subscriber's ConsumeRoute references the proxy Route in the subscriber's zone. The JumperConfig with the subscriber's credentials, however, is built by the primary Route in the provider's zone and by failover secondary Routes. These Routes read all ConsumeRoutes with the same route name.
+
+When a ConsumeRoute is created, changed or deleted, the Route controller therefore reconciles:
+
+- the Route the ConsumeRoute references, and
+- all primary and failover secondary Routes with the same name in the ConsumeRoute's environment.
+
+Other proxy Routes with that name are not reconciled, because they only list their own consumers. Routes of other environments are never reconciled. A changed subscriber credential, such as a rotated client secret, reaches the provider zone's JumperConfig without waiting for the periodic resync.
+
 ## Domain Interactions
 
 - **Admin domain** — Zones define which gateway instance to use.
