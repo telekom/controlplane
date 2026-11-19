@@ -12,6 +12,18 @@ import (
 )
 
 var _ = Describe("Approval mapping", func() {
+	Describe("ValidateListenerGate", func() {
+		It("accepts the provider and consumer gates with their actions", func() {
+			Expect(shared.ValidateListenerGate("provider", "listen-provider")).To(Succeed())
+			Expect(shared.ValidateListenerGate("consumer", "listen-consumer")).To(Succeed())
+		})
+
+		It("rejects unknown keys and mismatched actions", func() {
+			Expect(shared.ValidateListenerGate("", "listen-")).To(MatchError(ContainSubstring("invalid Listener approvalKey")))
+			Expect(shared.ValidateListenerGate("other", "listen-other")).To(MatchError(ContainSubstring("invalid Listener approvalKey")))
+			Expect(shared.ValidateListenerGate("consumer", "listen-provider")).To(MatchError(ContainSubstring("action must match")))
+		})
+	})
 	Describe("MapApprovalState", func() {
 		It("maps PascalCase states to upper-case enums", func() {
 			Expect(shared.MapApprovalState("Approved")).To(Equal("APPROVED"))

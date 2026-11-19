@@ -13,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapprovalrequest "github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	entlistener "github.com/telekom/controlplane/controlplane-api/ent/listener"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/infrastructure/cachekeys"
 	"github.com/telekom/controlplane/projector/internal/metrics"
@@ -57,11 +58,8 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps App
 func (r *Repository) resolveSubscriptionID(ctx context.Context, data *ApprovalRequestData) (int, error) {
 	switch data.TargetKind {
 	case TargetKindListener:
-		if data.ApprovalKey != "provider" && data.ApprovalKey != "consumer" {
-			return 0, fmt.Errorf("invalid Listener approvalKey %q", data.ApprovalKey)
-		}
-		if data.Action != "listen-"+data.ApprovalKey {
-			return 0, fmt.Errorf("invalid Listener action %q for approvalKey %q", data.Action, data.ApprovalKey)
+		if err := shared.ValidateListenerGate(data.ApprovalKey, data.Action); err != nil {
+			return 0, err
 		}
 		id, err := r.client.Listener.Query().
 			Where(entlistener.NamespaceEQ(data.SubscriptionNamespace), entlistener.NameEQ(data.SubscriptionName)).
