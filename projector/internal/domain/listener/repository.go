@@ -131,6 +131,7 @@ func (r *Repository) Delete(ctx context.Context, key Key) error {
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues("listener", metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
+	// Namespace and name identify exactly one row; namespaces are environment-prefixed.
 	_, err := r.client.Listener.Delete().Where(entlistener.NamespaceEQ(key.Namespace), entlistener.NameEQ(key.Name)).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("delete listener %s/%s: %w", key.Namespace, key.Name, err)

@@ -15,7 +15,6 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
-	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/module"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -39,8 +38,10 @@ const providerIndex = "spec.provider.owner"
 const subscriptionIndex = "spec.consumer.subscription"
 const exposureIndex = "spec.provider.exposure"
 
-func ownerKey(team, name string) string      { return fmt.Sprintf("%q/%q", team, name) }
-func edgeKey(team, name, path string) string { return fmt.Sprintf("%q/%q/%q", team, name, path) }
+func ownerKey(namespace, name string) string { return fmt.Sprintf("%q/%q", namespace, name) }
+func edgeKey(namespace, name, path string) string {
+	return fmt.Sprintf("%q/%q/%q", namespace, name, path)
+}
 
 type listenerModule struct{}
 
@@ -99,6 +100,8 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 		}
 	}
 
+	// The readers below only Get or List by keys that contain an environment-prefixed
+	// namespace, so every lookup stays within the source object's environment.
 	repo := NewRepository(deps.EntClient, deps.IDResolver)
 	translator := &Translator{Reader: mgr.GetClient(), OnMissingApplication: repo.Delete}
 	proc := &listenerProcessor{
@@ -141,7 +144,7 @@ func indexConsumer(obj client.Object) []string {
 	if ref.Name == "" || ref.Namespace == "" {
 		return nil
 	}
-	return []string{ownerKey(shared.TeamNameFromNamespace(ref.Namespace), ref.Name)}
+	return []string{ownerKey(ref.Namespace, ref.Name)}
 }
 
 func indexProvider(obj client.Object) []string {
@@ -149,7 +152,7 @@ func indexProvider(obj client.Object) []string {
 	if ref.Name == "" || ref.Namespace == "" {
 		return nil
 	}
-	return []string{ownerKey(shared.TeamNameFromNamespace(ref.Namespace), ref.Name)}
+	return []string{ownerKey(ref.Namespace, ref.Name)}
 }
 
 func indexSubscription(obj client.Object) []string {
@@ -157,7 +160,7 @@ func indexSubscription(obj client.Object) []string {
 	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || len(indexConsumer(obj)) == 0 {
 		return nil
 	}
-	return []string{edgeKey(shared.TeamNameFromNamespace(l.Spec.Consumer.Namespace), l.Spec.Consumer.Name, l.Spec.ApiListener.ApiBasePath)}
+	return []string{edgeKey(l.Spec.Consumer.Namespace, l.Spec.Consumer.Name, l.Spec.ApiListener.ApiBasePath)}
 }
 
 func indexExposure(obj client.Object) []string {
@@ -165,7 +168,7 @@ func indexExposure(obj client.Object) []string {
 	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || len(indexProvider(obj)) == 0 {
 		return nil
 	}
-	return []string{edgeKey(shared.TeamNameFromNamespace(l.Spec.Provider.Namespace), l.Spec.Provider.Name, l.Spec.ApiListener.ApiBasePath)}
+	return []string{edgeKey(l.Spec.Provider.Namespace, l.Spec.Provider.Name, l.Spec.ApiListener.ApiBasePath)}
 }
 
 func indexObserver(obj client.Object) []string {
@@ -184,17 +187,19 @@ func listenersForParent(ctx context.Context, reader client.Reader, obj client.Ob
 		if parent.Spec.Requestor.Application.Name == "" || parent.Spec.ApiBasePath == "" {
 			return nil
 		}
-		selectors = append(selectors, client.MatchingFields{subscriptionIndex: edgeKey(shared.TeamNameFromNamespace(parent.Namespace), parent.Spec.Requestor.Application.Name, parent.Spec.ApiBasePath)})
+		selectors = append(selectors, client.MatchingFields{subscriptionIndex: edgeKey(parent.Namespace, parent.Spec.Requestor.Application.Name, parent.Spec.ApiBasePath)})
 	case *apiv1.ApiExposure:
 		appName := parent.Labels[cconfig.BuildLabelKey("application")]
 		if appName == "" || parent.Spec.ApiBasePath == "" {
 			return nil
 		}
-		selectors = append(selectors, client.MatchingFields{exposureIndex: edgeKey(shared.TeamNameFromNamespace(parent.Namespace), appName, parent.Spec.ApiBasePath)})
+		selectors = append(selectors, client.MatchingFields{exposureIndex: edgeKey(parent.Namespace, appName, parent.Spec.ApiBasePath)})
 	case *appv1.Application:
-		key := ownerKey(parent.Spec.Team, parent.Name)
+		key := ownerKey(parent.Namespace, parent.Name)
 		selectors = append(selectors, client.MatchingFields{consumerIndex: key}, client.MatchingFields{providerIndex: key})
 		apps := &spectrev1.SpectreApplicationList{}
+		// The index key contains the Application's namespace, which is environment-prefixed,
+		// so only SpectreApplications of the same environment match.
 		if err := reader.List(ctx, apps, client.MatchingFields{observerIndex: parent.Namespace + "/" + parent.Name}); err != nil {
 			log.FromContext(ctx).Error(err, "list spectre applications for observer", "application", client.ObjectKeyFromObject(parent))
 		} else {

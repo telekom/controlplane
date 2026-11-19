@@ -95,6 +95,7 @@ func (p notifyingProcessor[T]) Upsert(ctx context.Context, obj T) error {
 }
 
 func (p notifyingProcessor[T]) Delete(ctx context.Context, key client.ObjectKey, obj T) error {
+	// Removes only this object's database projection; no Kubernetes object is deleted.
 	if err := p.SyncProcessor.Delete(ctx, key, obj); err != nil {
 		return err
 	}
@@ -124,6 +125,8 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 	if m.NotifyParent && cconfig.FeatureSpectre.IsEnabled() {
 		processor = notifyingProcessor[T]{SyncProcessor: proc, events: deps.ParentEvents}
 	}
+	// The reconciler only Gets the object named by the reconcile request, an exact
+	// key in that object's own environment.
 	rec := runtime.NewReadOnlyReconciler(
 		mgr.GetClient(),
 		processor,

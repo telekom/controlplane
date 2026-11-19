@@ -64,6 +64,7 @@ func (r *Repository) Upsert(ctx context.Context, data *ApiData) error {
 		return fmt.Errorf("find team %q: %w", data.TeamName, err)
 	}
 
+	// Database row, not a Kubernetes object; the Api catalogue has no environment column.
 	create := r.client.Api.Create().
 		SetBasePath(data.BasePath).
 		SetName(data.Meta.Name).

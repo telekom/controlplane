@@ -42,7 +42,11 @@ func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*D
 		ref.Namespace = obj.Namespace
 	}
 	app := &spectrev1.SpectreApplication{}
-	if err := t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app); err != nil {
+	err := t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app)
+	if err == nil && shared.EnvironmentFromLabels(app.Labels) != shared.EnvironmentFromLabels(obj.Labels) {
+		err = apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("spectreapplications").GroupResource(), ref.Name)
+	}
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			if t.OnMissingApplication != nil {
 				if deleteErr := t.OnMissingApplication(ctx, Key{Namespace: obj.Namespace, Name: obj.Name}); deleteErr != nil {
