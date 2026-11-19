@@ -1,0 +1,59 @@
+gateway/api/v1/traffic_types.go
+  s_6168b13b24d7e0::t_879424422bee02 18
+agentic/internal/handler/util/route_test.go
+  s_6168b13b24d7e0::t_053a8d317bea5c 50-54,56-64
+file/internal/handler/zoneserviceconfig/handler.go
+  s_6168b13b24d7e0::t_40f9e7a817b41e 340
+agentic/internal/handler/util/route.go
+  s_6168b13b24d7e0::t_8df51a0cd353bc 180
+  s_6168b13b24d7e0::t_e1269729b66de8 275,279
+gateway/api/v1/suite_test.go
+  s_6168b13b24d7e0::t_2d647eac407a4b 1-18
+admin/internal/handler/zone/routes.go
+  s_6168b13b24d7e0::t_5304b3163e4d50 137
+gateway/api/go.mod
+  s_6168b13b24d7e0::t_01f6798f2bad65 10-11,20,42,44-45,59,62,67
+gateway/api/v1/util_test.go
+  s_6168b13b24d7e0::t_c39f5450be3e1c 1-7,10-58
+  s_6168b13b24d7e0::t_ee9448db88f9b1 8-9
+api/internal/handler/util/route_util.go
+  s_6168b13b24d7e0::t_0b12c65d25f208 571,575
+  s_6168b13b24d7e0::t_dc199d1191fbaa 289
+  s_6168b13b24d7e0::t_066ca9b1ab5666 381,385
+  s_6168b13b24d7e0::t_ff7c2ed8ba2dce 428
+gateway/api/v1/util.go
+  s_6168b13b24d7e0::t_bbfe8ddc7cc6f7 8
+  s_6168b13b24d7e0::t_4c5a110c437780 38-53
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  s_6168b13b24d7e0::t_8a792cfa52be7f 86
+event/internal/handler/util/publish_route.go
+  s_6168b13b24d7e0::t_2a8cdbdb12fc99 53
+event/internal/handler/util/shared_route.go
+  s_6168b13b24d7e0::t_76044852966ea2 187
+event/internal/handler/util/sse_route.go
+  s_6168b13b24d7e0::t_e84fe48acca704 67
+event/internal/handler/util/voyager_route.go
+  s_6168b13b24d7e0::t_52d2fe0563098e 60
+gateway/api/go.sum
+  s_6168b13b24d7e0::t_a73be17532b567 17-22,63-64,74-75,78-85,109-110,119-126
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  s_6168b13b24d7e0::t_6f470d7ebf1565 67-68,581-582
+spectre/internal/handler/spectreapplication_route.go
+  s_6168b13b24d7e0::t_a67ff479d35fb2 161,382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "d35dbb880cfc35c9bceebb022b86fbaa1b399b43",
+  "prompts": {},
+  "sessions": {
+    "s_6168b13b24d7e0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fc5a2a2ffeMAZaAQ04gEapFQ",
+        "model": "github-copilot/claude-opus-5.5-long"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

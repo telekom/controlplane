@@ -1,0 +1,45 @@
+rover-server/internal/mapper/applicationinfo/variables_test.go
+  s_9575c9093a0498::t_062358d7684575 64-67,162,167-171,181-187
+rover-server/internal/mapper/applicationinfo/status_test.go
+  s_9575c9093a0498::t_062358d7684575 98-101
+rover-server/api/openapi.yaml
+  s_9575c9093a0498::t_062358d7684575 2698-2702
+rover-server/internal/api/server.gen.go
+  s_53a52cf590af8c::t_c610a67ab30603 1051,2823-3016
+docs/docs/user-journey/exposing-events.mdx
+  s_9575c9093a0498::t_062358d7684575 129
+rover-server/internal/mapper/applicationinfo/out_test.go
+  s_9575c9093a0498::t_062358d7684575 558-561,602,624,628,632,634,637-640,650,660,664,668-671,684,690,698-719,743,747-750,768-769
+rover-server/test/mocks/data/zone.json
+  s_9575c9093a0498::t_062358d7684575 19-24
+rover-server/internal/mapper/applicationinfo/out.go
+  s_9575c9093a0498::t_062358d7684575 131,133,145-149,152,211
+rover-server/internal/controller/rover_pagination_test.go
+  s_9575c9093a0498::t_062358d7684575 160-161
+docs/docs/user-journey/subscribing-to-apis.mdx
+  s_9575c9093a0498::t_062358d7684575 89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9243eda38e85edcf2e247a61537459a506038cd2",
+  "prompts": {},
+  "sessions": {
+    "s_53a52cf590af8c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4f731e66ffefnzbyjL2AyEVHU",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_9575c9093a0498": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fa6969affeiVjVIBsZAk9yeQ",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+gateway/Makefile
+  s_6168b13b24d7e0::t_53740953c922a2 73
+gateway/api/Makefile
+  s_6168b13b24d7e0::t_d6819e287d8e71 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "515b2a017bba30e8bbf666619188115ba4b412a2",
+  "prompts": {},
+  "sessions": {
+    "s_6168b13b24d7e0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fc5a2a2ffeMAZaAQ04gEapFQ",
+        "model": "github-copilot/claude-opus-5.5-long"
+      },
+      "human_author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  }
+}

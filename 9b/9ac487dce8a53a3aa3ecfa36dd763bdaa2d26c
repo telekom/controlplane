@@ -1,0 +1,304 @@
+rover/internal/controller/suite_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 188-190
+.agents/rules/13-environment-isolation.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 3,48-72,81,83,112-116,132-160
+approval/internal/controller/approvalrequest_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 63
+.agents/skills/code-auditor/persona/README.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 68-69,75-76
+agentic/internal/controller/mcpserver_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 55
+event/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18,165
+docs/docs/user-journey/features/event-filtering.mdx
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 401-405
+gateway/pkg/kong/client/legacy_roundtrip_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-78
+gateway/pkg/kong/client/plugin_helpers_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-164
+admin/internal/controller/zone_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 12,20,84,88,91,94,97,100,103,106,109,126-130,145
+rover-server/internal/controller/suite_controller_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 68
+.agents/rules/02-no-reconcile-loops.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 32-39,57,88-91
+  s_1ad86bc6089685::t_248c276c4b73cd 92-93
+docs/docs/developer-journey/creating-an-operator.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 234
+rover-server/internal/api/server.gen.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 7,12,2832-2835,2837-3038,3040-3041,3045,3047-3051,3059,3077-3082,3108-3126
+organization/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18,27,186
+docs/docs/user-journey/applications.mdx
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 87-88
+spectre/internal/handler/util/callback_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 17,26,29,38,53,66
+common/pkg/config/env_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 25,37,52,104-105,116,128
+common/pkg/controller/predicates.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 40-53
+api/internal/controller/apisubscription_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 75,79,83,87,91
+discovery-server/internal/controller/application.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 9,37,50-52,89-122
+gateway/pkg/kong/client/plugin_discovery.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-255
+rover/internal/controller/rover_controller_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 48-57,735-740,761-786
+  s_1ad86bc6089685::t_76b59d81195bf3 787-789
+rover/internal/controller/publisher_mapper_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-42
+rover-server/pkg/store/stores_secret_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 14,166-181
+  s_1ad86bc6089685::t_7160d4cd5ec4ba 182
+discovery-server/internal/pagination/pagination.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 10,59-60,100-103,105
+.agents/skills/code-auditor/scripts/auditlib/detect.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 33-40,267,303-315
+  s_1ad86bc6089685::t_5d1de3c10560eb 316-317
+identity/internal/controller/realm_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 64
+gateway/hack/legacy-route-seed.sh
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-631
+discovery-server/internal/server/server.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 105
+agentic/internal/controller/agentcard_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 55
+discovery-server/internal/mapper/application/out_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 86-143
+agentic/internal/controller/agenticexposure_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 63,67,71,77,81
+approval/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18,29,105
+.agents/rules/15-prefer-shared-mocks.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 50
+admin/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 19,155
+common/pkg/controller/predicates_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 8,28-43
+discovery-server/internal/mapper/apisubscription/out.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 179
+gateway/pkg/kong/client/plugin_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 293,328
+event/internal/handler/util/callback_route.go
+  s_1ad86bc6089685::t_6769faa9882319 22,27
+discovery-server/internal/mapper/externalids_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-42
+rover/internal/handler/rover/application/application.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 11,15,52-57,154-209
+discovery-server/internal/controller/eventtype.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 49-53,55-56
+spectre/internal/controller/listener_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 93,99,105,111,117,124,131,137,143,149,155
+discovery-server/internal/mapper/externalids.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-35
+api/internal/controller/apiexposure_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 66,70,74,81,85,89
+gateway/hack/legacy-route-seed_test.sh
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-465
+discovery-server/internal/mapper/eventexposure/out.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 87
+event/internal/controller/eventexposure_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 69,73,77,81,85,89,96
+sftp/cmd/sftp-operator/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 14,20,86
+gateway/pkg/kong/client/plugin_cleanup.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-148
+.agents/skills/code-auditor/scripts/process_audit_report.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 15-17,36,198,212-216,220-248,270,281,370-377,435,440-443,467-476,493-500
+  s_1ad86bc6089685::t_f31df652a4b13f 501
+.agents/skills/code-auditor/scripts/auditlib/report.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 62-64
+spectre/internal/handler/util/naming_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 100
+gateway/pkg/kong/client/plugin_response_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 37,69
+agentic/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 19,135
+gateway/pkg/kong/client/plugin_config_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-96
+application/internal/handler/application/handler_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 954-985
+gateway/pkg/kong/client/plugin.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 22-27,97-99,102,104,121,138,141,143,149,164-210,226-232,234,237-250,252,256-257,260,264-265,267-272,276-287,323-324,326,347-350,353-354,397-399
+.opencode/agents/audit-judge-fast.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 79-80,86-87
+common-server/helm/Chart.yaml
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 6,10
+application/internal/controller/application_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 88
+event/internal/handler/util/naming_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 34
+file/internal/controller/filesubscription_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 69,73
+permission/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 14,20,120
+.github/agents/audit-judge-careful.agent.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 75-76,82-83
+.agents/skills/code-auditor/scripts/auditlib/inline.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-157
+notification/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 19,26,187
+admin/internal/controller/zone_cabundle.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 11,47
+rover/internal/handler/rover/application/application_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 8,12-18,81-199
+CHANGELOG.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-15
+event/internal/handler/util/naming.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 24
+spectre/internal/controller/spectreapplication_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 61,67,73,79,85,91,97
+spectre/internal/handler/listener_handler_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1828
+event/internal/controller/callback_lifecycle_test.go
+  s_1ad86bc6089685::t_6769faa9882319 496,514
+.agents/skills/code-auditor/scripts/audit_gate.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 34,129,156-159
+  s_1ad86bc6089685::t_1151ab598874db 160
+gateway/internal/controller/routelistener_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 57
+discovery-server/internal/mapper/application/out.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 31-33
+agentic/internal/controller/agenticsubscription_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 69,77,81,85
+rover/internal/controller/rover_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 9-12,20,37,97-99,121,127,187-244,246
+  s_1ad86bc6089685::t_0b5723926ca9ae 245
+docs/docs/architecture/event.mdx
+  s_1ad86bc6089685::t_6769faa9882319 122
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 136
+.github/agents/audit-judge-fast.agent.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 75-76,82-83
+gateway/pkg/kong/client/plugin_discovery_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-528
+gateway/hack/legacy-route-seed.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-83
+docs/docs/architecture/gateway.mdx
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 127-171
+install/overlays/default/kustomization.yaml
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 33,35,37,39,41,43,45,47,49,51,53,55,58,60,63,65
+spectre/internal/handler/spectreapplication_handler_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 576
+.agents/skills/code-auditor/SKILL.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18-19,168-174
+.opencode/agents/audit-judge-careful.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 79-80,86-87
+file/cmd/file-operator/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18,137
+pubsub/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 14,22,149
+spectre/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 16,24,135
+pubsub/internal/controller/publisher_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 55
+organization/internal/controller/team_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 67,70
+identity/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 16,24,120
+common/pkg/config/config.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 21,45-47,63,78
+.agents/ARCHITECTURE.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 45-46,54-55,129-136,171,175-176
+rover-server/internal/controller/rover_pagination_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 19,88-130
+discovery-server/internal/controller/application_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 8-9,15-21,24,27-54,96-154
+  s_1ad86bc6089685::t_3daf156ddea6ad 155
+discovery-server/api/application-openapi.yaml
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 353
+api/internal/controller/api_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 54
+rover-server/api/openapi.yaml
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 64-68
+rover-server/pkg/store/stores.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 34-36,170,176-179
+  s_1ad86bc6089685::t_8bd695a3c00a31 180-181
+.agents/auditignore
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 5-8
+event/internal/controller/eventsubscription_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 72,76,80,84
+discovery-server/api/uber-openapi.yaml
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 2076
+identity/internal/controller/client_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 64
+discovery-server/test/mocks/data/application.json
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 23-26
+discovery-server/internal/controller/eventtype_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 8-9,15-21,24,42-83
+discovery-server/internal/mapper/eventsubscription/out.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 114
+.agents/skills/code-auditor/scripts/README.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 30-31,126-127,131-136,183-185
+api/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 16,25,123
+gateway/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 20,28,121
+AGENTS.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 99-100
+file/internal/controller/fileexposure_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 62,66
+gateway/pkg/kong/client/plugin_cleanup_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-220
+rover/internal/controller/index.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 23,78-80
+  s_1ad86bc6089685::t_bc3bc669b0468d 81-82
+projector/internal/bootstrap/bootstrap.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 29,224-225
+rover/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 24,163
+.agents/skills/code-auditor/scripts/create_audit_report.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 9-12,35,120-125,186,212-217,223-232
+application/cmd/main.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 18,29,151
+event/internal/controller/eventconfig_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 68,72
+event/internal/handler/util/callback_route_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 188
+.agents/rules/README.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 257-318,326-327
+rover-server/internal/controller/rover.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 38-41,46-49,113-115
+spectre/internal/handler/util/callback.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 13-15,18
+.agents/rules/16-skip-initial-list-on-watches.md
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-73
+event/internal/handler/eventsubscription/handler_test.go
+  s_1ad86bc6089685::t_6769faa9882319 680,801
+.agents/skills/code-auditor/scripts/tests/test_inline_ignores.py
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-219
+discovery-server/internal/pagination/pagination_test.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 1-47
+discovery-server/internal/api/server.gen.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 7,12,566-567,1438-1441,1443-1597,1599-1600,1604,1606-1610,1618,1636-1641,1667-1685
+docs/docs/user-journey/exposing-events.mdx
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 131-134
+pubsub/internal/controller/subscriber_controller.go
+  s_1ad86bc6089685::t_8a8345a5ff6a3e 54
+discovery-server/internal/controller/__snapshots__/apiexposure_test.snap
+  s_1ad86bc6089685::t_8f3e243242f195 252,295,338,381
+discovery-server/internal/controller/__snapshots__/apisubscription_test.snap
+  s_1ad86bc6089685::t_5b73691d940857 12,55,98,141,177,206,235,264
+discovery-server/internal/controller/__snapshots__/application_test.snap
+  s_1ad86bc6089685::t_2d4ccacb9cf482 11,14,49,52,87,90,125,128,159,162,183,186,207,210,268,271,348,351,389,392
+discovery-server/internal/controller/__snapshots__/eventexposure_test.snap
+  s_1ad86bc6089685::t_73a39a7875a16d 13,51,89,120,144,168,228,270,312
+discovery-server/internal/controller/__snapshots__/eventsubscription_test.snap
+  s_1ad86bc6089685::t_f5f4ef7755bc59 12,54,96,131,159,187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9b9ac487dce8a53a3aa3ecfa36dd763bdaa2d26c",
+  "prompts": {},
+  "sessions": {
+    "s_1ad86bc6089685": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "4bed33a7-dcdc-4fb7-9d67-6bd3b9dd6d2a",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

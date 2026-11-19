@@ -1,0 +1,29 @@
+.agents/skills/code-auditor/scripts/README.md
+  s_fcbd43e11bddb1::t_69704b65f59536 95-99
+CONTRIBUTING.md
+  s_fcbd43e11bddb1::t_69704b65f59536 95-97
+.agents/skills/code-auditor/scripts/auditlib/changeset.py
+  s_fcbd43e11bddb1::t_69704b65f59536 78,81,93-94,98-99
+.agents/skills/code-auditor/scripts/audit_gate.py
+  s_fcbd43e11bddb1::t_69704b65f59536 77-84,87-89
+.agents/skills/code-auditor/scripts/tests/test_followup_review.py
+  s_fcbd43e11bddb1::t_709c7cf5b0f97f 7-9,199-234
+  s_fcbd43e11bddb1::t_69704b65f59536 166-170
+  s_fcbd43e11bddb1::t_ade826116a7ab6 150-165,171-198,235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ba54f7a68b872f75e4e178f4b160e640af257e9c",
+  "prompts": {},
+  "sessions": {
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

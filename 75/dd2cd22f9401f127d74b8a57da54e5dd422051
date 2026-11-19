@@ -1,0 +1,63 @@
+api/internal/handler/util/gateway_test.go
+  h_052be7cb63ce69 36
+  s_6168b13b24d7e0::t_8b6c76a63f6516 1-35,37-46
+file/internal/handler/zoneserviceconfig/handler_test.go
+  s_6168b13b24d7e0::t_db03bb207cc276 607-627
+docs/docs/user-journey/exposing-apis.mdx
+  h_052be7cb63ce69 83
+api/internal/handler/remoteapisubscription/consumer_scenario.go
+  s_6168b13b24d7e0::t_2f71a0ee4e7197 86-88
+  s_6168b13b24d7e0::t_83a2c57d3bac87 99
+gateway/pkg/kong/client/types.go
+  s_6168b13b24d7e0::t_b091aa0b5c3b1a 86
+event/internal/handler/util/shared_route.go
+  s_6168b13b24d7e0::t_3d8908d4469e5f 62
+admin/internal/handler/zone/handler_test.go
+  s_6168b13b24d7e0::t_77d963c9736c44 245-256
+event/internal/handler/util/publish_route_test.go
+  s_6168b13b24d7e0::t_9d64972dfc6fe3 188-204
+agentic/internal/handler/util/route.go
+  s_6168b13b24d7e0::t_6f3bbe761ab4a9 283
+api/internal/handler/util/gateway.go
+  s_6168b13b24d7e0::t_cab9c9c8c32eff 29
+  h_052be7cb63ce69 16
+file/internal/handler/zoneserviceconfig/handler.go
+  s_6168b13b24d7e0::t_8024364f9ac61f 351
+gateway/pkg/kong/client/types_test.go
+  s_6168b13b24d7e0::t_4a29de01a5cb9f 1-33
+spectre/internal/handler/spectreapplication_route.go
+  s_6168b13b24d7e0::t_fdeee154835588 440
+spectre/internal/handler/spectreapplication_handler_test.go
+  s_6168b13b24d7e0::t_5c9336ba4ddcc4 631-667
+agentic/internal/handler/util/route_test.go
+  s_6168b13b24d7e0::t_3bb4fd3ec803b6 49-69
+admin/internal/handler/zone/routes.go
+  s_6168b13b24d7e0::t_8cc340ddbf7e3d 146
+api/internal/controller/remoteapisubscription_controller_test.go
+  s_6168b13b24d7e0::t_e4aef722cea8c7 343
+  s_6168b13b24d7e0::t_0c2d6402ab7a22 362-363
+api/internal/handler/util_real_route_test.go
+  h_052be7cb63ce69 47,61
+  s_6168b13b24d7e0::t_dd9614fe973294 1-46,48-60,62-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "75dd2cd22f9401f127d74b8a57da54e5dd422051",
+  "prompts": {},
+  "humans": {
+    "h_052be7cb63ce69": {
+      "author": "Niklas Beilmann <niklas.beilmann@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_6168b13b24d7e0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e4fc5a2a2ffeMAZaAQ04gEapFQ",
+        "model": "github-copilot/claude-opus-5.5-long"
+      },
+      "human_author": null
+    }
+  }
+}

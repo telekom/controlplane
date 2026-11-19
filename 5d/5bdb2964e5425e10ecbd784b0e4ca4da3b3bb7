@@ -1,0 +1,47 @@
+.opencode/agents/audit-judge-careful.md
+  s_63cc75af7e7d97::t_8c41699ebee305 4
+REUSE.toml
+  s_63cc75af7e7d97::t_8c41699ebee305 44
+.agents/judges.yaml
+  h_0f030e7424553c 24-25
+.github/agents/audit-judge-fast.agent.md
+  s_63cc75af7e7d97::t_8c41699ebee305 1-81
+.opencode/agents/audit-judge-fast.md
+  s_63cc75af7e7d97::t_8c41699ebee305 4
+.pre-commit-config.yaml
+  s_63cc75af7e7d97::t_8c41699ebee305 52
+.agents/skills/code-auditor/scripts/README.md
+  s_63cc75af7e7d97::t_a1d2378bd88a37 123-124
+  s_63cc75af7e7d97::t_5c644ff03437e8 113-122,125-132
+.agents/skills/code-auditor/SKILL.md
+  s_63cc75af7e7d97::t_ee500612fd8ab8 45-46
+.agents/skills/code-auditor/scripts/tests/test_sync_judges.py
+  s_63cc75af7e7d97::t_3a80802141d7f4 46,56,76-78,85,96,116,152
+  s_63cc75af7e7d97::t_29c7eb3ecc4906 1-45,47-55,57-75,79-84,86-95,97-115,117-151,153-170
+.github/agents/audit-judge-careful.agent.md
+  s_63cc75af7e7d97::t_8c41699ebee305 1-81
+.agents/skills/code-auditor/scripts/sync_judges.py
+  s_63cc75af7e7d97::t_291acd4dcd2091 17-23,26-30,79,94-114,116-144,158,163,165,167,183,186,194-195,208-211
+  s_63cc75af7e7d97::t_a1d2378bd88a37 24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5d5bdb2964e5425e10ecbd784b0e4ca4da3b3bb7",
+  "prompts": {},
+  "humans": {
+    "h_0f030e7424553c": {
+      "author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  },
+  "sessions": {
+    "s_63cc75af7e7d97": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3b6d7622ffeP3fifYqyAt78Lj",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

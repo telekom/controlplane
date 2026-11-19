@@ -1,0 +1,19 @@
+docs/docs/user-journey/features/event-filtering.mdx
+  s_26c1d938ea13b5::t_c72b5fcb239319 402-405
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d965f68aeb9ed33e837182a10c1f1a1e3f516b5c",
+  "prompts": {},
+  "sessions": {
+    "s_26c1d938ea13b5": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a27b4f3a-d8ef-4549-b305-b94e26df3301",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

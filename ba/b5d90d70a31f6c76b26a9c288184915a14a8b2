@@ -1,0 +1,43 @@
+docs/docs/user-journey/exposing-events.mdx
+  s_eba6099c9c685b::t_8998b0de361452 131-134
+docs/docs/user-journey/features/event-filtering.mdx
+  s_eba6099c9c685b::t_79e51f2e72984d 401-402
+rover/internal/handler/rover/application/application_test.go
+  s_eba6099c9c685b::t_64e79d18f7e822 8,12-18,81-199
+rover/internal/handler/rover/application/application.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 11,15,52-57,154-209
+rover/internal/controller/rover_controller.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 9-12,20,37,97-99,187-244,246
+rover/internal/controller/rover_controller_test.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 761-789
+application/internal/handler/application/handler_test.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 954-985
+rover/internal/controller/index.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 23,78-80
+rover/internal/controller/publisher_mapper_test.go
+  s_26c1d938ea13b5::t_f19f11a0ff8bcb 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "bab5d90d70a31f6c76b26a9c288184915a14a8b2",
+  "prompts": {},
+  "sessions": {
+    "s_26c1d938ea13b5": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a27b4f3a-d8ef-4549-b305-b94e26df3301",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_eba6099c9c685b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b698d323-d3bf-49f7-938d-f8cd19f37fc4",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

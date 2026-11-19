@@ -1,0 +1,185 @@
+controlplane-api/ent/agenticexposure/agenticexposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 55-56,115,304-306
+  s_daba57fb480f2b::t_710411b2d76ecd 307-308
+controlplane-api/internal/resolvers/schema_resolvers_agentic_test.go
+  s_fb5a99b45bc86e::t_43534051e26930 45-50
+controlplane-api/ent/apiexposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 57-58,128,262-268,396-398
+  s_c08c060e19607b::t_485f76d2d4a3f7 59-60,122,269-276,401-403
+  s_daba57fb480f2b::t_d451c17d065071 399-400
+docs/docs/architecture/agentic.mdx
+  s_fb5a99b45bc86e::t_77e64f6478fa8d 68-75
+controlplane-api/ent/apiexposure/apiexposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 55-56,108,272-274
+  s_c08c060e19607b::t_485f76d2d4a3f7 57-58,109
+  s_daba57fb480f2b::t_0160d8cb9ba9dd 275-276
+api/internal/controller/apiexposure_controller_test.go
+  s_fb5a99b45bc86e::t_da8663ed0679a9 255,322,336
+docs/docs/architecture/api.mdx
+  s_ab085c56ddd61d::t_39709e25ebb18f 48-50
+  s_fb5a99b45bc86e::t_77e64f6478fa8d 44-47,51
+projector/internal/domain/apiexposure/repository.go
+  s_fb5a99b45bc86e::t_f40827c1fb6f95 134,142,290-296,300-301
+  s_c08c060e19607b::t_e8ebccf92db2c7 135-137,297-299
+  s_fb5a99b45bc86e::t_eb547c0ff60a6f 138
+  s_c08c060e19607b::t_d99fd41f40278f 302
+projector/internal/domain/agenticexposure/repository.go
+  s_fb5a99b45bc86e::t_f40827c1fb6f95 138,142,232-240
+  s_daba57fb480f2b::t_587cc2d996a141 241
+controlplane-api/ent/migrate/schema.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 73,233
+  s_daba57fb480f2b::t_b8a7afb881d044 86,92,98,107,112
+  s_c08c060e19607b::t_485f76d2d4a3f7 234,246,252,261,266
+agentic/internal/handler/util/route.go
+  s_fb5a99b45bc86e::t_15e55d3f5fef66 43,53,59,66,136,139
+  s_fb5a99b45bc86e::t_3cdf94c2b2e102 31,49
+projector/internal/domain/apiexposure/types.go
+  s_c08c060e19607b::t_e8ebccf92db2c7 26-41
+controlplane-api/ent/agenticexposure/where.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 96-100,581-654
+  s_daba57fb480f2b::t_3d88dc69578344 655
+projector/internal/domain/agenticexposure/translator.go
+  s_daba57fb480f2b::t_c94aa93979602b 142
+  s_fb5a99b45bc86e::t_eb547c0ff60a6f 118-119,122-123
+  s_fb5a99b45bc86e::t_9663aacae182d8 120-121
+controlplane-api/ent/agenticexposure_create.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 219-232,512-515,845-862,1153-1173,1630-1649
+  s_daba57fb480f2b::t_a6f5fdacabf1e7 1650
+api/api/v1/apiexposure_types.go
+  s_c08c060e19607b::t_b02c7d2ea4299e 156-170
+  s_fb5a99b45bc86e::t_8fa08fb6a7ac17 151-155
+projector/internal/domain/apiexposure/repository_test.go
+  s_c08c060e19607b::t_b4e86959938bcd 465-496
+  s_fb5a99b45bc86e::t_d688a1bba58d1c 436-464
+controlplane-api/ent/schema/api_exposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 67-71
+  s_c08c060e19607b::t_485f76d2d4a3f7 72-75
+projector/internal/domain/apiexposure/translator.go
+  s_fb5a99b45bc86e::t_9663aacae182d8 117-118
+  s_fb5a99b45bc86e::t_eb547c0ff60a6f 115-116,119-120
+  s_c08c060e19607b::t_e8ebccf92db2c7 121-122,136-142,233-243
+  s_c08c060e19607b::t_01d2b383f23f31 244
+api/internal/handler/apiexposure/handler_test.go
+  s_c08c060e19607b::t_e3bda074eeb8a4 699-757,775,829-830
+  s_fb5a99b45bc86e::t_08ab71b0894025 513,614-615
+api/internal/handler/apiexposure/types.go
+  s_fb5a99b45bc86e::t_ed3d9fce140000 102-109
+controlplane-api/ent/mutation.go
+  s_c08c060e19607b::t_485f76d2d4a3f7 2895,5661-5694,6505-6569,6736,6785-6787,6828-6829,6871-6872,6993-7000,7055-7057,7096-7098,7154-7157
+  s_daba57fb480f2b::t_b8a7afb881d044 1483,2497
+  s_fb5a99b45bc86e::t_e7e669d35a6280 2243-2291,2543-2545,2584-2585,2625-2626,2741-2747,2799-2801,2837-2839,2893-2894,6456-6504,6782-6784,6826-6827,6869-6870,6987-6992,7052-7054,7093-7095,7152-7153
+docs/docs/architecture/controlplane-api.mdx
+  s_fb5a99b45bc86e::t_77e64f6478fa8d 153
+  s_ab085c56ddd61d::t_c489cdc47c4cd6 149
+api/internal/handler/apiexposure/handler.go
+  s_c08c060e19607b::t_0869dae82a2f27 52,66,78,84,92,99,105,310,324-337
+  s_fb5a99b45bc86e::t_ed3d9fce140000 51,65,77,83,91,98,104,146,470
+  s_c08c060e19607b::t_3efa59f1a1e495 338
+controlplane-api/ent/agenticexposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 58-59,141,276-282,412-416
+projector/internal/domain/agenticexposure/repository_test.go
+  s_fb5a99b45bc86e::t_d688a1bba58d1c 666-694
+agentic/config/crd/bases/agentic.cp.ei.telekom.de_agenticexposures.yaml
+  s_fb5a99b45bc86e::t_dd4bcde6aefef6 541-545
+agentic/internal/controller/agenticexposure_controller.go
+  s_fb5a99b45bc86e::t_66c3d0a5c05449 75
+controlplane-api/gqlgen.yml
+  s_c08c060e19607b::t_485f76d2d4a3f7 208-210
+controlplane-api/ent/agenticexposure_update.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 268-287,551-556,937-956,1250-1255
+controlplane-api/schema.graphql
+  s_c08c060e19607b::t_485f76d2d4a3f7 277-282
+controlplane-api/pkg/model/embedded.go
+  s_c08c060e19607b::t_485f76d2d4a3f7 165-170
+projector/internal/domain/agenticexposure/types.go
+  s_daba57fb480f2b::t_c94aa93979602b 43
+agentic/api/v1/agenticexposure_types.go
+  s_fb5a99b45bc86e::t_8fa08fb6a7ac17 75-79
+api/config/crd/bases/api.cp.ei.telekom.de_apiexposures.yaml
+  s_fb5a99b45bc86e::t_dd4bcde6aefef6 585-589
+  s_c08c060e19607b::t_b02c7d2ea4299e 541-563
+controlplane-api/ent/apiexposure_create.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 210-223,485-487,492,805-819,1131-1148,1170-1172,1629-1646
+  s_c08c060e19607b::t_485f76d2d4a3f7 224-229,488-491,820-839,1149-1169,1647-1669
+  s_daba57fb480f2b::t_2a2505589e3ceb 840,1670
+controlplane-api/internal/resolvers/schema_resolvers_apiexposure_test.go
+  s_fb5a99b45bc86e::t_43534051e26930 9,374-412
+  s_c08c060e19607b::t_5018d4f36d4b1e 413-461
+agentic/internal/handler/agenticexposure/handler_test.go
+  s_fb5a99b45bc86e::t_d6505f80b6168e 288,340,346,427-433,454
+  s_fb5a99b45bc86e::t_e1e36dc88172ad 306
+controlplane-api/ent/gql_where_input.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 954-970,1353-1397,2903-2919,3331-3375
+projector/internal/domain/agenticexposure/translator_test.go
+  s_fb5a99b45bc86e::t_d688a1bba58d1c 813-855
+controlplane-api/ent/schema/agentic_exposure.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 71-75
+api/api/v1/zz_generated.deepcopy.go
+  s_c08c060e19607b::t_b02c7d2ea4299e 295-299,654-664,667
+  s_daba57fb480f2b::t_eeb31059f59247 665-666,668
+agentic/internal/handler/agenticexposure/handler.go
+  s_fb5a99b45bc86e::t_3cdf94c2b2e102 58,62,68-70,101,170,175,275
+controlplane-api/ent/apiexposure/where.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 101-105,631-703
+  s_c08c060e19607b::t_485f76d2d4a3f7 704,706-715
+  s_daba57fb480f2b::t_fd6aa4704e8814 705
+controlplane-api/ent/gql_collection.go
+  s_fb5a99b45bc86e::t_e7e669d35a6280 322-326,831-834
+  s_c08c060e19607b::t_485f76d2d4a3f7 835-840
+projector/internal/domain/apiexposure/translator_test.go
+  s_c08c060e19607b::t_b4e86959938bcd 725-751,770
+  s_fb5a99b45bc86e::t_d688a1bba58d1c 703-724,752-769,771
+  s_c08c060e19607b::t_2174436e7e5f5e 15
+controlplane-api/ent.graphql
+  s_fb5a99b45bc86e::t_e7e669d35a6280 329,549-566,908,1131-1148
+  s_c08c060e19607b::t_485f76d2d4a3f7 909
+controlplane-api/ent/apiexposure_update.go
+  s_c08c060e19607b::t_485f76d2d4a3f7 285-302,546-557,927-944,1218-1229
+  s_fb5a99b45bc86e::t_e7e669d35a6280 265-284,541-545,907-926,1213-1217
+controlplane-api/internal/resolvers/ent.generated.go
+  s_daba57fb480f2b::t_13a9bb80ee4ee8 2864-2886,4676-4730,15844,16558-16662,17715,18506-18610,35127-35131,36165-36174
+controlplane-api/internal/resolvers/root_.generated.go
+  s_daba57fb480f2b::t_8ffbfb36b9817c 119,263-283,699-703,1346-1351,1929-1934,1953-1958,3716-3728,6041,6261-6278,6620-6621,6843-6860,12538-12543,12920-12921,13224-13227,14064-14073
+controlplane-api/internal/resolvers/schema.generated.go
+  s_daba57fb480f2b::t_6b765318b7a093 2732-2777,6590-6632,8117-8120,8378-8396
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4fbb53d2d9649599a6430220cacc072e9ed452ff",
+  "prompts": {},
+  "sessions": {
+    "s_ab085c56ddd61d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3a476195ffeGU4NJl59LFpJuK",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_c08c060e19607b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3a1c6c1fffevGGf0h0lbGv69J",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_daba57fb480f2b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3a050a10ffeVZTL4UkFS5e65a",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_fb5a99b45bc86e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3b18c8b0ffel2gvzZqiDHBHHE",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

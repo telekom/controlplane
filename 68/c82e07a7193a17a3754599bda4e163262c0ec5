@@ -1,0 +1,23 @@
+agentic/internal/controller/agenticexposure_controller.go
+  s_55f9c2f1cd69dd::t_833bd53d52c787 73-74
+rover/api/v1/traffic_types.go
+  s_55f9c2f1cd69dd::t_833bd53d52c787 66
+rover/config/crd/bases/rover.cp.ei.telekom.de_rovers.yaml
+  s_55f9c2f1cd69dd::t_094cbe716ed03c 333,789
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "68c82e07a7193a17a3754599bda4e163262c0ec5",
+  "prompts": {},
+  "sessions": {
+    "s_55f9c2f1cd69dd": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "830fe7b9-0023-44a5-97e9-34b500e4160a",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

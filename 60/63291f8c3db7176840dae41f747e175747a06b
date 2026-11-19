@@ -1,0 +1,84 @@
+.agents/tools/tests/test_spec_field_docs.py
+  s_fcbd43e11bddb1::t_afab05a2b3161d 70-81
+.agents/rules/13-environment-isolation.md
+  s_fcbd43e11bddb1::t_97438c3b7e41bf 27-28
+  s_fcbd43e11bddb1::t_f5966e422aaff0 51,56,58-59,61
+.agents/skills/code-auditor/scripts/tests/test_remaining_review.py
+  s_fcbd43e11bddb1::t_afab05a2b3161d 1-7,9-17,20-56,60-91,142-152,187-214,235,237-245
+  s_fcbd43e11bddb1::t_7ce8a31482e768 8,92-141,215-234,236
+  s_fcbd43e11bddb1::t_c45cdb7fa6c173 18-19,57-59,153-186
+.agents/skills/code-auditor/scripts/process_audit_report.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 218-219
+.agents/tools/tests/test_journey_fences.py
+  s_fcbd43e11bddb1::t_afab05a2b3161d 15-22,27-36
+  s_fcbd43e11bddb1::t_4bb693be630faa 23-26
+.agents/rules/04-over-technical-docs.md
+  s_fcbd43e11bddb1::t_f5966e422aaff0 16
+.agents/tools/spelling.py
+  s_fcbd43e11bddb1::t_bd5c0db22ecea3 1-53
+.agents/skills/code-auditor/scripts/auditlib/rules.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 402
+  s_fcbd43e11bddb1::t_42c514b255f758 46,93,209-214,336-338
+.agents/tools/journey_fences.py
+  s_fcbd43e11bddb1::t_bd5c0db22ecea3 10-11,16-17,20,25,40,43-44,46-50,68-71,75-78,80-90
+  s_fcbd43e11bddb1::t_4bb693be630faa 21-22,26-39,41-42,45,51-59,66
+.agents/skills/code-auditor/SKILL.md
+  s_fcbd43e11bddb1::t_ebdbb4865b1313 23-27,29,76-78,112-114,123-124,156
+  s_fcbd43e11bddb1::t_97438c3b7e41bf 97-98,135
+.agents/rules/10-spec-field-doc-purpose.md
+  s_fcbd43e11bddb1::t_f5966e422aaff0 44,46
+.agents/skills/code-auditor/persona/README.md
+  s_fcbd43e11bddb1::t_ebdbb4865b1313 11-13,20-21,28-29
+  s_fcbd43e11bddb1::t_05b6aff86c21d0 30
+.agents/rules/03-spelling.md
+  s_fcbd43e11bddb1::t_bd5c0db22ecea3 34,36
+.agents/skills/code-auditor/scripts/tests/test_config_root.py
+  s_fcbd43e11bddb1::t_7ce8a31482e768 307,309
+.agents/rules/README.md
+  s_fcbd43e11bddb1::t_7ce8a31482e768 44,73-77,105,107,111-121,176-178,267-268
+.agents/skills/code-auditor/scripts/README.md
+  s_fcbd43e11bddb1::t_7ce8a31482e768 125-127,138-144,188-192
+  s_fcbd43e11bddb1::t_97438c3b7e41bf 135-136
+  s_fcbd43e11bddb1::t_697dfe2090568e 137
+  s_fcbd43e11bddb1::t_f7d4209d68054e 193
+.agents/tools/spec_field_docs.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 30,94-98,188,208-211,248,272-285,291,294-299
+.agents/skills/code-auditor/scripts/auditlib/detect.py
+  s_fcbd43e11bddb1::t_4bb693be630faa 199
+  s_fcbd43e11bddb1::t_f5966e422aaff0 14,167,195-198,200,202-229,232-237,242-243
+.agents/rules/05-docs-no-code-blocks.md
+  s_fcbd43e11bddb1::t_f5966e422aaff0 29,31
+  s_fcbd43e11bddb1::t_97438c3b7e41bf 22-23
+.agents/rules/09-spec-field-doc-comment.md
+  s_fcbd43e11bddb1::t_f5966e422aaff0 38,40
+.agents/skills/code-auditor/scripts/create_audit_report.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 49
+.agents/skills/code-auditor/scripts/auditlib/provenance.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 139
+.agents/skills/code-auditor/scripts/auditlib/store.py
+  s_fcbd43e11bddb1::t_f5966e422aaff0 195-198,200
+.github/agents/audit-judge-careful.agent.md
+  s_fcbd43e11bddb1::t_0b8c82c2b5d07c 18-20,27-28,35-37
+.github/agents/audit-judge-fast.agent.md
+  s_fcbd43e11bddb1::t_0a8bcc597fee29 18-20,27-28,35-37
+.opencode/agents/audit-judge-careful.md
+  s_fcbd43e11bddb1::t_6a89bb31303938 22-24,31-32,39-41
+.opencode/agents/audit-judge-fast.md
+  s_fcbd43e11bddb1::t_e6674358f54782 22-24,31-32,39-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6063291f8c3db7176840dae41f747e175747a06b",
+  "prompts": {},
+  "sessions": {
+    "s_fcbd43e11bddb1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6c39ebae-91f0-4b27-a5d1-dc94aba44d7e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

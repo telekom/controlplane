@@ -1,0 +1,21 @@
+.agents/auditignore
+  s_0ca82193f57e20::t_3b68917f6c5eb7 7-8
+.agents/rules/15-prefer-shared-mocks.md
+  s_0ca82193f57e20::t_48a4c00752b797 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "d56fd6a2580d2cbe5bbfe8ba09e5e1546b8443f5",
+  "prompts": {},
+  "sessions": {
+    "s_0ca82193f57e20": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6225a502-76cf-427e-b7e3-bbf4a8b7b4c0",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

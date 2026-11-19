@@ -1,0 +1,31 @@
+rover-server/api/openapi.yaml
+  s_cac5cdab001131::t_b56aad18f32e68 64-68
+rover-server/internal/api/server.gen.go
+  s_cac5cdab001131::t_dac0c84f46050e 7,12,2832-2835,2837-3038,3040-3041,3045,3047-3051,3059,3077-3082,3108-3126
+rover-server/internal/controller/rover.go
+  s_cac5cdab001131::t_6615d106b04c44 38-41,46-49,113-115
+rover-server/internal/controller/suite_controller_test.go
+  s_cac5cdab001131::t_ab800644fd9b9f 68
+rover-server/pkg/store/stores.go
+  s_cac5cdab001131::t_ae13de80efe9e7 34-36,170,176-181
+rover-server/pkg/store/stores_secret_test.go
+  s_cac5cdab001131::t_0d9c1cb0249388 14,166-182
+rover-server/internal/controller/rover_pagination_test.go
+  s_cac5cdab001131::t_5840bb2b2ec5b6 19,88-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "abe6adc72469b00652566a1aba769d1bd8fa6233",
+  "prompts": {},
+  "sessions": {
+    "s_cac5cdab001131": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9f48adeb-33aa-44e6-ae19-a0f9b16348cf",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
