@@ -55,7 +55,7 @@ var _ = Describe("SpectreApplication watch", func() {
 })
 
 var _ = Describe("Parent watches", func() {
-	It("matches subscription and exposure by owner team, name and exact base path", func() {
+	It("matches subscription and exposure by owner namespace, name and exact base path", func() {
 		scheme := runtime.NewScheme()
 		Expect(spectrev1.AddToScheme(scheme)).To(Succeed())
 		makeListener := func(name, consumer, provider, path string) *spectrev1.Listener {
@@ -73,6 +73,11 @@ var _ = Describe("Parent watches", func() {
 			&spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: "listeners", Name: "different-team"}, Spec: spectrev1.ListenerSpec{
 				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "prod--other-team", Name: "consumer"}},
 				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "prod--other-team", Name: "provider"}},
+				ApiListener: &spectrev1.ApiListener{ApiBasePath: "/api"},
+			}},
+			&spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: "listeners", Name: "different-environment"}, Spec: spectrev1.ListenerSpec{
+				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "qa--consumer-team", Name: "consumer"}},
+				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "qa--provider-team", Name: "provider"}},
 				ApiListener: &spectrev1.ApiListener{ApiBasePath: "/api"},
 			}},
 		).WithIndex(&spectrev1.Listener{}, consumerIndex, indexConsumer).

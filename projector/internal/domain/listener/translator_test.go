@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	projectorruntime "github.com/telekom/controlplane/projector/internal/runtime"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,6 +62,15 @@ var _ = Describe("Listener translator", func() {
 		var removed Key
 		translator.OnMissingApplication = func(_ context.Context, key Key) error { removed = key; return nil }
 		obj.Spec.Application.Name = "missing"
+		_, err := translator.Translate(context.Background(), obj)
+		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
+		Expect(removed).To(Equal(Key{Namespace: namespace, Name: "listener"}))
+	})
+
+	It("treats a SpectreApplication from another environment as absent", func() {
+		var removed Key
+		translator.OnMissingApplication = func(_ context.Context, key Key) error { removed = key; return nil }
+		obj.Labels = map[string]string{shared.EnvironmentLabelKey: "qa"}
 		_, err := translator.Translate(context.Background(), obj)
 		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
 		Expect(removed).To(Equal(Key{Namespace: namespace, Name: "listener"}))

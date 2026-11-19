@@ -168,6 +168,7 @@ func Run() error {
 
 	// --- Schema Migration ---
 	setupLog.Info("running schema migration")
+	// Migrates the database schema only; it writes no environment-scoped Kubernetes objects.
 	if err = entClient.Schema.Create(ctx,
 		migrate.WithGlobalUniqueID(true),
 		migrate.WithDropIndex(true),

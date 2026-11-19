@@ -50,6 +50,8 @@ type approvalRecovery struct {
 }
 
 func (r *approvalRecovery) restore(ctx context.Context, key Key) error {
+	// The target key contains the Listener's environment-prefixed namespace, so only
+	// approvals for this Listener in its own environment match.
 	selector := client.MatchingFields{approvalTargetIndex: key.Namespace + "/" + key.Name}
 	approvals := &approvalv1.ApprovalList{}
 	if err := r.reader.List(ctx, approvals, selector); err != nil {
