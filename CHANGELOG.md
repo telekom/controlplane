@@ -1,3 +1,11 @@
+## [0.48.4](https://github.com/telekom/controlplane/compare/v0.48.3...v0.48.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **gateway,common-server:** back off on unavailable token endpoints and reduce cache memory ([#873](https://github.com/telekom/controlplane/issues/873)) ([107e81b](https://github.com/telekom/controlplane/commit/107e81b8819520b5c04bf5f1b15d1c887e8a3bd8))
+* **identity:** clean up keycloak rotation state when rotation is disabled ([#874](https://github.com/telekom/controlplane/issues/874)) ([df6ce07](https://github.com/telekom/controlplane/commit/df6ce07779331448c36213f1490c4ffc7f17157a))
+
 ## [0.48.3](https://github.com/telekom/controlplane/compare/v0.48.2...v0.48.3) (2026-11-18)
 
 
