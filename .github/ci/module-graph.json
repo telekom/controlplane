@@ -186,7 +186,8 @@
       "file",
       "organization",
       "permission",
-      "secret-manager"
+      "secret-manager",
+      "spectre"
     ]
   },
   "pubsub": {

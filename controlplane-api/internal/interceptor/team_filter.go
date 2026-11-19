@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/privacy"
@@ -48,6 +49,21 @@ func TeamFilterInterceptor() ent.Interceptor {
 			}
 
 			teams := v.Teams
+			listenerOwnedByTeam := listener.Or(
+				listener.HasApplicationWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
+				),
+				listener.HasSubscriptionWith(
+					apisubscription.HasOwnerWith(
+						application.HasOwnerTeamWith(team.NameIn(teams...)),
+					),
+				),
+				listener.HasExposureWith(
+					apiexposure.HasOwnerWith(
+						application.HasOwnerTeamWith(team.NameIn(teams...)),
+					),
+				),
+			)
 
 			switch q := query.(type) {
 			case *entgen.TeamQuery:
@@ -75,6 +91,9 @@ func TeamFilterInterceptor() ent.Interceptor {
 				q.Where(filesubscription.HasOwnerWith(
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				))
+
+			case *entgen.ListenerQuery:
+				q.Where(listenerOwnedByTeam)
 
 			case *entgen.ApprovalQuery:
 				q.Where(approval.Or(
@@ -126,6 +145,8 @@ func TeamFilterInterceptor() ent.Interceptor {
 							),
 						),
 					),
+					approval.HasListenerWith(listenerOwnedByTeam),
+					approval.HasConsumerListenerWith(listenerOwnedByTeam),
 				))
 
 			case *entgen.ApprovalRequestQuery:
@@ -178,6 +199,7 @@ func TeamFilterInterceptor() ent.Interceptor {
 							),
 						),
 					),
+					approvalrequest.HasListenerWith(listenerOwnedByTeam),
 				))
 
 			case *entgen.MemberQuery:
