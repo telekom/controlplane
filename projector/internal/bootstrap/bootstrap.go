@@ -87,6 +87,8 @@ var modules = []module.Module{
 	api.Module,
 	apiexposure.Module,
 	apisubscription.Module,
+	approval.Module,
+	approvalrequest.Module,
 }
 
 // registerSchemesAndModules conditionally registers CR schemes and appends
@@ -99,7 +101,6 @@ func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Modu
 		_ = spectrev1.AddToScheme(scheme)
 		result = append(result, listener.Module)
 	}
-	result = append(result, approval.Module, approvalrequest.Module)
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)

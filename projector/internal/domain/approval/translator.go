@@ -62,11 +62,8 @@ func (t *Translator) ShouldSkip(obj *approvalv1.Approval) (bool, string) {
 		if !cconfig.FeatureSpectre.IsEnabled() {
 			return true, "spectre feature is disabled"
 		}
-		if obj.Spec.ApprovalKey != "provider" && obj.Spec.ApprovalKey != "consumer" {
-			return true, "Listener target requires provider or consumer approvalKey"
-		}
-		if obj.Spec.Action != "listen-"+obj.Spec.ApprovalKey {
-			return true, "Listener action must match approvalKey"
+		if err := shared.ValidateListenerGate(obj.Spec.ApprovalKey, obj.Spec.Action); err != nil {
+			return true, err.Error()
 		}
 	}
 
