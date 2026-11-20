@@ -175,6 +175,7 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 	}
 
 	cc := cclient.ClientFromContextOrDie(ctx)
+	env := contextutil.EnvFromContextOrDie(ctx)
 
 	clientSecretPath := fmt.Sprintf("zones/%s/file/clientSecret", zone.Name)
 
@@ -188,7 +189,7 @@ func createSFTPAPIClient(ctx context.Context, obj *filev1.ZoneServiceConfig, zon
 		secretsapi.WithSecretValue(clientSecretPath, secretValue),
 	}
 
-	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, contextutil.EnvFromContextOrDie(ctx), options...)
+	availableSecret, err := secretsapi.API().UpsertEnvironment(ctx, env, options...)
 	if err != nil {
 		return fmt.Errorf("failed to onboard secrets for SFTP API Client: %w", err)
 	}

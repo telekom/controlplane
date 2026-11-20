@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,18 +22,22 @@ import (
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 )
 
-// alwaysConflictClient wraps a real fake client but forces every Create and
-// Update to fail with a 409 Conflict, so the onboarder's bounded optimistic
-// retry is always exhausted. This deterministically exercises the "retries ran
-// out under contention" path without needing real concurrency.
+// alwaysConflictClient wraps a real fake client but forces Secret writes to
+// fail with a 409 Conflict, so the onboarder's bounded optimistic retry is
+// always exhausted. This deterministically exercises the "retries ran out
+// under contention" path without needing real concurrency.
 func alwaysConflictClient() client.Client {
+	base := fake.NewClientBuilder().Build()
 	conflict := func(name string) error {
 		return apierrors.NewConflict(
 			schema.GroupResource{Resource: "secrets"}, name,
 			fmt.Errorf("forced conflict"))
 	}
-	return interceptor.NewClient(fake.NewClientBuilder().Build(), interceptor.Funcs{
-		Create: func(_ context.Context, _ client.WithWatch, obj client.Object, _ ...client.CreateOption) error {
+	return interceptor.NewClient(base, interceptor.Funcs{
+		Create: func(ctx context.Context, _ client.WithWatch, obj client.Object, _ ...client.CreateOption) error {
+			if _, isNamespace := obj.(*corev1.Namespace); isNamespace {
+				return base.Create(ctx, obj)
+			}
 			return conflict(obj.GetName())
 		},
 		Update: func(_ context.Context, _ client.WithWatch, obj client.Object, _ ...client.UpdateOption) error {

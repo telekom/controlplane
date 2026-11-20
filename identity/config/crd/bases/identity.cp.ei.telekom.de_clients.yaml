@@ -18,6 +18,12 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.leaderRef.name
+      name: Leader
+      type: string
+    - jsonPath: .status.leaderRef.namespace
+      name: Leader Namespace
+      type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
@@ -153,6 +159,24 @@ spec:
                 description: IssuerUrl is the URL of the Keycloak realm's OpenID Connect
                   issuer, which clients can use for authentication and token retrieval.
                 type: string
+              leaderRef:
+                description: LeaderRef identifies the Client that manages this Keycloak
+                  client.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               rotatedClientSecret:
                 description: |-
                   RotatedClientSecret holds the previous client secret during a graceful

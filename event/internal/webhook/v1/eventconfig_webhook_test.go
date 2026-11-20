@@ -13,9 +13,12 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
 	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	clientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -418,13 +421,20 @@ var _ = Describe("EventConfig Webhook", func() {
 		var (
 			defaulter         EventConfigCustomDefaulter
 			secretManagerMock *fake.MockSecretManager
+			fakeKubeClient    client.Client
 			cleanup           func()
 		)
 
 		BeforeEach(func() {
 			cleanup = enableSecretManager()
 			secretManagerMock = fake.NewMockSecretManager(GinkgoT())
-			defaulter = EventConfigCustomDefaulter{secretManager: secretManagerMock}
+			kubeScheme := runtime.NewScheme()
+			Expect(corev1.AddToScheme(kubeScheme)).To(Succeed())
+			fakeKubeClient = clientfake.NewClientBuilder().WithScheme(kubeScheme).Build()
+			defaulter = EventConfigCustomDefaulter{
+				reader:        fakeKubeClient,
+				secretManager: secretManagerMock,
+			}
 		})
 
 		AfterEach(func() {
@@ -634,6 +644,140 @@ var _ = Describe("EventConfig Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(obj.Spec.Local.Admin.Client.ClientId).To(Equal(util.AdminClientName))
 			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal(util.CallbackClientName))
+		})
+
+		It("should reuse the shared secret for rover admin clients", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			sharedRef := "$<shared:::zones/test-zone/event/admin/clientSecret:>"
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, sharedRef).
+				Return("stored-rover-secret", nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
+		})
+
+		It("should create a shared secret when no rover secret exists", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			sharedRef := "$<shared:::zones/test-zone/event/admin/clientSecret:>"
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, sharedRef).
+				Return("", secretsapi.ErrNotFound).Once()
+			secretManagerMock.EXPECT().
+				UpsertEnvironment(mock.Anything, "shared", mock.Anything, mock.Anything).
+				Return(map[string]string{}, nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
+		})
+
+		It("should not write to the Secret-Manager for dry-run requests", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
+			obj.Spec.Mesh.Client.ClientSecret = ""
+			dryRun := true
+			dryRunCtx := admission.NewContextWithRequest(ctx, admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{Operation: admissionv1.Create, DryRun: &dryRun},
+			})
+
+			Expect(defaulter.Default(dryRunCtx, obj)).To(Succeed())
+
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(BeEmpty())
+			Expect(obj.Spec.Mesh.Client.ClientSecret).To(BeEmpty())
+		})
+
+		It("should retain a legacy rover secret when the shared value differs", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName
+			legacyRef := "$<test-env:::zones/test-zone/event/admin/clientSecret:>"
+			sharedRef := "$<shared:::zones/test-zone/event/admin/clientSecret:>"
+			obj.Spec.Local.Admin.Client.ClientSecret = legacyRef
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, legacyRef).
+				Return("legacy-rover-secret", nil).Once()
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, sharedRef).
+				Return("different-rover-secret", nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(legacyRef))
+		})
+
+		It("should migrate a legacy rover secret when the shared value matches", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName
+			legacyRef := "$<test-env:::zones/test-zone/event/admin/clientSecret:>"
+			sharedRef := "$<shared:::zones/test-zone/event/admin/clientSecret:>"
+			obj.Spec.Local.Admin.Client.ClientSecret = legacyRef
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, legacyRef).
+				Return("same-rover-secret", nil).Once()
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, sharedRef).
+				Return("same-rover-secret", nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
+		})
+
+		It("should seed the shared secret from a legacy rover secret", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName
+			legacyRef := "$<test-env:::zones/test-zone/event/admin/clientSecret:>"
+			sharedRef := "$<shared:::zones/test-zone/event/admin/clientSecret:>"
+			obj.Spec.Local.Admin.Client.ClientSecret = legacyRef
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, legacyRef).
+				Return("legacy-rover-secret", nil).Once()
+			secretManagerMock.EXPECT().
+				Get(mock.Anything, sharedRef).
+				Return("", secretsapi.ErrNotFound).Once()
+			secretManagerMock.EXPECT().
+				UpsertEnvironment(mock.Anything, "shared", mock.Anything, mock.Anything).
+				Return(map[string]string{}, nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
+		})
+
+		It("should not share admin secrets for non-rover realms", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
+			obj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+			adminSecretId := "zones/test-zone/event/admin/clientSecret"
+			secretManagerMock.EXPECT().
+				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything).
+				Return(map[string]string{adminSecretId: "environment-secret"}, nil).Once()
+
+			err := defaulter.OnboardSecrets(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal("$<environment-secret>"))
 		})
 	})
 })

@@ -100,9 +100,11 @@ func createDefaultIdentityRealm(ctx context.Context, hc *HandlingContext) error 
 }
 
 // createInternalIdentityRealm creates the internal "rover" realm for admin-config clients.
+// It has no claims: Environments sharing a Keycloak share this realm, and Zone-specific
+// claims written by one Environment would end up in the tokens of all others.
 func createInternalIdentityRealm(ctx context.Context, hc *HandlingContext) error {
 	opts := createIdentityRealmOptions{
-		Claims:         hc.DefaultClaims,
+		Claims:         nil,
 		SecretRotation: nil,   // Internal realm MUST not have secret rotation enabled
 		SetFrontendURL: false, // Internal (rover) realm MUST not have a frontendUrl
 	}

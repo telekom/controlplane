@@ -42,6 +42,10 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 	obj := &corev1.Secret{}
 	err = k.client.Get(ctx, secretId.ObjectKey(), obj)
 	if err != nil {
+		// Environment storage can be absent before its first onboarding.
+		if apierrors.IsNotFound(err) && secretId.env != "" && secretId.team == backend.NoTeam && secretId.app == backend.NoApp {
+			return res, backend.ErrSecretNotFound(secretId)
+		}
 		return res, handleError(err, secretId)
 	}
 
