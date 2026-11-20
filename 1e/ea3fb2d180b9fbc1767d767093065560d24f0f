@@ -1,0 +1,14 @@
+.github/ci/module-graph.json
+  h_65f5d22af11f8f 189-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "1eea3fb2d180b9fbc1767d767093065560d24f0f",
+  "prompts": {},
+  "humans": {
+    "h_65f5d22af11f8f": {
+      "author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
