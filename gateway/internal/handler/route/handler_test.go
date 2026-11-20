@@ -6,6 +6,7 @@ package route_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/stretchr/testify/mock"
@@ -17,6 +18,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -92,10 +94,13 @@ var _ = Describe("RouteHandler", func() {
 		}
 	}
 
+	gatewayPrefix := ""
+
 	setupReadyGatewayGet := func() {
 		mockClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
 			Run(func(_ context.Context, _ pkgtypes.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
 				gw := obj.(*gatewayv1.Gateway)
+				gw.Spec.NamePrefix = gatewayPrefix
 				gw.Name = "test-gateway"
 				gw.Namespace = "test-ns"
 				gw.Spec.Admin = gatewayv1.AdminConfig{
@@ -125,6 +130,69 @@ var _ = Describe("RouteHandler", func() {
 				gw.Namespace = "test-ns"
 			}).Return(nil)
 	}
+
+	Describe("name prefix from the Gateway", func() {
+		BeforeEach(func() {
+			DeferCleanup(func() { gatewayPrefix = "" })
+		})
+
+		DescribeTable("sets the prefix before the Kong client is called",
+			func(prefix, kongName string) {
+				gatewayPrefix = prefix
+				setupReadyGatewayGet()
+				setupFeatureBuilderOverrides()
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+				mockBuilder.EXPECT().Build(mock.Anything).Run(func(_ context.Context) {
+					Expect(route.GetNamePrefix()).To(Equal(prefix))
+					Expect(route.GetFullName()).To(Equal(kongName))
+				}).Return(nil)
+
+				Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
+				Expect(releases).To(Equal(1))
+			},
+			Entry("Gateway with prefix", "bond", "bond--test-route"),
+			Entry("Gateway without prefix", "", "test-route"),
+		)
+
+		It("blocks a route built with a prefix on a gateway without one", func() {
+			route.SetProperty("namePrefix", "bond")
+			setupReadyGatewayGet()
+
+			err := handler.CreateOrUpdate(ctx, route)
+			var ctrlErr *ctrlerrors.CtrlError
+			Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+			Expect(ctrlErr.IsBlocked()).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring(`name prefix "bond"`))
+		})
+
+		DescribeTable("sets the prefix before a delete",
+			func(prefix, recorded, kongName string) {
+				gatewayPrefix = prefix
+				if recorded != "" {
+					route.SetProperty("namePrefix", recorded)
+				}
+				setupReadyGatewayGet()
+				originalGetClientFor := kongutil.GetClientFor
+				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, func() { releases++ }, nil
+				}
+				mockKC.EXPECT().DeleteRoute(mock.Anything, route).
+					Run(func(_ context.Context, r kongclient.CustomRoute) {
+						Expect(r.(kongclient.RealmRoute).GetFullName()).To(Equal(kongName))
+					}).Return(nil)
+
+				Expect(handler.Delete(ctx, route)).To(Succeed())
+				Expect(releases).To(Equal(1))
+			},
+			Entry("Gateway with prefix", "bond", "", "bond--test-route"),
+			Entry("Gateway without prefix", "", "", "test-route"),
+			Entry("Gateway prefix wins over the recorded one", "cit2", "bond", "cit2--test-route"),
+			Entry("recorded prefix on a Gateway without prefix", "", "bond", "bond--test-route"),
+		)
+	})
 
 	Describe("CreateOrUpdate()", func() {
 		Context("happy path", func() {
@@ -382,6 +450,16 @@ var _ = Describe("RouteHandler", func() {
 				err := handler.Delete(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to get gateway"))
+			})
+
+			It("blocks when the gateway is not ready", func() {
+				setupNotReadyGatewayGet()
+
+				err := handler.Delete(ctx, route)
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("is not ready"))
 			})
 
 			It("returns error when kong client DeleteRoute fails", func() {

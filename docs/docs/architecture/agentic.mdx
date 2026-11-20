@@ -1,14 +1,14 @@
-<!--
-SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
-
-SPDX-License-Identifier: CC0-1.0
--->
-
 ---
 sidebar_position: 16
 ---
 
 # Agentic Domain
+
+<!--
+SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+
+SPDX-License-Identifier: CC0-1.0
+-->
 
 The Agentic domain manages the lifecycle of MCP (Model Context Protocol) servers within the Control Plane — from server registration through exposure to subscription. It acts as an abstraction layer above the Gateway domain, handling business logic for who can access which MCP servers and under what conditions.
 
@@ -132,7 +132,7 @@ Subscribers in other zones keep their own proxy routes, which only allow the sub
 
 If the Telecontext Application does not exist, is not ready, or has no client ID, the exposure is blocked. The operator does not change the existing routes and keeps them in the exposure status, so subscriptions keep their route reference. The exposure controller does not watch Applications, so a Telecontext Application that becomes ready later is picked up at the next periodic reconcile.
 
-This mirrors how the legacy Java controlplane handled Telecontext integration: iterating all zones and creating proxy routes where the Telecontext Application is located, plus granting access via a dedicated RoutePermission (now replaced by the `DefaultConsumers` mechanism).
+This preserves legacy-compatible Telecontext integration behavior: iterating all zones and creating proxy routes where the Telecontext Application is located. Access is now granted through `DefaultConsumers` rather than a dedicated RoutePermission.
 
 **Why not a ConsumeRoute?** A `ConsumeRoute` is namespace-scoped and goes through the approval flow. `DefaultConsumers` is a gateway-level bypass that is more appropriate for a trusted platform component that needs seamless, always-on access to TeleMCP servers across the whole platform.
 

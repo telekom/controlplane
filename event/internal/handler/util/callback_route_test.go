@@ -162,7 +162,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("callback--zone-a"))
+		Expect(route.Name).To(Equal("horizon-callback-zone-a"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels
@@ -300,7 +300,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(route).ToNot(BeNil())
 
 		// Verify route metadata
-		Expect(route.Name).To(Equal("callback--zone-b"))
+		Expect(route.Name).To(Equal("horizon-callback-zone-b"))
 		Expect(route.Namespace).To(Equal("zone-a-ns"))
 
 		// Verify labels reference source zone

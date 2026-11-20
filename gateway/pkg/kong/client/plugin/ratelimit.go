@@ -65,6 +65,8 @@ type RateLimitPlugin struct {
 	Config       RateLimitPluginConfig `json:"config,omitempty"`
 	route        *gatewayv1.Route
 	consumeRoute *gatewayv1.ConsumeRoute
+	// boundRoute is the Route a consumer-specific plugin is bound to.
+	boundRoute *gatewayv1.Route
 }
 
 func (p *RateLimitPlugin) GetId() string {
@@ -126,15 +128,34 @@ func RateLimitPluginFromRoute(route *gatewayv1.Route) *RateLimitPlugin {
 	}
 }
 
-func RateLimitPluginFromConsumeRoute(consumeRoute *gatewayv1.ConsumeRoute) *RateLimitPlugin {
+// RateLimitPluginFromConsumeRoute returns the rate-limiting plugin of a consumer on the
+// route it consumes. The plugin is bound to the Kong route ID of route, if it has one.
+func RateLimitPluginFromConsumeRoute(consumeRoute *gatewayv1.ConsumeRoute, route *gatewayv1.Route) *RateLimitPlugin {
 	return &RateLimitPlugin{
-		Id: consumeRoute.GetProperty("kongRateLimitingPluginId"),
+		boundRoute: route,
+		Id:         consumeRoute.GetProperty("kongRateLimitingPluginId"),
 		Config: RateLimitPluginConfig{
 			FaultTolerant:     true,
 			HideClientHeaders: false,
 		},
 		consumeRoute: consumeRoute,
 	}
+}
+
+// GetRouteId implements client.RouteIdBinder.
+func (p *RateLimitPlugin) GetRouteId() string {
+	if p.route != nil {
+		return routeIdOf(p.route)
+	}
+	return routeIdOf(p.boundRoute)
+}
+
+// GetNamePrefix implements client.RealmPlugin.
+func (p *RateLimitPlugin) GetNamePrefix() string {
+	if p.route != nil {
+		return namePrefixOf(p.route)
+	}
+	return namePrefixOf(p.boundRoute)
 }
 
 func deepCopy[T any](v any, t T) error {
