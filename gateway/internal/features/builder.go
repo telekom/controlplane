@@ -23,6 +23,11 @@ const (
 	namePrefixProperty = "namePrefix"
 )
 
+// RecordedNamePrefix returns the name prefix the Route was last built with, or "".
+func RecordedNamePrefix(route *gatewayv1.Route) string {
+	return route.GetProperty(namePrefixProperty)
+}
+
 var (
 	ErrNoRoute    = errors.New("no route found in builder context")
 	ErrNoConsumer = errors.New("no consumer found in builder context")

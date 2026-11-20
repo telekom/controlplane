@@ -38,6 +38,9 @@ var _ = DescribeTable("gatewayNamePrefix",
 	Entry("legacy naming omits the prefix of the default realm", "", "default", true, ""),
 	Entry("legacy naming keeps an existing prefix of the default realm", "default", "default", true, "default"),
 	Entry("legacy naming prefixes other realms", "", "bond", true, "bond"),
+	Entry("realm name with a double hyphen is no prefix", "", "qa--blue", false, ""),
+	Entry("too long realm name is no prefix", "", strings.Repeat("a", 64), false, ""),
+	Entry("invalid realm name keeps an existing prefix", "bond", "qa--blue", false, "bond"),
 )
 
 var _ = Describe("Zone Handler", func() {

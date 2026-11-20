@@ -254,7 +254,7 @@ sequenceDiagram
 Writes happen only when Kong differs from the desired state. How existing entities are found, adopted from earlier names and deleted is described in [Gateway: Migrating Kong Entities](./gateway-realm-migration.mdx).
 
 :::caution Removing a prefix is not supported
-A changed `namePrefix` is followed through the stored ID or the `env--`/`route--` tags. A removed prefix is not: without a prefix, the operator looks up only `metadata.name` and never finds the entities named `P--R`. The Gateway CRD therefore rejects removing or emptying a set prefix, and the Admin operator keeps an existing prefix of the `default` realm when legacy gateway naming is turned on later.
+A changed `namePrefix` is followed through the stored ID or the `env--`/`route--` tags. A removed prefix is not: without a prefix, the operator looks up only `metadata.name` and never finds the entities named `P--R`. The Gateway CRD therefore rejects removing or emptying a set prefix, and the Admin operator keeps an existing prefix of the `default` realm when legacy gateway naming is turned on later. For the same reason, a Route built with a prefix (status property `namePrefix`) is Blocked if its `gatewayRef` changes to a Gateway without one; deleting it still uses the recorded prefix.
 :::
 
 :::info

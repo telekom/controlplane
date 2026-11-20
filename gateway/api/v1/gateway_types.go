@@ -5,10 +5,22 @@
 package v1
 
 import (
+	"regexp"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// namePrefixPattern and namePrefixMaxLength must match the validation of GatewaySpec.NamePrefix.
+var namePrefixPattern = regexp.MustCompile(`^[a-z0-9]+(-?[a-z0-9]+)*$`)
+
+const namePrefixMaxLength = 63
+
+// IsValidNamePrefix tells whether the Gateway CRD accepts prefix as spec.namePrefix.
+func IsValidNamePrefix(prefix string) bool {
+	return len(prefix) <= namePrefixMaxLength && namePrefixPattern.MatchString(prefix)
+}
 
 type RedisConfig struct {
 	Host      string `json:"host"`

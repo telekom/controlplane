@@ -8,6 +8,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -67,6 +68,11 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 		return nil, err
 	}
 
+	realmName := hc.Environment.GetRealmName()
+	if !gatewayapi.IsValidNamePrefix(realmName) {
+		logr.FromContextOrDiscard(ctx).Info("Realm name is no valid gateway name prefix, keeping the current prefix", "realmName", realmName, "gateway", gateway.Name)
+	}
+
 	mutator := func() error {
 		if gateway.Labels == nil {
 			gateway.Labels = make(map[string]string)
@@ -82,7 +88,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 				IssuerUrl:    issuerURL,
 				Url:          config.Admin.Url,
 			},
-			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, hc.Environment.GetRealmName(), cconfig.FeatureLegacyGatewayNaming.IsEnabled()),
+			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, realmName, cconfig.FeatureLegacyGatewayNaming.IsEnabled()),
 			TLS:        hc.managedTLS(),
 		}
 
@@ -114,10 +120,14 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 const legacyGatewayRealmName = "default"
 
 // gatewayNamePrefix returns the Kong name prefix of a Gateway: the realm name of its environment.
-// With legacy naming, the legacy realm gets no prefix. A prefix that is already set is kept then,
-// because the Gateway CRD rejects removing it.
+// With legacy naming, the legacy realm gets no prefix. A realm name the Gateway CRD rejects as
+// prefix, such as an environment name with "--", gets none either, so that existing environments
+// keep working. In both cases a prefix that is already set is kept, because the CRD rejects removing it.
 func gatewayNamePrefix(current, realmName string, legacyNaming bool) string {
 	if legacyNaming && realmName == legacyGatewayRealmName {
+		return current
+	}
+	if !gatewayapi.IsValidNamePrefix(realmName) {
 		return current
 	}
 	return realmName

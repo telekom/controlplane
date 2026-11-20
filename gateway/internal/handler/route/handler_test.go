@@ -156,9 +156,23 @@ var _ = Describe("RouteHandler", func() {
 			Entry("Gateway without prefix", "", "test-route"),
 		)
 
+		It("blocks a route built with a prefix on a gateway without one", func() {
+			route.SetProperty("namePrefix", "bond")
+			setupReadyGatewayGet()
+
+			err := handler.CreateOrUpdate(ctx, route)
+			var ctrlErr *ctrlerrors.CtrlError
+			Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+			Expect(ctrlErr.IsBlocked()).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring(`name prefix "bond"`))
+		})
+
 		DescribeTable("sets the prefix before a delete",
-			func(prefix, kongName string) {
+			func(prefix, recorded, kongName string) {
 				gatewayPrefix = prefix
+				if recorded != "" {
+					route.SetProperty("namePrefix", recorded)
+				}
 				setupReadyGatewayGet()
 				originalGetClientFor := kongutil.GetClientFor
 				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
@@ -173,8 +187,10 @@ var _ = Describe("RouteHandler", func() {
 				Expect(handler.Delete(ctx, route)).To(Succeed())
 				Expect(releases).To(Equal(1))
 			},
-			Entry("Gateway with prefix", "bond", "bond--test-route"),
-			Entry("Gateway without prefix", "", "test-route"),
+			Entry("Gateway with prefix", "bond", "", "bond--test-route"),
+			Entry("Gateway without prefix", "", "", "test-route"),
+			Entry("Gateway prefix wins over the recorded one", "cit2", "bond", "cit2--test-route"),
+			Entry("recorded prefix on a Gateway without prefix", "", "bond", "bond--test-route"),
 		)
 	})
 

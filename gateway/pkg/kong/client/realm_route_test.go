@@ -111,6 +111,16 @@ var _ = Describe("Realm route", func() {
 			Expect(kongFake.writes()).To(ContainElement("PUT /routes/" + id))
 		})
 
+		It("ignores a stored ID that another environment has claimed", func() {
+			otherID := kongFake.add("routes", map[string]any{"name": "cit2--eni-example-v1", "tags": anyTags("env--cit2", "route--eni-example-v1")})
+			route.SetRouteId(otherID)
+
+			Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
+			Expect(route.GetRouteId()).NotTo(Equal(otherID))
+			Expect(kongFake.get("routes", otherID)["name"]).To(Equal("cit2--eni-example-v1"))
+			Expect(kongFake.names("routes")).To(ConsistOf("cit2--eni-example-v1", "bond--eni-example-v1"))
+		})
+
 		It("goes on to the next step if the stored ID is gone", func() {
 			route.SetRouteId("gone")
 			id := kongFake.add("routes", cpEntity("bond--eni-example-v1"))
@@ -342,6 +352,25 @@ var _ = Describe("Realm route", func() {
 				Expect(kongFake.get("routes", routeID)).To(BeNil())
 			})
 
+			It("blocks renaming a shared service found by its stored ID", func() {
+				kongFake.add("routes", map[string]any{"name": "other-route", "service": map[string]any{"id": serviceID}})
+				route.SetServiceId(serviceID)
+				route.SetRouteId(routeID)
+				err := client.CreateOrReplaceRoute(ctx, route, upstream)
+				Expect(isBlocked(err)).To(BeTrue())
+				Expect(err).To(MatchError(ContainSubstring(`route "other-route"`)))
+				Expect(kongFake.writes()).To(BeEmpty())
+			})
+
+			It("does not delete a shared service under its new name", func() {
+				kongFake.get("services", serviceID)["name"] = "bond--eni-example-v1"
+				kongFake.add("routes", map[string]any{"name": "other-route", "service": map[string]any{"id": serviceID}})
+				route.SetServiceId(serviceID)
+				Expect(client.DeleteRoute(ctx, route)).To(Succeed())
+				Expect(kongFake.get("services", serviceID)).NotTo(BeNil())
+				Expect(kongFake.get("routes", routeID)).To(BeNil())
+			})
+
 			It("adopts an unshared service and checks no more once it is migrated", func() {
 				Expect(client.CreateOrReplaceRoute(ctx, route, upstream)).To(Succeed())
 				Expect(route.GetProperty("serviceId")).To(Equal(serviceID))
@@ -436,6 +465,14 @@ var _ = Describe("Realm route", func() {
 			Expect(client.DeleteRoute(ctx, route)).To(Succeed())
 			expectAllDeleted()
 			Expect(kongFake.writes()).To(ConsistOf("DELETE /routes/"+routeID, "DELETE /services/"+serviceID, "DELETE /upstreams/"+upstreamID))
+		})
+
+		It("does not delete an entity under its stored ID that another environment has claimed", func() {
+			otherID := kongFake.add("routes", map[string]any{"name": "cit2--eni-example-v1", "tags": anyTags("env--cit2", "route--eni-example-v1")})
+			route.SetRouteId(otherID)
+
+			Expect(client.DeleteRoute(ctx, route)).To(Succeed())
+			Expect(kongFake.get("routes", otherID)).NotTo(BeNil())
 		})
 
 		It("deletes the entities found by new name", func() {

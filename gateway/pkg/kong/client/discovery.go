@@ -65,7 +65,7 @@ type discovery[Req, Resp any] struct {
 	// policy decides what happens to foreign, ambiguous, duplicate and shared entities.
 	policy discoveryPolicy
 	// sharedWith returns another Kong entity that uses the found entity, or "". It guards
-	// the rename of an entity found through its parent or a legacy name.
+	// every rename and, with a policy that checks always, every found entity.
 	sharedWith func(ctx context.Context, found *Resp) (string, error)
 	// byNameCache holds the entities looked up by name, nil if not found.
 	byNameCache map[string]*Resp
@@ -79,6 +79,9 @@ type discoveryPolicy interface {
 	duplicate(ctx context.Context, kind, foundName, foundID, otherName, otherID, route string) error
 	shared(ctx context.Context, kind, name, id, user, route string) error
 	taken(ctx context.Context, kind, name, id string, tags []string, foundName, route string) error
+	// checksSharingAlways tells whether an entity already under its desired name is checked
+	// for sharing as well, not only one that is renamed.
+	checksSharingAlways() bool
 }
 
 // reconcilePolicy blocks on everything that is not clearly ours. It is the default.
@@ -105,6 +108,8 @@ func (reconcilePolicy) taken(_ context.Context, kind, name, id string, tags []st
 	return ctrlerrors.BlockedErrorf("%s %q (%s) is already used by env %q, route %q; cannot rename %q",
 		kind, name, id, tagValue(tags, "env"), tagValue(tags, parentRoute), foundName)
 }
+
+func (reconcilePolicy) checksSharingAlways() bool { return false }
 
 // deletePolicy never blocks: entities that are not ours or not unambiguous are skipped and
 // logged, so that a delete only removes the one entity found by the earliest step.
@@ -135,6 +140,9 @@ func (deletePolicy) taken(ctx context.Context, kind, name, id string, _ []string
 	logr.FromContextOrDiscard(ctx).Info("Skipping foreign kong entity under the desired name on delete", "kind", kind, "name", name, "id", id, "foundName", foundName)
 	return nil
 }
+
+// checksSharingAlways is true because Kong refuses to delete a service another route uses.
+func (deletePolicy) checksSharingAlways() bool { return true }
 
 // tagValue returns the value of the first key--value tag, or "".
 func tagValue(tags []string, key string) string {
@@ -210,7 +218,10 @@ func (d *discovery[Req, Resp]) locate(ctx context.Context) (*Resp, Origin, error
 		"id", d.kind.id(current), "kongName", d.kind.entName(current), "origin", origin)
 
 	if d.kind.entName(current) == d.names.Desired {
-		return current, origin, nil
+		if !d.policyOrDefault().checksSharingAlways() {
+			return current, origin, nil
+		}
+		return d.checkShared(ctx, current, origin)
 	}
 	if err := d.checkConflicts(ctx, current, named); err != nil {
 		return nil, origin, err
@@ -218,10 +229,10 @@ func (d *discovery[Req, Resp]) locate(ctx context.Context) (*Resp, Origin, error
 	return d.checkShared(ctx, current, origin)
 }
 
-// checkShared asks the policy what to do with an entity found through its parent or a legacy
-// name that another Kong entity uses as well. Skipping it means nothing was found.
+// checkShared asks the policy what to do with a found entity that another Kong entity uses
+// as well. Skipping it means nothing was found.
 func (d *discovery[Req, Resp]) checkShared(ctx context.Context, current *Resp, origin Origin) (*Resp, Origin, error) {
-	if d.sharedWith == nil || (origin != OriginParent && origin != OriginPreMigration && origin != OriginLegacy) {
+	if d.sharedWith == nil {
 		return current, origin, nil
 	}
 	user, err := d.sharedWith(ctx, current)
@@ -246,6 +257,14 @@ func (d *discovery[Req, Resp]) lookupID(id string, origin Origin) locator[Resp] 
 		current, err := d.kind.get(ctx, d.api, id)
 		if err != nil {
 			return nil, OriginNone, fmt.Errorf("looking up %s by id: %w", d.kind.name, err)
+		}
+		// Before the migration, environments with the same Route name upserted one unprefixed
+		// entity and recorded the same ID. An ID hit that another environment or route has
+		// claimed since is not ours; the next steps look for our own entity.
+		if current != nil && !notClaimedElsewhere(d.env, d.route)(d.kind.tags(current)) {
+			logr.FromContextOrDiscard(ctx).Info("Ignoring kong entity claimed by another route", "entity", d.kind.name,
+				"id", id, "kongName", d.kind.entName(current), "origin", origin)
+			return nil, OriginNone, nil
 		}
 		return current, origin, nil
 	}

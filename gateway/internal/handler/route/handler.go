@@ -35,6 +35,7 @@ type RouteHandler struct {
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := ctrllog.FromContext(ctx)
+	// The common controller puts a client scoped to the Route's environment into ctx.
 	kubeClient := cc.ClientFromContextOrDie(ctx)
 	builder, release, err := h.newFeatureBuilder(ctx, route)
 	if err != nil {
@@ -93,6 +94,9 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 			}); err != nil {
 				return errors.Wrap(err, "failed to list route listeners")
 			}
+			slices.SortFunc(routeListeners.Items, func(a, b gatewayv1.RouteListener) int {
+				return cmp.Compare(a.Name, b.Name)
+			})
 			for i := range routeListeners.Items {
 				if controller.IsBeingDeleted(&routeListeners.Items[i]) {
 					continue
@@ -138,7 +142,13 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 	if !ready {
 		return ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
-	route.SetNamePrefix(gateway.Spec.NamePrefix)
+	// Without a prefix, the Kong client would look the entities up by metadata.name only and
+	// leave the prefixed ones behind, so a Route moved to an unprefixed Gateway keeps its prefix.
+	prefix := gateway.Spec.NamePrefix
+	if prefix == "" {
+		prefix = features.RecordedNamePrefix(route)
+	}
+	route.SetNamePrefix(prefix)
 
 	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
 	if err != nil {
@@ -164,7 +174,13 @@ func (h *RouteHandler) newFeatureBuilder(ctx context.Context, route *gatewayv1.R
 	if !ready {
 		return nil, nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", route.Spec.GatewayRef.Name)
 	}
-	// The Kong names of the Route use the prefix of its Gateway.
+	// The Kong names of the Route use the prefix of its Gateway. A removed prefix is not
+	// followed: the unprefixed lookup ignores the stored IDs and would create a second set of
+	// Kong entities beside the prefixed ones.
+	if recorded := features.RecordedNamePrefix(route); recorded != "" && gateway.Spec.NamePrefix == "" {
+		return nil, nil, ctrlerrors.BlockedErrorf("route was built with name prefix %q, but gateway %q has none; moving a route to a gateway without name prefix is not supported",
+			recorded, gateway.Name)
+	}
 	route.SetNamePrefix(gateway.Spec.NamePrefix)
 
 	kc, release, err := kongutil.GetClientFor(ctx, h.KongClients, gateway)
