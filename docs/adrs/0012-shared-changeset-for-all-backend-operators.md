@@ -70,7 +70,7 @@ Rules for every operator:
 - Every entity kind is registered at startup. An ignore rule for an unknown kind stops the operator.
 - Collections from Kubernetes lists are sorted before the build, so the plan and its hash are reproducible.
 - Each operator has its own `--migration-mode` and ignore list, so they can be switched over one by one.
-- The apply pass reuses the reads of the plan pass in the same reconcile, so the backend is read about once per reconcile.
+- A reconcile without any change keeps the result of the plan and does not run the apply pass, so it reads the backend once. A reconcile with changes reads it twice: the apply pass reads again, because its writes change what later reads must see.
 
 The gateway package `gateway/pkg/kong/migration` moves to `common/pkg/changeset`. The gateway operator switches first without a change in behaviour, then pubsub, then identity.
 
@@ -80,7 +80,7 @@ The gateway package `gateway/pkg/kong/migration` moves to `common/pkg/changeset`
 - All operators are built and released together in one release, so a change of the shared package needs no coordinated version bumps.
 - The identity operator needs the most work: its direct Keycloak calls must move behind entity adapters. Secret rotation becomes a planned change of its own.
 - The pubsub operator depends on the new Horizon GET endpoint.
-- Every reconcile runs the plan pass. Reusing its reads keeps the extra load on the backends small; the remaining extra work is accepted, because all three operators need the logic.
+- Every reconcile runs the plan pass. A reconcile without changes, the usual case, reads the backend once as today; only a reconcile with changes reads it twice. This extra load is accepted, because all three operators need the logic.
 - The `status` of Route, Consumer, Realm, Client and Subscriber gets the fields `migration` and `lastAppliedChanges`. The CRDs are regenerated in each module.
 
 ## Alternatives considered
@@ -88,4 +88,4 @@ The gateway package `gateway/pkg/kong/migration` moves to `common/pkg/changeset`
 - **A copy per operator.** Rejected: three versions would drift apart, and reviewers would need to learn three flows.
 - **A separate migration service that compares snapshots of all backends.** Rejected: it would find differences only after they were written and could not block them.
 - **Share only the diff, keep gate and status per operator.** Rejected: the gate, status and approval are what reviewers use, so they must be the same everywhere.
-- **Read again in the apply pass.** Rejected as default: it doubles the reads on Keycloak and Horizon for a gap of milliseconds.
+- **Reuse the reads of the plan pass in the apply pass.** Rejected: after the first write, later reads must see it, so a cache would need exact invalidation per backend. Skipping the apply pass when nothing changes gives most of the saving without that risk.
