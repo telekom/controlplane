@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/index"
@@ -110,7 +111,7 @@ func generateNewToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1
 	return clientSecret, teamToken, err
 }
 
-func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*adminv1.Zone, error) {
+func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client, env string) (*adminv1.Zone, error) {
 	var teamApiZone *adminv1.Zone = nil
 	zoneList := &adminv1.ZoneList{}
 
@@ -118,7 +119,7 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 		return nil, errors.NewInternalError(fmt.Errorf("k8sClient is nil"))
 	}
 
-	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"})
+	err := k8sClient.List(ctx, zoneList, client.MatchingFields{index.FieldSpecManagedRoutes: "true"}, client.MatchingLabels{cconfig.EnvironmentLabelKey: env})
 	if err != nil {
 		return nil, errors.NewInternalError(err)
 	}

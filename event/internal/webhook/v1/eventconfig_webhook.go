@@ -45,7 +45,7 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=NoneOnDryRun,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
 
 // EventConfigCustomDefaulter struct is responsible for setting default values on the custom resource of the
 // Kind EventConfig when those are created or updated.
@@ -74,6 +74,12 @@ func getOldEventConfig(ctx context.Context) (*eventv1.EventConfig, bool) {
 		return nil, false
 	}
 	return oldObj, true
+}
+
+// isDryRun reports whether the admission request in ctx is a dry-run request.
+func isDryRun(ctx context.Context) bool {
+	req, err := admission.RequestFromContext(ctx)
+	return err == nil && req.DryRun != nil && *req.DryRun
 }
 
 // resolveSecretForUpdate returns the old secret value if the new value is empty and
@@ -117,8 +123,8 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		!secretsapi.IsRef(eventCfg.Spec.Local.Admin.Client.ClientSecret) &&
 		!roverAdminClient
 	if roverAdminClient {
-		if err := d.onboardRoverAdminSecret(ctx, envName, zoneName, adminSecretPath, &eventCfg.Spec.Local.Admin.Client.ClientSecret); err != nil {
-			return errors.Wrap(err, "failed to onboard shared rover admin client secret")
+		if roverErr := d.onboardRoverAdminSecret(ctx, envName, zoneName, adminSecretPath, &eventCfg.Spec.Local.Admin.Client.ClientSecret); roverErr != nil {
+			return errors.Wrap(roverErr, "failed to onboard shared rover admin client secret")
 		}
 	}
 	if needsAdminSecret {
@@ -298,6 +304,11 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
+		if isDryRun(ctx) {
+			// Onboarding writes to the Secret-Manager; a dry-run request must not have side effects.
+			log.Info("Dry-run request, skipping onboarding of secrets for EventConfig")
+			return nil
+		}
 		log.Info("Secret-Manager is enabled, onboarding secrets for EventConfig")
 
 		if d.secretManager == nil {

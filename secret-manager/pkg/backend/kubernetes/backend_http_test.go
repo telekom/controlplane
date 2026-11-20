@@ -60,7 +60,6 @@ var _ = Describe("Environment secret initialization", func() {
 	})
 
 	It("allows the shared rover credential to be seeded after HTTP 404 and preserves it on retry", func() {
-		Expect(kubeClient.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "shared"}})).To(Succeed())
 		path := "zones/zone-a/admin/rover/clientSecret"
 		id := kubernetes.New("shared", "", "", path, "")
 		expectNotFound(id)

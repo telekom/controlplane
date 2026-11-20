@@ -92,12 +92,6 @@ func (c *Client) IsFollower() bool {
 	return c.Status.LeaderRef != nil && !c.Status.LeaderRef.Equals(c)
 }
 
-// EnvironmentClientId prefixes clientID with the environment name. Clients in the internal
-// realm use it because Environments on the same Keycloak share that realm.
-func EnvironmentClientId(environment, clientID string) string {
-	return environment + "--" + clientID
-}
-
 func (e *Client) GetConditions() []metav1.Condition {
 	return e.Status.Conditions
 }

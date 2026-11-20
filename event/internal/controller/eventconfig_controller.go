@@ -55,7 +55,7 @@ func (r *EventConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("eventconfig-controller")
-	r.Controller = cc.NewController(&eventconfig.EventConfigHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&eventconfig.EventConfigHandler{Reader: r.Client}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&eventv1.EventConfig{}, builder.WithPredicates(cc.Count("eventconfig", cc.RoleFor))).

@@ -101,6 +101,34 @@ var _ = Describe("leader election", func() {
 		Expect(ElectRealm(peers)).To(HaveField("Namespace", "env-a--zone"))
 	})
 
+	It("limits the reconciled-Keycloak group to the realm's status admin URL", func() {
+		idpOld := identityProvider("env-a", "idp-old", "https://old.example.com/auth")
+		idpNew := identityProvider("env-b", "idp", "https://new.example.com/auth")
+		idpNewPeer := identityProvider("env-c", "idp", "https://new.example.com/auth")
+		oldPeer := realm("env-a--zone", idpOld, time.Unix(0, 0))
+		newPeer := realm("env-c--zone", idpNewPeer, time.Unix(2, 0))
+		moving := realm("env-b--zone", idpNew, time.Unix(1, 0))
+		moving.Status.AdminUrl = "https://old.example.com/auth"
+		reader := indexedReader(idpOld, idpNew, idpNewPeer, oldPeer, newPeer, moving)
+
+		peers, err := RealmPeersOnReconciledKeycloak(context.Background(), reader, moving)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(peers).To(ConsistOf(
+			HaveField("ObjectMeta.Namespace", "env-a--zone"),
+			HaveField("ObjectMeta.Namespace", "env-b--zone"),
+		))
+
+		moving.Status.AdminUrl = "https://new.example.com/auth"
+		peers, err = RealmPeersOnReconciledKeycloak(context.Background(), reader, moving)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(peers).To(ConsistOf(
+			HaveField("ObjectMeta.Namespace", "env-b--zone"),
+			HaveField("ObjectMeta.Namespace", "env-c--zone"),
+		))
+	})
+
 	It("selects the same client across realms", func() {
 		realmA := identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "rover", Namespace: "env-a--zone-a"}}
 		realmB := identityv1.Realm{ObjectMeta: metav1.ObjectMeta{Name: "rover", Namespace: "env-b--zone-b"}}

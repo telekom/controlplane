@@ -54,15 +54,15 @@ const (
 	ClaimTypeSessionNote ClaimType = "SessionNote"
 )
 
-// ClaimConfig defines a claim that is added to tokens issued for clients in
-// this realm. Claims in the "rover" realm are not added to the "rover" client.
+// ClaimConfig defines a claim that is added to all tokens issued for
+// clients in this realm.
 type ClaimConfig struct {
 	// Name is the claim name as it appears in the token (e.g. "team", "env").
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
-	// Value is the static claim value written into tokens for applicable clients.
+	// Value is the static claim value written into every token.
 	// Only used for HardcodedClaim; ignored for SessionNote (which
 	// reads the value from the Keycloak session note keyed by Name).
 	// +optional
@@ -89,11 +89,11 @@ type RealmSpec struct {
 	// +optional
 	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 
-	// Claims defines claims that are added to tokens issued for clients in
-	// this realm, except for the "rover" client in the "rover" realm. Each
-	// claim can be a static value (HardcodedClaim) or derived from a
-	// Keycloak session note (SessionNote). The controller manages a dedicated
-	// Keycloak client scope with protocol mappers for each claim.
+	// Claims defines claims that are added to all tokens issued for
+	// clients in this realm. Each claim can be a static value
+	// (HardcodedClaim) or derived from a Keycloak session note
+	// (SessionNote). The controller manages a dedicated Keycloak
+	// client scope with protocol mappers for each claim.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
