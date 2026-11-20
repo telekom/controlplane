@@ -64,6 +64,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	}
 
 	var obsolete []string
+	names := map[string]string{}
 	for i := range kongPlugins {
 		plugin := &kongPlugins[i]
 		if slices.Contains(desiredIds, valueOrZero(plugin.Id)) {
@@ -84,20 +85,32 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 			continue
 		}
 		obsolete = append(obsolete, *plugin.Id)
+		names[*plugin.Id] = valueOrZero(plugin.Name)
 	}
 	slices.Sort(obsolete)
 
 	log.Info("cleaning up plugins", "found", len(kongPlugins), "expected", len(desiredIds), "obsolete", len(obsolete))
 
 	for _, id := range obsolete {
-		log.V(1).Info("deleting plugin", "id", id)
-		response, err := c.client.DeletePluginWithResponse(ctx, id)
-		if err != nil {
-			return fmt.Errorf("failed to delete plugin %s: %w", id, HandleClientError(err))
+		if err := c.deleteObsoletePlugin(ctx, id, names[id]); err != nil {
+			return err
 		}
-		if err := CheckStatusCode(response, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
-			return fmt.Errorf("failed to delete plugin %s (%d): %s: %w", id, response.StatusCode(), summarizeBody(response.Body), err)
-		}
+	}
+	return nil
+}
+
+// deleteObsoletePlugin deletes a plugin by ID. name identifies it for Migration Mode.
+func (c *kongClient) deleteObsoletePlugin(ctx context.Context, id, name string) error {
+	if write, err := c.guard.CheckDelete(ctx, "plugin", name); err != nil || !write {
+		return err
+	}
+	logr.FromContextOrDiscard(ctx).V(1).Info("deleting plugin", "id", id)
+	response, err := c.client.DeletePluginWithResponse(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete plugin %s: %w", id, HandleClientError(err))
+	}
+	if err := CheckStatusCode(response, http.StatusOK, http.StatusNoContent, http.StatusNotFound); err != nil {
+		return fmt.Errorf("failed to delete plugin %s (%d): %s: %w", id, response.StatusCode(), summarizeBody(response.Body), err)
 	}
 	return nil
 }

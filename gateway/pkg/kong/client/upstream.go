@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 // CreateOrReplaceUpstream normalizes the given bodies in place before comparing
@@ -60,7 +61,7 @@ func (c *kongClient) prepareUpstream(ctx context.Context, route CustomRoute, ups
 }
 
 func (c *kongClient) writeUpstream(ctx context.Context, route CustomRoute, prepared *preparedUpstream) error {
-	kongUpstream, _, err := reconcile(ctx, prepared.entity, *prepared.body)
+	kongUpstream, _, err := reconcile(ctx, c.guard, prepared.entity, *prepared.body)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func (c *kongClient) writeUpstream(ctx context.Context, route CustomRoute, prepa
 	if prepared.byID {
 		upstreamRef = *kongUpstream.Id
 	}
-	kongTarget, _, err := reconcile(ctx, targetEntity{
+	kongTarget, _, err := reconcile(ctx, c.guard, targetEntity{
 		client:       c.client,
 		upstreamName: upstreamRef,
 		address:      prepared.target.Target,
@@ -145,6 +146,9 @@ func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) erro
 func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, upstreamRef string) error {
 	if upstreamRef == "" {
 		return nil
+	}
+	if write, err := c.guard.CheckDelete(ctx, "upstream", upstreamRef); err != nil || !write {
+		return err
 	}
 	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, upstreamRef)
 	if err != nil {
@@ -308,6 +312,10 @@ var _ entity[kong.CreateTargetForUpstreamJSONRequestBody, kong.Target] = targetE
 func (e targetEntity) Name() string { return "target" }
 
 func (e targetEntity) Get(ctx context.Context) (*kong.Target, bool, error) {
+	// A planned upstream does not exist in Kong yet, so it has no targets.
+	if _, planned := migration.LookupPlanned(ctx, "upstream", e.upstreamName); planned {
+		return nil, false, nil
+	}
 	size := 1000
 	params := &kong.ListTargetsForUpstreamParams{Size: &size}
 

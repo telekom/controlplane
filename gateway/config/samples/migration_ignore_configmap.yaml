@@ -1,0 +1,24 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Mounted into the operator and passed as
+# --migration-mode=on --migration-ignore-config=/etc/gateway/migration-ignore.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-migration-ignore
+data:
+  migration-ignore.yaml: |
+    # Diffs between the operator's desired Kong state and the current one that are expected
+    # during the migration. Every other diff blocks the write.
+    ignore:
+      # Routes and services are renamed to <namePrefix>--<name> and get new ownership tags.
+      - kind: route
+        paths: ["$.name", "$.tags"]
+      - kind: service
+        paths: ["$.name", "$.tags"]
+      # The operator may create and update its own rate-limiting plugins.
+      - kind: plugin
+        name: rate-limiting
+        paths: ["$"]

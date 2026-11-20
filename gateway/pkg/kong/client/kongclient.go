@@ -17,6 +17,7 @@ import (
 
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kong/naming"
 )
 
@@ -76,6 +77,9 @@ var _ KongClient = &kongClient{}
 type kongClient struct {
 	client KongAdminApi
 	names  naming.NameScheme
+	// guard checks every write and delete against the current Kong state in Migration Mode.
+	// It is nil otherwise.
+	guard *migration.Guard
 }
 
 // Option configures a KongClient.
@@ -85,6 +89,13 @@ type Option func(*kongClient)
 func WithMigrator(migrator legacy.Migrator) Option {
 	return func(c *kongClient) {
 		c.names = naming.NewNameScheme(migrator)
+	}
+}
+
+// WithMigrationGuard enables Migration Mode: every write and delete is checked by guard first.
+func WithMigrationGuard(guard *migration.Guard) Option {
+	return func(c *kongClient) {
+		c.guard = guard
 	}
 }
 

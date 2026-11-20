@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"reflect"
 	"slices"
 
 	"github.com/go-logr/logr"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 // Kinds of the Kong entities a plugin can be bound to.
@@ -61,7 +61,7 @@ func (c *kongClient) CreateOrReplacePlugin(ctx context.Context, plugin CustomPlu
 		}
 	}
 
-	kongPlugin, _, err := reconcile(ctx, &pluginEntity{client: c.client, plugin: plugin}, desired)
+	kongPlugin, _, err := reconcile(ctx, c.guard, &pluginEntity{client: c.client, plugin: plugin}, desired)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +92,9 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) erro
 		pluginId = *kongPlugin.Id
 	}
 
+	if write, err := c.guard.CheckDelete(ctx, "plugin", plugin.GetName()); err != nil || !write {
+		return err
+	}
 	response, err := c.client.DeletePluginWithResponse(ctx, pluginId)
 	if err != nil {
 		return HandleClientError(err)
@@ -210,6 +213,9 @@ func resolveParentID(ctx context.Context, api KongAdminApi, kind, name string) (
 // lookupParentID returns the Kong ID of a route or consumer and whether Kong
 // knows it. A found parent without an ID is an error.
 func lookupParentID(ctx context.Context, api KongAdminApi, kind, name string) (string, bool, error) {
+	if id, ok := migration.LookupPlanned(ctx, kind, name); ok {
+		return id, true, nil
+	}
 	var id *string
 	switch kind {
 	case parentConsumer:
@@ -297,6 +303,10 @@ func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 		e.routeID = &routeID
 		identity.routeID = routeID
 	}
+	// A plugin of a planned route or consumer cannot exist in Kong yet.
+	if migration.IsPlanned(identity.routeID) || migration.IsPlanned(identity.consumerID) {
+		return nil, false, nil
+	}
 
 	current, err := discoverBoundPlugin(ctx, e.client, e.plugin.GetId(), identity)
 	if err != nil {
@@ -349,13 +359,13 @@ func (e *pluginEntity) Project(current *kong.Plugin) (kong.UpsertPluginJSONReque
 	return projected, nil
 }
 
-// Equal compares the request against the current definition while normalizing
+// Comparable prepares the request and the current definition for comparison, normalizing
 // the entity references that Kong reports as IDs. If Kong drifted the plugin to
 // a different route or consumer out-of-band, matching on the name would be a
 // false positive because the ownership tags alone do not make the plugin safe to
 // reuse. An existing bound plugin is compared against its effective desired
 // body, so missing ownership tags still count as a change.
-func (e *pluginEntity) Equal(desired, current kong.UpsertPluginJSONRequestBody) bool {
+func (e *pluginEntity) Comparable(desired, current kong.UpsertPluginJSONRequestBody) (kong.UpsertPluginJSONRequestBody, kong.UpsertPluginJSONRequestBody) {
 	desired = e.effective(desired)
 	desired.Service = nil
 	current.Service = nil
@@ -370,7 +380,7 @@ func (e *pluginEntity) Equal(desired, current kong.UpsertPluginJSONRequestBody) 
 	narrowed := narrowToDesired(desiredConfig, valueOrZero(current.Config))
 	desired.Config, current.Config = &desiredConfig, &narrowed
 
-	return reflect.DeepEqual(desired, current)
+	return desired, current
 }
 
 func (e *pluginEntity) Write(ctx context.Context, desired *kong.UpsertPluginJSONRequestBody) (*kong.Plugin, error) {

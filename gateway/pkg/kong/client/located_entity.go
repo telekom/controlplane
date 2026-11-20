@@ -80,10 +80,10 @@ func (e *locatedEntity[Req, Resp]) Project(current *Resp) (Req, error) {
 	return e.discovery.kind.plain(e.discovery.api, "").Project(current)
 }
 
-// Equal compares the desired body with the legacy tags of the found entity merged in.
-func (e *locatedEntity[Req, Resp]) Equal(desired, current Req) bool {
+// Comparable merges the legacy tags of the found entity into the desired body.
+func (e *locatedEntity[Req, Resp]) Comparable(desired, current Req) (Req, Req) {
 	desired = e.withLegacyTags(desired)
-	return equal(e.discovery.kind.plain(e.discovery.api, ""), desired, current)
+	return comparedBodies(e.discovery.kind.plain(e.discovery.api, ""), desired, current)
 }
 
 func (e *locatedEntity[Req, Resp]) Write(ctx context.Context, desired *Req) (*Resp, error) {

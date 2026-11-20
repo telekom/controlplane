@@ -184,6 +184,156 @@ data:
 | `separator` | Joins the legacy realm and the base name. |
 | `realmSuffixes` | Appended to `namePrefix` to build the legacy realms to try, in order. |
 
+## Migration Mode
+
+Migration Mode makes the switch from the legacy operator safe. The Gateway operator compares the Kong changes of a Route or Consumer with the current Kong state before it writes any of them. A difference that is not expected blocks all of them and is shown on the Route or Consumer. Kong stays as the legacy operator left it until the difference is expected, fixed or approved.
+
+| Mode | The Kong changes of a Route or Consumer are written if |
+| ---- | ------------------------------------------------------ |
+| `off` | always. This is the default. |
+| `on` | every diff is on the ignore list, or the changes are approved. |
+| `strict` | the changes are approved, even if every diff is on the ignore list. |
+
+A reconcile without any Kong change writes nothing, so it needs no approval in either mode.
+
+### One plan for the whole Route
+
+Each reconcile runs twice. The first run is the plan: it goes through every Kong entity of the Route or Consumer and records each create, update and delete instead of executing it. Together, these changes are the bundle. The operator then decides on the bundle as a whole. Only an allowed or approved bundle is written, in a second run.
+
+| Object | Bundle |
+| ------ | ------ |
+| Route | Upstream and targets of the circuit breaker, service, route, its plugins and the removal of plugins it no longer uses |
+| Consumer | Consumer, consumer group membership and its plugins |
+| Deleted Route or Consumer | The deletion of its Kong entities |
+
+An entity the plan would create does not exist yet. The plan gives it a placeholder ID starting with `planned--`, so that the entities that depend on it, such as the route of a new service, can be planned too.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor H as Human
+    participant R as Route
+    participant O as Gateway operator
+    participant K as Kong
+    R->>O: Reconcile
+    O->>K: Read every entity of the Route
+    O->>O: Plan: record all changes, write nothing
+    alt no unexpected diff (mode on) or no change
+        O->>K: Write the bundle
+    else needs approval
+        O->>R: Blocked, status.migration lists every change and its hash
+        H->>R: Review status.migration
+        H->>R: Annotate with the hash
+        R->>O: Reconcile
+        O->>O: Plan again, same hash
+        O->>K: Write the bundle
+        O->>R: Remove status.migration
+    end
+```
+
+### What is compared
+
+| Change | Compared as |
+| ------ | ----------- |
+| Update of a route, service, upstream, target, plugin or consumer | Every field, by JSON path, such as `$.tags` or `$.config.minute` |
+| Creation of an entity or of a consumer group membership | One diff at `$` with the whole new entity |
+| Deletion of a route, service, upstream, plugin or consumer | One diff at `$` |
+
+Both sides are compared as the operator compares them for a normal reconcile. Tags, hosts and protocols are sorted. Legacy tags of an adopted entity are kept. Plugin config fields the operator does not set are left out. A missing value, `null`, an empty list and an empty object count as the same. Lists of different length differ as a whole; lists of equal length differ per element.
+
+### Reviewing blocked changes
+
+A blocked Route or Consumer has the condition `Blocked`, a Warning event and the field `status.migration`. The field exists only while the changes are blocked:
+
+```bash
+kubectl get route eni-echo-v1 -o jsonpath='{.status.migration}' | jq
+```
+
+```yaml
+status:
+  migration:
+    hash: 7fb798163a653a9e
+    mode: on
+    changes:
+      - kind: service
+        name: bond--eni-echo-v1
+        operation: update
+        diffs:
+          - path: $.name
+            desired: '"bond--eni-echo-v1"'
+            current: '"bond.eni-echo-v1"'
+            ignored: true
+      - kind: route
+        name: bond--eni-echo-v1
+        operation: update
+        diffs:
+          - path: $.paths[0]
+            desired: '"/eni/echo/v3"'
+            current: '"/eni/echo/v2"'
+```
+
+Values are JSON. A value longer than 1024 characters is cut off; the hash covers the full value. The operator log has the full changes under `Migration mode blocked kong changes`.
+
+Two metrics count the checks:
+
+- `gateway_kong_migration_checks_total` counts reconciles per kind (`Route`, `Consumer`), with the outcome `unchanged`, `allowed`, `approved` or `blocked`.
+- `gateway_kong_migration_diffs_total` counts diffs per entity kind, with the outcome `ignored` or `unexpected`.
+
+### Approving blocked changes
+
+Approve the reviewed changes with their hash:
+
+```bash
+kubectl annotate route eni-echo-v1 \
+  gateway.cp.ei.telekom.de/migration-approved-hash=7fb798163a653a9e --overwrite
+```
+
+The annotation starts a new reconcile. It plans again and writes the bundle only if the new plan has the same hash. The hash covers every change and every value, so an approval covers exactly what was reviewed. If the Route changes or the legacy operator changes Kong in between, the hash changes, and the new changes are blocked and shown again. Approved changes are logged under `Migration mode applied approved kong changes`.
+
+An approval stays valid as long as the hash does not change. It does not have to be removed.
+
+### Configuration
+
+| Flag | Meaning |
+| ---- | ------- |
+| `--migration-mode=<off\|on\|strict>` | Sets the mode. `off` by default. |
+| `--migration-ignore-config=<path>` | Optional ignore list of expected diffs, mounted from a ConfigMap. Without it, every diff blocks. |
+
+An unknown mode, a missing file, invalid YAML, an unknown field, an unknown kind or an invalid path stops the operator at startup.
+
+Sample ConfigMap, shipped as `gateway/config/samples/migration_ignore_configmap.yaml`:
+
+```yaml
+# Mounted into the operator and passed as
+# --migration-mode=on --migration-ignore-config=/etc/gateway/migration-ignore.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-migration-ignore
+data:
+  migration-ignore.yaml: |
+    ignore:
+      # Routes and services are renamed to <namePrefix>--<name> and get new ownership tags.
+      - kind: route
+        paths: ["$.name", "$.tags"]
+      - kind: service
+        paths: ["$.name", "$.tags"]
+      # The operator may create and update its own rate-limiting plugins.
+      - kind: plugin
+        name: rate-limiting
+        paths: ["$"]
+```
+
+| Field | Meaning |
+| ----- | ------- |
+| `kind` | `route`, `service`, `upstream`, `target`, `plugin`, `consumer` or `consumer_group`. |
+| `name` | Optional regular expression. It must match the whole entity name. |
+| `paths` | JSON paths of the expected diffs. A path also covers everything below it. |
+
+The entity name is the Kong name for routes, services and upstreams. For plugins it is the plugin name, for targets the target and for consumers the username. A deletion of a route or service uses its Kong name. A deletion of an upstream uses the name or ID it is deleted by.
+
+A path starts with `$`, followed by `.key` and `[index]` parts. `.*` matches any key and `[*]` any index. `$` alone covers the whole entity, including its creation and deletion.
+
 ## Scope and limitations
 
 - **Who sets the prefix.** The Admin operator sets `Gateway.spec.namePrefix` to the environment's realm name, except for the realm `default` while `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is `true`. The Event operator names its Routes after the legacy-compatible base names. The API and Agentic operators are unchanged.
