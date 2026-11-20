@@ -278,18 +278,13 @@ func (g *Route) GetTargetsId() string {
 	return g.GetProperty("targetsId")
 }
 
-// KongName returns the name of the Kong entities of this Route: "<namePrefix>--<metadata.name>"
-// if the prefix is set, otherwise metadata.name.
-func (g *Route) KongName() string {
+// GetFullName returns the realm-qualified name of this Route: "<namePrefix>--<metadata.name>"
+// if the prefix is set, otherwise metadata.name. The gateway entities of the Route are named after it.
+func (g *Route) GetFullName() string {
 	if g.Runtime.NamePrefix == "" {
 		return g.Name
 	}
 	return g.Runtime.NamePrefix + "--" + g.Name
-}
-
-// GetKongName implements the RealmRoute interface for Route.
-func (g *Route) GetKongName() string {
-	return g.KongName()
 }
 
 // GetNamePrefix implements the RealmRoute interface for Route.

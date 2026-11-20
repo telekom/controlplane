@@ -50,7 +50,7 @@ func makePublishRouteName() string {
 
 // makePublishEventsRoutePath returns the main downstream path of the publish route.
 func makePublishEventsRoutePath() string {
-	return horizonPrefix("") + "/events/v1"
+	return eventv1.HorizonPublishEventPathSuffix
 }
 
 // makePublishRoutePath returns the secondary downstream path of the publish route.

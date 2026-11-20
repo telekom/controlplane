@@ -51,6 +51,8 @@ var (
 	FeatureAiGateway     Feature = NewFeature("ai_gateway", false)    // AI Gateway (MCP) feature disabled by default
 	FeatureFile          Feature = NewFeature("file", false)          // File feature disabled by default
 	FeatureSpectre       Feature = NewFeature("spectre", false)       // Spectre listener feature disabled by default
+	// FeatureLegacyGatewayNaming keeps the Kong entities of the "default" realm unprefixed. Disabled by default.
+	FeatureLegacyGatewayNaming Feature = NewFeature("legacy_gateway_naming", false)
 )
 
 // SetFeatureEnabled sets the enabled state for a feature. Intended for tests.

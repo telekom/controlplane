@@ -246,7 +246,7 @@ func recordKongRoute(obj any) {
 	}
 	kongRouteNamesMu.Lock()
 	defer kongRouteNamesMu.Unlock()
-	kongRouteNames[route.Name] = append(kongRouteNames[route.Name], route.KongName())
+	kongRouteNames[route.Name] = append(kongRouteNames[route.Name], route.GetFullName())
 }
 
 // kongNamesOf returns the Kong names the reconciles of a Route used, in call order.

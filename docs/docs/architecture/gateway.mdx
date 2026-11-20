@@ -128,7 +128,7 @@ API and Agentic controllers use this field for traffic classification, with tags
 
 Several virtual environments, for example `bond`, `cit2` and `cit4`, can share one Kong. If Kong entities are named only after `Route.metadata.name`, the same Route name in two environments maps to the same Kong route, service and upstream, and the environments overwrite each other.
 
-The optional field `Gateway.spec.namePrefix` keeps them apart by putting the realm in front of every Kong name. It applies to every Route on the Gateway; Routes have no prefix field of their own. The Admin operator sets it to the realm name of the zone (`zone.status.realmName`) when it creates or updates the Gateway.
+The optional field `Gateway.spec.namePrefix` keeps them apart by putting the realm in front of every Kong name. It applies to every Route on the Gateway; Routes have no prefix field of their own. The Admin operator sets it to the realm name of the environment when it creates or updates the Gateway. If the feature flag `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is `true` (default `false`), Gateways of the realm `default` get no prefix, so their Kong entities keep the names `metadata.name`; a prefix that is already set is kept.
 
 ```mermaid
 ---
@@ -254,7 +254,7 @@ sequenceDiagram
 Writes happen only when Kong differs from the desired state. How existing entities are found, adopted from earlier names and deleted is described in [Gateway: Migrating Kong Entities](./gateway-realm-migration.mdx).
 
 :::caution Removing a prefix is not supported
-A changed `namePrefix` is followed through the stored ID or the `env--`/`route--` tags. A removed prefix is not: without a prefix, the operator looks up only `metadata.name` and never finds the entities named `P--R`. The Gateway CRD therefore rejects removing or emptying a set prefix, and the Admin operator keeps an existing prefix if the realm name is ever empty.
+A changed `namePrefix` is followed through the stored ID or the `env--`/`route--` tags. A removed prefix is not: without a prefix, the operator looks up only `metadata.name` and never finds the entities named `P--R`. The Gateway CRD therefore rejects removing or emptying a set prefix, and the Admin operator keeps an existing prefix of the `default` realm when legacy gateway naming is turned on later.
 :::
 
 :::info

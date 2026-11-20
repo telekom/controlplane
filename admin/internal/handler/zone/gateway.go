@@ -82,7 +82,7 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 				IssuerUrl:    issuerURL,
 				Url:          config.Admin.Url,
 			},
-			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, hc.Zone.Status.RealmName),
+			NamePrefix: gatewayNamePrefix(gateway.Spec.NamePrefix, hc.Environment.GetRealmName(), cconfig.FeatureLegacyGatewayNaming.IsEnabled()),
 			TLS:        hc.managedTLS(),
 		}
 
@@ -109,10 +109,15 @@ func createGateway(ctx context.Context, hc *HandlingContext, config *adminapi.Ga
 	return gateway, nil
 }
 
-// gatewayNamePrefix returns the Kong name prefix of a Gateway: the zone's realm name, or the
-// current prefix if the realm name is empty, because a set prefix cannot be removed.
-func gatewayNamePrefix(current, realmName string) string {
-	if realmName == "" {
+// legacyGatewayRealmName is the realm whose Gateways keep unprefixed Kong names while
+// cconfig.FeatureLegacyGatewayNaming is enabled.
+const legacyGatewayRealmName = "default"
+
+// gatewayNamePrefix returns the Kong name prefix of a Gateway: the realm name of its environment.
+// With legacy naming, the legacy realm gets no prefix. A prefix that is already set is kept then,
+// because the Gateway CRD rejects removing it.
+func gatewayNamePrefix(current, realmName string, legacyNaming bool) string {
+	if legacyNaming && realmName == legacyGatewayRealmName {
 		return current
 	}
 	return realmName

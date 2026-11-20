@@ -102,7 +102,7 @@ func isDeleteScenario(route *gatewayv1.Route) bool {
 
 // handleApply makes the Kong client write the upstream and target the service points to.
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) {
-	routeName := route.KongName()
+	routeName := route.GetFullName()
 
 	upstreamAlgorithm := kong.RoundRobin
 	passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp

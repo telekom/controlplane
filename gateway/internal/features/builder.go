@@ -306,7 +306,7 @@ func (b *Builder) Build(ctx context.Context) (err error) {
 	// disappear. Until then, features and plugins still read the previous values.
 	b.Route.StartPropertyRebuild()
 	defer func() { b.Route.FinishPropertyRebuild(err == nil) }()
-	b.Route.SetProperty(routeNameProperty, b.Route.KongName())
+	b.Route.SetProperty(routeNameProperty, b.Route.GetFullName())
 	if prefix := b.Route.GetNamePrefix(); prefix != "" {
 		b.Route.SetProperty(namePrefixProperty, prefix)
 	}

@@ -539,8 +539,8 @@ var _ = Describe("Realm route", func() {
 	Describe("Upstream", func() {
 		upstreamBody := func() *kong.CreateUpstreamJSONRequestBody {
 			return &kong.CreateUpstreamJSONRequestBody{
-				Name: route.KongName(),
-				Tags: &[]string{"env--bond", "upstream--" + route.KongName(), "route--eni-example-v1", "realm--bond"},
+				Name: route.GetFullName(),
+				Tags: &[]string{"env--bond", "upstream--" + route.GetFullName(), "route--eni-example-v1", "realm--bond"},
 			}
 		}
 		targetBody := func() *kong.CreateTargetForUpstreamJSONRequestBody {

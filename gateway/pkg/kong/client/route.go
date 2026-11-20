@@ -98,7 +98,7 @@ func (c *kongClient) entitiesFor(ctx context.Context, route CustomRoute, policy 
 		return nil, err
 	}
 	return &routeEntities{
-		name:    realm.GetKongName(),
+		name:    realm.GetFullName(),
 		route:   located,
 		service: svc,
 		located: located,

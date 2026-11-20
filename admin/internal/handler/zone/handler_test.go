@@ -29,13 +29,15 @@ import (
 )
 
 var _ = DescribeTable("gatewayNamePrefix",
-	func(current, realmName, expected string) {
-		Expect(gatewayNamePrefix(current, realmName)).To(Equal(expected))
+	func(current, realmName string, legacyNaming bool, expected string) {
+		Expect(gatewayNamePrefix(current, realmName, legacyNaming)).To(Equal(expected))
 	},
-	Entry("set from the realm", "", "bond", "bond"),
-	Entry("realm replaces an existing prefix", "old", "bond", "bond"),
-	Entry("empty realm keeps the existing prefix", "bond", "", "bond"),
-	Entry("empty realm without existing prefix stays unset", "", "", ""),
+	Entry("set from the realm", "", "bond", false, "bond"),
+	Entry("realm replaces an existing prefix", "old", "bond", false, "bond"),
+	Entry("default realm is prefixed without legacy naming", "", "default", false, "default"),
+	Entry("legacy naming omits the prefix of the default realm", "", "default", true, ""),
+	Entry("legacy naming keeps an existing prefix of the default realm", "default", "default", true, "default"),
+	Entry("legacy naming prefixes other realms", "", "bond", true, "bond"),
 )
 
 var _ = Describe("Zone Handler", func() {

@@ -46,11 +46,11 @@ type CustomRoute interface {
 type StoredIds = gatewayv1.StoredIds
 
 // RealmRoute is an optional interface of a CustomRoute. If it returns a name prefix, the
-// Kong entities of the route are named GetKongName() and discovered, migrated and written
+// Kong entities of the route are named GetFullName() and discovered, migrated and written
 // by ID. Otherwise they are named GetName() as before.
 type RealmRoute interface {
 	GetNamePrefix() string
-	GetKongName() string
+	GetFullName() string
 	GetStoredIds() StoredIds
 }
 

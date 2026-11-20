@@ -185,7 +185,7 @@ data:
 
 ## Scope and limitations
 
-- **Who sets the prefix.** The Admin operator sets `Gateway.spec.namePrefix` to the zone's realm name. The Event operator names its Routes after the legacy-compatible base names. The API and Agentic operators are unchanged.
+- **Who sets the prefix.** The Admin operator sets `Gateway.spec.namePrefix` to the environment's realm name, except for the realm `default` while `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is `true`. The Event operator names its Routes after the legacy-compatible base names. The API and Agentic operators are unchanged.
 - **Out of scope.** Kong consumer name collisions across virtual environments, and removing legacy `ei__telekom__de--*` tags.
 - **Changing the prefix works, removing it does not.** A changed `namePrefix` is followed through the stored ID or the CP tags; the Route controller reconciles all Routes of the Gateway when it changes. Without a prefix, the operator looks up only `metadata.name` and never sees the entity named `P--R`, so the Gateway CRD rejects removing or emptying a set prefix.
 

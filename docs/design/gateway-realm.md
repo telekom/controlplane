@@ -23,7 +23,7 @@ API and AI Routes on the same Gateway share one prefix.
 | # | Decision |
 |---|----------|
 | D1 | Kong name: `<namePrefix>--<metadata.name>`, e.g. `bond--eni-echo-v3`, `default--eni-foo-v1`, `default--ai-gateway--mcp-v1`. The pattern is the same for every realm, including `default`. |
-| D2 | The prefix is configured once per Gateway: optional field `Gateway.spec.namePrefix`, set by the admin operator to `zone.Status.RealmName`. All Routes referencing the Gateway use it; there is no per-Route field. `Route.spec.security.realmName` is **not** used, because it controls the Last-Mile-Security realm. API and AI Routes on the same Gateway share the prefix; agentic names (`ai-gateway--…`) keep them apart. |
+| D2 | The prefix is configured once per Gateway: optional field `Gateway.spec.namePrefix`, set by the admin operator to `Environment.GetRealmName()`, or left unset for the realm `default` while the feature flag `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is on. All Routes referencing the Gateway use it; there is no per-Route field. `Route.spec.security.realmName` is **not** used, because it controls the Last-Mile-Security realm. API and AI Routes on the same Gateway share the prefix; agentic names (`ai-gateway--…`) keep them apart. |
 | D3 | Gateway has a `namePrefix` → realm naming and migration for every Route on it. No prefix → Kong names, lookups and tags stay as they are today. The only exception is legacy plugin adoption (D11), which applies to all Routes. |
 | D4 | Every Kong entity named after the route gets the new name: **route, service, upstream** (circuit breaker), and the service host that points to the upstream. Targets have no name. |
 | D5 | Every Route on a Gateway with a prefix is migrated, including identity, zone-health and admin managed routes (no special handling). The admin operator sets the prefix; the event operator names its Routes after the legacy-compatible base names (D17); the api and agentic operators stay as they are. There is no feature flag: everything rolls out at once. |
@@ -36,7 +36,7 @@ API and AI Routes on the same Gateway share one prefix.
 | D12 | Legacy naming (`defaultRealm`, `separator`, `realmSuffixes`) lives in an optional config file, mounted from a ConfigMap. The code reads it only through a `Migrator` interface. Without the file, no legacy names are tried. |
 | D13 | Names, IDs and the legacy origin are recorded in `Route.status.properties`. |
 | D14 | Out of scope: Kong consumer name collisions, migrating infrastructure routes, and removing legacy tags. |
-| D15 | `Gateway.spec.namePrefix` may change but must not be removed once set (CEL rule): without a prefix the Routes are looked up by `metadata.name` only, so second Kong routes would be created. The admin operator keeps an existing prefix if the realm name is ever empty. |
+| D15 | `Gateway.spec.namePrefix` may change but must not be removed once set (CEL rule): without a prefix the Routes are looked up by `metadata.name` only, so second Kong routes would be created. With legacy gateway naming, the admin operator keeps an existing prefix of the `default` realm instead of removing it. |
 | D16 | Delete never blocks: foreign entities and duplicates are skipped, at most one entity per kind is deleted. |
 | D17 | Event Routes carry the legacy-compatible base names as `metadata.name`, so the legacy-compatible `baseName` always equals `metadata.name`. The Migrator has no name rules. |
 | D17 | Precondition: the legacy operator no longer writes a route once the CP has taken it over. The conflict check (D10) therefore runs only while a rename is pending; a legacy route recreated later under its old name would not be detected. Accepted consequence: if a delete fails after removing the first of two duplicates (e.g. on the service delete or the finalizer update), the retry finds the retained duplicate and deletes it too. Duplicates exist only if the legacy operator wrote after the takeover, which is excluded. |
@@ -68,7 +68,7 @@ The effective prefix is recorded in `status.properties["namePrefix"]` (only when
 Gateways and requeues the Routes that reference a Gateway (field index `spec.gatewayRef` = `namespace/name`) when
 its `namePrefix` changes; create, delete and other Gateway updates do not requeue Routes.
 
-Helpers on `Route`: `KongName()` / `GetKongName()` (`prefix + "--" + Name`, or `Name` without prefix),
+Helpers on `Route`: `GetFullName()` (`prefix + "--" + Name`, or `Name` without prefix),
 `GetNamePrefix()`, `GetStoredIds()` / `CaptureStoredIds()`, `GetRouteId()`, `SetLegacyName()`. `StoredIds` lives in
 `gateway/api/v1` because the separate `gateway/api` module cannot import the Kong client; the client uses an alias.
 
@@ -296,8 +296,8 @@ that are no longer used.
 ## Callers
 
 Only the admin operator sets the prefix: when it creates or updates a Gateway it writes
-`Gateway.spec.namePrefix = zone.Status.RealmName`. If the realm name is empty, an existing prefix is kept and no
-new one is set. The api, agentic, event and admin route builders do not change.
+`Gateway.spec.namePrefix = Environment.GetRealmName()`. If `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is on and the realm
+is `default`, no new prefix is set and an existing one is kept. The api, agentic, event and admin route builders do not change.
 
 Example: one Gateway `aws-standard` in environment `cit2` serves the `api` and `ai` presets. Its prefix is `cit2`:
 
@@ -316,7 +316,7 @@ Example: one Gateway `aws-standard` in environment `cit2` serves the `api` and `
   ```go
   type RealmRoute interface {
       GetNamePrefix() string
-      GetKongName() string
+      GetFullName() string
       GetStoredIds() StoredIds // routeId, serviceId, upstreamId, captured at the start of Build
   }
   ```
@@ -374,7 +374,7 @@ Migrator. Nothing else changes.
 
 **Phase 1: gateway module (done)**
 
-1. API: add `RouteSpec.NamePrefix` and the `Route` methods `KongName()`, `GetNamePrefix()` and `GetStoredIds()`.
+1. API: add `RouteSpec.NamePrefix` and the `Route` methods `GetFullName()`, `GetNamePrefix()` and `GetStoredIds()`.
    Run `make build` to regenerate the CRDs and deepcopy code.
 2. Legacy package `pkg/kong/legacy`: config types, `LoadMigrator(path)`, `NewMigrator`, `Candidates`, validation,
    unit tests. Add the flag `--legacy-naming-config` to `cmd/main.go` and a sample ConfigMap under
@@ -384,7 +384,7 @@ Migrator. Nothing else changes.
    service and upstream, ownership checks, conflict check, reconcile/delete policy. Extend `KongAdminApi` and
    regenerate the mocks.
 5. Writes by ID with merged legacy tags and the `realm--` tag. The circuit breaker feature takes its names from
-   `KongName()`.
+   `GetFullName()`.
 6. Delete through discovery, by ID.
 7. Plugins: binding by route ID (`RouteIdBinder`), slot lookup replacing the legacy tag lookup, cleanup scope by
    route ID, `realm--` tag on route-bound plugins.

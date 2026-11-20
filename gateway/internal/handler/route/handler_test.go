@@ -146,7 +146,7 @@ var _ = Describe("RouteHandler", func() {
 				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 				mockBuilder.EXPECT().Build(mock.Anything).Run(func(_ context.Context) {
 					Expect(route.GetNamePrefix()).To(Equal(prefix))
-					Expect(route.KongName()).To(Equal(kongName))
+					Expect(route.GetFullName()).To(Equal(kongName))
 				}).Return(nil)
 
 				Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
@@ -167,7 +167,7 @@ var _ = Describe("RouteHandler", func() {
 				}
 				mockKC.EXPECT().DeleteRoute(mock.Anything, route).
 					Run(func(_ context.Context, r kongclient.CustomRoute) {
-						Expect(r.(kongclient.RealmRoute).GetKongName()).To(Equal(kongName))
+						Expect(r.(kongclient.RealmRoute).GetFullName()).To(Equal(kongName))
 					}).Return(nil)
 
 				Expect(handler.Delete(ctx, route)).To(Succeed())
