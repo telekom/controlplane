@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC0-1.0
 
 # ADR-0011: Show pending Kong changes in a temporary status field
 
-- Status: Accepted
+- Status: Superseded by [ADR-0013](0013-record-last-applied-changes.md)
 - Date: 2026-11-20
 - Related: [ADR-0009](0009-plan-kong-changes-as-one-bundle.md), [ADR-0010](0010-approval-by-diff-hash.md)
 
