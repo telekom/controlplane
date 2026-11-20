@@ -21,7 +21,7 @@ one work unit and nothing else.
 
 ## What you may use
 
-Run exactly this, and work only from what it prints:
+Run exactly this first, and work only from what the viewer prints:
 
 ```bash
 cd "$REPO_ROOT"
@@ -35,13 +35,37 @@ followed by the questions to answer.
 Use the supplied values as quoted arguments. If any value is missing, report
 the missing invocation context rather than guessing a path or configuration.
 
+Copy the paths character-for-character from your instructions; never retype
+or shorten them. If the viewer fails or its output does not end with the
+`# Answer all N item(s)` line, compare your command with the instructions and
+retry once. If it still fails, return the error text instead of JSON. An empty
+array is never a valid answer: it hides the failure from the audit.
+
 Context lines are rendered as `>123 | source`. The `>` marks a line this
 change touched; a space means the line was already there. Weigh the marked
 lines — they are the work under review.
 
-Do not read files, do not grep, do not explore the repository, do not open the
-audit report. The context is fixed so that the same change always produces the
-same answer; going outside it defeats the entire mechanism.
+A large file is cut to one contiguous range around the change, and the
+context then starts with a note such as
+`[truncated: showing lines 120-410 of 1324. ...]`. Every changed line is
+always shown; a change too large for one prompt is split into parts
+(`part 1 of 3: lines 1-410` in the candidate's detail), each judged
+separately. Never assume what the lines outside the range contain. If an
+answer depends on them - a helper defined further down, the near-duplicate a
+detail names, a match listed under "also matched at" - read them with the same
+viewer:
+
+```bash
+python3 "$VIEWER_PATH" "$UNIT_ID" --config-root "$CONFIG_ROOT" --file "<candidate file>" --lines 500-620
+```
+
+It reads the same frozen snapshot the audit was made of, only for the files
+of your work unit. Read only what the question needs.
+
+Apart from the viewer, do not read files, do not grep, do not explore the
+repository, do not open the audit report. The context is fixed so that the
+same change always produces the same answer; going outside it defeats the
+entire mechanism.
 
 If an item genuinely cannot be decided from the context given, answer
 `UNCLEAR` and say what you would have needed. That is a correct answer, not a

@@ -33,34 +33,13 @@ from auditlib.context import AuditContext, ConfigError, add_argument, resolve  #
 from auditlib.context import config_hash, snapshot_config  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
 from auditlib.inline import InlineIgnores  # noqa: E402
+from auditlib.prompt import MAX_UNIT_BYTES, rule_prompt  # noqa: E402
 from auditlib.store import (  # noqa: E402
     VerdictCache,
     AuditIgnores,
     verdict_key,
     write_state,
 )
-
-
-def _rule_prompt(rule: rulelib.Rule) -> dict:
-    return {
-        "id": rule.id,
-        "severity": rule.severity,
-        "description": rule.description,
-        "body": rule.body,
-        "context_lines": rule.context_lines,
-        "report_radius": rule.report_radius if rule.report_radius is not None else rule.context_lines,
-        "checks": [{"id": c.slug, "question": c.question} for c in rule.checks],
-        "examples": {
-            kind: [
-                {
-                    "code": e.code,
-                    "source": str(e.provenance) if e.provenance else "synthetic",
-                }
-                for e in rule.examples.get(kind, ())
-            ]
-            for kind in ("violation", "allowed")
-        },
-    }
 
 
 def build(
@@ -291,7 +270,8 @@ def _build(
         )
 
     items.sort(key=lambda i: (i.rule_id, i.file, i.line, i.check_id))
-    units = reportlib.build_work_units(items)
+    prompts = {r.id: rule_prompt(r) for r in rules if r.complexity > 0}
+    units = reportlib.build_work_units(items, prompts)
     cache.save()
     by_id = {rule.id: rule for rule in rules}
     for summary in rules_summary:
@@ -323,7 +303,7 @@ def _build(
         "comparison": comparison,
         "config_hash": configuration_hash,
         "tree_hash": changeset.tree_hash(input_tree),
-        "rule_prompts": {r.id: _rule_prompt(r) for r in rules if r.complexity > 0},
+        "rule_prompts": prompts,
     }
 
 
@@ -389,6 +369,13 @@ def main() -> int:
             f"deterministically, {stats['items_pending']} need judgment"
         )
         print(f"  {stats['work_units']} work unit(s)")
+    for unit in document["work_units"]:
+        if unit["bytes"] > MAX_UNIT_BYTES:
+            print(
+                f"  WARNING {unit['unit_id']} renders {unit['bytes']} bytes, over the "
+                f"{MAX_UNIT_BYTES}-byte budget; its judge may not receive all of it",
+                file=sys.stderr,
+            )
     for error in document["errors"]:
         print(f"  ERROR {error}", file=sys.stderr)
     return 2 if document["errors"] else 0
