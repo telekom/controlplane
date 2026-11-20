@@ -26,4 +26,7 @@ Each ADR is a file `NNNN-short-title.md` with the sections Context, Decision, Co
 | [0008](0008-approval-by-generation.md) | Approve Kong changes by generation | Superseded by [0010](0010-approval-by-diff-hash.md) |
 | [0009](0009-plan-kong-changes-as-one-bundle.md) | Plan the Kong changes of a Route as one bundle | Accepted |
 | [0010](0010-approval-by-diff-hash.md) | Approve Kong changes by the hash of the reviewed changes | Accepted |
-| [0011](0011-pending-changes-in-status.md) | Show pending Kong changes in a temporary status field | Accepted |
+| [0011](0011-pending-changes-in-status.md) | Show pending Kong changes in a temporary status field | Superseded by [0013](0013-record-last-applied-changes.md) |
+| [0012](0012-shared-changeset-for-all-backend-operators.md) | One change pipeline for the gateway, identity and pubsub operators | Proposed |
+| [0013](0013-record-last-applied-changes.md) | Record the last applied changes in the status | Proposed |
+| [0014](0014-mask-secrets-in-change-records.md) | Mask secrets in change records | Proposed |
