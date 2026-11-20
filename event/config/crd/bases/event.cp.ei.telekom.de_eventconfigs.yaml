@@ -277,6 +277,24 @@ spec:
                 - namespace
                 - observedGeneration
                 type: object
+              callbackConsumer:
+                description: CallbackConsumer references the gateway Consumer CR that
+                  registers the callback identity with the zone's gateway.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               callbackRoute:
                 description: CallbackRoute references this zone's owned primary Route
                   for final callback delivery.

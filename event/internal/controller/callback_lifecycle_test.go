@@ -208,6 +208,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 		Expect(identityClient.Spec.ClientId).To(Equal(consumer.Spec.Name))
 		Expect(consumer.Spec.Gateway).To(Equal(ctypes.ObjectRef{Name: cfg.Spec.Zone.Name + "-gateway", Namespace: namespace}))
 		Expect(consumer.OwnerReferences).To(ContainElement(SatisfyAll(HaveField("UID", cfg.UID), HaveField("Kind", "EventConfig"))))
+		Expect(cfg.Status.CallbackConsumer).To(Equal(ctypes.ObjectRefFromObject(consumer)))
 		callback := &gatewayv1.Route{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--" + cfg.Spec.Zone.Name, Namespace: namespace}, callback)).To(Succeed())
 		Expect(callback.Spec.Security.DefaultConsumers).To(ContainElement(consumer.Spec.Name))
@@ -224,6 +225,7 @@ var _ = Describe("callback lifecycle with persisted resources", func() {
 			replacement := &gatewayv1.Consumer{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "replacement-callback", Namespace: namespace}, replacement)).To(Succeed())
 			Expect(replacement.Spec.Name).To(Equal("replacement-callback"))
+			Expect(cfg.Status.CallbackConsumer).To(Equal(ctypes.ObjectRefFromObject(replacement)))
 			Expect(errors.IsNotFound(k8sClient.Get(ctx, types.NamespacedName{Name: clientId, Namespace: namespace}, &gatewayv1.Consumer{}))).To(BeTrue())
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: "callback--backend", Namespace: namespace}, callback)).To(Succeed())
 			Expect(callback.Spec.Security.DefaultConsumers).To(ContainElement("replacement-callback"))

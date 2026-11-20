@@ -136,11 +136,11 @@ sequenceDiagram
     H1->>G1: /horizon-dataplane3/callback/v1?url=U<br/>dp1 normal issuer, dp1 backend callback client<br/>(default eventstore)
     Note over G1: Validate dp1 normal issuer<br/>Match dp1 EventConfig's Consumer and route ACL
     G1->>G3: Same callback path and query<br/>dp1 LMS issuer, gateway identity
-    Note over G3: Trust inbound dp1 LMS issuer<br/>Allow gateway Consumer
+    Note over G3: Trust dp1 LMS issuer (local backend)<br/>Allow gateway Consumer
     G3->>S: Dynamic upstream selects U<br/>Remove callback query parameter
 ```
 
-G1's outbound route is `PROXY` but accepts Horizon's **normal dp1 issuer**, not dp1's LMS issuer. The required callback client ID comes from the **dp1 backend EventConfig**, not dp2's proxy configuration. G3's primary callback route trusts its **own normal issuer plus inbound peers' LMS issuers**. Its allowed consumers include its own EventConfig's callback client for local callbacks and, when there are inbound peers, `gateway`. The G1 → G3 hop uses **`gateway`**, not a callback client ID. Inbound trust follows **dp1's outbound mesh permission to reach dp3**; a reverse dp3 → dp1 callback mesh is not required.
+G1's outbound route is `PROXY` but accepts Horizon's **normal dp1 issuer**, not dp1's LMS issuer. The required callback client ID comes from the **dp1 backend EventConfig**, not dp2's proxy configuration. G3's primary callback route trusts its **own normal issuer plus the LMS issuers of local (non-proxy) zones whose mesh includes dp3**. Proxy zones run no Horizon and own no outbound callback routes, so their LMS issuers are never trusted on a callback primary, even when their mesh includes dp3. Its allowed consumers include its own EventConfig's callback client for local callbacks and, when at least one such local zone exists, `gateway`. The G1 → G3 hop uses **`gateway`**, not a callback client ID. Inbound trust follows **dp1's outbound mesh permission to reach dp3**; a reverse dp3 → dp1 callback mesh is not required.
 
 The subscriber's location changes the route, not the backend:
 
@@ -164,7 +164,7 @@ If the exposure's logical mesh explicitly disallows a callback subscriber zone, 
 
 Every local or proxy EventConfig manages an identity Client **and a gateway Consumer** in its zone. Its effective `spec.mesh.client.clientId` (default **`eventstore`**) aligns that Client's client ID, that Consumer's `spec.name`, and the allow-list (ACL) on **its own** primary callback route and, for local backends only, outbound callback routes. Projecting a backend callback URL does not transfer those identities or ACLs. Kubernetes resource names are normalized; Kong uses the Consumer's `spec.name` as its username and custom ID, matching the callback token's `azp` claim.
 
-The Consumer references the zone gateway and is owned by the EventConfig. Its readiness participates in reconciliation, changes are watched, and ownership controls cleanup. Horizon must use the **real backend EventConfig's callback client ID** with the backend's normal issuer, because that EventConfig owns the advertised first-hop route and ACL. If backend and proxy client IDs differ, the proxy ID cannot authenticate at that entry. The subsequent cross-zone hop uses **`gateway`** with the backend's LMS issuer, including when the subscriber is in the proxy zone itself.
+The Consumer references the zone gateway and is owned by the EventConfig, which records it in `status.callbackConsumer`. Its readiness participates in reconciliation, changes are watched, and ownership controls cleanup. Horizon must use the **real backend EventConfig's callback client ID** with the backend's normal issuer, because that EventConfig owns the advertised first-hop route and ACL. If backend and proxy client IDs differ, the proxy ID cannot authenticate at that entry. The subsequent cross-zone hop uses **`gateway`** with the backend's LMS issuer, including when the subscriber is in the proxy zone itself.
 
 ### Voyager Route
 

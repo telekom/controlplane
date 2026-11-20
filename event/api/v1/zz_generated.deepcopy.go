@@ -206,6 +206,10 @@ func (in *EventConfigStatus) DeepCopyInto(out *EventConfigStatus) {
 		*out = new(ObservedObjectRef)
 		**out = **in
 	}
+	if in.CallbackConsumer != nil {
+		in, out := &in.CallbackConsumer, &out.CallbackConsumer
+		*out = (*in).DeepCopy()
+	}
 	if in.PublishRoute != nil {
 		in, out := &in.PublishRoute, &out.PublishRoute
 		*out = (*in).DeepCopy()
