@@ -150,7 +150,7 @@ Previously, World zones without `issuerHostname` got a `frontendUrl` derived fro
 
 ### Sharing an identity provider across environments
 
-Zones in separate Environments can share a Keycloak instance when their IdentityProviders use the same exact `admin.url`. Matching Realm names then share a Keycloak realm. Clients with matching IDs in that realm use the same ownership rules.
+Zones in different Environments can use the same Keycloak instance when their identity provider configurations use the same Admin URL. The Control Plane treats Realms with the same name as one shared realm, and clients with the same ID in that realm as one shared client.
 
 ```mermaid
 flowchart TD
@@ -195,26 +195,19 @@ With Secret-Manager enabled, the shared credentials use these paths:
 - Gateway admin client: `shared:::zones/<zone>/admin/rover/clientSecret`
 - Event admin client: `shared:::zones/<zone>/event/admin/clientSecret`
 
+With the Kubernetes Secret-Manager backend, Secret-Manager creates the `shared` namespace when the first shared credential is stored.
+
 Mesh clients are unchanged: they keep their configured IDs and use the Zone's default realm.
+
+The internal `rover` realm has no token claims. The Zone's claims (`originZone`, `originStargate`, `clientId`) are configured only on its default realm, so one Environment's values never appear in another Environment's tokens.
 
 :::warning Zones on one Keycloak must have the same name
 Use the same Zone name in every Environment that shares a Keycloak. The shared rover and Event admin clients use credentials stored under that name. Different names point to different credentials, so the platform cannot keep the shared clients in sync.
 :::
 
-In the shared realm, SFTP API clients for same-named Zones across Environments use the same ID (`sftp-api-<zone>`). Their credentials are onboarded per Environment, so a follower may not become ready if its resolved secret differs from the leader's. Event admin clients share one ID across Environments. Event mesh clients keep their configured IDs in each Zone's default realm.
+In the shared realm, SFTP API clients use the ID `sftp-api-<zone>`, so the SFTP API clients of same-named Zones across Environments share one Keycloak client. Their credentials are onboarded per Environment at `<environment>:::zones/<zone>/file/clientSecret`, so a follower SFTP API client reports `Ready=False` with `client secret differs from leader` until its resolved secret matches the leader's. Event admin clients also share one ID across Environments. Event mesh clients keep their configured IDs in each Zone's default realm.
 
 The elected Realm owner supplies the shared settings. Those settings can affect access across Environments.
-
-#### Existing Event admin Clients
-
-Migrate existing unprefixed Event admin Clients before replacing them:
-
-```mermaid
-flowchart LR
-    Existing["Existing unprefixed Event admin Client"] --> Retain["Keep the existing Client, Keycloak identity, and assigned roles"]
-    Retain --> Migrate["Migrate externally"]
-    Migrate --> Replace["Replace with a prefixed Client"]
-```
 
 IdentityProviders share a leader-election group only when their admin URLs are identical character for character. Differences in letter case, port, whitespace, or trailing slash create separate groups, even if the URLs reach the same Keycloak instance. Set the same `admin.url` value on each IdentityProvider you want to share.
 

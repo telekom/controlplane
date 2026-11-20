@@ -213,7 +213,6 @@ var _ = Describe("Zone rover admin client", func() {
 			id, ok := secretsapi.FromRef(getRoverClient(zone).Spec.ClientSecret)
 			Expect(ok).To(BeTrue())
 			Expect(id).To(Equal("shared:::zones/" + zone.Name + "/admin/rover/clientSecret:"))
-			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: sharedSecretScope}, &corev1.Namespace{})).To(Succeed())
 		})
 
 		It("keeps the credentials stable across repeated reconciliation and gateway add, reorder and removal", func() {

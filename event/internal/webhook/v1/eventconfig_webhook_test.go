@@ -683,6 +683,21 @@ var _ = Describe("EventConfig Webhook", func() {
 			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(Equal(sharedRef))
 		})
 
+		It("should not write to the Secret-Manager for dry-run requests", func() {
+			obj := newValidEventConfig()
+			obj.Spec.Local.Admin.Client.ClientSecret = ""
+			obj.Spec.Mesh.Client.ClientSecret = ""
+			dryRun := true
+			dryRunCtx := admission.NewContextWithRequest(ctx, admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{Operation: admissionv1.Create, DryRun: &dryRun},
+			})
+
+			Expect(defaulter.Default(dryRunCtx, obj)).To(Succeed())
+
+			Expect(obj.Spec.Local.Admin.Client.ClientSecret).To(BeEmpty())
+			Expect(obj.Spec.Mesh.Client.ClientSecret).To(BeEmpty())
+		})
+
 		It("should retain a legacy rover secret when the shared value differs", func() {
 			obj := newValidEventConfig()
 			obj.Spec.Local.Admin.Client.Realm.Name = util.RoverRealmName

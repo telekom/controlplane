@@ -67,7 +67,6 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(cc.Count("realm", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
-			// avoid concurrent reconciles to prevent race conditions with shared resources
 			MaxConcurrentReconciles: 1,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).

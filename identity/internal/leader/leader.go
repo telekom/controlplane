@@ -84,6 +84,20 @@ func RealmPeersForRealm(ctx context.Context, reader client.Reader, realm *identi
 	return uniqueObjects(withLiveSelf(peers, realm)), nil
 }
 
+// RealmPeersOnReconciledKeycloak returns the live members of a realm's group on the Keycloak
+// the realm was last reconciled against (its status admin URL). Clients are written there,
+// so their election must not span the Keycloak of a pending IdentityProvider change.
+func RealmPeersOnReconciledKeycloak(ctx context.Context, reader client.Reader, realm *identityv1.Realm) ([]identityv1.Realm, error) {
+	if realm.Status.AdminUrl == "" {
+		return withLiveSelf(nil, realm), nil
+	}
+	peers, err := liveRealmsForAdminURL(ctx, reader, realm.Status.AdminUrl, realm.Name)
+	if err != nil {
+		return nil, err
+	}
+	return withLiveSelf(peers, realm), nil
+}
+
 // ClientsForRealmGroup returns live clients with the same client ID across the given realms.
 func ClientsForRealmGroup(ctx context.Context, reader client.Reader, realms []identityv1.Realm, identityClient *identityv1.Client) ([]identityv1.Client, error) {
 	peers := make([]identityv1.Client, 0)

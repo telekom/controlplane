@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -380,21 +381,24 @@ var _ = Describe("EventConfigHandler", func() {
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
 				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
 					adminClient := obj.(*identityv1.Client)
-					adminClient.Status.LeaderRef = &ctypes.ObjectRef{Name: "leader", Namespace: "default"}
+					adminClient.Status.LeaderRef = &ctypes.ObjectRef{Name: "leader", Namespace: "other-env--zone"}
 					Expect(mutate()).To(Succeed())
 					createdAdminClient = adminClient.DeepCopy()
 				}).
 				Return(controllerutil.OperationResultNone, nil).Once()
+			// The leader belongs to another Environment, so it is only visible through the
+			// unscoped Reader and never through the Environment-scoped context client.
 			leader := &identityv1.Client{
-				ObjectMeta: metav1.ObjectMeta{Name: "leader", Namespace: "default"},
-				Spec:       identityv1.ClientSpec{ClientSecret: "shared-inline-secret"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "leader",
+					Namespace: "other-env--zone",
+					Labels:    map[string]string{config.EnvironmentLabelKey: "other-env"},
+				},
+				Spec: identityv1.ClientSpec{ClientSecret: "shared-inline-secret"},
 			}
-			fakeClient.EXPECT().
-				Get(ctx, k8stypes.NamespacedName{Name: "leader", Namespace: "default"}, mock.AnythingOfType("*v1.Client")).
-				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
-					*out.(*identityv1.Client) = *leader
-				}).
-				Return(nil).Once()
+			readerScheme := runtime.NewScheme()
+			Expect(identityv1.AddToScheme(readerScheme)).To(Succeed())
+			h.Reader = k8sfake.NewClientBuilder().WithScheme(readerScheme).WithObjects(leader).Build()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 1)
 			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)

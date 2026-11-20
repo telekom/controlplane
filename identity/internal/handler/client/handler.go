@@ -325,9 +325,10 @@ func (h *HandlerClient) otherLivePeer(ctx context.Context, obj *identityv1.Clien
 	return ctrlclient.ObjectKey{}, false, nil
 }
 
-// livePeers returns the live Clients with identityClient's client ID in all realms shared with realm.
+// livePeers returns the live Clients with identityClient's client ID in the realms sharing
+// realm on the Keycloak that realm is reconciled against.
 func (h *HandlerClient) livePeers(ctx context.Context, realm *identityv1.Realm, identityClient *identityv1.Client) ([]identityv1.Client, error) {
-	realms, err := leader.RealmPeersForRealm(ctx, h.PeerReader, realm)
+	realms, err := leader.RealmPeersOnReconciledKeycloak(ctx, h.PeerReader, realm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find shared Realm peers: %w", err)
 	}

@@ -21,16 +21,9 @@ import (
 // the controller for custom claim injection (HardcodedClaim and SessionNote).
 const ManagedClientScopeName = "controlplane-claims"
 
-const (
-	roverRealmName = "rover"
-	roverClientID  = "rover"
-	clientPageSize = int32(100)
-)
-
 // ConfigureClientScopes ensures that a Keycloak client scope with protocol
-// mappers for the configured claims exists. In the rover realm, the scope is
-// assigned to every client except the rover client. In other realms, it is
-// assigned as a realm default. When claims is empty any managed scope is removed.
+// mappers for the configured claims exists and is assigned as a realm default
+// scope. When claims is empty any previously managed scope is removed.
 func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName string, claims []identityv1.ClaimConfig) error {
 	logger := logr.FromContextOrDiscard(ctx).WithValues("realm", realmName, "scope", ManagedClientScopeName)
 
@@ -43,11 +36,6 @@ func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName s
 	if len(claims) == 0 {
 		logger.Info("cleaning up client-scope")
 		if existing != nil {
-			if realmName == roverRealmName {
-				if err := k.reconcileRoverClientScopes(ctx, realmName, existingID, false, logger); err != nil {
-					return err
-				}
-			}
 			return k.deleteManagedClientScope(ctx, realmName, existingID, logger)
 		}
 		return nil
@@ -57,11 +45,7 @@ func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName s
 
 	if existing == nil {
 		logger.Info("initial creation of client-scope", "claimsCount", len(claims))
-		scopeID, err := k.createManagedClientScope(ctx, realmName, desired, logger)
-		if err != nil {
-			return err
-		}
-		return k.configureClientScopeAssignments(ctx, realmName, scopeID, logger)
+		return k.createManagedClientScope(ctx, realmName, desired, logger)
 	}
 
 	existingCount := 0
@@ -69,6 +53,13 @@ func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName s
 		existingCount = len(*existing.ProtocolMappers)
 	}
 	logger.Info("configuring client-scope", "claimsCount", len(claims), "existingID", existingID, "existingCount", existingCount)
+
+	// Ensure the scope is assigned as realm default (idempotent). This
+	// covers drift where the scope exists but was manually removed from
+	// realm defaults.
+	if err := k.assignAsRealmDefault(ctx, realmName, existingID, logger); err != nil {
+		return err
+	}
 
 	// Scope exists — reconcile individual protocol mappers.
 	// Keycloak's PUT on a client scope does NOT update embedded protocol
@@ -81,18 +72,7 @@ func (k *keycloakService) ConfigureClientScopes(ctx context.Context, realmName s
 		logger.V(1).Info("no changes detected for managed client scope, skipping update")
 	}
 
-	return k.configureClientScopeAssignments(ctx, realmName, existingID, logger)
-}
-
-func (k *keycloakService) configureClientScopeAssignments(ctx context.Context, realmName, scopeID string, logger logr.Logger) error {
-	if realmName != roverRealmName {
-		return k.assignAsRealmDefault(ctx, realmName, scopeID, logger)
-	}
-
-	if err := k.reconcileRoverClientScopes(ctx, realmName, scopeID, true, logger); err != nil {
-		return err
-	}
-	return k.removeAsRealmDefault(ctx, realmName, scopeID)
+	return nil
 }
 
 // findManagedClientScope lists all client scopes in the realm and returns the
@@ -129,7 +109,7 @@ func buildClaimsClientScope(claims []identityv1.ClaimConfig) api.ClientScopeRepr
 	}
 	return api.ClientScopeRepresentation{
 		Name:            ptr.To(ManagedClientScopeName),
-		Description:     ptr.To("Managed by controlplane: realm token claims"),
+		Description:     ptr.To("Managed by controlplane: claims for all clients"),
 		Protocol:        ptr.To("openid-connect"),
 		ProtocolMappers: &mappers,
 	}
@@ -322,23 +302,29 @@ func (k *keycloakService) reconcileProtocolMappers(
 	return nil
 }
 
-// createManagedClientScope creates the managed claims scope.
-func (k *keycloakService) createManagedClientScope(ctx context.Context, realmName string, scope api.ClientScopeRepresentation, logger logr.Logger) (string, error) {
+// createManagedClientScope creates the scope and assigns it as a realm default.
+func (k *keycloakService) createManagedClientScope(ctx context.Context, realmName string, scope api.ClientScopeRepresentation, logger logr.Logger) error {
 	createResp, err := k.Client.PostRealmClientScopesWithResponse(ctx, realmName, scope)
 	if err != nil {
-		return "", fmt.Errorf("failed to create client scope %q in realm %q: %w", ManagedClientScopeName, realmName, err)
+		return fmt.Errorf("failed to create client scope %q in realm %q: %w", ManagedClientScopeName, realmName, err)
 	}
 	if responseErr := CheckStatusCode(createResp, http.StatusCreated); responseErr != nil {
-		return "", fmt.Errorf("creating client scope %q in realm %q: %w", ManagedClientScopeName, realmName, responseErr)
+		return fmt.Errorf("creating client scope %q in realm %q: %w", ManagedClientScopeName, realmName, responseErr)
 	}
 
 	scopeID, err := resourceIDFromResponse(createResp.HTTPResponse)
 	if err != nil {
-		return "", fmt.Errorf("client scope was created but failed to extract ID: %w", err)
+		return fmt.Errorf("client scope was created but failed to extract ID: %w", err)
 	}
 
 	logger.V(1).Info("created managed client scope", "realm", realmName, "scopeId", scopeID)
-	return scopeID, nil
+
+	// Assign as realm default so all clients (existing and future) inherit it.
+	if err := k.assignAsRealmDefault(ctx, realmName, scopeID, logger); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // deleteManagedClientScope removes the scope from realm defaults and deletes it.
@@ -407,109 +393,5 @@ func (k *keycloakService) assignAsRealmDefault(ctx context.Context, realmName, s
 	}
 
 	logger.V(1).Info("assigned managed client scope as realm default", "realm", realmName, "scopeId", scopeID)
-	return nil
-}
-
-func (k *keycloakService) removeAsRealmDefault(ctx context.Context, realmName, scopeID string) error {
-	resp, err := k.Client.DeleteRealmDefaultDefaultClientScopesClientScopeIdWithResponse(ctx, realmName, scopeID)
-	if err != nil {
-		return fmt.Errorf("failed to remove client scope %q from realm defaults in %q: %w", ManagedClientScopeName, realmName, err)
-	}
-	if responseErr := CheckStatusCode(resp, http.StatusNoContent, http.StatusNotFound); responseErr != nil {
-		return fmt.Errorf("removing client scope %q from realm defaults in %q: %w", ManagedClientScopeName, realmName, responseErr)
-	}
-	return nil
-}
-
-func (k *keycloakService) reconcileRoverClientScopes(
-	ctx context.Context,
-	realmName, scopeID string,
-	assign bool,
-	logger logr.Logger,
-) error {
-	for first := int32(0); ; first += clientPageSize {
-		params := &api.GetRealmClientsParams{
-			First: &first,
-			Max:   ptr.To(clientPageSize),
-		}
-		resp, err := k.Client.GetRealmClientsWithResponse(ctx, realmName, params)
-		if err != nil {
-			return fmt.Errorf("failed to list clients in realm %q: %w", realmName, err)
-		}
-		if responseErr := CheckStatusCode(resp, http.StatusOK); responseErr != nil {
-			return fmt.Errorf("listing clients in realm %q: %w", realmName, responseErr)
-		}
-		if resp.JSON2XX == nil {
-			return fmt.Errorf("listing clients in realm %q returned an empty response", realmName)
-		}
-
-		for _, client := range *resp.JSON2XX {
-			if client.Id == nil || *client.Id == "" {
-				return fmt.Errorf("client in realm %q has no Keycloak ID", realmName)
-			}
-			clientId := ""
-			if client.ClientId != nil {
-				clientId = *client.ClientId
-			}
-			shouldAssign := assign && clientId != roverClientID
-			if err := k.reconcileClientScopeAssignment(ctx, realmName, *client.Id, scopeID, shouldAssign); err != nil {
-				return fmt.Errorf("reconciling claims scope for client %q: %w", clientId, err)
-			}
-		}
-
-		if len(*resp.JSON2XX) < int(clientPageSize) {
-			break
-		}
-	}
-
-	logger.V(1).Info("reconciled managed claims scope assignments", "scopeId", scopeID, "assigned", assign)
-	return nil
-}
-
-func (k *keycloakService) reconcileClientScopeAssignment(
-	ctx context.Context,
-	realmName, clientID, scopeID string,
-	assign bool,
-) error {
-	resp, err := k.Client.GetRealmClientsIdDefaultClientScopesWithResponse(ctx, realmName, clientID)
-	if err != nil {
-		return fmt.Errorf("failed to list default client scopes for client %q: %w", clientID, err)
-	}
-	if responseErr := CheckStatusCode(resp, http.StatusOK); responseErr != nil {
-		return fmt.Errorf("listing default client scopes for client %q: %w", clientID, responseErr)
-	}
-	if resp.JSON2XX == nil {
-		return fmt.Errorf("listing default client scopes for client %q returned an empty response", clientID)
-	}
-
-	alreadyAssigned := false
-	for _, scope := range *resp.JSON2XX {
-		if scope.Id != nil && *scope.Id == scopeID {
-			alreadyAssigned = true
-			break
-		}
-	}
-	if alreadyAssigned == assign {
-		return nil
-	}
-
-	if assign {
-		putResp, err := k.Client.PutRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(ctx, realmName, clientID, scopeID)
-		if err != nil {
-			return fmt.Errorf("failed to assign claims scope to client %q: %w", clientID, err)
-		}
-		if responseErr := CheckStatusCode(putResp, http.StatusNoContent); responseErr != nil {
-			return fmt.Errorf("assigning claims scope to client %q: %w", clientID, responseErr)
-		}
-		return nil
-	}
-
-	deleteResp, err := k.Client.DeleteRealmClientsIdDefaultClientScopesClientScopeIdWithResponse(ctx, realmName, clientID, scopeID)
-	if err != nil {
-		return fmt.Errorf("failed to remove claims scope from client %q: %w", clientID, err)
-	}
-	if responseErr := CheckStatusCode(deleteResp, http.StatusNoContent, http.StatusNotFound); responseErr != nil {
-		return fmt.Errorf("removing claims scope from client %q: %w", clientID, responseErr)
-	}
 	return nil
 }

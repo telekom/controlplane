@@ -50,6 +50,7 @@ func environmentSecretRef(envName, path string) string {
 // stale cache read from replacing credentials that are already in use.
 func ensureRoverClient(ctx context.Context, hc *HandlingContext) (*identityapi.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+	// audit:ignore 13-environment-isolation/unscoped-get necessary for rover client retrieval
 	key := client.ObjectKey{Namespace: hc.Namespace.Name, Name: naming.ForGatewayAdminClient(hc.IdentityProvider.Name)}
 
 	existing := &identityapi.Client{}
@@ -127,9 +128,6 @@ func roverClientSecret(ctx context.Context, hc *HandlingContext) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("generating rover client secret: %w", err)
 	}
-	if nsErr := ensureSharedNamespace(ctx, hc.KubeClient); nsErr != nil {
-		return "", nsErr
-	}
 	_, err = secretsapi.API().UpsertEnvironment(ctx, sharedSecretScope,
 		secretsapi.WithMergeStrategy(),
 		secretsapi.WithSecretValue(path, generated))
@@ -204,9 +202,6 @@ func migrateRoverSecret(ctx context.Context, hc *HandlingContext, existingRef st
 		return "", false, ctrlerrors.RetryableErrorf("failed to read shared rover client secret of zone %q: %s", hc.Zone.Name, err)
 	}
 
-	if err := ensureSharedNamespace(ctx, hc.KubeClient); err != nil {
-		return "", false, err
-	}
 	if _, err := secretsapi.API().UpsertEnvironment(ctx, sharedSecretScope,
 		secretsapi.WithMergeStrategy(),
 		secretsapi.WithSecretValue(path, legacyValue)); err != nil {
@@ -224,20 +219,4 @@ func isEnvironmentSecretRef(ref, envName, path string) bool {
 	}
 	scopedPath, _ := secretsapi.FromRef(environmentSecretRef(envName, path))
 	return strings.HasPrefix(id, scopedPath) && !strings.Contains(strings.TrimPrefix(id, scopedPath), ":")
-}
-
-func ensureSharedNamespace(ctx context.Context, kubeClient client.Client) error {
-	namespace := &corev1.Namespace{}
-	// audit:ignore 13-environment-isolation/unscoped-get We need to get the shared namespace to ensure it exists.
-	err := kubeClient.Get(ctx, client.ObjectKey{Name: sharedSecretScope}, namespace)
-	if err == nil {
-		return nil
-	}
-	if !apierrors.IsNotFound(err) {
-		return ctrlerrors.RetryableErrorf("failed to read shared Secret-Manager namespace: %s", err)
-	}
-	if err := kubeClient.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: sharedSecretScope}}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return ctrlerrors.RetryableErrorf("failed to create shared Secret-Manager namespace: %s", err)
-	}
-	return nil
 }

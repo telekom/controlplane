@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -37,7 +38,12 @@ const tokenUrlSuffix = "/protocol/openid-connect/token"
 
 var _ handler.Handler[*eventv1.EventConfig] = &EventConfigHandler{}
 
-type EventConfigHandler struct{}
+// EventConfigHandler reconciles EventConfigs.
+type EventConfigHandler struct {
+	// Reader is an unscoped reader for objects of other Environments, such as the leader
+	// of a shared rover Event admin Client. The context client only reads the current Environment.
+	Reader client.Reader
+}
 
 func effectiveEnvironmentName(ctx context.Context, overwrite string) string {
 	if overwrite != "" {
@@ -337,28 +343,9 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 
 		clientSecret := clientCfg.ClientSecret
 		if sharedRoverAdmin && !config.FeatureSecretManager.IsEnabled() {
-			switch {
-			case identityClient.IsFollower():
-				leader := &identityv1.Client{}
-				leaderRef := identityClient.Status.LeaderRef
-				if err := c.Get(ctx, leaderRef.K8s(), leader); err != nil {
-					if apierrors.IsNotFound(errors.Cause(err)) {
-						return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s is not found", leaderRef.String())
-					}
-					return errors.Wrapf(err, "failed to get rover Event admin Client leader %s", leaderRef.String())
-				}
-				if secretsapi.IsRef(leader.Spec.ClientSecret) {
-					return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has a Secret-Manager reference while Secret-Manager is disabled", leaderRef.String())
-				}
-				if leader.Spec.ClientSecret == "" {
-					return ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has no client secret", leaderRef.String())
-				}
-				clientSecret = leader.Spec.ClientSecret
-			case identityClient.Spec.ClientSecret != "":
-				clientSecret = identityClient.Spec.ClientSecret
-			}
-			if secretsapi.IsRef(clientSecret) {
-				return ctrlerrors.BlockedErrorf("rover Event admin Client has a Secret-Manager reference while Secret-Manager is disabled")
+			var err error
+			if clientSecret, err = h.inlineRoverAdminSecret(ctx, identityClient, clientSecret); err != nil {
+				return err
 			}
 		}
 
@@ -376,6 +363,50 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 	}
 
 	return identityClient, nil
+}
+
+// inlineRoverAdminSecret returns the inline secret of a shared rover Event admin Client when
+// Secret-Manager is disabled: a follower adopts its leader's secret, an existing Client keeps
+// its own, and a new Client uses configured.
+func (h *EventConfigHandler) inlineRoverAdminSecret(ctx context.Context, identityClient *identityv1.Client, configured string) (string, error) {
+	clientSecret := configured
+	switch {
+	case identityClient.IsFollower():
+		leaderSecret, err := h.roverAdminLeaderSecret(ctx, identityClient.Status.LeaderRef)
+		if err != nil {
+			return "", err
+		}
+		clientSecret = leaderSecret
+	case identityClient.Spec.ClientSecret != "":
+		clientSecret = identityClient.Spec.ClientSecret
+	}
+	if secretsapi.IsRef(clientSecret) {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client has a Secret-Manager reference while Secret-Manager is disabled")
+	}
+	return clientSecret, nil
+}
+
+// roverAdminLeaderSecret reads the inline secret of the leader Client, which may belong to
+// another Environment and is therefore read with the unscoped Reader.
+func (h *EventConfigHandler) roverAdminLeaderSecret(ctx context.Context, leaderRef *types.ObjectRef) (string, error) {
+	if h.Reader == nil {
+		return "", errors.New("an unscoped reader is required to read the rover Event admin Client leader")
+	}
+	leader := &identityv1.Client{}
+	// audit:ignore 13-environment-isolation/unscoped-get necessary for reading the rover Event admin Client leader across environments
+	if err := h.Reader.Get(ctx, leaderRef.K8s(), leader); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s is not found", leaderRef.String())
+		}
+		return "", errors.Wrapf(err, "failed to get rover Event admin Client leader %s", leaderRef.String())
+	}
+	if secretsapi.IsRef(leader.Spec.ClientSecret) {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has a Secret-Manager reference while Secret-Manager is disabled", leaderRef.String())
+	}
+	if leader.Spec.ClientSecret == "" {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has no client secret", leaderRef.String())
+	}
+	return leader.Spec.ClientSecret, nil
 }
 
 // createCallbackConsumer registers the callback identity with the zone's gateway.
