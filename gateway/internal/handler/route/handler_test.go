@@ -26,6 +26,7 @@ import (
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 
@@ -192,6 +193,94 @@ var _ = Describe("RouteHandler", func() {
 			Entry("Gateway prefix wins over the recorded one", "cit2", "bond", "cit2--test-route"),
 			Entry("recorded prefix on a Gateway without prefix", "", "bond", "bond--test-route"),
 		)
+	})
+
+	Describe("Migration Mode", func() {
+		var (
+			guard  *migration.Guard
+			builds int
+		)
+
+		BeforeEach(func() {
+			var err error
+			guard, err = migration.New(migration.Config{}, migration.ModeOn)
+			Expect(err).NotTo(HaveOccurred())
+			kongutil.SetMigrationGuard(guard)
+			DeferCleanup(func() { kongutil.SetMigrationGuard(nil) })
+			builds = 0
+			setupReadyGatewayGet()
+		})
+
+		// changePaths writes the route paths through the guard, as the Kong client does.
+		changePaths := func(ctx context.Context) error {
+			_, err := guard.CheckWrite(ctx, "route", "test-route",
+				map[string]any{"paths": []any{"/new"}}, map[string]any{"paths": []any{"/old"}}, true)
+			return err
+		}
+
+		Describe("CreateOrUpdate", func() {
+			BeforeEach(func() {
+				setupFeatureBuilderOverrides()
+				mockBuilder.EXPECT().EnableFeature(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddAllowedConsumers(mock.Anything).Maybe()
+				mockBuilder.EXPECT().AddRouteListeners(mock.Anything).Maybe()
+				mockBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{}).Maybe()
+				mockClient.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockBuilder.EXPECT().Build(mock.Anything).RunAndReturn(func(ctx context.Context) error {
+					builds++
+					return changePaths(ctx)
+				})
+			})
+
+			It("plans the bundle, blocks it and shows it in the status", func() {
+				err := handler.CreateOrUpdate(ctx, route)
+
+				var ctrlErr *ctrlerrors.CtrlError
+				Expect(errors.As(err, &ctrlErr)).To(BeTrue())
+				Expect(ctrlErr.IsBlocked()).To(BeTrue())
+				Expect(builds).To(Equal(1), "only the plan runs")
+				Expect(route.Status.Migration).NotTo(BeNil())
+				Expect(route.Status.Migration.Changes).To(ConsistOf(HaveField("Diffs", ConsistOf(
+					gatewayv1.MigrationDiff{Path: "$.paths[0]", Desired: `"/new"`, Current: `"/old"`},
+				))))
+				Expect(err.Error()).To(ContainSubstring(route.Status.Migration.Hash))
+			})
+
+			It("applies an approved bundle and removes the status", func() {
+				Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
+				route.Annotations = map[string]string{migration.ApprovalAnnotation: route.Status.Migration.Hash}
+
+				Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
+				Expect(builds).To(Equal(3), "plan, plan and apply")
+				Expect(route.Status.Migration).To(BeNil())
+			})
+		})
+
+		Describe("Delete", func() {
+			BeforeEach(func() {
+				originalGetClientFor := kongutil.GetClientFor
+				DeferCleanup(func() { kongutil.GetClientFor = originalGetClientFor })
+				kongutil.GetClientFor = func(_ context.Context, _ *kongutil.ClientFactory, _ *gatewayv1.Gateway) (kongclient.KongClient, func(), error) {
+					return mockKC, func() { releases++ }, nil
+				}
+				mockKC.EXPECT().DeleteRoute(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, _ kongclient.CustomRoute) error {
+					builds++
+					_, err := guard.CheckDelete(ctx, "route", "test-route")
+					return err
+				})
+			})
+
+			It("blocks an unapproved deletion and deletes once it is approved", func() {
+				Expect(handler.Delete(ctx, route)).To(HaveOccurred())
+				Expect(builds).To(Equal(1))
+				Expect(route.Status.Migration.Changes).To(ConsistOf(HaveField("Operation", "delete")))
+
+				route.Annotations = map[string]string{migration.ApprovalAnnotation: route.Status.Migration.Hash}
+				Expect(handler.Delete(ctx, route)).To(Succeed())
+				Expect(builds).To(Equal(3))
+				Expect(route.Status.Migration).To(BeNil())
+			})
+		})
 	})
 
 	Describe("CreateOrUpdate()", func() {

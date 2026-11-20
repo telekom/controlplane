@@ -27,6 +27,11 @@ type ConsumerStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	Properties map[string]string  `json:"properties,omitempty"`
+
+	// Migration is the pending Kong change that Migration Mode blocked. It is set only
+	// while the change is blocked.
+	// +optional
+	Migration *MigrationStatus `json:"migration,omitempty"`
 }
 
 // +kubebuilder:object:root=true

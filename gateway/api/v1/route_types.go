@@ -102,6 +102,11 @@ type RouteStatus struct {
 	// +kubebuilder:validation:items:Type=string
 	Consumers  []string          `json:"consumers,omitempty"`
 	Properties map[string]string `json:"properties,omitempty"`
+
+	// Migration is the pending Kong change that Migration Mode blocked. It is set only
+	// while the change is blocked.
+	// +optional
+	Migration *MigrationStatus `json:"migration,omitempty"`
 }
 
 // +kubebuilder:object:root=true

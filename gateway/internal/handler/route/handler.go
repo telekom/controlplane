@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	gatewayhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
@@ -35,11 +36,60 @@ type RouteHandler struct {
 
 func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Route) error {
 	log := ctrllog.FromContext(ctx)
+	route.Status.Migration = nil
+	if guard := kongutil.MigrationGuard(); guard != nil {
+		// Migration Mode compares the Kong entities of the Route as one bundle before any of
+		// them is written. The plan runs on a copy, so its placeholder IDs never reach the status.
+		plan := migration.NewPlan()
+		if _, err := h.build(migration.WithPlan(ctx, plan), route.DeepCopy()); err != nil {
+			return errors.Wrap(err, "failed to plan route")
+		}
+		status, err := guard.Decide(ctx, plan, "Route", route)
+		route.Status.Migration = status
+		if err != nil {
+			return err
+		}
+		ctx = migration.WithApply(ctx)
+	}
+
+	builder, err := h.build(ctx, route)
+	if err != nil {
+		return err
+	}
+	log.V(1).Info("route properties are", "properties", route.Status.Properties)
+
+	// Reset the consumers list to only contain the current consumer names
+	route.Status.Consumers = []string{}
+	allowedConsumers := builder.GetAllowedConsumers()
+	cmpFunc := func(a, b *gatewayv1.ConsumeRoute) int {
+		return cmp.Compare(a.Name, b.Name)
+	}
+	slices.SortStableFunc(allowedConsumers, cmpFunc)
+
+	for _, consumer := range allowedConsumers {
+		// We needed all consumers for real-routes to construct the JumperConfig,
+		// but we only want to add the consumers that are actually consuming this route
+		// to the route status.
+		if consumer.Spec.Route.Equals(route) {
+			route.Status.Consumers = append(route.Status.Consumers, consumer.Spec.ConsumerName)
+		}
+	}
+
+	route.SetCondition(condition.NewReadyCondition("RouteProcessed", "Route processed successfully"))
+	route.SetCondition(condition.NewDoneProcessingCondition("Route processed successfully"))
+
+	return nil
+}
+
+// build builds the Kong entities of route. In a ctx with a migration plan, it records them
+// without writing.
+func (h *RouteHandler) build(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {
+	log := ctrllog.FromContext(ctx)
 	// The common controller puts a client scoped to the Route's environment into ctx.
 	kubeClient := cc.ClientFromContextOrDie(ctx)
 	builder, release, err := h.newFeatureBuilder(ctx, route)
 	if err != nil {
-		return errors.Wrap(err, "failed to create feature builder")
+		return nil, errors.Wrap(err, "failed to create feature builder")
 	}
 	defer release()
 
@@ -70,7 +120,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 
 		err = kubeClient.List(ctx, routeConsumers, listOpts...)
 		if err != nil {
-			return errors.Wrap(err, "failed to list route consumers")
+			return nil, errors.Wrap(err, "failed to list route consumers")
 		}
 
 		for i := range routeConsumers.Items {
@@ -92,7 +142,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 			if err := kubeClient.List(ctx, routeListeners, client.MatchingFields{
 				"spec.route": types.ObjectRefFromObject(route).String(),
 			}); err != nil {
-				return errors.Wrap(err, "failed to list route listeners")
+				return nil, errors.Wrap(err, "failed to list route listeners")
 			}
 			slices.SortFunc(routeListeners.Items, func(a, b gatewayv1.RouteListener) int {
 				return cmp.Compare(a.Name, b.Name)
@@ -107,31 +157,9 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	}
 
 	if err := builder.Build(ctx); err != nil {
-		return errors.Wrap(err, "failed to build route")
+		return nil, errors.Wrap(err, "failed to build route")
 	}
-	log.V(1).Info("route properties are", "properties", route.Status.Properties)
-
-	// Reset the consumers list to only contain the current consumer names
-	route.Status.Consumers = []string{}
-	allowedConsumers := builder.GetAllowedConsumers()
-	cmpFunc := func(a, b *gatewayv1.ConsumeRoute) int {
-		return cmp.Compare(a.Name, b.Name)
-	}
-	slices.SortStableFunc(allowedConsumers, cmpFunc)
-
-	for _, consumer := range allowedConsumers {
-		// We needed all consumers for real-routes to construct the JumperConfig,
-		// but we only want to add the consumers that are actually consuming this route
-		// to the route status.
-		if consumer.Spec.Route.Equals(route) {
-			route.Status.Consumers = append(route.Status.Consumers, consumer.Spec.ConsumerName)
-		}
-	}
-
-	route.SetCondition(condition.NewReadyCondition("RouteProcessed", "Route processed successfully"))
-	route.SetCondition(condition.NewDoneProcessingCondition("Route processed successfully"))
-
-	return nil
+	return builder, nil
 }
 
 func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error {
@@ -155,6 +183,20 @@ func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error
 		return errors.Wrap(err, "failed to get kong client")
 	}
 	defer release()
+
+	route.Status.Migration = nil
+	if guard := kongutil.MigrationGuard(); guard != nil {
+		plan := migration.NewPlan()
+		if planErr := kc.DeleteRoute(migration.WithPlan(ctx, plan), route.DeepCopy()); planErr != nil {
+			return errors.Wrap(planErr, "failed to plan route deletion")
+		}
+		status, decideErr := guard.Decide(ctx, plan, "Route", route)
+		route.Status.Migration = status
+		if decideErr != nil {
+			return decideErr
+		}
+		ctx = migration.WithApply(ctx)
+	}
 
 	err = kc.DeleteRoute(ctx, route)
 	if err != nil {
