@@ -94,7 +94,7 @@ sources:
 
 #### Global Settings
 
-- `storePath`: Directory where snapshots will be stored
+- `storePath`: Directory where snapshots will be stored (can be overridden with `snap --store`)
 - `decoders`: Global decoders applied to all sources
 - `obfuscators`: Global obfuscators applied to all sources
 
@@ -219,7 +219,17 @@ Flags:
 - `--source string`: Source to snapshot from (only required if multiple sources are configured)
 - `--route string`: ID of the route to snapshot
 - `--consumer string`: ID of the consumer to snapshot
-- `--store string`: Path to the snapshot store (default "./snapshots")
+- `--store string`: Directory to store snapshots in (overrides `storePath` from the config file)
+- `--limit int`: Maximum number of resources for a global snapshot (default `100`, `0` = no limit). Only valid without `--route`/`--consumer`.
+  `--limit` takes the first N resources in the gateway's listing order (stable while the gateway content doesn't change);
+  the selected resources are processed in sorted order.
+- `--raw`: Store the unmodified gateway state (no obfuscators/decoders); required for `apply`. Only allowed together with `--route`.
+
+> **Warning:** Raw snapshots are not obfuscated and may contain sensitive data (credentials, keys, inline
+> configuration). They are written with file mode `0600` (directories `0700`). The file store keeps only
+> one version per snapshot ID, so a later `snap` of the same route into the same store overwrites the
+> rollback point (with an obfuscated, non-applicable snapshot if `--raw` is omitted). Use a dedicated
+> `--store` directory for rollback snapshots.
 
 Examples:
 ```bash
@@ -235,12 +245,42 @@ snapshotter --config config.yaml --format json snap --source my-source --route m
 # Take a snapshot with YAML output format
 snapshotter --config config.yaml --format yaml snap --source my-source --consumer my-consumer
 
-# Capture all routes from a source (unlimited)
+# Capture routes from a source (default limit 100)
 snapshotter --config config.yaml snap --source my-source
+
+# Capture all routes from a source
+snapshotter --config config.yaml snap --source my-source --limit 0
 
 # Capture with limit
 snapshotter --config config.yaml snap --source my-source --limit 10
 ```
+
+#### apply
+
+Restore a route 1:1 on the same gateway from a raw snapshot. Restores exactly what a route snapshot
+contains: service, route, route plugins, upstream and upstream targets. Values are copied as-is.
+
+```bash
+snapshotter --config cfg.yaml apply --route <route-id-or-name> [--source <key>] [--store <dir>] [--apply] [--prune]
+snapshotter --config cfg.yaml apply --file <path/to/N.snap.yaml> [--source <key>] [--store <dir>] [--apply] [--prune]
+```
+
+Flags:
+- `--route string`: Load the latest snapshot `<environment>-<zone>-<route>` from the store (environment/zone of the selected source)
+- `--file string`: Apply the given snapshot file (mutually exclusive with `--route`)
+- `--source string`: Target gateway (only required if multiple sources are configured)
+- `--store string`: Snapshot store directory (overrides `storePath` from the config file)
+- `--apply`: Execute the plan. Without it, `apply` is a dry run.
+- `--prune`: Delete route plugins, upstream targets and the upstream (named like the route) that exist on the gateway but not in the snapshot. Without it they are kept and listed as "would be kept".
+
+Behaviour:
+- The snapshot must be raw (`raw: true`), its environment/zone must match the selected source and it must contain a route and a service with IDs. Otherwise nothing is written.
+- The current gateway state is read and compared with the snapshot (ignoring `created_at`/`updated_at`). The diff (respecting `--format`) and the planned operations are printed.
+- With `--apply`, a backup of the current gateway state is written to `<storePath>/.backups/<snapshot-id>/<unix-timestamp>.snap.yaml` (raw, mode `0600`) before the first write. A store path is required for `--apply`.
+- Operations run in the order upstream, targets, service, route, plugins, then prune deletes. Entities are upserted (`PUT`) by the IDs in the snapshot; entities that are already equal are skipped.
+- The first failing operation stops the run; the error lists the operations that already succeeded. There is no automatic rollback — re-apply the backup file instead.
+- After applying, the gateway state is read again and verified against the snapshot.
+- A backup taken while the route did not exist contains no route and cannot be re-applied; it only documents the previous state.
 
 #### cmp
 
@@ -293,7 +333,8 @@ When running in server mode, the following HTTP endpoints are available:
 
 - `GET /snapshots`: List all snapshots
 - `GET /snapshots/{id}`: Get a specific snapshot
-- `POST /snapshots`: Take a new snapshot
+- `POST /snapshots?instance={source}&resourceType={route|consumer}&limit={n}`: Take a new global snapshot;
+  `limit` defaults to `0` (no limit), negative values are rejected with `400`
 - `GET /compare?a={id1}&b={id2}`: Compare two snapshots
 
 ## Example Workflows
@@ -312,6 +353,25 @@ snapshotter --config config.yaml snap --source prod --route api-route
 
 # Compare the before and after states
 snapshotter cmp --a "production-aws-api-route" --b "production-aws-api-route"
+```
+
+### Route Rollback
+
+```bash
+# Before a change: store a raw rollback point in a dedicated store
+snapshotter --config cfg.yaml snap --source prod --route my-route --raw --store /secure/rollback
+
+# ... change or break the route ...
+
+# Show what would be restored (dry run)
+snapshotter --config cfg.yaml apply --source prod --route my-route --store /secure/rollback
+
+# Restore it, deleting plugins/targets added since the snapshot
+snapshotter --config cfg.yaml apply --source prod --route my-route --store /secure/rollback --apply --prune
+
+# Undo the rollback using the backup written by apply
+snapshotter --config cfg.yaml apply --source prod --store /secure/rollback --apply \
+  --file /secure/rollback/.backups/production-aws-my-route/1767225600.snap.yaml
 ```
 
 ### Monitoring

@@ -17,7 +17,11 @@ func (a *API) TakeSnapshot(ctx *fiber.Ctx) error {
 	}
 	resourceType := ctx.Query("resourceType")
 
+	// limit 0 means no limit
 	limit := ctx.QueryInt("limit", 0)
+	if limit < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "limit must be >= 0")
+	}
 
 	o, exists := a.instances[instanceID]
 	if !exists {
@@ -35,7 +39,7 @@ func (a *API) TakeSnapshot(ctx *fiber.Ctx) error {
 	var resp []any
 	for _, snap := range snaps {
 		resp = append(resp, map[string]any{
-			"id":   snap.ID,
+			"id":   snap.ID(),
 			"text": snap.String(),
 		})
 	}

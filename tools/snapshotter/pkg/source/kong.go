@@ -7,6 +7,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -148,38 +149,31 @@ func (k *KongSource) TakeSnapshot(ctx context.Context, resourceType, routeId str
 	}
 }
 
+// TakeGlobalSnapshot lists up to limit resources (0 = no limit) and snapshots them asynchronously into ch.
+// Listing happens synchronously and its errors are returned; ch is closed when all snapshots are taken.
+// The resources are the first N in the gateway's listing order and are processed in sorted order.
 func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int, ch chan<- *snapshot.Snapshot) (err error) {
-	idsCh := make(chan string, limit)
-
-	if strings.EqualFold(resourceType, "route") {
-		err = k.listRoutes(ctx, limit, nil, idsCh)
-		if err != nil {
-			return errors.Wrap(err, "failed to get routes")
-		}
-	} else if strings.EqualFold(resourceType, "consumer") {
-		err = k.listConsumers(ctx, limit, nil, idsCh)
-		if err != nil {
-			return errors.Wrap(err, "failed to get consumers")
-		}
-	} else {
-		return errors.Errorf("unsupported resource type: %s", resourceType)
+	ids, err := k.listIDs(ctx, resourceType, limit)
+	if err != nil {
+		return err
 	}
+	slices.Sort(ids)
+	zap.L().Info("selected resources for global snapshot", zap.String("resourceType", resourceType), zap.Int("count", len(ids)), zap.Int("limit", limit))
 
 	go func() {
-		zap.L().Info("taking snapshots for resources", zap.String("resourceType", resourceType))
 		defer close(ch)
-		for {
+		for _, resourceId := range ids {
+			if ctx.Err() != nil {
+				zap.L().Info("stopping snapshot taking due to context done")
+				return
+			}
+			snap, err := k.TakeSnapshot(ctx, resourceType, resourceId)
+			if err != nil {
+				zap.L().Error("failed to take snapshot for resource", zap.String("resourceType", resourceType), zap.String("id", resourceId), zap.Error(err))
+				continue
+			}
 			select {
-			case resourceId, ok := <-idsCh:
-				if !ok {
-					return
-				}
-				routeSnap, err := k.TakeRouteSnapShot(ctx, resourceId)
-				if err != nil {
-					zap.L().Error("failed to take snapshot for resource", zap.String("resourceType", resourceType), zap.String("id", resourceId), zap.Error(err))
-					continue
-				}
-				ch <- routeSnap
+			case ch <- snap:
 				zap.L().Info("taken snapshot for resource", zap.String("resourceType", resourceType), zap.String("id", resourceId))
 			case <-ctx.Done():
 				zap.L().Info("stopping snapshot taking due to context done")
@@ -191,56 +185,99 @@ func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string
 	return nil
 }
 
-func (k *KongSource) listRoutes(ctx context.Context, limit int, offset *string, ch chan<- string) error {
-	if err := k.listRatelimiter.Wait(ctx); err != nil {
-		return errors.Wrap(err, "rate limiter wait failed")
-	}
+const maxListPageSize = 100
 
-	pageSize := min(limit, 100)
-	routes, err := k.kongClient.ListRouteWithResponse(ctx, &kong.ListRouteParams{
-		Offset: offset,
-		Size:   &pageSize,
-		Tags:   makeTags(k.tags),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to list routes")
+// pageFunc fetches one page of identifiers with the given size and offset and returns the next offset.
+type pageFunc func(ctx context.Context, size int, offset *string) (ids []string, next *string, err error)
+
+func (k *KongSource) listIDs(ctx context.Context, resourceType string, limit int) ([]string, error) {
+	switch {
+	case strings.EqualFold(resourceType, "route"):
+		ids, err := k.listAll(ctx, limit, k.routesPage)
+		return ids, errors.Wrap(err, "failed to list routes")
+	case strings.EqualFold(resourceType, "consumer"):
+		ids, err := k.listAll(ctx, limit, k.consumersPage)
+		return ids, errors.Wrap(err, "failed to list consumers")
+	default:
+		return nil, errors.Errorf("unsupported resource type: %s", resourceType)
 	}
-	util.MustBe2xx(routes, "Routes")
-	for _, route := range *routes.JSON200.Data {
-		ch <- *route.Name
-	}
-	nextLimit := limit - len(*routes.JSON200.Data)
-	if routes.JSON200.Offset == nil || len(*routes.JSON200.Data) < limit || nextLimit <= 0 {
-		close(ch)
-		return nil
-	}
-	zap.L().Debug("continue listing routes", zap.Int("next_limit", nextLimit))
-	return k.listRoutes(ctx, nextLimit, routes.JSON200.Offset, ch)
 }
 
-func (k *KongSource) listConsumers(ctx context.Context, limit int, offset *string, ch chan<- string) error {
-	if err := k.listRatelimiter.Wait(ctx); err != nil {
-		return errors.Wrap(err, "rate limiter wait failed")
+// listAll follows the offset of page until the listing ends or limit identifiers are collected (0 = no limit).
+func (k *KongSource) listAll(ctx context.Context, limit int, page pageFunc) ([]string, error) {
+	var ids []string
+	var offset *string
+	for {
+		size := maxListPageSize
+		if limit > 0 {
+			size = min(limit-len(ids), maxListPageSize)
+		}
+		if err := k.listRatelimiter.Wait(ctx); err != nil {
+			return nil, errors.Wrap(err, "rate limiter wait failed")
+		}
+		pageIDs, next, err := page(ctx, size, offset)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, pageIDs...)
+		if limit > 0 && len(ids) >= limit {
+			return ids[:limit], nil
+		}
+		if next == nil || *next == "" {
+			return ids, nil
+		}
+		zap.L().Debug("continue listing", zap.Int("collected", len(ids)))
+		offset = next
 	}
+}
 
-	consumers, err := k.kongClient.ListConsumerWithResponse(ctx, &kong.ListConsumerParams{
+func (k *KongSource) routesPage(ctx context.Context, size int, offset *string) ([]string, *string, error) {
+	res, err := k.kongClient.ListRouteWithResponse(ctx, &kong.ListRouteParams{
 		Offset: offset,
-		Size:   &limit,
+		Size:   &size,
 		Tags:   makeTags(k.tags),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to list consumers")
+		return nil, nil, err
 	}
-	util.MustBe2xx(consumers, "Consumers")
-	for _, consumer := range *consumers.JSON200.Data {
-		ch <- *consumer.Id
+	if !util.Is2xx(res) || res.JSON200 == nil {
+		return nil, nil, errors.Errorf("unexpected status code %d", res.StatusCode())
 	}
-	if consumers.JSON200.Offset == nil || len(*consumers.JSON200.Data) < limit {
-		close(ch)
-		return nil
+	var ids []string
+	if res.JSON200.Data != nil {
+		for _, route := range *res.JSON200.Data {
+			switch {
+			case route.Name != nil:
+				ids = append(ids, *route.Name)
+			case route.Id != nil:
+				ids = append(ids, *route.Id)
+			}
+		}
 	}
-	zap.L().Debug("continue listing consumers", zap.Int("next_limit", limit-len(*consumers.JSON200.Data)))
-	return k.listConsumers(ctx, limit-len(*consumers.JSON200.Data), consumers.JSON200.Offset, ch)
+	return ids, res.JSON200.Offset, nil
+}
+
+func (k *KongSource) consumersPage(ctx context.Context, size int, offset *string) ([]string, *string, error) {
+	res, err := k.kongClient.ListConsumerWithResponse(ctx, &kong.ListConsumerParams{
+		Offset: offset,
+		Size:   &size,
+		Tags:   makeTags(k.tags),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if !util.Is2xx(res) || res.JSON200 == nil {
+		return nil, nil, errors.Errorf("unexpected status code %d", res.StatusCode())
+	}
+	var ids []string
+	if res.JSON200.Data != nil {
+		for _, consumer := range *res.JSON200.Data {
+			if consumer.Id != nil {
+				ids = append(ids, *consumer.Id)
+			}
+		}
+	}
+	return ids, res.JSON200.Offset, nil
 }
 
 func makeTags(tags []string) *string {

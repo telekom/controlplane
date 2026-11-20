@@ -28,6 +28,8 @@ type Orchestrator struct {
 	obfuscationTargets []obfuscator.ObfuscationTarget
 	decoderTargets     []decoder.DecoderTarget
 	ReportResult       func(result diffmatcher.Result, snapID string)
+	// Raw skips obfuscators and decoders and stores the unmodified gateway state.
+	Raw bool
 }
 
 func NewFromConfig(cfg config.Config, store store.SnapshotStore[*snapshot.Snapshot]) map[string]*Orchestrator {
@@ -63,6 +65,7 @@ func NewOrchestrator(source source.Source, store store.SnapshotStore[*snapshot.S
 }
 
 type RunOptions struct {
+	// Limit is the maximum number of resources for a global snapshot; 0 means no limit.
 	Limit        int
 	ResourceType string
 	Resources    []string
@@ -96,6 +99,9 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (snaps []*snaps
 
 	ch := make(chan *snapshot.Snapshot, 10)
 	err = o.source.TakeGlobalSnapshot(ctx, opts.ResourceType, opts.Limit, ch)
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		select {
@@ -118,12 +124,16 @@ func (o *Orchestrator) handleSnapshot(ctx context.Context, snap *snapshot.Snapsh
 	snap.Zone = o.Zone
 	zap.L().Info("handling snapshot", zap.String("id", snap.ID()))
 
-	if err := obfuscator.Obfuscate(snap.State, o.obfuscationTargets...); err != nil {
-		return errors.Wrapf(err, "failed to obfuscate %q", snap.ID())
-	}
+	if o.Raw {
+		snap.Raw = true
+	} else {
+		if err := obfuscator.Obfuscate(snap.State, o.obfuscationTargets...); err != nil {
+			return errors.Wrapf(err, "failed to obfuscate %q", snap.ID())
+		}
 
-	if err := decoder.Decode(snap.State, o.decoderTargets); err != nil {
-		return errors.Wrapf(err, "failed to decode %q", snap.ID())
+		if err := decoder.Decode(snap.State, o.decoderTargets); err != nil {
+			return errors.Wrapf(err, "failed to decode %q", snap.ID())
+		}
 	}
 
 	oldSnap := &snapshot.Snapshot{}
@@ -134,8 +144,16 @@ func (o *Orchestrator) handleSnapshot(ctx context.Context, snap *snapshot.Snapsh
 		}
 	}
 
-	diffResult := diffmatcher.Compare(oldSnap, snap)
-	if diffResult.Changed {
+	var diffResult diffmatcher.Result
+	mustStore := false
+	if o.Raw {
+		// String() sorts in place; raw data must be stored exactly as received
+		diffResult = diffmatcher.Compare(oldSnap.DeepCopy(), snap.DeepCopy())
+		mustStore = !oldSnap.Raw
+	} else {
+		diffResult = diffmatcher.Compare(oldSnap, snap)
+	}
+	if diffResult.Changed || mustStore {
 		if err := o.store.Set(ctx, snap); err != nil {
 			return errors.Wrapf(err, "failed to store snapshot %q", snap.ID())
 		}
