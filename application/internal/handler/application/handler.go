@@ -76,18 +76,22 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	rotationInProgress := h.initiateRotationIfNeeded(app)
 
 	if c.AnyChanged() {
-		app.SetCondition(
-			condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "At least one sub-resource has been created or updated"))
+		msg := "At least one sub-resource has been created or updated"
+		app.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, msg))
+		app.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, msg))
 		return nil
 	}
 
 	if primaryClient != nil && !condition.IsReady(primaryClient) {
-		app.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, "Waiting for primary identity client to be ready"))
+		msg := "Waiting for primary identity client to be ready"
+		app.SetCondition(condition.NewNotReadyCondition(condition.ReasonSubResourceNotReady, msg))
+		app.SetCondition(condition.NewProcessingCondition(condition.ReasonProcessing, msg))
 		return nil
 	}
 
 	// All sub-resources are up to date and primary client (if applicable) is ready.
 	app.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "All sub-resources are up to date"))
+	app.SetCondition(condition.NewDoneProcessingCondition("All sub-resources are up to date"))
 
 	if app.Spec.NeedsClient {
 		app.Status.ClientSecret = app.Spec.Secret

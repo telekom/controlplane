@@ -450,6 +450,11 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 				readyCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
+
+				processingCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(processingCond).ToNot(BeNil())
+				Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(processingCond.Reason).To(Equal(condition.ReasonDone))
 			})
 
 			It("should set Status.ClientSecret only after convergence", func() {
@@ -488,6 +493,11 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 				readyCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeReady)
 				Expect(readyCond).ToNot(BeNil())
 				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+
+				processingCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeProcessing)
+				Expect(processingCond).ToNot(BeNil())
+				Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(processingCond.Reason).To(Equal(condition.ReasonProcessing))
 			})
 		})
 
