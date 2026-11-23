@@ -1,0 +1,20 @@
+docs/docs/decisions/0001-layers-see-only-the-api-module-of-the-layer-below.md
+  s_dfdbcf65d00025::t_12a85adb3976de 1-5,7-21,23-39,41-58,60-68,70-90
+  s_dfdbcf65d00025::t_52465f17d5a9f6 6,22,40,59,69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f5e0c377b5b74573c4e0f48117a9b53b26344feb",
+  "prompts": {},
+  "sessions": {
+    "s_dfdbcf65d00025": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "64d3a6c9-99a5-41c6-aca8-9d680355095e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
