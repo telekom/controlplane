@@ -74,6 +74,8 @@ This backend uses [Conjur](https://www.conjur.org/) to store secrets.
 It is a more secure option than the Kubernetes backend, as it provides more fine-grained access control and auditing capabilities.
 To further tighten the security, we recommend using [JWTs](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens) signed by the cluster.
 
+The Prometheus counter `secret_manager_conjur_read_retry_attempts_total` tracks individual Conjur read retries by method, excluding the initial attempt.
+
 For more information about the Conjur implementation, see the [Conjur Backend](./pkg/backend/conjur/README.md) documentation.
 
 ## Security

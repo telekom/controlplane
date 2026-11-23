@@ -21,15 +21,26 @@ var (
 		Help:    "Duration of HTTP requests in seconds",
 		Buckets: []float64{0.1, 0.5, 1, 2, 5, 10},
 	}, []string{"client", "method", "status"})
+	readRetryAttempts = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "secret_manager_conjur_read_retry_attempts_total",
+		Help: "Total retry attempts for Conjur reads, excluding the initial attempt.",
+	}, []string{"method"})
 )
 
 const (
 	name = "conjur"
+
+	retrieveSecretMethod            = "RetrieveSecret"
+	retrieveBatchSecretsMethod      = "RetrieveBatchSecrets"
+	retrieveSecretWithVersionMethod = "RetrieveSecretWithVersion"
 )
 
 func Register(reg prometheus.Registerer) {
 	registerOnce.Do(func() {
-		reg.MustRegister(histogram)
+		for _, method := range []string{retrieveSecretMethod, retrieveBatchSecretsMethod, retrieveSecretWithVersionMethod} {
+			readRetryAttempts.WithLabelValues(method)
+		}
+		reg.MustRegister(histogram, readRetryAttempts)
 	})
 }
 
@@ -96,7 +107,7 @@ func (c *ConjurApiMetrics) RetrieveBatchSecrets(variableIDs []string) (map[strin
 			status = "error"
 		}
 	}
-	histogram.WithLabelValues(name, "RetrieveBatchSecrets", status).Observe(time.Since(start).Seconds())
+	histogram.WithLabelValues(name, retrieveBatchSecretsMethod, status).Observe(time.Since(start).Seconds())
 	return res, err
 }
 
@@ -113,7 +124,7 @@ func (c *ConjurApiMetrics) RetrieveSecret(variableID string) ([]byte, error) {
 			status = "error"
 		}
 	}
-	histogram.WithLabelValues(name, "RetrieveSecret", status).Observe(time.Since(start).Seconds())
+	histogram.WithLabelValues(name, retrieveSecretMethod, status).Observe(time.Since(start).Seconds())
 	return res, err
 }
 
@@ -130,6 +141,6 @@ func (c *ConjurApiMetrics) RetrieveSecretWithVersion(variableID string, version 
 			status = "error"
 		}
 	}
-	histogram.WithLabelValues(name, "RetrieveSecretWithVersion", status).Observe(time.Since(start).Seconds())
+	histogram.WithLabelValues(name, retrieveSecretWithVersionMethod, status).Observe(time.Since(start).Seconds())
 	return res, err
 }
