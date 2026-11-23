@@ -1,0 +1,8 @@
+{
+  "label": "Decisions",
+  "position": 5.5,
+  "collapsed": true,
+  "customProps": {
+    "description": "Why the Control Plane is built the way it is: the decisions that shaped it and the options that lost."
+  }
+}
