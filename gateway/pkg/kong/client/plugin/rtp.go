@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	JumperConfigKey  = "jumper_config"
+	JumperConfigKey  = client.JumperConfigKey
 	RoutingConfigKey = "routing_config"
 )
 

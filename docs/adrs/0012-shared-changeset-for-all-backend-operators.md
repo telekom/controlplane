@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC0-1.0
 
 # ADR-0012: One change pipeline for the gateway, identity and pubsub operators
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 - Related: [ADR-0006](0006-migration-mode-diff-guard.md), [ADR-0009](0009-plan-kong-changes-as-one-bundle.md), [ADR-0010](0010-approval-by-diff-hash.md), [ADR-0013](0013-record-last-applied-changes.md), [ADR-0014](0014-mask-secrets-in-change-records.md)
 
@@ -72,7 +72,7 @@ Rules for every operator:
 - Each operator has its own `--migration-mode` and ignore list, so they can be switched over one by one.
 - A reconcile without any change keeps the result of the plan and does not run the apply pass, so it reads the backend once. A reconcile with changes reads it twice: the apply pass reads again, because its writes change what later reads must see.
 
-The gateway package `gateway/pkg/kong/migration` moves to `common/pkg/changeset`. The gateway operator switches first without a change in behaviour, then pubsub, then identity.
+The gateway package `gateway/pkg/kong/migration` moves to `common/pkg/changeset`. The gateway operator switches first, then pubsub, then identity. For the gateway operator, the switch renames the approval annotation and the metrics as above and adds the records of [ADR-0013](0013-record-last-applied-changes.md) and the masking of [ADR-0014](0014-mask-secrets-in-change-records.md); Migration Mode has not been deployed, so no compatibility is kept.
 
 ## Consequences
 

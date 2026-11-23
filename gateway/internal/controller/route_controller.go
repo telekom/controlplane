@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -63,7 +64,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor,
-			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}, MigrationApprovalChangedPredicate())))).
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}, changeset.ApprovalChangedPredicate())))).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).

@@ -769,33 +769,40 @@ spec:
                 items:
                   type: string
                 type: array
-              migration:
-                description: |-
-                  Migration is the pending Kong change that Migration Mode blocked. It is set only
-                  while the change is blocked.
+              lastAppliedChanges:
+                description: LastAppliedChanges records the last Kong change that
+                  was written.
                 properties:
+                  appliedAt:
+                    description: AppliedAt is the time the change was written.
+                    format: date-time
+                    type: string
+                  approvedHash:
+                    description: ApprovedHash is the approved hash if the change was
+                      approved.
+                    type: string
                   changes:
-                    description: Changes are the Kong entities the change creates,
-                      updates or deletes.
+                    description: Changes are the backend entities the change created,
+                      updated or deleted.
                     items:
-                      description: MigrationChange is the change of one Kong entity.
+                      description: Change is the change of one backend entity.
                       properties:
                         diffs:
                           description: Diffs are the differences between the desired
                             and the current entity.
                           items:
-                            description: MigrationDiff is one difference between the
-                              desired and the current state of a Kong entity.
+                            description: Diff is one difference between the desired
+                              and the current state of a backend entity.
                             properties:
                               current:
                                 description: |-
-                                  Current is the value Kong holds, as JSON. It is empty if the operator adds a value.
-                                  Long values are truncated.
+                                  Current is the value the backend holds, as JSON. It is empty if the operator adds a
+                                  value. Secrets are masked and long values are truncated.
                                 type: string
                               desired:
                                 description: |-
-                                  Desired is the value the operator writes, as JSON. It is empty if Kong has a value the
-                                  operator removes. Long values are truncated.
+                                  Desired is the value the operator writes, as JSON. It is empty if the backend has a
+                                  value the operator removes. Secrets are masked and long values are truncated.
                                 type: string
                               ignored:
                                 description: Ignored is true if the difference is
@@ -811,13 +818,96 @@ spec:
                           type: array
                           x-kubernetes-list-type: atomic
                         kind:
-                          description: Kind is the Kong entity kind, such as route,
-                            service or plugin.
+                          description: Kind is the backend entity kind, such as route,
+                            plugin or client.
                           type: string
                         name:
-                          description: |-
-                            Name is the Kong name of the entity: the plugin name for plugins, the target for
-                            targets and the username for consumers.
+                          description: Name names the entity in the backend.
+                          type: string
+                        operation:
+                          description: Operation is create, update or delete.
+                          type: string
+                      required:
+                      - kind
+                      - name
+                      - operation
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  decision:
+                    description: 'Decision tells why the change was written: allowed
+                      or approved.'
+                    type: string
+                  generation:
+                    description: Generation is the metadata.generation the change
+                      was built from.
+                    format: int64
+                    type: integer
+                  hash:
+                    description: Hash identifies the applied change.
+                    type: string
+                  mode:
+                    description: 'Mode is the Migration Mode at the time of the change:
+                      off, on or strict.'
+                    type: string
+                  truncated:
+                    description: Truncated is true if changes or values were cut to
+                      fit the size limits.
+                    type: boolean
+                required:
+                - appliedAt
+                - decision
+                - generation
+                - hash
+                - mode
+                type: object
+              migration:
+                description: |-
+                  Migration is the pending Kong change that Migration Mode blocked. It is set only
+                  while the change is blocked.
+                properties:
+                  changes:
+                    description: Changes are the backend entities the change creates,
+                      updates or deletes.
+                    items:
+                      description: Change is the change of one backend entity.
+                      properties:
+                        diffs:
+                          description: Diffs are the differences between the desired
+                            and the current entity.
+                          items:
+                            description: Diff is one difference between the desired
+                              and the current state of a backend entity.
+                            properties:
+                              current:
+                                description: |-
+                                  Current is the value the backend holds, as JSON. It is empty if the operator adds a
+                                  value. Secrets are masked and long values are truncated.
+                                type: string
+                              desired:
+                                description: |-
+                                  Desired is the value the operator writes, as JSON. It is empty if the backend has a
+                                  value the operator removes. Secrets are masked and long values are truncated.
+                                type: string
+                              ignored:
+                                description: Ignored is true if the difference is
+                                  on the ignore list.
+                                type: boolean
+                              path:
+                                description: Path is the JSON path of the difference,
+                                  such as $.tags or $.config.minute.
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        kind:
+                          description: Kind is the backend entity kind, such as route,
+                            plugin or client.
+                          type: string
+                        name:
+                          description: Name names the entity in the backend.
                           type: string
                         operation:
                           description: Operation is create, update or delete.
@@ -832,12 +922,16 @@ spec:
                   hash:
                     description: |-
                       Hash identifies the pending change. Setting the annotation
-                      gateway.cp.ei.telekom.de/migration-approved-hash to this value approves it.
+                      cp.ei.telekom.de/migration-approved-hash to this value approves it.
                     type: string
                   mode:
                     description: 'Mode is the Migration Mode that blocked the change:
                       on or strict.'
                     type: string
+                  truncated:
+                    description: Truncated is true if changes or values were cut to
+                      fit the size limits.
+                    type: boolean
                 required:
                 - hash
                 - mode

@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer CustomConsumer) (*kong.Consumer, error) {
@@ -28,7 +28,7 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 		Tags:     normalizeSet(&tags),
 	}
 
-	kongConsumer, _, err := reconcile(ctx, c.guard, consumerEntity{client: c.client, name: consumerName}, body)
+	kongConsumer, _, err := reconcile(ctx, c.gate, consumerEntity{client: c.client, name: consumerName}, body)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 
 	// A planned consumer does not exist in Kong yet, so it is in no group.
 	isInGroup := false
-	if !migration.IsPlanned(*kongConsumer.Id) {
+	if !changeset.IsPlanned(*kongConsumer.Id) {
 		isInGroup, err = c.isConsumerInGroup(ctx, consumerName)
 		if err != nil {
 			return nil, err
@@ -55,7 +55,7 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 }
 
 func (c *kongClient) DeleteConsumer(ctx context.Context, consumer CustomConsumer) error {
-	if write, err := c.guard.CheckDelete(ctx, "consumer", consumer.GetConsumerName()); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindConsumer, consumer.GetConsumerName()); err != nil || !write {
 		return err
 	}
 	response, err := c.client.DeleteConsumerWithResponse(ctx, consumer.GetConsumerName())
@@ -70,7 +70,7 @@ func (c *kongClient) DeleteConsumer(ctx context.Context, consumer CustomConsumer
 
 func (c *kongClient) addConsumerToGroup(ctx context.Context, consumerName string) error {
 	groupName := consumerName
-	if write, err := c.guard.CheckWrite(ctx, "consumer_group", consumerName, map[string]string{"group": groupName}, nil, false); err != nil || !write {
+	if write, err := c.gate.CheckWrite(ctx, kindConsumerGroup, consumerName, map[string]string{"group": groupName}, nil, false); err != nil || !write {
 		return err
 	}
 	response, err := c.client.AddConsumerToGroupWithResponse(ctx, consumerName, kong.AddConsumerToGroupJSONRequestBody{
@@ -112,7 +112,7 @@ type consumerEntity struct {
 
 var _ entity[kong.CreateConsumerJSONRequestBody, kong.Consumer] = consumerEntity{}
 
-func (e consumerEntity) Name() string { return "consumer" }
+func (e consumerEntity) Kind() string { return kindConsumer }
 
 func (e consumerEntity) Get(ctx context.Context) (*kong.Consumer, bool, error) {
 	response, err := e.client.GetConsumerWithResponse(ctx, e.name)

@@ -15,6 +15,7 @@ import (
 	pkgtypes "k8s.io/apimachinery/pkg/types"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -26,7 +27,6 @@ import (
 	routehandler "github.com/telekom/controlplane/gateway/internal/handler/route"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	clientmock "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 
@@ -197,16 +197,16 @@ var _ = Describe("RouteHandler", func() {
 
 	Describe("Migration Mode", func() {
 		var (
-			guard  *migration.Guard
+			guard  *changeset.Gate
 			builds int
 		)
 
 		BeforeEach(func() {
 			var err error
-			guard, err = migration.New(migration.Config{}, migration.ModeOn)
+			guard, err = changeset.New(changeset.Options{Operator: "gateway", Mode: changeset.ModeOn, Kinds: kongclient.EntityKinds}, changeset.Config{})
 			Expect(err).NotTo(HaveOccurred())
-			kongutil.SetMigrationGuard(guard)
-			DeferCleanup(func() { kongutil.SetMigrationGuard(nil) })
+			kongutil.SetGate(guard)
+			DeferCleanup(func() { kongutil.SetGate(nil) })
 			builds = 0
 			setupReadyGatewayGet()
 		})
@@ -241,18 +241,22 @@ var _ = Describe("RouteHandler", func() {
 				Expect(builds).To(Equal(1), "only the plan runs")
 				Expect(route.Status.Migration).NotTo(BeNil())
 				Expect(route.Status.Migration.Changes).To(ConsistOf(HaveField("Diffs", ConsistOf(
-					gatewayv1.MigrationDiff{Path: "$.paths[0]", Desired: `"/new"`, Current: `"/old"`},
+					types.Diff{Path: "$.paths[0]", Desired: `"/new"`, Current: `"/old"`},
 				))))
 				Expect(err.Error()).To(ContainSubstring(route.Status.Migration.Hash))
 			})
 
 			It("applies an approved bundle and removes the status", func() {
 				Expect(handler.CreateOrUpdate(ctx, route)).To(HaveOccurred())
-				route.Annotations = map[string]string{migration.ApprovalAnnotation: route.Status.Migration.Hash}
+				route.Annotations = map[string]string{changeset.ApprovalAnnotation: route.Status.Migration.Hash}
 
 				Expect(handler.CreateOrUpdate(ctx, route)).To(Succeed())
 				Expect(builds).To(Equal(3), "plan, plan and apply")
 				Expect(route.Status.Migration).To(BeNil())
+				Expect(route.Status.LastAppliedChanges).To(SatisfyAll(
+					HaveField("Decision", "approved"),
+					HaveField("Changes", ConsistOf(HaveField("Kind", "route"))),
+				))
 			})
 		})
 
@@ -275,7 +279,7 @@ var _ = Describe("RouteHandler", func() {
 				Expect(builds).To(Equal(1))
 				Expect(route.Status.Migration.Changes).To(ConsistOf(HaveField("Operation", "delete")))
 
-				route.Annotations = map[string]string{migration.ApprovalAnnotation: route.Status.Migration.Hash}
+				route.Annotations = map[string]string{changeset.ApprovalAnnotation: route.Status.Migration.Hash}
 				Expect(handler.Delete(ctx, route)).To(Succeed())
 				Expect(builds).To(Equal(3))
 				Expect(route.Status.Migration).To(BeNil())

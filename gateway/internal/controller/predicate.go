@@ -13,7 +13,6 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 // RouteRelevantForConsumeRoutePredicate admits a Route update to the
@@ -50,18 +49,4 @@ func (RouteRelevantForConsumeRoutePredicate) Update(e event.UpdateEvent) bool {
 	// Status.Consumers is sorted by the Route handler before it is stored, so a
 	// plain comparison does not flap on ordering.
 	return !slices.Equal(oldRoute.Status.Consumers, newRoute.Status.Consumers)
-}
-
-// MigrationApprovalChangedPredicate admits an update that changes the Migration Mode
-// approval annotation. The annotation does not change the generation, so without it an
-// approval would only take effect on the next periodic reconcile.
-func MigrationApprovalChangedPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			return e.ObjectOld.GetAnnotations()[migration.ApprovalAnnotation] != e.ObjectNew.GetAnnotations()[migration.ApprovalAnnotation]
-		},
-		CreateFunc:  func(event.CreateEvent) bool { return false },
-		DeleteFunc:  func(event.DeleteEvent) bool { return false },
-		GenericFunc: func(event.GenericEvent) bool { return false },
-	}
 }

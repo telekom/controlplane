@@ -15,9 +15,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kong/naming"
 )
 
@@ -77,9 +77,9 @@ var _ KongClient = &kongClient{}
 type kongClient struct {
 	client KongAdminApi
 	names  naming.NameScheme
-	// guard checks every write and delete against the current Kong state in Migration Mode.
-	// It is nil otherwise.
-	guard *migration.Guard
+	// gate plans every write and delete and decides on them (see changeset.Run). Without a
+	// gate, writes go to Kong directly.
+	gate *changeset.Gate
 }
 
 // Option configures a KongClient.
@@ -92,10 +92,10 @@ func WithMigrator(migrator legacy.Migrator) Option {
 	}
 }
 
-// WithMigrationGuard enables Migration Mode: every write and delete is checked by guard first.
-func WithMigrationGuard(guard *migration.Guard) Option {
+// WithGate sets the gate of the change pipeline: every write and delete is checked by it.
+func WithGate(gate *changeset.Gate) Option {
 	return func(c *kongClient) {
-		c.guard = guard
+		c.gate = gate
 	}
 }
 

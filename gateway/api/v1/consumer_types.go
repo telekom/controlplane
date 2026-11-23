@@ -31,7 +31,11 @@ type ConsumerStatus struct {
 	// Migration is the pending Kong change that Migration Mode blocked. It is set only
 	// while the change is blocked.
 	// +optional
-	Migration *MigrationStatus `json:"migration,omitempty"`
+	Migration *types.MigrationStatus `json:"migration,omitempty"`
+
+	// LastAppliedChanges records the last Kong change that was written.
+	// +optional
+	LastAppliedChanges *types.AppliedChanges `json:"lastAppliedChanges,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -104,4 +108,14 @@ func (c *ConsumerList) GetItems() []types.Object {
 		items[i] = &c.Items[i]
 	}
 	return items
+}
+
+// SetMigrationStatus sets the pending Kong change that Migration Mode blocked.
+func (g *Consumer) SetMigrationStatus(status *types.MigrationStatus) {
+	g.Status.Migration = status
+}
+
+// SetLastAppliedChanges records the last Kong change that was written.
+func (g *Consumer) SetLastAppliedChanges(applied *types.AppliedChanges) {
+	g.Status.LastAppliedChanges = applied
 }

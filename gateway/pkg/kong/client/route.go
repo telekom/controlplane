@@ -164,7 +164,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		Tags:     normalizeSet(&tags),
 	}
 
-	service, _, err := reconcile(ctx, c.guard, entities.service, serviceBody)
+	service, _, err := reconcile(ctx, c.gate, entities.service, serviceBody)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		routeBody.Methods = &[]string{http.MethodHead}
 	}
 
-	kongRoute, _, err := reconcile(ctx, c.guard, entities.route, routeBody)
+	kongRoute, _, err := reconcile(ctx, c.gate, entities.route, routeBody)
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (c *kongClient) deleteRealmRoute(ctx context.Context, route CustomRoute) er
 
 // deleteRouteByIDOrName deletes a Kong route. name identifies it for Migration Mode.
 func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName, name string) error {
-	if write, err := c.guard.CheckDelete(ctx, "route", name); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindRoute, name); err != nil || !write {
 		return err
 	}
 	routeResponse, err := c.client.DeleteRouteWithResponse(ctx, idOrName)
@@ -291,7 +291,7 @@ func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName, name s
 
 // deleteServiceByIDOrName deletes a Kong service. name identifies it for Migration Mode.
 func (c *kongClient) deleteServiceByIDOrName(ctx context.Context, idOrName, name string) error {
-	if write, err := c.guard.CheckDelete(ctx, "service", name); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindService, name); err != nil || !write {
 		return err
 	}
 	serviceResponse, err := c.client.DeleteServiceWithResponse(ctx, idOrName)
@@ -311,7 +311,7 @@ type serviceEntity struct {
 
 var _ entity[kong.CreateServiceJSONRequestBody, kong.Service] = serviceEntity{}
 
-func (e serviceEntity) Name() string { return "service" }
+func (e serviceEntity) Kind() string { return kindService }
 
 func (e serviceEntity) Get(ctx context.Context) (*kong.Service, bool, error) {
 	response, err := e.client.GetServiceWithResponse(ctx, e.name)
@@ -350,7 +350,7 @@ type routeEntity struct {
 
 var _ entity[kong.CreateRouteJSONRequestBody, kong.Route] = routeEntity{}
 
-func (e routeEntity) Name() string { return "route" }
+func (e routeEntity) Kind() string { return kindRoute }
 
 func (e routeEntity) Get(ctx context.Context) (*kong.Route, bool, error) {
 	response, err := e.client.GetRouteWithResponse(ctx, e.name)

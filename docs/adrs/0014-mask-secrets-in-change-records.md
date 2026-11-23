@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC0-1.0
 
 # ADR-0014: Mask secrets in change records
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 - Related: [ADR-0012](0012-shared-changeset-for-all-backend-operators.md), [ADR-0013](0013-record-last-applied-changes.md)
 

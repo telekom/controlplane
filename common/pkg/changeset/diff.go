@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package migration
+package changeset
 
 import (
 	"bytes"
@@ -16,8 +16,8 @@ import (
 // Root is the JSON path of a whole entity. A diff at Root means the entity is created or deleted.
 const Root = "$"
 
-// Diff is one difference between the desired and the current state of a Kong entity.
-// Desired is nil for a value only Kong has, Current is nil for a value only the
+// Diff is one difference between the desired and the current state of a backend entity.
+// Desired is nil for a value only the backend has, Current is nil for a value only the
 // operator wants.
 type Diff struct {
 	Path    string `json:"path"`
@@ -28,9 +28,10 @@ type Diff struct {
 }
 
 // Compare returns the differences between desired and current, both serialized to
-// JSON first. Null values, empty arrays and empty objects count as absent, because Kong
-// and the operator use them interchangeably. Arrays of different length differ as a whole.
-func Compare(desired, current any) ([]Diff, error) {
+// JSON first. Null values, empty arrays and empty objects count as absent, because
+// backends and the operator use them interchangeably. Arrays of different length differ
+// as a whole. The maskers replace secret values on both sides before the comparison.
+func Compare(desired, current any, maskers ...Masker) ([]Diff, error) {
 	d, err := canonical(desired)
 	if err != nil {
 		return nil, fmt.Errorf("serializing desired state: %w", err)
@@ -38,6 +39,9 @@ func Compare(desired, current any) ([]Diff, error) {
 	c, err := canonical(current)
 	if err != nil {
 		return nil, fmt.Errorf("serializing current state: %w", err)
+	}
+	for _, mask := range maskers {
+		d, c = mask(d), mask(c)
 	}
 	var diffs []Diff
 	walk(Root, d, c, &diffs)
@@ -130,11 +134,11 @@ func walk(path string, desired, current any, diffs *[]Diff) {
 	}
 }
 
-// nameFields are the fields that name a Kong entity, in lookup order: routes, services,
-// upstreams and plugins have a name, targets a target and consumers a username.
-var nameFields = []string{"name", "target", "username"}
+// nameFields are the fields that commonly name a backend entity, in lookup order.
+var nameFields = []string{"name", "target", "username", "clientId", "realm", "id"}
 
-// NameOf returns the name of a Kong entity body, or "" if it has none.
+// NameOf returns the name of an entity body from its first naming field, or "" if it
+// has none.
 func NameOf(body any) string {
 	tree, err := canonical(body)
 	if err != nil {
