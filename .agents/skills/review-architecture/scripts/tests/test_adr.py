@@ -139,6 +139,24 @@ class ValidateTest(RepoTest):
         self.commit("adr")
         self.assertIn("reserved for mermaid", "\n".join(self.errors()))
 
+    def test_diagram_label_lines_must_fit_their_box(self) -> None:
+        long_label = VALID_BODY.replace(
+            "    A --> B", '    A["Admin · Notification · Secret Manager"] -->|"creates resources via the API"| B'
+        )
+        self.write_adr("0001-environments.md", body=long_label)
+        self.commit("adr")
+        errors = "\n".join(self.errors())
+        self.assertIn("'Admin · Notification · Secret Manager' has 37 characters", errors)
+        self.assertIn("'creates resources via the API' has 29 characters", errors)
+
+        broken = VALID_BODY.replace(
+            "    A --> B",
+            '    A["Admin<br/>Notification<br/>Secret Manager"] -->|"creates resources<br/>via the API"| B',
+        )
+        self.write_adr("0001-environments.md", body=broken)
+        self.commit("adr")
+        self.assertEqual(self.errors(), [])
+
     def test_a_decision_needs_an_alternative(self) -> None:
         body = VALID_BODY.replace("- **One cluster per tenant**: too expensive to operate.\n", "")
         self.write_adr("0001-environments.md", body=body)

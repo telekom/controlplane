@@ -62,25 +62,25 @@ Administration, notifications and secret management sit outside the chain. They 
 
 ```mermaid
 flowchart TD
+    subgraph SH["Shared by all layers"]
+        Shared["Admin<br/>Notification<br/>Secret Manager"]
+    end
     subgraph CC["Customer-Config layer"]
-        Rover["Rover file · Rover Server · Rover-CTL"]
+        Rover["Rover file<br/>Rover Server<br/>Rover-CTL"]
     end
     subgraph UI["UI layer"]
-        Read["ControlPlane API · Projector · Discovery Server"]
+        Read["ControlPlane API<br/>Projector<br/>Discovery Server"]
     end
     subgraph LG["Logic layer"]
-        Logic["Application · Organization · Permission<br/>API · Event · File · Agentic · Spectre · Approval"]
+        Logic["Application<br/>Organization<br/>Permission<br/>API · Event · File<br/>Agentic · Spectre<br/>Approval"]
     end
     subgraph RT["Runtime-Config layer"]
-        Runtime["Gateway · Identity · PubSub · SFTP"]
+        Runtime["Gateway · Identity<br/>PubSub · SFTP"]
     end
-    subgraph SH["Shared by all layers"]
-        Shared["Admin · Notification · Secret Manager"]
-    end
-    Rover -->|"creates resources via the API module"| Logic
-    Read -.->|"reads via the API module"| Logic
-    Logic -->|"creates resources via the API module"| Runtime
-    Runtime -->|configures| DataPlane["Gateway, identity provider, event backbone, SFTP"]
+    CC -->|"creates resources<br/>via the API module"| LG
+    UI -.->|"reads via<br/>the API module"| LG
+    LG -->|"creates resources<br/>via the API module"| RT
+    RT -->|configures| DataPlane["Gateway<br/>Identity provider<br/>Event backbone<br/>SFTP"]
 ```
 
 ## Options considered

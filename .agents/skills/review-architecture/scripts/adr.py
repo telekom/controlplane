@@ -72,6 +72,35 @@ HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+\S")
 PLACEHOLDER = "<!-- adr:"
 
+#: Mermaid sizes a label before the browser lays it out; anything much past
+#: its default 200px wrapping width is cut off in some fonts and zoom levels.
+MERMAID_LINE_MAX = 24
+MERMAID_SKIP = re.compile(r"^\s*(%%|classDef\b|class\b|style\b|linkStyle\b|direction\b)")
+MERMAID_LABELS = (
+    re.compile(r'"([^"]*)"'),
+    re.compile(r"\|([^|]*)\|"),
+    re.compile(r"[\[({]+([^\[\](){}\"|]+)[\])}]+"),
+    re.compile(r"^\s*\S+\s*-->\s*\S+\s*:\s*(.+)$"),
+)
+LINE_BREAK = re.compile(r"<br\s*/?>", re.IGNORECASE)
+HTML_TAG = re.compile(r"<[^>]+>")
+
+
+def mermaid_label_lines(line: str) -> list[str]:
+    """The rendered lines of every label on one mermaid source line."""
+    if MERMAID_SKIP.match(line):
+        return []
+    found: list[str] = []
+    rest = line
+    for pattern in MERMAID_LABELS:
+        for match in pattern.finditer(rest):
+            for part in LINE_BREAK.split(match.group(1)):
+                text = HTML_TAG.sub("", part).strip()
+                if text:
+                    found.append(text)
+        rest = pattern.sub(" ", rest)
+    return found
+
 MODULE_GRAPH = ".github/ci/module-graph.json"
 OWN_MODULE_PREFIX = "github.com/telekom/controlplane"
 KIND_MARKER = "+kubebuilder:object:root=true"
@@ -309,6 +338,7 @@ def _validate_body(adr: Adr, findings: Findings) -> None:
     no_alternatives = False
     words = 0
     fence: str | None = None
+    in_mermaid = False
     previous = ""
 
     for line in adr.body.splitlines():
@@ -318,11 +348,21 @@ def _validate_body(adr: Adr, findings: Findings) -> None:
             closing = fence_match and not fence_match.group(2)
             if closing and fence_match.group(1).startswith(fence):
                 fence = None
+            elif in_mermaid:
+                for text in mermaid_label_lines(line):
+                    if len(text) > MERMAID_LINE_MAX:
+                        findings.error(
+                            where,
+                            f"diagram label line '{text}' has {len(text)} characters; keep each "
+                            f"line at most {MERMAID_LINE_MAX} and break longer labels with <br/>, "
+                            "or the text is cut off when rendered",
+                        )
             previous = line
             continue
         if fence_match:
             fence = fence_match.group(1)
-            if fence_match.group(2) != "mermaid" and not CODE_BLOCK_REASON.match(previous):
+            in_mermaid = fence_match.group(2) == "mermaid"
+            if not in_mermaid and not CODE_BLOCK_REASON.match(previous):
                 findings.error(
                     where,
                     "code blocks are reserved for mermaid diagrams; explain in prose, or justify "

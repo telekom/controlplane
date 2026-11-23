@@ -18,7 +18,7 @@ stateDiagram-v2
     [*] --> Proposed
     Proposed --> Accepted: reviewed and agreed
     Proposed --> Rejected: reviewed and turned down
-    Accepted --> Superseded: a newer record replaces it
+    Accepted --> Superseded: a newer one replaces it
     Accepted --> Deprecated: no longer applies
 ```
 

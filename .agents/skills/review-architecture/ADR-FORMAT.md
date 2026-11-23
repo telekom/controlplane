@@ -62,6 +62,10 @@ The documentation's journey pages set the bar, and ADRs follow it:
   talks to whom) gets a `mermaid` diagram. Code blocks are reserved for the
   rare decision that is about a literal format; justify one with a
   `<!-- code-block: reason -->` line directly above it.
+- **Short diagram lines.** Mermaid cuts off label text that runs past its
+  box, so keep every line of a node, subgraph or arrow label at most 24
+  characters and break longer labels with `<br/>`. Prefer one item per line
+  over `·`-separated lists.
 - **Link, do not repeat.** When explaining needs more than a paragraph, the
   explanation belongs in `docs/docs/architecture/`. Link to it.
 
