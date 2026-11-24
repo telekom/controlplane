@@ -23,7 +23,6 @@ evidence:
   - docs/docs/architecture/overview.md#virtual-environments
   - docs/docs/admin-journey/environments-and-zones.md#environments
   - docs/docs/admin-journey/operations.md#scaling-considerations
-  - docs/docs/admin-journey/controlplane-api.md#running-multiple-environments-in-one-cluster
   - .agents/rules/13-environment-isolation.md
   - common/pkg/client/client.go
   - common/pkg/controller/controller.go
@@ -83,4 +82,3 @@ flowchart TD
 
 - A missing environment filter does not fail. It silently reads, enqueues or changes another environment's resources. Rule 13 therefore checks it at review time, as a critical finding.
 - The cluster grows with every environment: each zone and each team adds a namespace and its gateway and identity resources.
-- Components with their own storage must isolate environments themselves. By default, one ControlPlane API and one Projector serve all environments from one database. Separate pairs per environment are an operator's choice.
