@@ -1,0 +1,19 @@
+docs/docs/decisions/0002-environments-share-one-cluster-and-are-isolated-virtually.md
+  s_7fe8a2269e95bf::t_9da481e91d9ef8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f618ef116149b8a6a09bc7d3bccf2d05bf22b5eb",
+  "prompts": {},
+  "sessions": {
+    "s_7fe8a2269e95bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b2b35c6f-044a-4bf4-af1b-668b466fb36b",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
