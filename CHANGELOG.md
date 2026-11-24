@@ -1,3 +1,16 @@
+# [0.49.0](https://github.com/telekom/controlplane/compare/v0.48.4...v0.49.0) (2026-11-24)
+
+
+### Bug Fixes
+
+* **approval:** let a newly granted request rebind a revoked four-eyes approval ([#812](https://github.com/telekom/controlplane/issues/812)) ([fa369ec](https://github.com/telekom/controlplane/commit/fa369ec8fc056bdcb418c133421a9fdc5fc62287))
+* **gateway:** reconcile provider routes when cross-zone consumers change ([#875](https://github.com/telekom/controlplane/issues/875)) ([1863be4](https://github.com/telekom/controlplane/commit/1863be4393ff3dd44ed4a06230fcdf59fb8936ea))
+
+
+### Features
+
+* **secret-manager:** retry transient Conjur read failures ([#861](https://github.com/telekom/controlplane/issues/861)) ([747be19](https://github.com/telekom/controlplane/commit/747be198e8cebd21242b658bba24980b83e3dc8b))
+
 ## [0.48.4](https://github.com/telekom/controlplane/compare/v0.48.3...v0.48.4) (2026-11-19)
 
 
