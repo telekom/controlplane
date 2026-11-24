@@ -1,6 +1,6 @@
 ---
 title: "Layers see only the API module of the layer below"
-status: proposed
+status: accepted
 date: 2026-11-23
 origin: backfilled
 domains: [rover, rover-server, rover-ctl, api, event, file, agentic, approval, application, organization, permission, spectre, projector, controlplane-api, discovery-server, gateway, identity, pubsub, sftp]
