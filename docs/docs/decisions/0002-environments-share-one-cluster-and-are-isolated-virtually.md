@@ -1,6 +1,6 @@
 ---
 title: "Environments share one cluster and are isolated virtually"
-status: proposed
+status: accepted
 date: 2026-11-23
 origin: backfilled
 domains: [all]
