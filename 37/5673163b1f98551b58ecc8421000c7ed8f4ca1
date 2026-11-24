@@ -1,0 +1,19 @@
+docs/docs/decisions/0001-layers-see-only-the-api-module-of-the-layer-below.md
+  s_7fe8a2269e95bf::t_1b69e3affe4a97 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "375673163b1f98551b58ecc8421000c7ed8f4ca1",
+  "prompts": {},
+  "sessions": {
+    "s_7fe8a2269e95bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b2b35c6f-044a-4bf4-af1b-668b466fb36b",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
