@@ -39,7 +39,7 @@ graph LR
 - The **Projector** runs inside the Kubernetes cluster as a read-only controller. It watches custom resources (teams, applications, API exposures, subscriptions, approvals) and continuously projects their current state into PostgreSQL. It never writes back to the cluster.
 - The **ControlPlane API** is a GraphQL server that queries the same PostgreSQL database. It provides paginated, filterable access to everything the Projector has copied.
 
-The Projector never modifies the Kubernetes state. When Kubernetes integration is enabled (`kubernetes.enabled`), the ControlPlane API offers mutations that write Team, Group, Application and Approval resources in its environment. All other changes flow through Rover-CTL, Rover Server, or `kubectl`.
+The Projector never changes anything in the cluster. The ControlPlane API can also let clients change teams, groups, applications and approvals in its environment, when its [configuration](#controlplane-api-configuration) allows it. All other changes flow through Rover-CTL, Rover Server, or `kubectl`.
 
 ## Prerequisites
 
