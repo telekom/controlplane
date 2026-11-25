@@ -15,7 +15,7 @@ its output before accepting it.
 | --- | --- | --- |
 | `validate_rules.py` | pre-commit | Static validation of `.agents/rules` |
 | `create_audit_report.py` | agent session | Changeset → detectors → items → work units |
-| `show_work_unit.py` | subagent | Print one work unit: rule, context, questions |
+| `show_work_unit.py` | subagent | Print one work unit: rule, context, questions; `--file`/`--lines` reads more of a candidate file |
 | `process_audit_report.py` | agent session | Verify agent verdicts, write receipts, render findings |
 | `audit_gate.py` | pre-commit, Git pre-push | Prove an audit covers staged or committed blobs |
 | `sync_judges.py` | pre-commit | Keep the harness judge agents equal to the pins |
@@ -23,12 +23,20 @@ its output before accepting it.
 
 Work units are packed **candidate-major**: every check of one candidate rides
 in the same prompt, so its frozen context is sent once instead of once per
-check. Severity sets two caps, on candidates and on resulting questions.
+check. Severity sets two caps, on candidates and on resulting questions. A
+third cap keeps every rendered unit under `MAX_UNIT_BYTES` (`auditlib/prompt`),
+because agent harnesses truncate or divert larger tool output and the judge
+then answers nothing. A candidate whose context alone would exceed it is cut
+to one contiguous range around its changed lines first, marked
+`[truncated: showing lines A-B of N]`; if the changed lines alone do not
+fit, the candidate is split into parts (`detect.fit_ranges`). The judge reads
+any other range of a candidate file from the frozen blob with
+`show_work_unit.py <unit> --file PATH --lines START-END`.
 
 `auditlib/` holds the shared pieces: `yamlish` (frontmatter subset),
 `rules` (parse and index), `provenance` (example sources), `changeset`
-(git scope), `context` (config root and state location), `detect` (candidates), `report` (schema, item ids, batching),
-`inline` (`audit:ignore` comment markers) and
+(git scope), `context` (config root and state location), `detect` (candidates), `prompt` (rendered unit and its size budget),
+`report` (schema, item ids, batching), `inline` (`audit:ignore` comment markers) and
 `store` (cache, receipts, audit ignores).
 
 Two things are re-anchored against real files, and both reject rather than

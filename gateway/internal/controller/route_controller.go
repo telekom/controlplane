@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -82,13 +83,44 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a ConsumeRoute
 	consumeRoute, ok := obj.(*gatewayv1.ConsumeRoute)
 	if !ok {
 		return nil
 	}
+	log := logr.FromContextOrDiscard(ctx)
 
-	return r.mapRouteReference(ctx, consumeRoute, consumeRoute.Spec.Route)
+	direct := consumeRoute.Spec.Route.K8s()
+	requests := []reconcile.Request{{NamespacedName: direct}}
+
+	env := consumeRoute.Labels[cconfig.EnvironmentLabelKey]
+	if env == "" {
+		return requests
+	}
+
+	// Primary and failover-secondary Routes build their JumperConfig from all ConsumeRoutes
+	// with the same route name, including cross-zone ones that reference a proxy Route.
+	// Mirror that lookup, restricted to the ConsumeRoute's environment.
+	routes := &gatewayv1.RouteList{}
+	if err := r.List(ctx, routes,
+		client.MatchingFields{IndexFieldMetadataName: consumeRoute.Spec.Route.Name},
+		client.MatchingLabels{cconfig.EnvironmentLabelKey: env},
+	); err != nil {
+		log.Error(err, "Failed to list Routes by name", "routeName", consumeRoute.Spec.Route.Name)
+		return requests
+	}
+
+	for i := range routes.Items {
+		route := &routes.Items[i]
+		if route.IsProxy() && !route.IsFailoverSecondary() {
+			continue
+		}
+		key := client.ObjectKeyFromObject(route)
+		if key == direct {
+			continue
+		}
+		requests = append(requests, reconcile.Request{NamespacedName: key})
+	}
+	return requests
 }
 
 // NamePrefixChangedPredicate passes only updates of a Gateway that change spec.namePrefix.

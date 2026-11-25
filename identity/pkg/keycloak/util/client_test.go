@@ -156,12 +156,17 @@ func TestMergeClientRepresentation_PreservesExistingAttributes(t *testing.T) {
 	}
 }
 
-func TestMergeClientRepresentation_RemovesAttributeWhenDesiredHasNone(t *testing.T) {
+func TestMergeClientRepresentation_ClearsRotationAttributesWhenDesiredHasNone(t *testing.T) {
 	existing := &api.ClientRepresentation{
 		ClientId: ptr.To("my-app"),
 		Attributes: &map[string]interface{}{
-			SecretRotationClientAttribute: "true",
-			"other-attr":                  "keep-me",
+			SecretRotationClientAttribute:        "true",
+			SecretCreationTimeAttribute:          "1700000000",
+			SecretExpirationTimeAttribute:        "1800000000",
+			RotatedSecretAttribute:               "old-secret",
+			RotatedSecretCreationTimeAttribute:   "1700000000",
+			RotatedSecretExpirationTimeAttribute: "1700600000",
+			"other-attr":                         "keep-me",
 		},
 	}
 	desired := &api.ClientRepresentation{
@@ -172,10 +177,51 @@ func TestMergeClientRepresentation_RemovesAttributeWhenDesiredHasNone(t *testing
 	merged := MergeClientRepresentation(existing, desired)
 
 	attrs := *merged.Attributes
-	if _, ok := attrs[SecretRotationClientAttribute]; ok {
-		t.Fatal("secret-rotation attribute should have been removed")
+	// Keycloak ignores omitted keys on PUT and removes keys with empty values.
+	for _, key := range []string{
+		SecretRotationClientAttribute,
+		SecretExpirationTimeAttribute,
+		RotatedSecretAttribute,
+		RotatedSecretCreationTimeAttribute,
+		RotatedSecretExpirationTimeAttribute,
+	} {
+		if v, ok := attrs[key]; !ok || v != "" {
+			t.Fatalf("expected attribute %q to be sent as empty value, got %v (present=%t)", key, v, ok)
+		}
+	}
+	if _, ok := attrs[SecretRemainingExpirationAttribute]; ok {
+		t.Fatal("absent attributes must not be added")
+	}
+	if attrs[SecretCreationTimeAttribute] != "1700000000" {
+		t.Fatal("secret creation time must be preserved")
 	}
 	if attrs["other-attr"] != "keep-me" {
 		t.Fatal("unrelated attribute was removed")
+	}
+	if !CompareClientRepresentation(merged, desired) {
+		t.Fatal("merged representation must converge with the desired one")
+	}
+}
+
+func TestCompareClientRepresentation_DetectsLeftoverRotationStateWhenDisabled(t *testing.T) {
+	desired := &api.ClientRepresentation{ClientId: ptr.To("my-app")}
+	existing := &api.ClientRepresentation{
+		ClientId: ptr.To("my-app"),
+		Attributes: &map[string]interface{}{
+			SecretExpirationTimeAttribute: "1800000000",
+		},
+	}
+
+	if CompareClientRepresentation(existing, desired) {
+		t.Fatal("leftover secret expiration must count as drift when rotation is disabled")
+	}
+
+	enabled := &api.ClientRepresentation{
+		ClientId:   ptr.To("my-app"),
+		Attributes: &map[string]interface{}{SecretRotationClientAttribute: "true"},
+	}
+	(*existing.Attributes)[SecretRotationClientAttribute] = "true"
+	if !CompareClientRepresentation(existing, enabled) {
+		t.Fatal("rotation state is expected while rotation is enabled")
 	}
 }

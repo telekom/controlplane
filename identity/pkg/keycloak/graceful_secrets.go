@@ -44,10 +44,10 @@ type SecretRotationParams struct {
 }
 
 const (
-	attrSecretCreationTime    = "client.secret.creation.time"
-	attrSecretExpirationTime  = "client.secret.expiration.time"
-	attrRotatedCreationTime   = "client.secret.rotated.creation.time"
-	attrRotatedExpirationTime = "client.secret.rotated.expiration.time"
+	attrSecretCreationTime    = util.SecretCreationTimeAttribute
+	attrSecretExpirationTime  = util.SecretExpirationTimeAttribute
+	attrRotatedCreationTime   = util.RotatedSecretCreationTimeAttribute
+	attrRotatedExpirationTime = util.RotatedSecretExpirationTimeAttribute
 )
 
 // GetSecretCreationTime extracts the epoch-seconds timestamp of the current
