@@ -104,7 +104,7 @@ type FileSubscriptionResolver interface {
 	Target(ctx context.Context, obj *ent.FileSubscription) (*model.FileExposureInfo, error)
 }
 type ListenerResolver interface {
-	ResourceName(ctx context.Context, obj *ent.Listener) (string, error)
+	ResourceName(ctx context.Context, obj *ent.Listener) (*string, error)
 	Approved(ctx context.Context, obj *ent.Listener) (bool, error)
 	APIBasePath(ctx context.Context, obj *ent.Listener) (string, error)
 	RequestFilter(ctx context.Context, obj *ent.Listener) (*model1.ListenerFilter, error)
@@ -11866,11 +11866,11 @@ func (ec *executionContext) _Listener_resourceName(ctx context.Context, field gr
 			return ec.Resolvers.Listener().ResourceName(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_Listener_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -41886,7 +41886,7 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Listener_resourceName(ctx, field, obj)
-				if res == graphql.Null {
+				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res

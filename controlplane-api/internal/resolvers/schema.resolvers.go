@@ -936,26 +936,30 @@ func (r *fileSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gql
 }
 
 // ResourceName is the resolver for the resourceName field.
-func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) (string, error) {
+func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) (*string, error) {
 	sysCtx := viewer.SystemContext(ctx)
 	exposure, err := obj.Edges.ExposureOrErr()
 	if ent.IsNotLoaded(err) {
 		exposure, err = obj.QueryExposure().Only(sysCtx)
 	}
 	if err != nil {
-		return "", fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
 	}
 	apiDefinition, err := exposure.Edges.APIOrErr()
 	if ent.IsNotLoaded(err) {
 		apiDefinition, err = exposure.QueryAPI().Only(sysCtx)
 	}
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
-		return "", fmt.Errorf("loading api for listener %d: %w", obj.ID, err)
+		return nil, fmt.Errorf("loading api for listener %d: %w", obj.ID, err)
 	}
 	if apiDefinition.Name == nil || *apiDefinition.Name == "" {
-		return "", fmt.Errorf("listener %d references api %d without a projected kubernetes name", obj.ID, apiDefinition.ID)
+		return nil, nil
 	}
-	return *apiDefinition.Name, nil
+	name := *apiDefinition.Name
+	return &name, nil
 }
 
 // Approved is the resolver for the approved field.

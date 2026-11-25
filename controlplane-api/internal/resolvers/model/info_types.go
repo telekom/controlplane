@@ -23,7 +23,7 @@ type ApplicationInfo struct {
 // ListenerInfo provides a reduced cross-tenant safe view of a Listener.
 type ListenerInfo struct {
 	ID               int              `json:"id"`
-	ResourceName     string           `json:"resourceName"`
+	ResourceName     *string          `json:"resourceName,omitempty"`
 	Approved         bool             `json:"approved"`
 	Application      *ApplicationInfo `json:"application"`
 	Consumer         *ApplicationInfo `json:"consumer"`

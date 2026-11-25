@@ -221,12 +221,14 @@ func mapListenerInfo(listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	var resourceName *string
 	apiDefinition, err := exposure.Edges.APIOrErr()
-	if err != nil {
+	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading api edge for listener %d: %w", listener.ID, err)
 	}
-	if apiDefinition.Name == nil || *apiDefinition.Name == "" {
-		return nil, fmt.Errorf("listener %d references api %d without a projected kubernetes name", listener.ID, apiDefinition.ID)
+	if apiDefinition != nil && apiDefinition.Name != nil && *apiDefinition.Name != "" {
+		name := *apiDefinition.Name
+		resourceName = &name
 	}
 
 	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted &&
@@ -234,7 +236,7 @@ func mapListenerInfo(listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
 	applicationInfo := mapApplicationInfo(application, applicationZone, applicationTeam, applicationGroup)
 	return &gqlmodel.ListenerInfo{
 		ID:               listener.ID,
-		ResourceName:     *apiDefinition.Name,
+		ResourceName:     resourceName,
 		Approved:         approved,
 		Application:      applicationInfo,
 		Consumer:         mapApplicationInfo(consumer, consumerZone, consumerTeam, consumerGroup),

@@ -85,6 +85,13 @@ var _ = Describe("SubscriptionInfo", func() {
 		}
 	})
 
+	It("exposes Listener resourceName as nullable", func() {
+		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
+		for _, typeName := range []string{"Listener", "ListenerInfo"} {
+			Expect(schema.Types[typeName].Fields.ForName("resourceName").Type.String()).To(Equal("String"))
+		}
+	})
+
 	Describe("GraphQL execution", func() {
 		var (
 			db     *ent.Client

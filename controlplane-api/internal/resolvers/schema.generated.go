@@ -3489,11 +3489,11 @@ func (ec *executionContext) _ListenerInfo_resourceName(ctx context.Context, fiel
 			return obj.ResourceName, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_ListenerInfo_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7366,7 +7366,7 @@ func (ec *executionContext) _ListenerInfo(ctx context.Context, sel ast.Selection
 			}
 		case "resourceName":
 			out.Values[i] = ec._ListenerInfo_resourceName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
+			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
 		case "approved":

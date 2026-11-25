@@ -37,7 +37,7 @@ var _ = Describe("Listener resolvers", func() {
 		ctx := testutil.AllowContext()
 		resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resourceName).To(Equal("api-alpha"))
+		Expect(resourceName).To(HaveValue(Equal("api-alpha")))
 
 		approved, err := r.Listener().Approved(ctx, s.ListenerReady)
 		Expect(err).NotTo(HaveOccurred())
@@ -182,13 +182,49 @@ var _ = Describe("Listener resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exposureListeners).To(HaveLen(1))
 		Expect(exposureListeners[0].ID).To(Equal(s.ListenerReady.ID))
-		Expect(exposureListeners[0].ResourceName).To(Equal("api-alpha"))
+		Expect(exposureListeners[0].ResourceName).To(HaveValue(Equal("api-alpha")))
 		Expect(exposureListeners[0].Approved).To(BeTrue())
 
 		subscriptionListeners, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(subscriptionListeners).To(HaveLen(1))
 		Expect(subscriptionListeners[0].ID).To(Equal(s.ListenerReady.ID))
+	})
+
+	It("returns nil resourceName without failing when API name is missing or exposure is unlinked", func() {
+		ctx := testutil.AllowContext()
+
+		assertNilResourceName := func() {
+			resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resourceName).To(BeNil())
+
+			exposureListeners, err := r.ApiExposure().Listeners(ctx, s.ExposureAlpha)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exposureListeners).To(HaveLen(1))
+			Expect(exposureListeners[0].ResourceName).To(BeNil())
+
+			subscriptionListeners, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(subscriptionListeners).To(HaveLen(1))
+			Expect(subscriptionListeners[0].ResourceName).To(BeNil())
+
+			approvalTarget, err := r.Approval().Subscription(ctx, s.ListenerApproval)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approvalTarget.(*gqlmodel.ListenerInfo).ResourceName).To(BeNil())
+
+			requestTarget, err := r.ApprovalRequest().Subscription(ctx, s.ListenerApprovalRequest)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(requestTarget.(*gqlmodel.ListenerInfo).ResourceName).To(BeNil())
+		}
+
+		// Case 1: Api exists, but its Kubernetes name has not been projected yet.
+		client.Api.UpdateOne(s.APIAlpha).ClearName().ExecX(ctx)
+		assertNilResourceName()
+
+		// Case 2: ApiExposure has no linked Api catalogue row (e.g. inactive exposure or deleted Api).
+		client.ApiExposure.UpdateOne(s.ExposureAlpha).ClearAPI().ExecX(ctx)
+		assertNilResourceName()
 	})
 
 	It("includes non-ready Listeners on the listener application", func() {
