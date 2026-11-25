@@ -1,0 +1,46 @@
+projector/internal/domain/listener/module.go
+  s_c8feb8b6fa5325::t_b4e2a4a4099a33 163
+  s_c8feb8b6fa5325::t_7801dc989524c1 41-44
+  s_c8feb8b6fa5325::t_252a3f507448fd 103-104
+  s_c8feb8b6fa5325::t_562808b3fc071b 147,155
+  s_c8feb8b6fa5325::t_bd08a9309dd5af 196,198
+  s_c8feb8b6fa5325::t_8e14971991f93e 171
+  s_c8feb8b6fa5325::t_6b348501ca3d79 201-202
+  s_c8feb8b6fa5325::t_9660a12bdef841 190
+projector/internal/domain/listener/translator.go
+  s_c8feb8b6fa5325::t_835790a25a60a0 45-49
+projector/internal/domain/listener/translator_test.go
+  s_c8feb8b6fa5325::t_40c5f1d28c4e18 13
+  s_c8feb8b6fa5325::t_7446cd516c1803 70-75
+  s_c8feb8b6fa5325::t_e3e58a2d94e309 67-69
+projector/internal/domain/listener/processor.go
+  s_c8feb8b6fa5325::t_89df4dfedbc779 53-54
+projector/internal/domain/api/repository.go
+  s_c8feb8b6fa5325::t_3ac73e53bac718 67
+projector/internal/bootstrap/bootstrap.go
+  s_c8feb8b6fa5325::t_0563ea053c697d 171
+projector/internal/domain/listener/repository.go
+  s_c8feb8b6fa5325::t_dc030ce9eb5805 134
+projector/internal/domain/listener/module_test.go
+  s_c8feb8b6fa5325::t_79192c217a5709 58
+  s_c8feb8b6fa5325::t_1c4580b4e296ae 78-82
+projector/internal/module/module.go
+  s_c8feb8b6fa5325::t_b21e249460a5b9 128-129
+  s_c8feb8b6fa5325::t_654637273a84a5 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "7a4f363bb9dfb4fa0360555301d3bcdf8c2585ed",
+  "prompts": {},
+  "sessions": {
+    "s_c8feb8b6fa5325": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e0bd4958cffeO87LkmCIDqaEu9",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

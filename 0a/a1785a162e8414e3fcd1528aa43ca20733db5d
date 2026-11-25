@@ -1,0 +1,24 @@
+controlplane-api/ent/migrate/schema.go
+  s_6d5f77137fa4a5::t_fd79af7b2b973c 555-559,934-948
+controlplane-api/ent/schema/listener.go
+  s_6d5f77137fa4a5::t_0dab1dfa60b05a 14
+  s_6d5f77137fa4a5::t_7f6d15258338b9 84-93
+controlplane-api/ent/schema/approval_request.go
+  s_6d5f77137fa4a5::t_655ec28541034b 52,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "0aa1785a162e8414e3fcd1528aa43ca20733db5d",
+  "prompts": {},
+  "sessions": {
+    "s_6d5f77137fa4a5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_dee20c6e9ffeEwOU2k9T1ONU9e",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
