@@ -31,11 +31,11 @@ func writeToken(path, tok string) {
 	Expect(os.WriteFile(path, []byte(tok), 0o600)).To(Succeed())
 }
 
-// setCachedToken replaces the cached token's refresh and expiry times, relative to now in seconds.
-func setCachedToken(at *FileAccessToken, refreshOffset, expiryOffset int64) {
-	now := time.Now().Unix()
+// setCachedToken replaces the cached token's refresh and expiry times, relative to now.
+func setCachedToken(at *FileAccessToken, refreshOffset, expiryOffset time.Duration) {
+	now := time.Now()
 	s := at.current.Load()
-	at.current.Store(&tokenSnapshot{data: s.data, refreshAt: now + refreshOffset, expiresAt: now + expiryOffset})
+	at.current.Store(&tokenSnapshot{data: s.data, refreshAt: now.Add(refreshOffset), expiresAt: now.Add(expiryOffset)})
 }
 
 var _ = Describe("FileAccessToken", func() {
@@ -77,7 +77,7 @@ var _ = Describe("FileAccessToken", func() {
 		writeToken(tokenPath, second)
 		Expect(at.Read()).To(Equal(first), "a valid cached token must not trigger a file read")
 
-		setCachedToken(at, -1, 10)
+		setCachedToken(at, -time.Second, 10*time.Second)
 		Expect(at.Read()).To(Equal(second))
 	})
 
@@ -133,11 +133,12 @@ var _ = Describe("FileAccessToken", func() {
 		Expect(at.Read()).To(Equal(first))
 
 		writeToken(tokenPath, "not-a-jwt")
-		setCachedToken(at, -1, 10)
+		setCachedToken(at, -time.Second, 10*time.Second)
 		Expect(at.Read()).To(Equal(first))
 		Expect(at.IsExpired()).To(BeTrue())
 
-		setCachedToken(at, -20, -1)
+		// Expired less than a second ago, so second-precision checks would still accept it.
+		setCachedToken(at, -20*time.Second, -time.Millisecond)
 		_, err := at.Read()
 		Expect(err).To(MatchError(ContainSubstring("failed to parse token")))
 
@@ -145,5 +146,13 @@ var _ = Describe("FileAccessToken", func() {
 		_, err = at.Read()
 		Expect(err).To(MatchError(ContainSubstring("token is expired")))
 		Expect(at.current.Load().data).To(Equal(first), "a failed refresh must not replace the cached token")
+	})
+
+	It("treats a token as expired from its exp instant on", func() {
+		exp := time.Unix(1_000, 0)
+		s := &tokenSnapshot{expiresAt: exp}
+		Expect(s.isUsable(exp.Add(-time.Nanosecond))).To(BeTrue())
+		Expect(s.isUsable(exp)).To(BeFalse())
+		Expect(s.isUsable(exp.Add(500 * time.Millisecond))).To(BeFalse())
 	})
 })
