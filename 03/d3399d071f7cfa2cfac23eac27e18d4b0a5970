@@ -1,0 +1,21 @@
+projector/go.mod
+  s_6d5f77137fa4a5::t_2ea0157e780b52 85-96
+projector/go.sum
+  s_6d5f77137fa4a5::t_ed99ea128d1a2c 71-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "03d3399d071f7cfa2cfac23eac27e18d4b0a5970",
+  "prompts": {},
+  "sessions": {
+    "s_6d5f77137fa4a5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_dee20c6e9ffeEwOU2k9T1ONU9e",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
