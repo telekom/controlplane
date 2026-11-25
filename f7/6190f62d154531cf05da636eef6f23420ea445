@@ -1,0 +1,38 @@
+controlplane-api/internal/resolvers/mapper.go
+  s_6d5f77137fa4a5::t_3ffd32b59ef3e7 224,226,229-231,239
+controlplane-api/internal/resolvers/schema_resolvers_listener_test.go
+  s_6d5f77137fa4a5::t_123b49bf07b8a1 40
+  s_6d5f77137fa4a5::t_c29ca3ae09c060 185,194-227
+  s_6d5f77137fa4a5::t_65e0ce8a53e538 228-229
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_6d5f77137fa4a5::t_2e73533c929417 88-94
+controlplane-api/schema.graphql
+  s_6d5f77137fa4a5::t_dce3d66e68dd6b 482-483
+  s_6d5f77137fa4a5::t_a14375b7ca2629 331-332
+controlplane-api/internal/resolvers/model/info_types.go
+  s_6d5f77137fa4a5::t_c9ddab0b1f9441 26
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_6d5f77137fa4a5::t_a84d253012bf98 939,946,952-954,956,959,961-962
+controlplane-api/internal/resolvers/ent.generated.go
+  s_6d5f77137fa4a5::t_24d2d980f4a240 107,11869-11870,11873,41889
+controlplane-api/internal/resolvers/root_.generated.go
+  s_6d5f77137fa4a5::t_1c1ea43ecb2bf6 13126-13127,13277-13278
+controlplane-api/internal/resolvers/schema.generated.go
+  s_6d5f77137fa4a5::t_13dc7ce7804411 3492-3493,3496,7369
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "f76190f62d154531cf05da636eef6f23420ea445",
+  "prompts": {},
+  "sessions": {
+    "s_6d5f77137fa4a5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_dee20c6e9ffeEwOU2k9T1ONU9e",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}

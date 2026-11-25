@@ -1,0 +1,20 @@
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_6d5f77137fa4a5::t_5ed6f875b47763 1091,1106
+  s_6d5f77137fa4a5::t_3de811e43036f5 580,598
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "9fdf91b7669e1d6f190fd4abd30245b4b38fd23b",
+  "prompts": {},
+  "sessions": {
+    "s_6d5f77137fa4a5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_dee20c6e9ffeEwOU2k9T1ONU9e",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
