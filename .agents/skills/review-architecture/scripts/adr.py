@@ -318,6 +318,15 @@ def _validate_links(adr: Adr, by_number: dict[int, Adr], findings: Findings) -> 
             findings.error(adr.path, f"superseded-by '{successor}' is not an ADR")
         elif adr.number not in {number_of(n) for n in target.items("supersedes")}:
             findings.error(adr.path, f"{target.ref} does not list {adr.ref} in 'supersedes'")
+        if target is not None and target.status in ("proposed", "rejected"):
+            # Only an accepted successor ends the predecessor's force.
+            findings.error(
+                adr.path,
+                f"superseded by {target.ref}, which is not accepted (status {target.status})",
+            )
+        cycle = _supersede_cycle(adr, by_number)
+        if cycle:
+            findings.error(adr.path, "supersede cycle: " + " -> ".join(cycle))
 
     for value in adr.items("supersedes"):
         target = by_number.get(number_of(value) or -1)
@@ -329,6 +338,24 @@ def _validate_links(adr: Adr, by_number: dict[int, Adr], findings: Findings) -> 
                 adr.path,
                 f"{target.ref} must have status superseded and superseded-by {adr.number:04d}",
             )
+
+
+def _supersede_cycle(adr: Adr, by_number: dict[int, Adr]) -> list[str]:
+    """Return the superseded-by chain from adr when it leads back to adr, else []."""
+    chain = [adr.ref]
+    seen = {adr.number}
+    current = adr
+    while True:
+        number = number_of(current.meta.get("superseded-by"))
+        if number is None or number not in by_number:
+            return []
+        current = by_number[number]
+        chain.append(current.ref)
+        if current.number == adr.number:
+            return chain
+        if current.number in seen:
+            return []
+        seen.add(current.number)
 
 
 def _validate_body(adr: Adr, findings: Findings) -> None:

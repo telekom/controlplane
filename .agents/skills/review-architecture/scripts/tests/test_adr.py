@@ -192,6 +192,38 @@ class ValidateTest(RepoTest):
         self.commit("adrs")
         self.assertIn("must have status superseded", "\n".join(self.errors()))
 
+    def test_only_an_accepted_successor_retires_its_predecessor(self) -> None:
+        self.write_adr("0001-environments.md", status="superseded", **{"superseded-by": "2"})
+        for status in ("proposed", "rejected"):
+            self.write_adr("0002-namespaces.md", status=status, supersedes="[1]")
+            self.commit(f"adrs {status}")
+            self.assertIn("superseded by ADR-0002, which is not accepted", "\n".join(self.errors()))
+
+    def test_supersede_cycles_fail(self) -> None:
+        self.write_adr(
+            "0001-environments.md", status="superseded", supersedes="[1]", **{"superseded-by": "1"}
+        )
+        self.commit("self")
+        self.assertIn("supersede cycle", "\n".join(self.errors()))
+
+        self.write_adr(
+            "0001-environments.md", status="superseded", supersedes="[2]", **{"superseded-by": "2"}
+        )
+        self.write_adr(
+            "0002-namespaces.md", status="superseded", supersedes="[1]", **{"superseded-by": "1"}
+        )
+        self.commit("pair")
+        self.assertIn("supersede cycle", "\n".join(self.errors()))
+
+    def test_supersede_chain_passes(self) -> None:
+        self.write_adr("0001-environments.md", status="superseded", **{"superseded-by": "2"})
+        self.write_adr(
+            "0002-namespaces.md", status="superseded", supersedes="[1]", **{"superseded-by": "3"}
+        )
+        self.write_adr("0003-labels.md", supersedes="[2]")
+        self.commit("chain")
+        self.assertEqual(self.errors(), [])
+
     def test_new_skeleton_is_unfinished_until_written(self) -> None:
         self.write_adr("0001-environments.md")
         self.write("docs/docs/decisions/0002-broken.md", "no frontmatter\n")
