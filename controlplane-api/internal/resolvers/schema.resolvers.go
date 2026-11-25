@@ -298,13 +298,14 @@ func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExp
 
 // Listeners is the resolver for the listeners field.
 func (r *apiExposureResolver) Listeners(ctx context.Context, obj *ent.ApiExposure) ([]*gqlmodel.ListenerInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
 	listeners, err := withListenerInfo(obj.QueryListeners()).
 		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
-		All(viewer.SystemContext(ctx))
+		All(sysCtx)
 	if err != nil {
 		return nil, fmt.Errorf("loading listeners for api exposure %d: %w", obj.ID, err)
 	}
-	return mapListenerInfos(listeners)
+	return mapListenerInfos(sysCtx, listeners)
 }
 
 // Visibility is the resolver for the visibility field.
@@ -344,13 +345,14 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 
 // Listeners is the resolver for the listeners field.
 func (r *apiSubscriptionResolver) Listeners(ctx context.Context, obj *ent.ApiSubscription) ([]*gqlmodel.ListenerInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
 	listeners, err := withListenerInfo(obj.QueryListeners()).
 		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
-		All(viewer.SystemContext(ctx))
+		All(sysCtx)
 	if err != nil {
 		return nil, fmt.Errorf("loading listeners for api subscription %d: %w", obj.ID, err)
 	}
-	return mapListenerInfos(listeners)
+	return mapListenerInfos(sysCtx, listeners)
 }
 
 // StatusPhase is the resolver for the statusPhase field.
@@ -451,20 +453,14 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 		return loadFileSubscriptionInfo(sysCtx, fileSub)
 	}
 
-	listenerTarget, err := obj.Edges.ListenerOrErr()
-	if ent.IsNotLoaded(err) {
-		listenerTarget, err = obj.QueryListener().Only(sysCtx)
-	}
+	listenerTarget, err := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading listener for approval %d: %w", obj.ID, err)
 	}
 	if listenerTarget != nil {
 		return loadListenerInfo(sysCtx, r.client, listenerTarget)
 	}
-	consumerListener, err := obj.Edges.ConsumerListenerOrErr()
-	if ent.IsNotLoaded(err) {
-		consumerListener, err = obj.QueryConsumerListener().Only(sysCtx)
-	}
+	consumerListener, err := loadEdge(sysCtx, obj.Edges.ConsumerListenerOrErr, obj.QueryConsumerListener().Only)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading consumer listener for approval %d: %w", obj.ID, err)
 	}
@@ -536,10 +532,7 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadFileSubscriptionInfo(sysCtx, fileSub)
 	}
 
-	listenerTarget, err := obj.Edges.ListenerOrErr()
-	if ent.IsNotLoaded(err) {
-		listenerTarget, err = obj.QueryListener().Only(sysCtx)
-	}
+	listenerTarget, err := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, err)
 	}
@@ -575,10 +568,7 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 		return appr, nil
 	}
 
-	listenerTarget, listenerErr := obj.Edges.ListenerOrErr()
-	if ent.IsNotLoaded(listenerErr) {
-		listenerTarget, listenerErr = obj.QueryListener().Only(sysCtx)
-	}
+	listenerTarget, listenerErr := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
 	if listenerErr != nil && !ent.IsNotFound(listenerErr) {
 		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, listenerErr)
 	}
@@ -938,17 +928,11 @@ func (r *fileSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gql
 // ResourceName is the resolver for the resourceName field.
 func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) (*string, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	exposure, err := obj.Edges.ExposureOrErr()
-	if ent.IsNotLoaded(err) {
-		exposure, err = obj.QueryExposure().Only(sysCtx)
-	}
+	exposure, err := loadEdge(sysCtx, obj.Edges.ExposureOrErr, obj.QueryExposure().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
 	}
-	apiDefinition, err := exposure.Edges.APIOrErr()
-	if ent.IsNotLoaded(err) {
-		apiDefinition, err = exposure.QueryAPI().Only(sysCtx)
-	}
+	apiDefinition, err := loadEdge(sysCtx, exposure.Edges.APIOrErr, exposure.QueryAPI().Only)
 	if ent.IsNotFound(err) {
 		return nil, nil
 	}
@@ -964,10 +948,8 @@ func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) 
 
 // Approved is the resolver for the approved field.
 func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (bool, error) {
-	providerApproval, err := obj.Edges.ProviderApprovalOrErr()
-	if ent.IsNotLoaded(err) {
-		providerApproval, err = obj.QueryProviderApproval().Only(viewer.SystemContext(ctx))
-	}
+	sysCtx := viewer.SystemContext(ctx)
+	providerApproval, err := loadEdge(sysCtx, obj.Edges.ProviderApprovalOrErr, obj.QueryProviderApproval().Only)
 	if ent.IsNotFound(err) {
 		return false, nil
 	}
@@ -977,10 +959,7 @@ func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (boo
 	if providerApproval.State != approval.StateGranted {
 		return false, nil
 	}
-	consumerApproval, err := obj.Edges.ConsumerApprovalOrErr()
-	if ent.IsNotLoaded(err) {
-		consumerApproval, err = obj.QueryConsumerApproval().Only(viewer.SystemContext(ctx))
-	}
+	consumerApproval, err := loadEdge(sysCtx, obj.Edges.ConsumerApprovalOrErr, obj.QueryConsumerApproval().Only)
 	if ent.IsNotFound(err) {
 		return false, nil
 	}
@@ -993,10 +972,7 @@ func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (boo
 // Application is the resolver for the application field.
 func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	application, err := obj.Edges.ApplicationOrErr()
-	if ent.IsNotLoaded(err) {
-		application, err = obj.QueryApplication().Only(sysCtx)
-	}
+	application, err := loadEdge(sysCtx, obj.Edges.ApplicationOrErr, obj.QueryApplication().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading listener application for listener %d: %w", obj.ID, err)
 	}
@@ -1006,17 +982,11 @@ func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (
 // Consumer is the resolver for the consumer field.
 func (r *listenerResolver) Consumer(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	subscription, err := obj.Edges.SubscriptionOrErr()
-	if ent.IsNotLoaded(err) {
-		subscription, err = obj.QuerySubscription().Only(sysCtx)
-	}
+	subscription, err := loadEdge(sysCtx, obj.Edges.SubscriptionOrErr, obj.QuerySubscription().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading subscription for listener %d: %w", obj.ID, err)
 	}
-	application, err := subscription.Edges.OwnerOrErr()
-	if ent.IsNotLoaded(err) {
-		application, err = subscription.QueryOwner().Only(sysCtx)
-	}
+	application, err := loadEdge(sysCtx, subscription.Edges.OwnerOrErr, subscription.QueryOwner().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading consumer application for listener %d: %w", obj.ID, err)
 	}
@@ -1026,17 +996,11 @@ func (r *listenerResolver) Consumer(ctx context.Context, obj *ent.Listener) (*gq
 // Provider is the resolver for the provider field.
 func (r *listenerResolver) Provider(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	exposure, err := obj.Edges.ExposureOrErr()
-	if ent.IsNotLoaded(err) {
-		exposure, err = obj.QueryExposure().Only(sysCtx)
-	}
+	exposure, err := loadEdge(sysCtx, obj.Edges.ExposureOrErr, obj.QueryExposure().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
 	}
-	application, err := exposure.Edges.OwnerOrErr()
-	if ent.IsNotLoaded(err) {
-		application, err = exposure.QueryOwner().Only(sysCtx)
-	}
+	application, err := loadEdge(sysCtx, exposure.Edges.OwnerOrErr, exposure.QueryOwner().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading provider application for listener %d: %w", obj.ID, err)
 	}
@@ -1046,10 +1010,7 @@ func (r *listenerResolver) Provider(ctx context.Context, obj *ent.Listener) (*gq
 // Subscription is the resolver for the subscription field.
 func (r *listenerResolver) Subscription(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApiSubscriptionInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	subscription, err := obj.Edges.SubscriptionOrErr()
-	if ent.IsNotLoaded(err) {
-		subscription, err = obj.QuerySubscription().Only(sysCtx)
-	}
+	subscription, err := loadEdge(sysCtx, obj.Edges.SubscriptionOrErr, obj.QuerySubscription().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading subscription for listener %d: %w", obj.ID, err)
 	}
@@ -1059,10 +1020,7 @@ func (r *listenerResolver) Subscription(ctx context.Context, obj *ent.Listener) 
 // Exposure is the resolver for the exposure field.
 func (r *listenerResolver) Exposure(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApiExposureInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	exposure, err := obj.Edges.ExposureOrErr()
-	if ent.IsNotLoaded(err) {
-		exposure, err = obj.QueryExposure().Only(sysCtx)
-	}
+	exposure, err := loadEdge(sysCtx, obj.Edges.ExposureOrErr, obj.QueryExposure().Only)
 	if err != nil {
 		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
 	}
