@@ -27,7 +27,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -198,9 +197,6 @@ func Run() error {
 		EdgeCache:   edgeCache,
 		IDResolver:  idResolver,
 		Config:      cfg,
-	}
-	if cconfig.FeatureSpectre.IsEnabled() {
-		deps.ParentEvents = make(chan event.GenericEvent, 1024)
 	}
 
 	// --- Controller Manager ---

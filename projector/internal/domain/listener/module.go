@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const applicationIndex = "spec.application"
@@ -131,7 +130,6 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
 		Watches(&apiv1.ApiExposure{}, parentHandler,
 			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
-		WatchesRawSource(source.Channel(deps.ParentEvents, parentHandler)).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: deps.Config.ConcurrencyFor("listener"),
 			RateLimiter:             module.NewRateLimiter(deps.Config),
