@@ -577,7 +577,7 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 
 	listenerTarget, listenerErr := obj.Edges.ListenerOrErr()
 	if ent.IsNotLoaded(listenerErr) {
-		listenerTarget, listenerErr = obj.QueryListener().Only(ctx)
+		listenerTarget, listenerErr = obj.QueryListener().Only(sysCtx)
 	}
 	if listenerErr != nil && !ent.IsNotFound(listenerErr) {
 		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, listenerErr)
@@ -595,7 +595,7 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 		default:
 			return nil, fmt.Errorf("unknown listener approval action %q for approval request %d", obj.Action, obj.ID)
 		}
-		matchedApproval, err := approvalQuery.Only(ctx)
+		matchedApproval, err := approvalQuery.Only(sysCtx)
 		if ent.IsNotFound(err) {
 			return nil, nil
 		}
@@ -1088,7 +1088,7 @@ func (r *listenerResolver) Exposure(ctx context.Context, obj *ent.Listener) (*gq
 func (r *listenerResolver) ProviderApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
 	providerApproval, err := obj.Edges.ProviderApprovalOrErr()
 	if ent.IsNotLoaded(err) {
-		providerApproval, err = obj.QueryProviderApproval().Only(ctx)
+		providerApproval, err = obj.QueryProviderApproval().Only(viewer.SystemContext(ctx))
 	}
 	if ent.IsNotFound(err) {
 		return nil, nil
@@ -1103,7 +1103,7 @@ func (r *listenerResolver) ProviderApproval(ctx context.Context, obj *ent.Listen
 func (r *listenerResolver) ConsumerApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
 	consumerApproval, err := obj.Edges.ConsumerApprovalOrErr()
 	if ent.IsNotLoaded(err) {
-		consumerApproval, err = obj.QueryConsumerApproval().Only(ctx)
+		consumerApproval, err = obj.QueryConsumerApproval().Only(viewer.SystemContext(ctx))
 	}
 	if ent.IsNotFound(err) {
 		return nil, nil
