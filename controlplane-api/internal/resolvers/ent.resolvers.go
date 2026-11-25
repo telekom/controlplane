@@ -214,12 +214,24 @@ func (r *queryResolver) Listeners(ctx context.Context, after *entgql.Cursor[int]
 	for _, loadedListener := range loaded {
 		byID[loadedListener.ID] = loadedListener
 	}
+	edges := make([]*ent.ListenerEdge, 0, len(connection.Edges))
 	for _, edge := range connection.Edges {
 		loadedListener, ok := byID[edge.Node.ID]
 		if !ok {
-			return nil, fmt.Errorf("loading listener %d relationships: listener not found", edge.Node.ID)
+			continue
 		}
 		edge.Node = loadedListener
+		edges = append(edges, edge)
+	}
+	if len(edges) != len(connection.Edges) {
+		connection.Edges = edges
+		if len(edges) == 0 {
+			connection.PageInfo.StartCursor = nil
+			connection.PageInfo.EndCursor = nil
+		} else {
+			connection.PageInfo.StartCursor = &edges[0].Cursor
+			connection.PageInfo.EndCursor = &edges[len(edges)-1].Cursor
+		}
 	}
 	return connection, nil
 }

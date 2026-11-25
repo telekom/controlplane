@@ -310,6 +310,37 @@ func loadedOwnerChain(app *ent.Application, listenerID int, role string) (*ent.A
 	return app, zone, team, group, nil
 }
 
+// loadApplicationChain loads zone, owner team, and optional group for an application,
+// reusing eager-loaded edges when present and falling back to DB queries otherwise.
+func loadApplicationChain(ctx context.Context, app *ent.Application) (*ent.Zone, *ent.Team, *ent.Group, error) {
+	// The zone edge is required in ent, so a not-found is a real error here.
+	zone, err := app.Edges.ZoneOrErr()
+	if ent.IsNotLoaded(err) {
+		zone, err = app.QueryZone().Only(ctx)
+	}
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
+	}
+	team, err := app.Edges.OwnerTeamOrErr()
+	if ent.IsNotLoaded(err) {
+		team, err = app.QueryOwnerTeam().Only(ctx)
+	}
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("loading owner team for application %d: %w", app.ID, err)
+	}
+	group, err := team.Edges.GroupOrErr()
+	if ent.IsNotLoaded(err) {
+		group, err = team.QueryGroup().Only(ctx)
+	}
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, nil, nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+	return zone, team, group, nil
+}
+
 // loadOwnerChain traverses subscription → owner application → zone/team → group.
 // Used by both API and event subscription info loaders.
 func loadOwnerChain(ctx context.Context, ownerQuery interface {
@@ -320,28 +351,23 @@ func loadOwnerChain(ctx context.Context, ownerQuery interface {
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("loading owner application: %w", err)
 	}
-	// The zone edge is required in ent, so a not-found is a real error here.
-	zone, err := app.QueryZone().Only(ctx)
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
-	}
-	team, err := app.QueryOwnerTeam().Only(ctx)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("loading owner team for application %d: %w", app.ID, err)
-	}
-	group, err := team.QueryGroup().Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, nil, nil, nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
-	}
-	if ent.IsNotFound(err) {
-		group = nil
+		return nil, nil, nil, nil, err
 	}
 	return app, zone, team, group, nil
 }
 
 // loadApiSubscriptionInfo loads the full owner chain for an API subscription and maps it to ApiSubscriptionInfo.
 func loadApiSubscriptionInfo(ctx context.Context, sub *ent.ApiSubscription) (*gqlmodel.ApiSubscriptionInfo, error) {
-	app, zone, team, group, err := loadOwnerChain(ctx, sub.QueryOwner())
+	app, err := sub.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = sub.QueryOwner().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("api subscription %d: loading owner application: %w", sub.ID, err)
+	}
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
 		return nil, fmt.Errorf("api subscription %d: %w", sub.ID, err)
 	}
@@ -377,7 +403,14 @@ func loadFileExposureInfo(ctx context.Context, exposure *ent.FileExposure) (*gql
 
 // loadApiExposureInfo loads the full owner chain for an API exposure and maps it to ApiExposureInfo.
 func loadApiExposureInfo(ctx context.Context, exposure *ent.ApiExposure) (*gqlmodel.ApiExposureInfo, error) {
-	app, zone, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
+	app, err := exposure.Edges.OwnerOrErr()
+	if ent.IsNotLoaded(err) {
+		app, err = exposure.QueryOwner().Only(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("api exposure %d: loading owner application: %w", exposure.ID, err)
+	}
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
 		return nil, fmt.Errorf("api exposure %d: %w", exposure.ID, err)
 	}
@@ -412,20 +445,9 @@ func loadAgenticExposureInfo(ctx context.Context, exposure *ent.AgenticExposure)
 }
 
 func loadApplicationInfo(ctx context.Context, app *ent.Application) (*gqlmodel.ApplicationInfo, error) {
-	zone, err := app.QueryZone().Only(ctx)
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
-		return nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
-	}
-	team, err := app.QueryOwnerTeam().Only(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("loading owner team for application %d: %w", app.ID, err)
-	}
-	group, err := team.QueryGroup().Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
-	}
-	if ent.IsNotFound(err) {
-		group = nil
+		return nil, err
 	}
 	return mapApplicationInfo(app, zone, team, group), nil
 }

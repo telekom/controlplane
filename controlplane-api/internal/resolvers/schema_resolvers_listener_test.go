@@ -243,6 +243,70 @@ var _ = Describe("Listener resolvers", func() {
 		Expect(connection.Edges).To(HaveLen(2))
 	})
 
+	It("resolves Listener fields from eager-loaded connections without extra DB queries", func() {
+		ctx := testutil.AllowContext()
+		// Clear Group on TeamAlpha to verify optional nil edges are also reused without querying.
+		client.Team.UpdateOne(s.TeamAlpha).ClearGroup().ExecX(ctx)
+
+		queryConn, err := r.Query().Listeners(ctx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(queryConn.Edges).To(HaveLen(2))
+
+		appConn, err := r.Application().Listeners(ctx, s.AppBeta, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(appConn.Edges).To(HaveLen(2))
+
+		// Close the database so any unexpected lazy query fails immediately.
+		Expect(client.Close()).To(Succeed())
+
+		for _, conn := range []*ent.ListenerConnection{queryConn, appConn} {
+			for _, edge := range conn.Edges {
+				node := edge.Node
+				resourceName, err := r.Listener().ResourceName(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resourceName).To(HaveValue(Equal("api-alpha")))
+
+				approved, err := r.Listener().Approved(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(approved).To(Equal(node.ID == s.ListenerReady.ID))
+
+				app, err := r.Listener().Application(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(app.Name).To(Equal("app-beta"))
+
+				consumer, err := r.Listener().Consumer(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(consumer.Name).To(Equal("app-beta"))
+
+				provider, err := r.Listener().Provider(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(provider.Name).To(Equal("app-alpha"))
+				Expect(provider.OwnerTeam.GroupName).To(BeEmpty())
+
+				sub, err := r.Listener().Subscription(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sub.ID).To(Equal(s.Subscription.ID))
+
+				exp, err := r.Listener().Exposure(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(exp.ID).To(Equal(s.ExposureAlpha.ID))
+				Expect(exp.OwnerTeam.GroupName).To(BeEmpty())
+
+				providerApproval, err := r.Listener().ProviderApproval(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				consumerApproval, err := r.Listener().ConsumerApproval(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				if node.ID == s.ListenerReady.ID {
+					Expect(providerApproval).NotTo(BeNil())
+					Expect(consumerApproval).NotTo(BeNil())
+				} else {
+					Expect(providerApproval).To(BeNil())
+					Expect(consumerApproval).To(BeNil())
+				}
+			}
+		}
+	})
+
 	It("maps filter values for GraphQL", func() {
 		trigger, err := r.ListenerFilter().Trigger(context.Background(), s.ListenerReady.RequestFilter)
 		Expect(err).NotTo(HaveOccurred())
