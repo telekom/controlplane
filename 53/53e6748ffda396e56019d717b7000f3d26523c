@@ -1,0 +1,28 @@
+docs/docs/decisions/index.md
+  s_dfdbcf65d00025::t_184753bbd8f523 21
+.agents/skills/review-architecture/scripts/adr.py
+  s_dfdbcf65d00025::t_71853c2a41f5ba 75-103,341,351-359,364-365
+.agents/skills/review-architecture/ADR-FORMAT.md
+  s_dfdbcf65d00025::t_83a8a8f0e86a54 65-68
+.agents/skills/review-architecture/scripts/tests/test_adr.py
+  s_dfdbcf65d00025::t_16b4f950bb8480 142-159
+docs/docs/decisions/0001-layers-see-only-the-api-module-of-the-layer-below.md
+  s_dfdbcf65d00025::t_9cb9a432dc3745 80-83
+  s_dfdbcf65d00025::t_f45f82fbbabf2a 65-67,69,72,75,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5353e6748ffda396e56019d717b7000f3d26523c",
+  "prompts": {},
+  "sessions": {
+    "s_dfdbcf65d00025": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "64d3a6c9-99a5-41c6-aca8-9d680355095e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

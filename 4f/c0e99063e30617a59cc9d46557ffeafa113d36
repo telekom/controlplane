@@ -1,0 +1,30 @@
+docs/docs/admin-journey/controlplane-api.md
+  s_7fe8a2269e95bf::t_5ee2668021d0bc 7
+  s_7fe8a2269e95bf::t_e053b03561a6ac 40,42
+docs/docs/architecture/controlplane-api.mdx
+  s_7fe8a2269e95bf::t_1ba84a85b2f8bf 7,25,109
+docs/docs/architecture/overview.md
+  s_7fe8a2269e95bf::t_b59aba7998c94d 45,103
+docs/docs/decisions/0001-layers-see-only-the-api-module-of-the-layer-below.md
+  s_7fe8a2269e95bf::t_08a95412c18a4c 28-31,45-48,55,59,67-73,95
+docs/docs/overview/components.md
+  s_7fe8a2269e95bf::t_194f51b12c2e1c 111
+docs/docs/reference/api.md
+  s_7fe8a2269e95bf::t_6aaf7067bb2493 280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4fc0e99063e30617a59cc9d46557ffeafa113d36",
+  "prompts": {},
+  "sessions": {
+    "s_7fe8a2269e95bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b2b35c6f-044a-4bf4-af1b-668b466fb36b",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

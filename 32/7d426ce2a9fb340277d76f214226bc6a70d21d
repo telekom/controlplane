@@ -1,0 +1,21 @@
+docs/adrs/0012-shared-changeset-for-all-backend-operators.md
+  s_8feb2417cda658::t_f4eeb24d756b66 73,83,91
+docs/adrs/0014-mask-secrets-in-change-records.md
+  s_8feb2417cda658::t_d332f6e1402496 15,19-23,30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "327d426ce2a9fb340277d76f214226bc6a70d21d",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

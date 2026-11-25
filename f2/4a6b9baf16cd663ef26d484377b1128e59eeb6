@@ -1,0 +1,147 @@
+gateway/api/v1/route_types.go
+  s_8feb2417cda658::t_17a5c7b905f4de 109-113,365-374
+gateway/pkg/kong/client/kongclient.go
+  s_8feb2417cda658::t_aa030fde607ff3 80-82,95-96,98
+  s_8feb2417cda658::t_7b34b88a18bbdc 18
+docs/adrs/0012-shared-changeset-for-all-backend-operators.md
+  s_8feb2417cda658::t_967cbd69aa3773 9,75
+gateway/pkg/kong/client/plugin/rtp.go
+  s_8feb2417cda658::t_40f8bc01e9f32e 15
+gateway/pkg/kong/client/consumer.go
+  s_8feb2417cda658::t_7b34b88a18bbdc 13
+  s_8feb2417cda658::t_98c91fd1068abe 73,115
+  s_8feb2417cda658::t_43b11be6487145 58
+  s_8feb2417cda658::t_cbfca507cd98d5 31,41
+gateway/pkg/kong/client/kinds.go
+  s_8feb2417cda658::t_98c91fd1068abe 68,78,88
+gateway/internal/controller/consumer_controller.go
+  s_8feb2417cda658::t_6cdabdd505152e 19
+  s_8feb2417cda658::t_e65112fe99ce18 58
+common/pkg/types/changes.go
+  s_8feb2417cda658::t_76cbea6a1f27ab 1-145
+gateway/api/v1/consumer_types.go
+  s_8feb2417cda658::t_17a5c7b905f4de 34-38,112-121
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_8feb2417cda658::t_eb2f660c4f7442 191-192,199,203,234,247-248,280,282,284-285,293,296-298,300-328,335
+docs/adrs/0013-record-last-applied-changes.md
+  s_8feb2417cda658::t_967cbd69aa3773 9,38
+common/pkg/changeset/run.go
+  s_8feb2417cda658::t_ccdc35fc462538 1-79
+gateway/internal/controller/route_controller.go
+  s_8feb2417cda658::t_e65112fe99ce18 67
+  s_8feb2417cda658::t_6cdabdd505152e 26
+gateway/pkg/kong/client/route.go
+  s_8feb2417cda658::t_98c91fd1068abe 314,353
+  s_8feb2417cda658::t_b54cc091c3432a 167,194
+  s_8feb2417cda658::t_43b11be6487145 279,294
+gateway/pkg/kong/client/plugin_cleanup.go
+  s_8feb2417cda658::t_43b11be6487145 104
+common/pkg/changeset/diff.go
+  s_8feb2417cda658::t_19a5a7e8146382 19-20,31-34,43-45,137-138,140-141
+  s_8feb2417cda658::t_37734bdbab4019 1-18,21-30,35-42,46-136,139,142-157
+common/pkg/changeset/changeset_test.go
+  s_8feb2417cda658::t_23a7f55c759ff2 16-17,41,50,56,68,77,82-83,87,90,94-95,98-99,106,111,121,124,137-139,143,154,159,166,172,189,193-194,198-199,209,217,228,233,239,249-250,254,256,258,260,262,264,266,268,273-274,277-283,294-296,298,302,307-308,320,326,333,340,350-351,353-355,359,367-368
+  s_8feb2417cda658::t_37734bdbab4019 1-15,18-29,33-40,42-49,51-55,57-67,69-76,78-81,84-86,88-89,91-93,96-97,100-105,107-110,112-119,122-123,134-136,140-142,144-146,149-150,152-153,155-158,160-165,167,169-171,173-174,177-178,180,182-184,186-188,190-192,195-197,200-208,210,212,214-216,218-219,221-227,229-232,234-238,240,245-248,251-253,255,257,259,261,263,265,267,269-272,275-276,284-285,289-293,297,299-301,303-306,309-319,321-325,327-331,334,336-339,341-349,352,356-358,360-366,369-374
+  s_8feb2417cda658::t_aa6881ea255a1f 30-32,120,125-133,147-148,151,168,175-176,179,181,185,211,213,220,241-244,286-288,332,335
+common/pkg/changeset/approval.go
+  s_8feb2417cda658::t_8d89658bbabdc0 11-14,17,21,39-43,49-61
+  s_8feb2417cda658::t_37734bdbab4019 5,62
+gateway/Makefile
+  s_8feb2417cda658::t_7b34b88a18bbdc 66,68
+common/pkg/changeset/plan.go
+  s_8feb2417cda658::t_ffaf7ffc1cb4a0 14,16-18,22,30-31,41,49-50,66-67,72-73,163-191,193-204,206,208,211-212,214,218,221,223
+  s_8feb2417cda658::t_37734bdbab4019 1-13,15,19-21,23-29,32-40,42-48,51-65,68-71,74-162,192,205,207,209-210,213,215-217,219-220,222,224
+common/pkg/changeset/mask.go
+  s_8feb2417cda658::t_19a5a7e8146382 1-124
+gateway/pkg/kong/client/plugin.go
+  s_8feb2417cda658::t_98c91fd1068abe 267
+  s_8feb2417cda658::t_e65112fe99ce18 269-270,272-278
+  s_8feb2417cda658::t_40f8bc01e9f32e 22-25,271
+  s_8feb2417cda658::t_cbfca507cd98d5 68,220,322
+  s_8feb2417cda658::t_43b11be6487145 99
+  s_8feb2417cda658::t_7b34b88a18bbdc 17
+  s_8feb2417cda658::t_3621cc2f5b5a27 268
+gateway/internal/handler/route/handler.go
+  s_8feb2417cda658::t_75e26bd913d296 38-40,43-51,56,77-78,180-182,184-185
+  s_8feb2417cda658::t_7b34b88a18bbdc 16
+common/pkg/changeset/flags.go
+  s_8feb2417cda658::t_8d89658bbabdc0 1-31
+common/pkg/changeset/path.go
+  s_8feb2417cda658::t_37734bdbab4019 1-74
+gateway/pkg/kong/client/upstream.go
+  s_8feb2417cda658::t_98c91fd1068abe 170,312
+  s_8feb2417cda658::t_cbfca507cd98d5 12,64,77,316
+  s_8feb2417cda658::t_43b11be6487145 150
+gateway/pkg/kong/client/consumer_test.go
+  s_8feb2417cda658::t_7b34b88a18bbdc 14
+  s_8feb2417cda658::t_ee10a5c97d3673 60
+  s_8feb2417cda658::t_cbfca507cd98d5 62,66,68
+common/pkg/changeset/gate.go
+  s_8feb2417cda658::t_37734bdbab4019 1-4,11-26,28-30,32-33,49-55,57-58,60-66,76-82,89-90,94,96-104,106-107,112,114,117-140,144-145,147-149,152-153,158-162,164,166-170,175-182,184-189,191-201,203-204,206-209,216-217,220-227,229-232,237-240,244-245,248,250,252-253,255,260-261,263-306
+  s_8feb2417cda658::t_adc6db8dbcb3fd 5-10,27,31,34-48,56,59,67-75,83-88,91-93,95,105,108-111,113,115-116,141-143,146,150-151,154-157,163,165,171-174,183,190,202,205,210-215,218-219,228,233-236,241-243,246-247,249,251,254,256-259,262
+gateway/internal/handler/route/handler_test.go
+  s_8feb2417cda658::t_cbfca507cd98d5 200,208-209,251,282
+  s_8feb2417cda658::t_7b34b88a18bbdc 18
+  s_8feb2417cda658::t_ee10a5c97d3673 206,256-259
+  s_8feb2417cda658::t_ffc9a82d848ae8 244
+docs/adrs/README.md
+  s_8feb2417cda658::t_967cbd69aa3773 30-32
+gateway/api/v1/zz_generated.deepcopy.go
+  s_8feb2417cda658::t_f96edbc5df579d 430-434,1079-1083
+gateway/pkg/kong/client/located_entity.go
+  s_8feb2417cda658::t_9dd21e767e6b21 30
+  s_8feb2417cda658::t_aa030fde607ff3 86-89
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_consumers.yaml
+  s_8feb2417cda658::t_f96edbc5df579d 156-247,254,257,263-264,268-269,273-274,290-291,294,309,315-318
+common/pkg/changeset/reconcile.go
+  s_8feb2417cda658::t_a64b3dce37f2c9 1-176
+common/pkg/changeset/suite_test.go
+  s_8feb2417cda658::t_37734bdbab4019 1-17
+gateway/cmd/main.go
+  s_8feb2417cda658::t_7b34b88a18bbdc 31
+  s_8feb2417cda658::t_cb2d42b1614db9 34
+  s_8feb2417cda658::t_319f56f5e6998b 59,73,91-93,96-97
+gateway/pkg/kong/client/reconcile.go
+  s_8feb2417cda658::t_ada2d915a67b58 10,24-25,27-44
+  s_8feb2417cda658::t_98c91fd1068abe 13-22,26
+gateway/config/crd/bases/gateway.cp.ei.telekom.de_routes.yaml
+  s_8feb2417cda658::t_f96edbc5df579d 772-863,870,873,879-880,884-885,889-890,906-907,910,925,931-934
+gateway/internal/handler/consumer/handler.go
+  s_8feb2417cda658::t_52f9e321628c10 56
+  s_8feb2417cda658::t_7b34b88a18bbdc 12
+  s_8feb2417cda658::t_75e26bd913d296 31-32,54-55,58-59,62-63
+common/pkg/changeset/metrics.go
+  s_8feb2417cda658::t_8d89658bbabdc0 1-29
+gateway/pkg/kongutil/client_factory.go
+  s_8feb2417cda658::t_cbfca507cd98d5 91,179
+  s_8feb2417cda658::t_f0ed59e24a3d7d 74,89-90,94,97-98,101,177
+  s_8feb2417cda658::t_7b34b88a18bbdc 19
+docs/adrs/0014-mask-secrets-in-change-records.md
+  s_8feb2417cda658::t_967cbd69aa3773 9
+common/pkg/changeset/pipeline_test.go
+  s_8feb2417cda658::t_adc6db8dbcb3fd 130-131,144-145
+  s_8feb2417cda658::t_a3099712adc1a7 92-111,237-247
+  s_8feb2417cda658::t_f584bcd15133ce 1-91,112-129,132-143,146-236,248-419,424
+  s_8feb2417cda658::t_e2a47c3906459b 420-423
+gateway/pkg/kong/client/migration_mode_test.go
+  s_8feb2417cda658::t_7b34b88a18bbdc 13
+  s_8feb2417cda658::t_cbfca507cd98d5 30,48,55-56,76,95
+  s_8feb2417cda658::t_ee10a5c97d3673 46
+  s_8feb2417cda658::t_13ac10e62dad05 9,105-126,128-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f24a6b9baf16cd663ef26d484377b1128e59eeb6",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

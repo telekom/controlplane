@@ -1,0 +1,19 @@
+common/go.mod
+  s_8feb2417cda658::t_c9deab378afc0d 10,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "476ddd8cfb64caea836ba3968445594c799433ca",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

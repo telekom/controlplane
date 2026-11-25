@@ -1,0 +1,77 @@
+.agents/skills/review-architecture/scripts/sync_reviewer.py
+  s_dfdbcf65d00025::t_2005994884e1c9 1-144
+.agents/skills/review-architecture/scripts/adr.py
+  s_dfdbcf65d00025::t_104e92c55c69a7 297-298
+  s_dfdbcf65d00025::t_6b0534f7c1d125 558-572
+  s_dfdbcf65d00025::t_304e7a75666c0f 321,352,398-404
+  s_dfdbcf65d00025::t_e4a0130ff65a76 309
+  s_dfdbcf65d00025::t_b9a4626ceb8c13 62-63,348-349,362,365-370,372-373
+  s_dfdbcf65d00025::t_60917a9e4e6651 233,266,277
+  s_dfdbcf65d00025::t_2d2735ed92eb76 1-61,64-232,234-265,267-276,278-296,299-308,310-320,322-347,350-351,353-361,363-364,371,374-397,405-557,573-705
+docs/docs/decisions/_category_.json
+  s_dfdbcf65d00025::t_0466fab6fe865d 1-8
+docs/docusaurus.config.ts
+  s_dfdbcf65d00025::t_c6d7d733b641db 64-65
+REVIEW.md
+  s_dfdbcf65d00025::t_990164b86b0832 26
+docs/docs/decisions/index.md
+  s_dfdbcf65d00025::t_fc13254b464713 1-37
+.agents/skills/review-architecture/scripts/tests/test_adr.py
+  s_dfdbcf65d00025::t_e96412689bc873 109-112
+  s_dfdbcf65d00025::t_dc354e3534e058 137-141,179,182
+  s_dfdbcf65d00025::t_7ab6cec23c20b2 167-176
+  s_dfdbcf65d00025::t_bd30d8aebe50a3 10,72-74,76
+  s_dfdbcf65d00025::t_1411e1ee5b9ff8 1-9,11-71,75,77-108,113-136,142-147,157-166,177-178,180-181,183-259
+  s_dfdbcf65d00025::t_ed6ea6df50793f 148-156
+.agents/skills/review-architecture/BACKFILL.md
+  s_dfdbcf65d00025::t_5b3812cb5a5236 52-54
+  s_dfdbcf65d00025::t_4a39772b39f1ef 1-51,55-63
+.agents/skills/review-architecture/scripts/tests/test_sync_reviewer.py
+  s_dfdbcf65d00025::t_b9b0964be6045e 1-40
+AGENTS.md
+  s_dfdbcf65d00025::t_9d19e170469a81 89,104-108
+  s_dfdbcf65d00025::t_4aefb28f3f298b 109
+.agents/skills/review-architecture/SKILL.md
+  s_dfdbcf65d00025::t_051d2702f01705 1-125
+docs/src/theme/DocItem/Content/index.tsx
+  s_dfdbcf65d00025::t_0e59cfec9fe577 1-64,72-79,83-85,87-133
+  s_dfdbcf65d00025::t_c1d1016841353f 65-71,86
+  s_dfdbcf65d00025::t_fd9a31d82fc362 80-82
+.agents/skills/review-architecture/ADR-FORMAT.md
+  s_dfdbcf65d00025::t_6785d8a9a1a6d7 1-42,48-119
+  s_dfdbcf65d00025::t_96c15823a6a832 43-47
+.agents/skills/review-architecture/reviewer/README.md
+  s_dfdbcf65d00025::t_31e97a3c2708b5 51-54
+  s_dfdbcf65d00025::t_0846e81b46cf47 1-42,47-50,55-98
+  s_dfdbcf65d00025::t_709ae6dcd63290 43-46
+REUSE.toml
+  s_dfdbcf65d00025::t_41d62a570bfcbe 44
+.claude/skills/review-pr/SKILL.md
+  s_dfdbcf65d00025::t_7ac3bc2f60a722 68
+.pre-commit-config.yaml
+  s_dfdbcf65d00025::t_004b4d9622e5c7 56-71
+.github/skills/review-pr/SKILL.md
+  s_dfdbcf65d00025::t_11a6c729a689af 67
+.claude/agents/architecture-reviewer.md
+  s_dfdbcf65d00025::t_b1c7b85b6fa37c 1-102
+.github/agents/architecture-reviewer.agent.md
+  s_dfdbcf65d00025::t_e7edb3a9056b98 1-103
+.opencode/agents/architecture-reviewer.md
+  s_dfdbcf65d00025::t_d9120ff013fd03 1-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "62ba6575863c0e3f22a7e85bb10932ce212d6ea4",
+  "prompts": {},
+  "sessions": {
+    "s_dfdbcf65d00025": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "64d3a6c9-99a5-41c6-aca8-9d680355095e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

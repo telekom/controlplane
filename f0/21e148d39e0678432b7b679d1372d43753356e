@@ -1,0 +1,48 @@
+gateway/api/v1/gateway_types.go
+  s_8feb2417cda658::t_0559f263ddd874 8-9,15-23
+  s_8feb2417cda658::t_2cc851d9b2515e 24
+gateway/internal/features/builder.go
+  s_8feb2417cda658::t_97a0a2d34b239e 26-30
+gateway/pkg/kong/client/discovery.go
+  s_8feb2417cda658::t_f9b5a1f429c9e7 68,82-84,112-113,144-146,221-224,232-233,235,261-268
+gateway/internal/handler/route/handler.go
+  s_8feb2417cda658::t_04d4a0f57d9aad 38
+  s_8feb2417cda658::t_1665ce6c305d95 145-151,177-183
+  s_8feb2417cda658::t_c7eaa4d49f43ed 97-99
+docs/docs/architecture/admin.mdx
+  s_8feb2417cda658::t_9371c4dd20b445 50
+admin/internal/handler/zone/gateway.go
+  s_8feb2417cda658::t_0559f263ddd874 123-125,130
+  s_8feb2417cda658::t_16ea3c185720db 11,71-75,91,132
+  s_8feb2417cda658::t_c47af92e67d398 131
+admin/internal/handler/zone/handler_test.go
+  s_8feb2417cda658::t_0559f263ddd874 41-43
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_8feb2417cda658::t_b14ee82eeb0f9c 99-100
+gateway/internal/handler/route/handler_test.go
+  s_8feb2417cda658::t_8e73bd2feaed66 159-169,171,173-175,190-193
+docs/docs/admin-journey/environments-and-zones.md
+  s_8feb2417cda658::t_f348b27c386f1f 33
+  s_8feb2417cda658::t_df14fa3b351bf1 34
+docs/docs/architecture/gateway.mdx
+  s_8feb2417cda658::t_b14ee82eeb0f9c 257
+gateway/pkg/kong/client/realm_route_test.go
+  s_8feb2417cda658::t_010fe539cd1897 114-123,355-373,470-476
+  s_8feb2417cda658::t_d1abda8d1f26c3 477
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f021e148d39e0678432b7b679d1372d43753356e",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

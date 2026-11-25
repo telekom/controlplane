@@ -1,0 +1,105 @@
+admin/go.mod
+  s_8feb2417cda658::t_511627c602f56e 51,58-69,78,101-108,125-126
+admin/go.sum
+  s_8feb2417cda658::t_ed860930be023e 30-31,55-80,108-109,197-214,252-255
+agentic/go.mod
+  s_8feb2417cda658::t_573c4919832435 43,51-62,70,91-98,115-116
+agentic/go.sum
+  s_8feb2417cda658::t_76c25d080f0445 26-27,51-76,102-103,185-202,240-243
+api/go.mod
+  s_8feb2417cda658::t_93777ce12c1522 58,66-77,84,107-114,130-131
+api/go.sum
+  s_8feb2417cda658::t_378c9bf2321ecc 30-31,55-80,106-107,195-212,250-253
+application/go.mod
+  s_8feb2417cda658::t_3bffe08bf4fc7e 44-54,66,83,91,98,113-119,133-134
+application/go.sum
+  s_8feb2417cda658::t_351592fc5168f8 30-31,55-80,108-109,197-214,252-255
+approval/go.mod
+  s_8feb2417cda658::t_990227617d3277 44,52-63,71,91-98,115-116
+approval/go.sum
+  s_8feb2417cda658::t_ff080d3c755068 26-27,51-76,102-103,185-202,240-243
+common-server/go.mod
+  s_8feb2417cda658::t_19dda35a999182 107-110
+common-server/go.sum
+  s_8feb2417cda658::t_ffbbfc9b8f7e66 224-231
+discovery-server/go.mod
+  s_8feb2417cda658::t_05933703f3447c 152-155
+discovery-server/go.sum
+  s_8feb2417cda658::t_0c5a4a60395b31 317-324
+event/go.mod
+  s_f9651950c26e10::t_ff17d15aea19ea 62,70-81,90,112-119,136-137
+event/go.sum
+  s_f9651950c26e10::t_3810fbb94dd9a7 30-31,55-80,108-109,197-214,252-255
+file/go.mod
+  s_8feb2417cda658::t_0428aaf080ec14 87,111-118,135-136
+file/go.sum
+  s_8feb2417cda658::t_cec901d7d69532 108-109,197-214,252-255
+gateway/go.mod
+  s_8feb2417cda658::t_4962a235ff4c4a 58,66-77,85,123-130,146-147
+gateway/go.sum
+  s_8feb2417cda658::t_8b3b6ec3e0562f 42-43,71-96,139-140,284-301,381-384
+identity/go.mod
+  s_8feb2417cda658::t_b6ee7d96b43130 56,64-75,84,122-129,145-146
+identity/go.sum
+  s_8feb2417cda658::t_e4ec2667a7236f 40-41,69-94,137-138,282-299,379-382
+notification/go.mod
+  s_8feb2417cda658::t_508cbefc71e603 49,56-67,74,104-111,128-129
+notification/go.sum
+  s_8feb2417cda658::t_62953f542573d3 28-29,53-78,106-107,207-224,263-266
+organization/go.mod
+  s_8feb2417cda658::t_13c488bd224ff9 55,62-73,82,108-115,132-133
+organization/go.sum
+  s_8feb2417cda658::t_215177efa555ea 30-31,55-80,108-109,203-220,259-262
+permission/go.mod
+  s_8feb2417cda658::t_4417d70213d8ee 39,47-58,66,87-94,111-112
+permission/go.sum
+  s_f9651950c26e10::t_26304f785e3ff0 26-27,51-76,102-103,185-202,240-243
+pubsub/go.mod
+  s_8feb2417cda658::t_61dbaed805e360 49,57-68,77,100-107,123-124
+pubsub/go.sum
+  s_8feb2417cda658::t_dd1ac7401a5795 30-31,55-80,108-109,197-214,252-255
+rover-server/go.mod
+  s_8feb2417cda658::t_3202378e07f2e0 101-112,176-179
+rover-server/go.sum
+  s_8feb2417cda658::t_8022e86c8c3bff 82-107,331-338
+rover/go.mod
+  s_8feb2417cda658::t_7d18c0587dc99e 70,77-88,97,120-127,144-145
+rover/go.sum
+  s_8feb2417cda658::t_aa75d82a428d1b 30-31,55-80,108-109,197-214,254-257
+sftp/go.mod
+  s_8feb2417cda658::t_9d11a0fc1b5da2 79,117-124,140-141
+sftp/go.sum
+  s_8feb2417cda658::t_01aa50696cfce6 137-138,282-299,379-382
+spectre/go.mod
+  s_8feb2417cda658::t_9ed3648fde6422 28-38,47,61,69,76,92-98,115-116
+spectre/go.sum
+  s_f9651950c26e10::t_8873e2c4b786cd 26-27,51-76,102-103,185-202,240-243
+tools/snapshotter/go.mod
+  s_8feb2417cda658::t_a6affeb628d3fb 52-63
+tools/snapshotter/go.sum
+  s_8feb2417cda658::t_5b4f57a272093f 46-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "871a094a386bd13db263bf1ce2862afd88ff7aae",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_f9651950c26e10": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "35f5ea11-adfb-4b12-a992-82e9e8c35161",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}

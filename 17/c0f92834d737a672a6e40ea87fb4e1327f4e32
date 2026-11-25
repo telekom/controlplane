@@ -1,0 +1,48 @@
+gateway/pkg/kong/client/realm_route_test.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 542-543
+docs/docs/architecture/gateway.mdx
+  s_8feb2417cda658::t_1b8e2e8e168d09 131,257
+gateway/internal/features/builder.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 309
+common/pkg/config/feature.go
+  s_8feb2417cda658::t_d2a9fe223cfff5 54-55
+gateway/pkg/kong/client/types.go
+  s_8feb2417cda658::t_4d9f70bb543a1e 49,53
+gateway/pkg/kong/client/route.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 101
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_8feb2417cda658::t_1b8e2e8e168d09 188
+gateway/internal/features/feature/circuit_breaker.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 105
+admin/internal/handler/zone/gateway.go
+  s_8feb2417cda658::t_aa9f872c7111f0 85,112-120
+gateway/internal/controller/suite_test.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 249
+admin/internal/handler/zone/handler_test.go
+  s_8feb2417cda658::t_4d3e65a4d13418 32-33,35-40
+event/internal/handler/util/naming.go
+  s_8feb2417cda658::t_17d6b5667a0568 53
+docs/design/gateway-realm.md
+  s_8feb2417cda658::t_0ae27e3ba7b283 71,319,377,387
+  s_8feb2417cda658::t_1b8e2e8e168d09 26,39,299-300
+gateway/api/v1/route_types.go
+  s_8feb2417cda658::t_1c2a5be7222a65 281-283
+gateway/internal/handler/route/handler_test.go
+  s_8feb2417cda658::t_fdb86e0ceeb86e 149,170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "17c0f92834d737a672a6e40ea87fb4e1327f4e32",
+  "prompts": {},
+  "sessions": {
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
