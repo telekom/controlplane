@@ -1,0 +1,19 @@
+docs/docs/admin-journey/controlplane-api.md
+  s_7fe8a2269e95bf::t_8352f2c41cf202 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "931f94ffc22d5c11f94efbd708b3b9316c9c1833",
+  "prompts": {},
+  "sessions": {
+    "s_7fe8a2269e95bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b2b35c6f-044a-4bf4-af1b-668b466fb36b",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
