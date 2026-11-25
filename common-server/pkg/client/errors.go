@@ -67,10 +67,8 @@ func RetryableWithDelayErrorf(delay time.Duration, format string, a ...any) *Htt
 	}
 }
 
-var (
-	RetryDelay = 3 * time.Second
-)
-
+// HandleError maps an HTTP status to a classified error. Retryable errors carry
+// no fixed delay, so controller-runtime's rate limiter owns the backoff.
 func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	if len(okStatusCodes) == 0 {
 		okStatusCodes = []int{200, 201, 202, 204}
@@ -82,10 +80,10 @@ func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	switch httpStatus {
 	case 400, 403, 405:
 		return BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
-	case 409, 500, 502, 504:
+	case 409, 500, 502, 503, 504:
 		httpErr = RetryableErrorf("server error (%d): %s", httpStatus, msg)
-	case 429, 503:
-		httpErr = RetryableWithDelayErrorf(RetryDelay, "rate limit error (%d): %s", httpStatus, msg)
+	case 429:
+		httpErr = RetryableErrorf("rate limit error (%d): %s", httpStatus, msg)
 	default:
 		httpErr = &HttpError{
 			retryable: true, // per-default allow retries if unsure

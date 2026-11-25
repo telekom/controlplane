@@ -176,6 +176,34 @@ var _ = Describe("KeycloakService", func() {
 				})).Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
 				Expect(svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})).To(Succeed())
 			})
+			It("should remove rotation attributes from Keycloak when rotation is disabled afterwards", func() {
+				client := newIdentityClient("my-app", "secret")
+				existing := util.MapToClientRepresentation(client)
+				existing.Id = ptr.To("existing-uid")
+				existing.Attributes = &map[string]interface{}{
+					util.SecretRotationClientAttribute:      "true",
+					util.SecretExpirationTimeAttribute:      "1800000000",
+					util.RotatedSecretAttribute:             "old-secret",
+					util.RotatedSecretCreationTimeAttribute: "1700000000",
+				}
+				client.Annotations = map[string]string{identityv1.DisableSecretRotationAnnotation: "true"}
+
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{HTTPResponse: httpResp(200), JSON2XX: &[]api.ClientRepresentation{existing}}, nil)
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "existing-uid", mock.MatchedBy(func(body api.ClientRepresentation) bool {
+					if body.Attributes == nil {
+						return false
+					}
+					attrs := *body.Attributes
+					return attrs[util.SecretRotationClientAttribute] == "" &&
+						attrs[util.SecretExpirationTimeAttribute] == "" &&
+						attrs[util.RotatedSecretAttribute] == "" &&
+						attrs[util.RotatedSecretCreationTimeAttribute] == ""
+				})).Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				Expect(svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})).To(Succeed())
+			})
+
 			It("should update existing client and set UID in status", func() {
 				client := newIdentityClient("my-app", "new-secret")
 				existing := api.ClientRepresentation{

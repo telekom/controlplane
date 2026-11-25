@@ -23,7 +23,7 @@ MIN_TOKENS = 20
 THRESHOLD = 0.95
 
 
-def blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
+def blocks(lines: list[str]) -> list[tuple[int, int, list[str]]]:
     found = []
     for start, line in enumerate(lines):
         if not START.match(line):
@@ -39,15 +39,16 @@ def blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
                 break
         tokens = TOKEN.findall(NUMBER.sub("N", "\n".join(body)))
         if len(tokens) >= MIN_TOKENS:
-            found.append((start + 1, tokens))
+            found.append((start + 1, line_no + 1, tokens))
     return found
 
 
 def findings(path: Path) -> list[dict]:
     items = blocks(path.read_text(encoding="utf-8").splitlines())
+    ends = {start: end for start, end, _ in items}
     reported: dict[int, int] = {}
-    for i, (line_a, tokens_a) in enumerate(items):
-        for line_b, tokens_b in items[i + 1:]:
+    for i, (line_a, _, tokens_a) in enumerate(items):
+        for line_b, _, tokens_b in items[i + 1:]:
             matcher = difflib.SequenceMatcher(None, tokens_a, tokens_b, autojunk=False)
             if matcher.real_quick_ratio() < THRESHOLD or matcher.quick_ratio() < THRESHOLD:
                 continue
@@ -56,7 +57,12 @@ def findings(path: Path) -> list[dict]:
             reported.setdefault(line_a, line_b)
             reported.setdefault(line_b, line_a)
     return [
-        {"file": str(path), "line": line, "detail": f"test body nearly identical to the one at line {other}"}
+        {
+            "file": str(path),
+            "line": line,
+            "detail": f"test body nearly identical to the one at line {other}",
+            "span": [line, ends[line]],
+        }
         for line, other in sorted(reported.items())
     ]
 

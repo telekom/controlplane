@@ -63,7 +63,7 @@ var _ = Describe("Controller Integration", Ordered, func() {
 		var reconciler *RouteReconciler
 
 		BeforeEach(func() {
-			reconciler = &RouteReconciler{Client: managerClient}
+			reconciler = &RouteReconciler{Client: mgrClient}
 			createRoute := func(environment string) *gatewayv1.Route {
 				route := &gatewayv1.Route{
 					ObjectMeta: metav1.ObjectMeta{
@@ -102,7 +102,7 @@ var _ = Describe("Controller Integration", Ordered, func() {
 
 			Eventually(func(g Gomega) {
 				routes := &gatewayv1.RouteList{}
-				g.Expect(managerClient.List(ctx, routes, client.MatchingFields{
+				g.Expect(mgrClient.List(ctx, routes, client.MatchingFields{
 					IndexFieldSpecGatewayRef: types.ObjectRefFromObject(gateway).String(),
 				})).To(Succeed())
 				names := make([]string, 0, len(routes.Items))
@@ -125,27 +125,20 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			}
 		})
 
-		DescribeTable("maps a route reference only within the source environment",
+		// ConsumeRoutes always enqueue their direct Route and fan out to same-named Routes of their
+		// environment; route_controller_test.go covers that mapping.
+		DescribeTable("maps a route listener only within the source environment",
 			func(environment string, labels map[string]string, expected bool) {
-				ref := *types.ObjectRefFromObject(localRoute)
-				consumeRoute := &gatewayv1.ConsumeRoute{
-					ObjectMeta: metav1.ObjectMeta{Labels: labels},
-					Spec:       gatewayv1.ConsumeRouteSpec{Route: ref},
-				}
 				listener := &gatewayv1.RouteListener{
 					ObjectMeta: metav1.ObjectMeta{Labels: labels},
-					Spec:       gatewayv1.RouteListenerSpec{Route: ref},
+					Spec:       gatewayv1.RouteListenerSpec{Route: *types.ObjectRefFromObject(localRoute)},
 				}
-				request := reconcile.Request{NamespacedName: client.ObjectKeyFromObject(localRoute)}
-				for _, requests := range [][]reconcile.Request{
-					reconciler.mapConsumeRouteToRoute(ctx, consumeRoute),
-					reconciler.mapRouteListenerToRoute(ctx, listener),
-				} {
-					if expected {
-						Expect(requests).To(ConsistOf(request), "source environment: %s", environment)
-					} else {
-						Expect(requests).To(BeEmpty(), "source environment: %s", environment)
-					}
+				requests := reconciler.mapRouteListenerToRoute(ctx, listener)
+				if expected {
+					Expect(requests).To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(localRoute)}),
+						"source environment: %s", environment)
+				} else {
+					Expect(requests).To(BeEmpty(), "source environment: %s", environment)
 				}
 			},
 			Entry("same environment", testEnvironment, map[string]string{config.EnvironmentLabelKey: testEnvironment}, true),

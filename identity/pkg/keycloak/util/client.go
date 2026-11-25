@@ -36,6 +36,28 @@ const (
 	stringTrue                    = "true"
 )
 
+// Client attributes written by Keycloak's secret-rotation executor.
+const (
+	SecretCreationTimeAttribute          = "client.secret.creation.time"
+	SecretExpirationTimeAttribute        = "client.secret.expiration.time"
+	SecretRemainingExpirationAttribute   = "client.secret.remaining.expiration.time"
+	RotatedSecretAttribute               = "client.secret.rotated"
+	RotatedSecretCreationTimeAttribute   = "client.secret.rotated.creation.time"
+	RotatedSecretExpirationTimeAttribute = "client.secret.rotated.expiration.time"
+)
+
+// secretRotationStateAttributes must be removed when a client opts out of
+// rotation. Keycloak enforces them on every client authentication even when no
+// rotation policy applies anymore: the current secret is rejected once
+// client.secret.expiration.time has passed, and the rotated secret stays valid.
+var secretRotationStateAttributes = []string{
+	SecretExpirationTimeAttribute,
+	SecretRemainingExpirationAttribute,
+	RotatedSecretAttribute,
+	RotatedSecretCreationTimeAttribute,
+	RotatedSecretExpirationTimeAttribute,
+}
+
 func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentation {
 	webOrigins := slices.Clone(client.Status.AllowedOrigins)
 	rep := api.ClientRepresentation{
@@ -109,9 +131,36 @@ func compareWebOrigins(left, right *[]string) bool {
 
 // compareSecretRotationAttribute returns true when both representations agree
 // on the controlplane.secret-rotation attribute value. The attribute is
-// considered "set" only when its value is the string "true".
-func compareSecretRotationAttribute(a, b *api.ClientRepresentation) bool {
-	return getSecretRotationAttr(a) == getSecretRotationAttr(b)
+// considered "set" only when its value is the string "true". When the desired
+// client opted out of rotation, any leftover rotation state on the existing
+// client counts as drift.
+func compareSecretRotationAttribute(existing, desired *api.ClientRepresentation) bool {
+	if getSecretRotationAttr(existing) != getSecretRotationAttr(desired) {
+		return false
+	}
+	return getSecretRotationAttr(desired) == stringTrue || !hasSecretRotationState(existing)
+}
+
+func hasSecretRotationState(c *api.ClientRepresentation) bool {
+	if c.Attributes == nil {
+		return false
+	}
+	for _, key := range secretRotationStateAttributes {
+		if isAttributeSet(*c.Attributes, key) {
+			return true
+		}
+	}
+	return false
+}
+
+// isAttributeSet mirrors Keycloak, which treats empty values as absent.
+func isAttributeSet(attrs map[string]interface{}, key string) bool {
+	v, ok := attrs[key]
+	if !ok || v == nil {
+		return false
+	}
+	s, isString := v.(string)
+	return !isString || s != ""
 }
 
 // getSecretRotationAttr returns "true" when the secret-rotation attribute is
@@ -157,10 +206,25 @@ func MergeClientRepresentation(existingClient, newClient *api.ClientRepresentati
 			existingClient.Attributes = &map[string]interface{}{}
 		}
 		(*existingClient.Attributes)[SecretRotationClientAttribute] = (*newClient.Attributes)[SecretRotationClientAttribute]
-	} else if existingClient.Attributes != nil {
-		// New client doesn't set the attribute — remove it from existing if present.
-		delete(*existingClient.Attributes, SecretRotationClientAttribute)
+		return existingClient
 	}
 
+	clearSecretRotationAttributes(existingClient)
 	return existingClient
+}
+
+// clearSecretRotationAttributes removes the opt-in attribute and the rotation
+// state from a client that opted out of rotation. A Keycloak client PUT only
+// updates the attributes it contains, so omitting a key keeps it; an empty
+// value is what makes Keycloak remove the attribute.
+func clearSecretRotationAttributes(c *api.ClientRepresentation) {
+	if c.Attributes == nil {
+		return
+	}
+	attrs := *c.Attributes
+	for _, key := range append([]string{SecretRotationClientAttribute}, secretRotationStateAttributes...) {
+		if _, ok := attrs[key]; ok {
+			attrs[key] = ""
+		}
+	}
 }

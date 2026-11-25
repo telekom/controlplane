@@ -31,6 +31,9 @@ import (
 type Stores struct {
 	RoverStore       store.ObjectStore[*roverv1.Rover]
 	RoverSecretStore store.ObjectStore[*roverv1.Rover]
+	// RoverRedactedStore redacts secret fields without resolving them. Use it where resolving
+	// every item would fan out to one secret-manager call per secret (e.g. list endpoints).
+	RoverRedactedStore store.ObjectStore[*roverv1.Rover]
 
 	ApplicationStore       store.ObjectStore[*applicationv1.Application]
 	ApplicationSecretStore store.ObjectStore[*applicationv1.Application]
@@ -164,9 +167,16 @@ func NewStores(ctx context.Context, cfg *rest.Config, db inmemory.DatabaseOpts, 
 
 	secretsAPI := secretsapi.NewSecrets()
 	s.RoverSecretStore = secrets.WrapStore(s.RoverStore, secretsForKinds["Rover"], secrets.NewSecretManagerResolver(secretsAPI))
+	s.RoverRedactedStore = newRedactedStore(s.RoverStore, secretsForKinds["Rover"])
 	s.ApplicationSecretStore = secrets.WrapStore(s.ApplicationStore, secretsForKinds["Application"], secrets.NewSecretManagerResolver(secretsAPI))
 
 	return s
+}
+
+// newRedactedStore wraps s so that secret fields are always replaced by a placeholder
+// and never resolved against the secret-manager.
+func newRedactedStore[T store.Object](s store.ObjectStore[T], secretJsonPaths []string) store.ObjectStore[T] {
+	return secrets.WrapStore(s, secretJsonPaths, secrets.NewObfuscator())
 }
 
 func NewOrDie[T store.Object](ctx context.Context, dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind, db inmemory.DatabaseOpts, informer inmemory.InformerOpts) store.ObjectStore[T] {

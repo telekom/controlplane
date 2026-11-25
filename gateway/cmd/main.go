@@ -17,6 +17,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	crconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -128,7 +129,9 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
+		Scheme: scheme,
+		// Reconcilers never read managedFields; dropping them shrinks every cached object.
+		Cache:                  cache.Options{DefaultTransform: cache.TransformStripManagedFields()},
 		Controller:             crconfig.Controller{CacheSyncTimeout: cconfig.CacheSyncTimeout},
 		Metrics:                metricsServerOptions,
 		WebhookServer:          webhookServer,

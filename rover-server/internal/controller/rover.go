@@ -35,16 +35,18 @@ import (
 var _ server.RoverController = &RoverController{}
 
 type RoverController struct {
-	stores      *s.Stores
-	Store       store.ObjectStore[*roverv1.Rover]
-	SecretStore store.ObjectStore[*roverv1.Rover]
+	stores        *s.Stores
+	Store         store.ObjectStore[*roverv1.Rover]
+	SecretStore   store.ObjectStore[*roverv1.Rover]
+	RedactedStore store.ObjectStore[*roverv1.Rover]
 }
 
 func NewRoverController(stores *s.Stores) *RoverController {
 	return &RoverController{
-		stores:      stores,
-		Store:       stores.RoverStore,
-		SecretStore: stores.RoverSecretStore,
+		stores:        stores,
+		Store:         stores.RoverStore,
+		SecretStore:   stores.RoverSecretStore,
+		RedactedStore: stores.RoverRedactedStore,
 	}
 }
 
@@ -108,7 +110,9 @@ func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversPar
 	}
 	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
-	objList, err := r.SecretStore.List(ctx, listOpts)
+	// Resolving secrets for a whole page costs one secret-manager call per secret per rover,
+	// so the list redacts them; GET /rovers/{id} returns the resolved values.
+	objList, err := r.RedactedStore.List(ctx, listOpts)
 	if err != nil {
 		return nil, err
 	}

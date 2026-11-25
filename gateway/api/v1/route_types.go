@@ -85,7 +85,6 @@ type RouteSpec struct {
 	// +kubebuilder:validation:items:MinLength=1
 	// +kubebuilder:validation:items:Pattern=`^[^,/\x00-\x1F\x7F]+$`
 	AdditionalTags []string `json:"additionalTags,omitempty"`
-
 }
 
 // RouteStatus defines the observed state of Route.
