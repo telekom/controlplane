@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from auditlib import SCHEMA_VERSION, VERDICTS, changeset, detect  # noqa: E402
 from auditlib import rules as rulelib  # noqa: E402
 from auditlib.judges import JudgeError  # noqa: E402
+from auditlib.prompt import context_budget  # noqa: E402
 from auditlib.store import audit_dir, model_id  # noqa: E402
 
 YIELD_SAMPLE_FILES = 300
@@ -106,9 +107,14 @@ def build_fixtures(root: Path, rules: list[rulelib.Rule]) -> tuple[list[Fixture]
                     )
                     anchor = example.provenance.line
                     marked = frozenset(range(anchor, anchor + max(span, 1)))
-                    context = detect.render_context(
-                        lines, anchor, rule.context_lines, marked
-                    )
+                    context = detect.fit_ranges(
+                        lines,
+                        max(1, anchor - rule.context_lines),
+                        min(len(lines), anchor + rule.context_lines),
+                        marked,
+                        context_budget(rule),
+                        anchor=anchor,
+                    )[0][2]
                     path = example.provenance.path
                 else:
                     lines = example.code.splitlines()

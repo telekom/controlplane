@@ -50,7 +50,7 @@ func CreatePublishRoute(
 		return nil, err
 	}
 
-	upstream, err := parseUpstream(eventConfig.Spec.Local.PublishEventUrl)
+	upstream, err := gatewayv1.ParseUpstream(eventConfig.Spec.Local.PublishEventUrl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse publishEventUrl %q", eventConfig.Spec.Local.PublishEventUrl)
 	}

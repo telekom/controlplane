@@ -19,6 +19,7 @@ var (
 	IndexFieldSpecRoute      = "spec.route"
 	IndexFieldSpecRouteName  = "spec.route.name"
 	IndexFieldSpecGatewayRef = "spec.gatewayRef"
+	IndexFieldMetadataName   = "metadata.name"
 )
 
 func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
@@ -79,6 +80,18 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.RouteListener{}, IndexFieldSpecRoute, filterRouteOnRouteListener)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create fieldIndex for RouteListener", "FieldIndex", IndexFieldSpecRoute)
+		os.Exit(1)
+	}
+
+	// Index the route by its name so ConsumeRoutes on a proxy Route can be mapped to the
+	// same-named Routes in other zones that read them for their JumperConfig
+	filterNameOnRoute := func(obj client.Object) []string {
+		return []string{obj.GetName()}
+	}
+
+	err = mgr.GetFieldIndexer().IndexField(ctx, &gatewayv1.Route{}, IndexFieldMetadataName, filterNameOnRoute)
+	if err != nil {
+		ctrl.Log.Error(err, "unable to create fieldIndex for Route", "FieldIndex", IndexFieldMetadataName)
 		os.Exit(1)
 	}
 

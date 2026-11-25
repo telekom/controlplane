@@ -61,7 +61,11 @@ paths:
       tags:
         - Rover
       summary: Find all Rovers
-      description: Find all Rovers of a Team
+      description: >-
+        Find all Rovers of a Team. Secret values (for example m2m client secrets,
+        client keys, refresh tokens and passwords) are not resolved in this list
+        and are returned as `**********`. If the secret values are needed, request
+        the Rover by id via `GET /rovers/{roverId}`.
       operationId: getAllRovers
       parameters:
         - $ref: '#/components/parameters/Limit'

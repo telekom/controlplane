@@ -114,6 +114,13 @@ identity.cp.ei.telekom.de/disable-secret-rotation: "true"
 
 This is typically done by the platform team, not by application developers.
 
+The annotation can be added at any time, including to clients that already took part in rotation. Shortly after you set it, the platform removes all rotation state from the client in Keycloak:
+
+- The current secret no longer expires.
+- If a rotation grace period is still active, the **old secret stops working immediately**. Make sure all consumers use the current secret before you opt the client out.
+
+Removing the annotation opts the client back in. Keycloak then assigns a new expiration date to the current secret.
+
 ## Operational Considerations
 
 - **Grace period sizing** — Choose a grace period long enough for teams to update all their consumers. Seven days is a common starting point.

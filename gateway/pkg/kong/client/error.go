@@ -70,6 +70,8 @@ func (e *apiError) RetryDelay() time.Duration {
 
 // CheckStatusCode classifies a Kong Admin API response into an ApiError.
 // It returns nil when the response status code is in okStatusCodes.
+// Retryable errors carry no fixed delay, so controller-runtime's rate limiter
+// owns the backoff.
 func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 	if slices.Contains(okStatusCodes, res.StatusCode()) {
 		return nil
@@ -80,7 +82,6 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 			statusCode:   res.StatusCode(),
 			message:      fmt.Sprintf("Kong rate limit error (%d)", res.StatusCode()),
 			retryAllowed: true,
-			retryDelay:   3 * time.Second,
 		}
 	}
 
@@ -102,12 +103,13 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 // HandleClientError classifies transport-level errors from the HTTP client so
 // that ctrlerrors.HandleError can route them correctly.
 //
-// - nil → nil
-// - Already an *apiError (e.g. from CheckStatusCode) → returned as-is
-// - context.Canceled / context.DeadlineExceeded → returned as-is (controller framework handles these)
-// - oauth2.RetrieveError → classified by the token endpoint's HTTP status (429/5xx retryable, 4xx blocked)
-// - net.Error (connection refused, DNS, TLS, timeout) → wrapped as a retryable apiError
-// - Anything else → returned as-is
+//   - nil → nil
+//   - Already an *apiError (e.g. from CheckStatusCode) → returned as-is
+//   - context.Canceled / context.DeadlineExceeded → returned as-is (controller framework handles these)
+//   - oauth2.RetrieveError → classified by the token endpoint's HTTP status via client.HandleError;
+//     retryable apiError if it carries no response
+//   - net.Error (connection refused, DNS, TLS, timeout) → wrapped as a retryable apiError
+//   - Anything else → returned as-is
 func HandleClientError(err error) error {
 	if err == nil {
 		return nil
@@ -123,9 +125,14 @@ func HandleClientError(err error) error {
 		return err
 	}
 
-	// OAuth2 token endpoint errors from clientcredentials — classify by
-	// the token endpoint's HTTP status so 429/5xx retry and 4xx block.
 	if oauth2Err, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
+		// RetrieveError.Error() dereferences Response unless ErrorCode is set.
+		if oauth2Err.Response == nil {
+			return &apiError{
+				message:      fmt.Sprintf("OAuth2 token endpoint error without response (error code %q)", oauth2Err.ErrorCode),
+				retryAllowed: true,
+			}
+		}
 		return client.HandleError(oauth2Err.Response.StatusCode, fmt.Sprintf("OAuth2 token endpoint error: %s", oauth2Err.Error()))
 	}
 
