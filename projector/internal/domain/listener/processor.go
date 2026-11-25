@@ -9,8 +9,10 @@ import (
 	"fmt"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
+	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,6 +30,7 @@ type listenerProcessor struct {
 
 func (p *listenerProcessor) Upsert(ctx context.Context, obj *spectrev1.Listener) error {
 	if skip, _ := p.translator.ShouldSkip(obj); skip {
+		// Removes only this object's projected PostgreSQL row; no Kubernetes object is deleted.
 		if err := p.repo.Delete(ctx, p.translator.KeyFromObject(obj)); err != nil {
 			return err
 		}
@@ -36,7 +39,7 @@ func (p *listenerProcessor) Upsert(ctx context.Context, obj *spectrev1.Listener)
 	if err := p.processor.Upsert(ctx, obj); err != nil {
 		return err
 	}
-	return p.recovery.restore(ctx, p.translator.KeyFromObject(obj))
+	return p.recovery.restore(ctx, p.translator.KeyFromObject(obj), shared.EnvironmentFromLabels(obj.Labels))
 }
 
 func (p *listenerProcessor) Delete(ctx context.Context, req types.NamespacedName, lastKnown *spectrev1.Listener) error {
@@ -49,12 +52,13 @@ type approvalRecovery struct {
 	requests  *approvalrequest.Repository
 }
 
-func (r *approvalRecovery) restore(ctx context.Context, key Key) error {
-	// The target key contains the Listener's environment-prefixed namespace, so only
-	// approvals for this Listener in its own environment match.
-	selector := client.MatchingFields{approvalTargetIndex: key.Namespace + "/" + key.Name}
+func (r *approvalRecovery) restore(ctx context.Context, key Key, env string) error {
+	listOpts := []client.ListOption{
+		client.MatchingFields{approvalTargetIndex: key.Namespace + "/" + key.Name},
+		client.MatchingLabels{cconfig.EnvironmentLabelKey: env},
+	}
 	approvals := &approvalv1.ApprovalList{}
-	if err := r.reader.List(ctx, approvals, selector); err != nil {
+	if err := r.reader.List(ctx, approvals, listOpts...); err != nil {
 		return fmt.Errorf("list approvals for listener %s/%s: %w", key.Namespace, key.Name, err)
 	}
 	translator := &approval.Translator{}
@@ -72,7 +76,7 @@ func (r *approvalRecovery) restore(ctx context.Context, key Key) error {
 		}
 	}
 	requests := &approvalv1.ApprovalRequestList{}
-	if err := r.reader.List(ctx, requests, selector); err != nil {
+	if err := r.reader.List(ctx, requests, listOpts...); err != nil {
 		return fmt.Errorf("list approval requests for listener %s/%s: %w", key.Namespace, key.Name, err)
 	}
 	requestTranslator := &approvalrequest.Translator{}

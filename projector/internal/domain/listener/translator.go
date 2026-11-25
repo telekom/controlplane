@@ -7,6 +7,7 @@ package listener
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
@@ -41,10 +42,18 @@ func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*D
 	if ref.Namespace == "" {
 		ref.Namespace = obj.Namespace
 	}
+	env := shared.EnvironmentFromLabels(obj.Labels)
 	app := &spectrev1.SpectreApplication{}
-	err := t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app)
-	if err == nil && shared.EnvironmentFromLabels(app.Labels) != shared.EnvironmentFromLabels(obj.Labels) {
+	var err error
+	if env != "" && ref.Namespace != obj.Namespace && !strings.HasPrefix(ref.Namespace, env+"--") {
 		err = apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("spectreapplications").GroupResource(), ref.Name)
+	} else {
+		// ref.Namespace is constrained above to obj.Namespace or the "<env>--" namespace
+		// prefix of the Listener's environment; the label check below also verifies the label.
+		err = t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app)
+		if err == nil && shared.EnvironmentFromLabels(app.Labels) != env {
+			err = apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("spectreapplications").GroupResource(), ref.Name)
+		}
 	}
 	if err != nil {
 		if apierrors.IsNotFound(err) {

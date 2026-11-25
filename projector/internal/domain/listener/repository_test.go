@@ -174,28 +174,31 @@ var _ = Describe("Listener repository", func() {
 		Expect(approvalv1.AddToScheme(scheme)).To(Succeed())
 		target := ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: data.Meta.Namespace, Name: data.Meta.Name},
 			TypeMeta: metav1.TypeMeta{Kind: "Listener"}}
+		envLabels := map[string]string{cconfig.EnvironmentLabelKey: "prod"}
 		makeApproval := func(name, key string) *approvalv1.Approval {
-			return &approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name},
+			return &approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name, Labels: envLabels},
 				Spec: approvalv1.ApprovalSpec{Target: target, ApprovalKey: key, Action: "listen-" + key, Strategy: approvalv1.ApprovalStrategy("Auto"),
 					State: approvalv1.ApprovalState("Granted"), Decider: approvalv1.Decider{TeamName: "provider-team"}}}
 		}
 		makeRequest := func(name string) *approvalv1.ApprovalRequest {
-			return &approvalv1.ApprovalRequest{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name},
+			return &approvalv1.ApprovalRequest{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name, Labels: envLabels},
 				Spec: approvalv1.ApprovalRequestSpec{Target: target, ApprovalKey: "provider", Action: "listen-provider",
 					Strategy: approvalv1.ApprovalStrategy("Auto"), State: approvalv1.ApprovalState("Pending"),
 					Decider: approvalv1.Decider{TeamName: "provider-team"}}}
 		}
-		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app"},
+		otherEnvApproval := makeApproval("other-env-consumer", "consumer")
+		otherEnvApproval.Labels = map[string]string{cconfig.EnvironmentLabelKey: "qa"}
+		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app", Labels: envLabels},
 			Spec: spectrev1.SpectreApplicationSpec{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: observer.Namespace, Name: observer.Name}}}}
-		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app, makeApproval("provider", "provider"), makeRequest("request")).
+		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app, makeApproval("provider", "provider"), otherEnvApproval, makeRequest("request")).
 			WithIndex(&approvalv1.Approval{}, approvalTargetIndex, func(obj kclient.Object) []string { return []string{data.Meta.Namespace + "/" + data.Meta.Name} }).
 			WithIndex(&approvalv1.ApprovalRequest{}, approvalTargetIndex, func(obj kclient.Object) []string { return []string{data.Meta.Namespace + "/" + data.Meta.Name} }).Build()
 		listed := &approvalv1.ApprovalList{}
 		Expect(reader.List(ctx, listed, kclient.MatchingFields{approvalTargetIndex: data.Meta.Namespace + "/" + data.Meta.Name})).To(Succeed())
-		Expect(listed.Items).To(HaveLen(1))
+		Expect(listed.Items).To(HaveLen(2))
 		skip, reason := (&approval.Translator{}).ShouldSkip(&listed.Items[0])
 		Expect(skip).To(BeFalse(), reason)
-		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name},
+		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name, Labels: envLabels},
 			Spec: spectrev1.ListenerSpec{Application: ctypes.ObjectRef{Name: app.Name},
 				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: consumer.Namespace, Name: consumer.Name}},
 				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: provider.Namespace, Name: provider.Name}},
