@@ -18,7 +18,7 @@ that a script can check.
 | `date` | yes | `YYYY-MM-DD`: when it was decided, or when it was recorded if that is unknown. |
 | `origin` | yes | `authored` when recorded as it was made, `backfilled` when reconstructed later. |
 | `domains` | yes | Top-level directories the decision concerns, or `all`. |
-| `governs` | no | Globs for the files the decision constrains. `adr.py match` uses them to bring this ADR into reviews, so keep them as narrow as the decision. |
+| `governs` | no | Globs for the files the decision constrains. `adr.py match` uses them to bring this ADR into reviews, so they must cover every file that can break the decision, and nothing else. |
 | `enforced-by` | no | Paths that check the decision mechanically, usually a rule in `.agents/rules/`. |
 | `evidence` | backfilled | Where the decision can be verified: a repository path (optionally with `#anchor`), a commit hash, or a URL (pull requests as full URLs). |
 | `supersedes` | no | Numbers of the ADRs this one replaces. |

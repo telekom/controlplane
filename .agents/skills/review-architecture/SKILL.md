@@ -27,6 +27,10 @@ whole game.
   down: flag a change that brings it back.
 - A human sets `accepted` and `rejected`. You write `proposed`, and you
   never rewrite the decision of an accepted ADR: a new ADR supersedes it.
+- Verify before accepting. When a human asks you to set `accepted`, first
+  check the record's claims against the code (see
+  [BACKFILL.md](./BACKFILL.md#3-draft), step 4). Report every mismatch and
+  change the status only once none is left.
 - Evidence or silence. Every claim cites an ADR, a `path:line` or a source.
   When the reason behind a choice is not written down anywhere, say it is
   unknown and ask. A plausible invented rationale is the worst output this

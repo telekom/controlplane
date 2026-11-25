@@ -52,12 +52,21 @@ For each picked candidate:
    missing. That complaint is the question to ask. If the answer is that
    nothing else was weighed, write `No alternatives were evaluated.` as
    [ADR-FORMAT.md](./ADR-FORMAT.md) describes.
-4. Narrow `governs` to the files the decision really constrains.
-5. `adr.py validate`.
+4. Check each claim against the code as it is today. Documentation goes
+   stale, so a cited sentence can still be false. For every component the
+   `Decision` names, read the code that would break the claim: its imports,
+   what it creates or changes, and every `evidence` item. When code and
+   documentation disagree, leave the claim out and ask which one is right.
+5. Set `governs` to every file that can break the decision, not just where
+   it is declared. A rule about module dependencies also binds the code that
+   writes resources across that boundary.
+6. `adr.py validate`.
 
 ## 4. Hand over
 
 Open one pull request per domain with every ADR still `proposed`. In its
 description, list per ADR the sentences that rest on the user's word rather
 than a written source, and any question left open. The reviewer accepts,
-corrects or rejects each record.
+corrects or rejects each record. Before a record turns `accepted`, its
+claims are checked against the code again (step 4), because a reviewer's
+approval of the pull request does not do that.
