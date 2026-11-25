@@ -104,7 +104,7 @@ Some modules are only registered (and their CRD scheme only added to the manager
 
 When a flag is disabled, its modules are not registered with the controller manager and their CRDs are never watched or reconciled.
 
-The Listener module watches `Listener`, `SpectreApplication`, `Application`, `ApiSubscription`, and `ApiExposure`. It resolves the observer through `SpectreApplication.spec.application` and matches the consumer subscription and provider exposure by owner and exact base path. Parent modules also notify Listener after a successful database projection, so a parent cascade can restore an unchanged Listener and its approvals with `periodic_resync=0`. Missing dependencies retry. Spectre is disabled by default. The local Spectre overlay enables it through `controlplane-env`; other installations that include Spectre must set `FEATURE_SPECTRE_ENABLED=true` in `controlplane-env` or `projector-env`.
+The Listener module watches `Listener`, `SpectreApplication`, `Application`, `ApiSubscription`, and `ApiExposure`. It resolves the observer through `SpectreApplication.spec.application` and matches the consumer subscription and provider exposure by owner and exact base path. Missing dependencies retry, and a projected Listener keeps its previous relationships until the missing dependency resolves. Spectre is disabled by default. The local Spectre overlay enables it through `controlplane-env`; other installations that include Spectre must set `FEATURE_SPECTRE_ENABLED=true` in `controlplane-env` or `projector-env`.
 
 ## Adding a New Entity
 
