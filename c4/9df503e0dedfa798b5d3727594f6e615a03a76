@@ -1,0 +1,22 @@
+common-server/pkg/client/token/file_test.go
+  s_1fec421c273b86::t_9c54068f96fc41 34-36,38,80,136,140-141,150-156
+  s_1fec421c273b86::t_adb39337efd023 157
+common-server/pkg/client/token/file.go
+  s_1fec421c273b86::t_9c54068f96fc41 22,28-31,41-44,47-48,51-53,58-61,66,75,86,107,110,113,122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c49df503e0dedfa798b5d3727594f6e615a03a76",
+  "prompts": {},
+  "sessions": {
+    "s_1fec421c273b86": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "099215b8-7e0f-4bc3-877e-3816f96e1ed2",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
