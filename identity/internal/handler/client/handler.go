@@ -125,14 +125,13 @@ func shouldSkipForceRotation(client *identityv1.Client) bool {
 
 // syncRotationStatus updates client.Status rotation fields after a successful
 // CreateOrReplaceClient call. When supportsRotation is false it clears any
-// stale fields left from a previous opt-in.
+// stale fields and the SecretRotation condition left from a previous opt-in.
 func syncRotationStatus(ctx context.Context, client *identityv1.Client, realmClient keycloak.KeycloakService, realmName string, clientCopy *identityv1.Client, supportsRotation bool) error {
 	if !supportsRotation {
-		// Rotation not supported (or was just disabled) — clear any stale
-		// rotation status fields from a previous opt-in.
 		client.Status.RotatedClientSecret = ""
 		client.Status.RotatedSecretExpiresAt = nil
 		client.Status.SecretExpiresAt = nil
+		meta.RemoveStatusCondition(&client.Status.Conditions, identityv1.SecretRotationConditionType)
 		return nil
 	}
 

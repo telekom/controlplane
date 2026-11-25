@@ -68,8 +68,8 @@ type ApprovalCustomValidator struct {
 	// (e.g. "system:serviceaccount:system:controller-manager"). Only this identity
 	// is permitted to transition an Approval to the Expired state.
 	OperatorServiceAccount string
-	// Reader is an uncached API reader for the ApprovalRequest a scoped Approval
-	// is rebound to.
+	// Reader is an uncached API reader for the ApprovalRequest an Approval is
+	// rebound to.
 	Reader client.Reader
 }
 
@@ -100,11 +100,11 @@ func (a *ApprovalCustomValidator) ValidateUpdate(ctx context.Context, oldObj, ne
 	// Validate FSM transitions on-the-fly using the canonical FSM definitions
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
-	// A scoped Approval rebound to another ApprovalRequest, which happens when a
-	// grant of a newer request lifts a revocation, is validated against that
+	// An Approval rebound to another ApprovalRequest, which happens when a new
+	// request for its target (and gate) is granted, is validated against that
 	// request instead, whether or not its state changes.
 	switch {
-	case isScopedRebind(oldObj, newObj):
+	case isRebind(oldObj, newObj):
 		err = a.validateRebind(ctx, newObj)
 	case stateChanged:
 		err = a.validateStateTransition(ctx, oldObj, newObj)
@@ -167,19 +167,18 @@ func (a *ApprovalCustomValidator) validateStateTransition(ctx context.Context, o
 	return nil
 }
 
-// isScopedRebind reports whether an update binds a scoped Approval to another
+// isRebind reports whether an update binds an Approval to another
 // ApprovalRequest than before.
-func isScopedRebind(oldObj, newObj *approvalv1.Approval) bool {
+func isRebind(oldObj, newObj *approvalv1.Approval) bool {
 	oldRef, newRef := oldObj.Spec.ApprovedRequest, newObj.Spec.ApprovedRequest
-	return newObj.Spec.ApprovalKey != "" && newRef != nil &&
-		(oldRef == nil || *oldRef != *newRef)
+	return newRef != nil && (oldRef == nil || *oldRef != *newRef)
 }
 
-// validateRebind allows a scoped Approval to be granted for the ApprovalRequest
-// it is rebound to only when that live request is Granted with the same
-// strategy for the same target and gate, and, under FourEyes, by two distinct
-// deciders. Whether the request may lift a revocation is decided by the
-// ApprovalRequest handler.
+// validateRebind allows an Approval to be granted for the ApprovalRequest it is
+// rebound to only when that live request is Granted with the same strategy for
+// the same target and gate (an unscoped Approval has no gate), and, under
+// FourEyes, by two distinct deciders. For a scoped Approval, whether the
+// request may lift a revocation is decided by the ApprovalRequest handler.
 func (a *ApprovalCustomValidator) validateRebind(ctx context.Context, newObj *approvalv1.Approval) error {
 	ref := newObj.Spec.ApprovedRequest
 	if newObj.Spec.State != approvalv1.ApprovalStateGranted {

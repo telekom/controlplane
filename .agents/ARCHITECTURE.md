@@ -77,6 +77,7 @@ no subagents at all.
 | `report_scope: changed` by default | inheriting a file's pre-existing backlog |
 | `>` markers on changed lines | a model unable to tell the change from its surroundings |
 | Severity-scaled batch size | precision loss where it is expensive |
+| Byte budget per rendered unit | a judge receiving a truncated or diverted prompt and answering nothing |
 | Evidence re-anchored against the file | hallucinated findings |
 | Completeness gate | silent partial audits |
 | Content-addressed cache | re-judging what has not changed |

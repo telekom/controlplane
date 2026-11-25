@@ -1,3 +1,38 @@
+# [0.49.0](https://github.com/telekom/controlplane/compare/v0.48.4...v0.49.0) (2026-11-24)
+
+
+### Bug Fixes
+
+* **approval:** let a newly granted request rebind a revoked four-eyes approval ([#812](https://github.com/telekom/controlplane/issues/812)) ([fa369ec](https://github.com/telekom/controlplane/commit/fa369ec8fc056bdcb418c133421a9fdc5fc62287))
+* **gateway:** reconcile provider routes when cross-zone consumers change ([#875](https://github.com/telekom/controlplane/issues/875)) ([1863be4](https://github.com/telekom/controlplane/commit/1863be4393ff3dd44ed4a06230fcdf59fb8936ea))
+
+
+### Features
+
+* **secret-manager:** retry transient Conjur read failures ([#861](https://github.com/telekom/controlplane/issues/861)) ([747be19](https://github.com/telekom/controlplane/commit/747be198e8cebd21242b658bba24980b83e3dc8b))
+
+## [0.48.4](https://github.com/telekom/controlplane/compare/v0.48.3...v0.48.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **gateway,common-server:** back off on unavailable token endpoints and reduce cache memory ([#873](https://github.com/telekom/controlplane/issues/873)) ([107e81b](https://github.com/telekom/controlplane/commit/107e81b8819520b5c04bf5f1b15d1c887e8a3bd8))
+* **identity:** clean up keycloak rotation state when rotation is disabled ([#874](https://github.com/telekom/controlplane/issues/874)) ([df6ce07](https://github.com/telekom/controlplane/commit/df6ce07779331448c36213f1490c4ffc7f17157a))
+
+## [0.48.3](https://github.com/telekom/controlplane/compare/v0.48.2...v0.48.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* **api,event,gateway:** preserve encoded upstream paths in gateway routes ([#837](https://github.com/telekom/controlplane/issues/837)) ([551f3be](https://github.com/telekom/controlplane/commit/551f3be5a8234125fdb09da1aa533dbb22fc4a39))
+* **discovery-server:** expose icto and psiid of applications ([#858](https://github.com/telekom/controlplane/issues/858)) ([1237c46](https://github.com/telekom/controlplane/commit/1237c46efb3a9642b6a38220cf83bbf59ad4fdbc))
+* **rover,event:** additional publishers get a client ([#872](https://github.com/telekom/controlplane/issues/872)) ([af3d8e2](https://github.com/telekom/controlplane/commit/af3d8e2f70b49c87727245a0888a10ded8c1c0f1))
+
+
+### Performance Improvements
+
+* **rover-server:** stop resolving secrets when listing rovers ([#870](https://github.com/telekom/controlplane/issues/870)) ([50a5f62](https://github.com/telekom/controlplane/commit/50a5f6235558247e80a59e8bd69a420028273cd1))
+
 ## [0.48.2](https://github.com/telekom/controlplane/compare/v0.48.1...v0.48.2) (2026-11-17)
 
 

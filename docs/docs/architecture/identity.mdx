@@ -18,7 +18,7 @@ When a Realm is configured with a `secretRotation` policy, the Identity domain p
 2. A new secret is set as the primary credential
 3. Both secrets are accepted until the grace period expires
 
-Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation.
+Individual clients can opt out via the `identity.cp.ei.telekom.de/disable-secret-rotation: "true"` annotation. The annotation can also be added to an existing client. On the next reconciliation, the controller removes the opt-in attribute and all rotation state from the Keycloak client: the secret expiration time and any rotated secret. Keycloak would otherwise still expire the current secret and keep accepting the old one. The client's `SecretRotation` condition and rotation status fields are cleared.
 
 ### Realm Attributes
 

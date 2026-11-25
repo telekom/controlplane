@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from test_config_root import (
@@ -23,7 +23,7 @@ import test_config_root as fixtures
 
 sys.path.insert(0, str(SCRIPTS))
 
-from auditlib import changeset, detect, rules, store
+from auditlib import changeset, detect, prompt, report, rules, store
 from auditlib.judges import JudgeError
 import process_audit_report as process
 import selftest_rules as selftest
@@ -284,6 +284,96 @@ class DiscoveryTest(unittest.TestCase):
         file = changeset.ChangedFile("rover/internal/handler/example.go", "blob", (3, 161))
         found = detect.run(rule, [file], ROOT, {file.path: "\n".join(lines)})
         self.assertTrue(any("second" in c.context for c in found))
+
+    def test_oversized_file_is_truncated_to_a_visible_range_around_the_change(self):
+        rule = self.corpus["13-environment-isolation"]
+        lines = [f"\t// unchanged filler line {n:05d} padded to a realistic width" for n in range(3000)]
+        lines[2] = "r.client.Get(ctx, first, obj)"
+        lines[2500] = "r.client.List(ctx, &second)"
+        file = changeset.ChangedFile("rover/internal/handler/example.go", "blob", (2501,))
+        [found] = detect.run(rule, [file], ROOT, {file.path: "\n".join(lines)})
+        self.assertLessEqual(len(found.context.encode()), prompt.context_budget(rule))
+        note = re.match(r"\[truncated: showing lines (\d+)-(\d+) of 3000\.", found.context)
+        self.assertIsNotNone(note, found.context[:200])
+        shown = [int(m) for m in re.findall(r"(?m)^[ >]\s*(\d+) \|", found.context)]
+        self.assertEqual(shown, list(range(int(note[1]), int(note[2]) + 1)))
+        self.assertIn(2501, shown)
+
+    def test_truncation_near_the_top_shows_lines_one_to_n(self):
+        rule = self.corpus["13-environment-isolation"]
+        lines = [f"\t// unchanged filler line {n:05d} padded to a realistic width" for n in range(3000)]
+        lines[2] = "r.client.Get(ctx, first, obj)"
+        file = changeset.ChangedFile("rover/internal/handler/example.go", "blob", (3,))
+        [found] = detect.run(rule, [file], ROOT, {file.path: "\n".join(lines)})
+        self.assertRegex(found.context, r"^\[truncated: showing lines 1-\d+ of 3000\.")
+
+    def test_change_larger_than_one_unit_is_split_into_parts(self):
+        rule = self.corpus["13-environment-isolation"]
+        lines = [f"\tr.client.Get(ctx, key{n:05d}, obj) // padded to a realistic width" for n in range(1500)]
+        file = changeset.ChangedFile(
+            "rover/internal/handler/example.go", "blob", tuple(range(1, 1501))
+        )
+        found = detect.run(rule, [file], ROOT, {file.path: "\n".join(lines)})
+        self.assertGreater(len(found), 1)
+        shown = set()
+        for part in found:
+            self.assertLessEqual(len(part.context.encode()), prompt.context_budget(rule))
+            self.assertIn("part ", part.detail)
+            shown |= {int(m) for m in re.findall(r"(?m)^>\s*(\d+) \|", part.context)}
+        self.assertEqual(shown, set(range(1, 1501)))
+        self.assertEqual(len({(c.line, c.anchor) for c in found}), len(found))
+
+    def test_viewer_reads_other_lines_from_the_frozen_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp:
+            repo = Path(temp)
+            init_repo(repo)
+            path = repo / "a.go"
+            path.write_text("".join(f"line {n}\n" for n in range(1, 41)))
+            sha = git(repo, "hash-object", "-w", "a.go").strip()
+            path.write_text("edited after the audit\n")
+            report = {
+                "scope": {"files": [{"path": "a.go", "blob_sha": sha, "changed_lines": [12]}]},
+                "rule_prompts": {"r": {}},
+                "work_units": [{"unit_id": "r#000", "rule_id": "r", "item_ids": ["i"]}],
+                "items": [{"item_id": "i", "file": "a.go"}],
+            }
+            report_path = repo / "report.json"
+            report_path.write_text(json.dumps(report))
+            result = run(
+                "show_work_unit.py", repo, "r#000", "--report", str(report_path),
+                "--file", "a.go", "--lines", "10-12",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("lines 10-12 of 40", result.stdout)
+            self.assertRegex(result.stdout, r"(?m)^>12 \| line 12$")
+            denied = run(
+                "show_work_unit.py", repo, "r#000", "--report", str(report_path),
+                "--file", "other.go", "--lines", "1-2",
+            )
+            self.assertEqual(denied.returncode, 2)
+
+    def test_work_units_respect_the_rendered_size_budget(self):
+        rule = self.corpus["13-environment-isolation"]
+        rule_prompt = prompt.rule_prompt(rule)
+        context = "x" * (prompt.MAX_UNIT_BYTES // 2)
+        items = [
+            report.Item(
+                item_id=f"{n:016d}", candidate_id=f"c{n}", rule_id=rule.id,
+                check_id=rule.checks[0].slug, question=rule.checks[0].question,
+                severity=rule.severity, file=f"f{n}.go", line=1, anchor="a",
+                cluster_id=f"c{n}", context=context,
+            )
+            for n in range(2)
+        ]
+        self.assertEqual(len(report.build_work_units(items)), 1)
+        units = report.build_work_units(items, {rule.id: rule_prompt})
+        self.assertEqual(len(units), 2)
+        for unit in units:
+            unit_items = [asdict(i) for i in items if i.item_id in unit.item_ids]
+            self.assertEqual(
+                unit.bytes, prompt.unit_bytes(unit.unit_id, rule_prompt, unit_items)
+            )
+            self.assertLessEqual(unit.bytes, prompt.MAX_UNIT_BYTES)
 
     def test_edit_near_existing_trigger_is_discovered(self):
         rule = self.corpus["06-rover-child-labels"]

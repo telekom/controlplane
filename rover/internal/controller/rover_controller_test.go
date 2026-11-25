@@ -758,6 +758,35 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 
+	Context("Application secret across a needsClient flip", func() {
+		It("preserves the existing Application secret when needsClient flips (AC-5)", func() {
+			rover := createRover(&roverv1.RoverSpec{Zone: testEnvironment, ClientSecret: "topsecret"})
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			appKey := client.ObjectKey{Name: resourceName, Namespace: teamNamespace}
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				g.Expect(k8sClient.Get(ctx, appKey, application)).To(Succeed())
+				g.Expect(application.Spec.NeedsClient).To(BeFalse())
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
+			}, timeout, interval).Should(Succeed())
+
+			By("changing the Rover so that it needs a client and a different bootstrap secret")
+			fetched := &roverv1.Rover{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+			fetched.Spec.ClientSecret = "other"
+			fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
+			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				g.Expect(k8sClient.Get(ctx, appKey, application)).To(Succeed())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("Rover with ExternalIds", func() {
 		It("propagates ExternalIds verbatim to the derived Application", func() {
 			spec := roverv1.RoverSpec{

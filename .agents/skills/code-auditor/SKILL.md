@@ -105,7 +105,10 @@ do not treat it as a pass.
 ### 2. Dispatch the work units
 
 `work_units` is already batched and ordered — one unit holds the checks for
-one or two candidates of a single rule, so their shared context is sent once.
+a few candidates of a single rule, so their shared context is sent once, and
+stays under the size a judge can receive in one tool call. If the report
+prints a `WARNING` that a unit is over that budget, tell the user: its judge
+may not see all of it.
 Start one subagent per work unit, in parallel, each with:
 
 - the judge agent named by the report: `audit-judge-<judge>`. If this harness
