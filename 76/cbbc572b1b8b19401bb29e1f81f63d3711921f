@@ -1,0 +1,21 @@
+docs/docs/architecture/controlplane-api.mdx
+  s_900bed55c50332::t_75af0d781a47b9 160,230
+projector/README.md
+  s_900bed55c50332::t_72721d8484eb9e 107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "76cbbc572b1b8b19401bb29e1f81f63d3711921f",
+  "prompts": {},
+  "sessions": {
+    "s_900bed55c50332": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ded48e708ffepwh6E0Jnzm9Kq4",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
