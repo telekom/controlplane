@@ -1,0 +1,27 @@
+controlplane-api/internal/resolvers/mapper.go
+  s_900bed55c50332::t_34be98da9f7ab7 204-212,221-229,231,233,235,237,239-243,262-263,269-272,274,276,280,291,294,297,310,314,318,347
+  s_900bed55c50332::t_66ac1a42c7569d 15
+  s_900bed55c50332::t_0d445bbe29be46 387
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_900bed55c50332::t_8c9d394dee5b96 571
+  s_900bed55c50332::t_a1f6a6e18296d8 348,931,935,951-952,962,975,985,989,999,1003,1013,1023
+  s_900bed55c50332::t_0d90c876825f24 301,304,308,351,355
+  s_900bed55c50332::t_c8fc267f297088 456,463
+  s_900bed55c50332::t_3913eda37d94d5 535
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "925494f77d9795b0d9edc7645684759530cd03be",
+  "prompts": {},
+  "sessions": {
+    "s_900bed55c50332": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ded48e708ffepwh6E0Jnzm9Kq4",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
