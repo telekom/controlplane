@@ -36,14 +36,7 @@ var _ = Describe("SpectreApplication watch", func() {
 			makeListener("other-ns", "same-name", "target"),
 			&spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: "other-ns", Name: "cross-namespace"},
 				Spec: spectrev1.ListenerSpec{Application: ctypes.ObjectRef{Namespace: "ns", Name: "target"}}},
-		).WithIndex(&spectrev1.Listener{}, applicationIndex, func(obj client.Object) []string {
-			l := obj.(*spectrev1.Listener)
-			ns := l.Spec.Application.Namespace
-			if ns == "" {
-				ns = l.Namespace
-			}
-			return []string{ns + "/" + l.Spec.Application.Name}
-		}).Build()
+		).WithIndex(&spectrev1.Listener{}, applicationIndex, indexApplication).Build()
 		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "target"}}
 		requests := listenersForApplication(context.Background(), reader, app)
 		Expect(requests).To(ConsistOf(
@@ -110,16 +103,8 @@ var _ = Describe("Parent watches", func() {
 			&spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: "listeners", Name: "provider"},
 				Spec: spectrev1.ListenerSpec{Provider: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: "prod--team", Name: "owner"}}}},
 		).WithIndex(&spectrev1.SpectreApplication{}, observerIndex, indexObserver).
-			WithIndex(&spectrev1.Listener{}, applicationIndex, func(obj client.Object) []string {
-				ref := obj.(*spectrev1.Listener).Spec.Application
-				if ref.Name == "" {
-					return nil
-				}
-				if ref.Namespace == "" {
-					ref.Namespace = obj.GetNamespace()
-				}
-				return []string{ref.Namespace + "/" + ref.Name}
-			}).WithIndex(&spectrev1.Listener{}, consumerIndex, indexConsumer).
+			WithIndex(&spectrev1.Listener{}, applicationIndex, indexApplication).
+			WithIndex(&spectrev1.Listener{}, consumerIndex, indexConsumer).
 			WithIndex(&spectrev1.Listener{}, providerIndex, indexProvider).Build()
 		app := &appv1.Application{ObjectMeta: metav1.ObjectMeta{Namespace: "prod--team", Name: "owner"}}
 		app.Spec.Team = "team"

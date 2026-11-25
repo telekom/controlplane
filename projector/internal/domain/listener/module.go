@@ -12,6 +12,7 @@ import (
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/module"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -33,9 +34,9 @@ const providerIndex = "spec.provider.owner"
 const subscriptionIndex = "spec.consumer.subscription"
 const exposureIndex = "spec.provider.exposure"
 
-func ownerKey(namespace, name string) string { return fmt.Sprintf("%q/%q", namespace, name) }
+func ownerKey(namespace, name string) string { return namespace + "/" + name }
 func edgeKey(namespace, name, path string) string {
-	return fmt.Sprintf("%q/%q/%q", namespace, name, path)
+	return namespace + "/" + name + "/" + path
 }
 
 type listenerModule struct{}
@@ -49,6 +50,7 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 		name string
 		fn   client.IndexerFunc
 	}{
+		{applicationIndex, indexApplication},
 		{consumerIndex, indexConsumer},
 		{providerIndex, indexProvider},
 		{subscriptionIndex, indexSubscription},
@@ -60,19 +62,6 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 	}
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spectrev1.SpectreApplication{}, observerIndex, indexObserver); err != nil {
 		return fmt.Errorf("index spectre application observer: %w", err)
-	}
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spectrev1.Listener{}, applicationIndex, func(obj client.Object) []string {
-		listener := obj.(*spectrev1.Listener)
-		ref := listener.Spec.Application
-		if ref.Name == "" {
-			return nil
-		}
-		if ref.Namespace == "" {
-			ref.Namespace = listener.Namespace
-		}
-		return []string{ref.Namespace + "/" + ref.Name}
-	}); err != nil {
-		return fmt.Errorf("index listener application: %w", err)
 	}
 	// The readers below only Get or List by keys that contain an environment-prefixed
 	// namespace, so every lookup stays within the source object's environment.
@@ -110,44 +99,52 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 		}).Complete(rec)
 }
 
-func indexConsumer(obj client.Object) []string {
-	ref := obj.(*spectrev1.Listener).Spec.Consumer
+func indexApplication(obj client.Object) []string {
+	l := obj.(*spectrev1.Listener)
+	ref := l.Spec.Application
+	if ref.Name == "" {
+		return nil
+	}
+	if ref.Namespace == "" {
+		ref.Namespace = l.Namespace
+	}
+	return []string{ownerKey(ref.Namespace, ref.Name)}
+}
+
+func indexOwner(ref ctypes.ObjectRef) []string {
 	if ref.Name == "" || ref.Namespace == "" {
 		return nil
 	}
 	return []string{ownerKey(ref.Namespace, ref.Name)}
 }
 
-func indexProvider(obj client.Object) []string {
-	ref := obj.(*spectrev1.Listener).Spec.Provider
-	if ref.Name == "" || ref.Namespace == "" {
+func indexEdge(l *spectrev1.Listener, ref ctypes.ObjectRef) []string {
+	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || ref.Name == "" || ref.Namespace == "" {
 		return nil
 	}
-	return []string{ownerKey(ref.Namespace, ref.Name)}
+	return []string{edgeKey(ref.Namespace, ref.Name, l.Spec.ApiListener.ApiBasePath)}
+}
+
+func indexConsumer(obj client.Object) []string {
+	return indexOwner(obj.(*spectrev1.Listener).Spec.Consumer.ObjectRef)
+}
+
+func indexProvider(obj client.Object) []string {
+	return indexOwner(obj.(*spectrev1.Listener).Spec.Provider.ObjectRef)
 }
 
 func indexSubscription(obj client.Object) []string {
 	l := obj.(*spectrev1.Listener)
-	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || len(indexConsumer(obj)) == 0 {
-		return nil
-	}
-	return []string{edgeKey(l.Spec.Consumer.Namespace, l.Spec.Consumer.Name, l.Spec.ApiListener.ApiBasePath)}
+	return indexEdge(l, l.Spec.Consumer.ObjectRef)
 }
 
 func indexExposure(obj client.Object) []string {
 	l := obj.(*spectrev1.Listener)
-	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || len(indexProvider(obj)) == 0 {
-		return nil
-	}
-	return []string{edgeKey(l.Spec.Provider.Namespace, l.Spec.Provider.Name, l.Spec.ApiListener.ApiBasePath)}
+	return indexEdge(l, l.Spec.Provider.ObjectRef)
 }
 
 func indexObserver(obj client.Object) []string {
-	ref := obj.(*spectrev1.SpectreApplication).Spec.Application.ObjectRef
-	if ref.Namespace == "" || ref.Name == "" {
-		return nil
-	}
-	return []string{ref.Namespace + "/" + ref.Name}
+	return indexOwner(obj.(*spectrev1.SpectreApplication).Spec.Application.ObjectRef)
 }
 
 func listenersForParent(ctx context.Context, reader client.Reader, obj client.Object) []reconcile.Request {
@@ -171,7 +168,7 @@ func listenersForParent(ctx context.Context, reader client.Reader, obj client.Ob
 		apps := &spectrev1.SpectreApplicationList{}
 		// The index key contains the Application's namespace, which is environment-prefixed,
 		// so only SpectreApplications of the same environment match.
-		if err := reader.List(ctx, apps, client.MatchingFields{observerIndex: parent.Namespace + "/" + parent.Name}); err != nil {
+		if err := reader.List(ctx, apps, client.MatchingFields{observerIndex: key}); err != nil {
 			log.FromContext(ctx).Error(err, "list spectre applications for observer", "application", client.ObjectKeyFromObject(parent))
 		} else {
 			for i := range apps.Items {
@@ -195,7 +192,7 @@ func listenersForParent(ctx context.Context, reader client.Reader, obj client.Ob
 }
 
 func listenersForApplication(ctx context.Context, reader client.Reader, obj client.Object) []reconcile.Request {
-	key := obj.GetNamespace() + "/" + obj.GetName()
+	key := ownerKey(obj.GetNamespace(), obj.GetName())
 	list := &spectrev1.ListenerList{}
 	if err := reader.List(ctx, list, client.MatchingFields{applicationIndex: key}); err != nil {
 		log.FromContext(ctx).Error(err, "list listeners for spectre application", "application", key)
