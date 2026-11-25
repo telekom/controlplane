@@ -1,0 +1,28 @@
+projector/internal/domain/listener/repository.go
+  s_900bed55c50332::t_0740883720f1e6 62,78-89
+projector/internal/domain/approval/repository.go
+  s_900bed55c50332::t_e0e4e210d18beb 31-36
+  s_900bed55c50332::t_d480a06db85d1c 127-131,143,160-161,166,169,173,176,179,182-191,197-203
+projector/internal/domain/approvalrequest/repository.go
+  s_900bed55c50332::t_a5e296c3ce9698 127-131,143,159-160,164,167,170,173,176-184,190-196
+  s_900bed55c50332::t_22d69c8efcadaa 31-36
+projector/internal/domain/approval/repository_test.go
+  s_900bed55c50332::t_22ed731b89ae5c 339-341
+  s_900bed55c50332::t_719851d48ab5a2 635-682
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "34592a11272a37cb2761959da35428cbc463e0ff",
+  "prompts": {},
+  "sessions": {
+    "s_900bed55c50332": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ded48e708ffepwh6E0Jnzm9Kq4",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
