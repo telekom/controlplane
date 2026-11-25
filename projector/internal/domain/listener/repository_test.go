@@ -11,8 +11,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entexposure "github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
@@ -21,15 +19,12 @@ import (
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
-	"github.com/telekom/controlplane/projector/internal/domain/approval"
-	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	projectorruntime "github.com/telekom/controlplane/projector/internal/runtime"
 	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -124,11 +119,14 @@ var _ = Describe("Listener repository", func() {
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
 	})
 
-	It("removes stale edges when retargeting waits for a dependency", func() {
+	It("keeps previous edges when retargeting waits for a dependency", func() {
 		Expect(repo.Upsert(ctx, data)).To(Succeed())
 		data.Observer = Key{Namespace: observer.Namespace, Name: "missing"}
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
-		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
+		row := client.Listener.Query().OnlyX(ctx)
+		Expect(row.QueryApplication().OnlyX(ctx).ID).To(Equal(observer.ID))
+		Expect(row.QuerySubscription().OnlyX(ctx).ID).To(Equal(sub.ID))
+		Expect(row.QueryExposure().OnlyX(ctx).QueryOwner().OnlyX(ctx).ID).To(Equal(provider.ID))
 	})
 
 	It("deletes by Kubernetes identity", func() {
@@ -138,23 +136,20 @@ var _ = Describe("Listener repository", func() {
 		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
 	})
 
-	It("removes stale projections when a Listener is skipped or its reference becomes incomplete", func() {
+	It("removes stale projections when a Listener is skipped", func() {
 		scheme := runtime.NewScheme()
 		Expect(spectrev1.AddToScheme(scheme)).To(Succeed())
-		Expect(approvalv1.AddToScheme(scheme)).To(Succeed())
 		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app"},
 			Spec: spectrev1.SpectreApplicationSpec{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: observer.Namespace, Name: observer.Name}}}}
-		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).
-			WithIndex(&approvalv1.Approval{}, approvalTargetIndex, func(obj kclient.Object) []string { return nil }).
-			WithIndex(&approvalv1.ApprovalRequest{}, approvalTargetIndex, func(obj kclient.Object) []string { return nil }).Build()
+		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
 		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name},
 			Spec: spectrev1.ListenerSpec{Application: ctypes.ObjectRef{Name: app.Name},
 				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: consumer.Namespace, Name: consumer.Name}},
 				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: provider.Namespace, Name: provider.Name}},
 				ApiListener: &spectrev1.ApiListener{ApiBasePath: data.BasePath}}}
-		translator := &Translator{Reader: reader, OnMissingApplication: repo.Delete}
+		translator := &Translator{Reader: reader}
 		proc := &listenerProcessor{processor: projectorruntime.NewProcessor[*spectrev1.Listener, *Data, Key](translator, repo),
-			translator: translator, repo: repo, recovery: &approvalRecovery{reader: reader}}
+			translator: translator, repo: repo}
 		Expect(proc.Upsert(ctx, obj)).To(Succeed())
 		obj.Spec.Consumer.Namespace = ""
 		Expect(projectorruntime.IsSkipSync(proc.Upsert(ctx, obj))).To(BeTrue())
@@ -164,80 +159,5 @@ var _ = Describe("Listener repository", func() {
 		obj.Spec.EventListener = &spectrev1.EventListener{EventType: "event"}
 		Expect(projectorruntime.IsSkipSync(proc.Upsert(ctx, obj))).To(BeTrue())
 		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
-	})
-
-	It("restores cascaded and late approvals after Listener recreation", func() {
-		cconfig.SetFeatureEnabled(cconfig.FeatureSpectre, true)
-		DeferCleanup(cconfig.SetFeatureEnabled, cconfig.FeatureSpectre, false)
-		scheme := runtime.NewScheme()
-		Expect(spectrev1.AddToScheme(scheme)).To(Succeed())
-		Expect(approvalv1.AddToScheme(scheme)).To(Succeed())
-		target := ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: data.Meta.Namespace, Name: data.Meta.Name},
-			TypeMeta: metav1.TypeMeta{Kind: "Listener"}}
-		envLabels := map[string]string{cconfig.EnvironmentLabelKey: "prod"}
-		makeApproval := func(name, key string) *approvalv1.Approval {
-			return &approvalv1.Approval{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name, Labels: envLabels},
-				Spec: approvalv1.ApprovalSpec{Target: target, ApprovalKey: key, Action: "listen-" + key, Strategy: approvalv1.ApprovalStrategy("Auto"),
-					State: approvalv1.ApprovalState("Granted"), Decider: approvalv1.Decider{TeamName: "provider-team"}}}
-		}
-		makeRequest := func(name string) *approvalv1.ApprovalRequest {
-			return &approvalv1.ApprovalRequest{ObjectMeta: metav1.ObjectMeta{Namespace: "approvals", Name: name, Labels: envLabels},
-				Spec: approvalv1.ApprovalRequestSpec{Target: target, ApprovalKey: "provider", Action: "listen-provider",
-					Strategy: approvalv1.ApprovalStrategy("Auto"), State: approvalv1.ApprovalState("Pending"),
-					Decider: approvalv1.Decider{TeamName: "provider-team"}}}
-		}
-		otherEnvApproval := makeApproval("other-env-consumer", "consumer")
-		otherEnvApproval.Labels = map[string]string{cconfig.EnvironmentLabelKey: "qa"}
-		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app", Labels: envLabels},
-			Spec: spectrev1.SpectreApplicationSpec{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: observer.Namespace, Name: observer.Name}}}}
-		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app, makeApproval("provider", "provider"), otherEnvApproval, makeRequest("request")).
-			WithIndex(&approvalv1.Approval{}, approvalTargetIndex, func(obj kclient.Object) []string { return []string{data.Meta.Namespace + "/" + data.Meta.Name} }).
-			WithIndex(&approvalv1.ApprovalRequest{}, approvalTargetIndex, func(obj kclient.Object) []string { return []string{data.Meta.Namespace + "/" + data.Meta.Name} }).Build()
-		listed := &approvalv1.ApprovalList{}
-		Expect(reader.List(ctx, listed, kclient.MatchingFields{approvalTargetIndex: data.Meta.Namespace + "/" + data.Meta.Name})).To(Succeed())
-		Expect(listed.Items).To(HaveLen(2))
-		skip, reason := (&approval.Translator{}).ShouldSkip(&listed.Items[0])
-		Expect(skip).To(BeFalse(), reason)
-		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name, Labels: envLabels},
-			Spec: spectrev1.ListenerSpec{Application: ctypes.ObjectRef{Name: app.Name},
-				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: consumer.Namespace, Name: consumer.Name}},
-				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: provider.Namespace, Name: provider.Name}},
-				ApiListener: &spectrev1.ApiListener{ApiBasePath: data.BasePath}}}
-		translator := &Translator{Reader: reader, OnMissingApplication: repo.Delete}
-		proc := &listenerProcessor{processor: projectorruntime.NewProcessor[*spectrev1.Listener, *Data, Key](translator, repo),
-			translator: translator, repo: repo, recovery: &approvalRecovery{reader: reader,
-				approvals: approval.NewRepository(client, cache, resolver), requests: approvalrequest.NewRepository(client, cache, resolver)}}
-		Expect(proc.Upsert(ctx, obj)).To(Succeed())
-		Expect(client.Approval.Query().CountX(ctx)).To(Equal(1))
-		Expect(client.ApprovalRequest.Query().CountX(ctx)).To(Equal(1))
-		Expect(repo.Delete(ctx, Key{Namespace: obj.Namespace, Name: obj.Name})).To(Succeed())
-		Expect(client.Approval.Query().CountX(ctx)).To(BeZero())
-		Expect(client.ApprovalRequest.Query().CountX(ctx)).To(BeZero())
-		Expect(reader.Create(ctx, makeApproval("consumer", "consumer"))).To(Succeed())
-		Expect(proc.Upsert(ctx, obj)).To(Succeed())
-		Expect(client.Approval.Query().CountX(ctx)).To(Equal(2))
-		Expect(client.ApprovalRequest.Query().CountX(ctx)).To(Equal(1))
-		Expect(proc.Upsert(ctx, obj)).To(Succeed())
-		Expect(client.Approval.Query().CountX(ctx)).To(Equal(2))
-		Expect(client.Listener.Query().OnlyX(ctx).QueryProviderApproval().OnlyX(ctx).Name).To(Equal("provider"))
-		Expect(client.Listener.Query().OnlyX(ctx).QueryConsumerApproval().OnlyX(ctx).Name).To(Equal("consumer"))
-		obj.Spec.EventListener = &spectrev1.EventListener{EventType: "unsupported"}
-		Expect(projectorruntime.IsSkipSync(proc.Upsert(ctx, obj))).To(BeTrue())
-		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
-		obj.Spec.EventListener = nil
-		Expect(proc.Upsert(ctx, obj)).To(Succeed())
-		Expect(client.Approval.Query().CountX(ctx)).To(Equal(2))
-
-		Expect(client.ApiSubscription.DeleteOneID(sub.ID).Exec(ctx)).To(Succeed())
-		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
-		Expect(client.Approval.Query().CountX(ctx)).To(BeZero())
-		Expect(client.ApprovalRequest.Query().CountX(ctx)).To(BeZero())
-		sub = client.ApiSubscription.Create().SetBasePath(data.BasePath).SetNamespace(consumer.Namespace).
-			SetName("consumer-sub").SetOwnerID(consumer.ID).SaveX(ctx)
-		resolver.EvictAPISubscriptionID(data.BasePath, consumer.Name, shared.TeamNameFromNamespace(consumer.Namespace))
-		Expect(proc.Upsert(ctx, obj)).To(Succeed())
-		Expect(client.Listener.Query().OnlyX(ctx).QuerySubscription().OnlyX(ctx).ID).To(Equal(sub.ID))
-		Expect(client.Approval.Query().CountX(ctx)).To(Equal(2))
-		Expect(client.ApprovalRequest.Query().CountX(ctx)).To(Equal(1))
 	})
 })

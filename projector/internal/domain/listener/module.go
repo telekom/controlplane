@@ -10,11 +10,8 @@ import (
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	appv1 "github.com/telekom/controlplane/application/api/v1"
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/projector/internal/domain/approval"
-	"github.com/telekom/controlplane/projector/internal/domain/approvalrequest"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/module"
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -30,7 +27,6 @@ import (
 )
 
 const applicationIndex = "spec.application"
-const approvalTargetIndex = "spec.target.listener"
 const observerIndex = "spec.application.objectRef"
 const consumerIndex = "spec.consumer.owner"
 const providerIndex = "spec.provider.owner"
@@ -78,37 +74,14 @@ func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
 	}); err != nil {
 		return fmt.Errorf("index listener application: %w", err)
 	}
-	for _, obj := range []client.Object{&approvalv1.Approval{}, &approvalv1.ApprovalRequest{}} {
-		if err := mgr.GetFieldIndexer().IndexField(context.Background(), obj, approvalTargetIndex, func(obj client.Object) []string {
-			var refNamespace, refName, kind string
-			switch a := obj.(type) {
-			case *approvalv1.Approval:
-				refNamespace, refName, kind = a.Spec.Target.Namespace, a.Spec.Target.Name, a.Spec.Target.Kind
-			case *approvalv1.ApprovalRequest:
-				refNamespace, refName, kind = a.Spec.Target.Namespace, a.Spec.Target.Name, a.Spec.Target.Kind
-			}
-			if kind != "Listener" || refName == "" {
-				return nil
-			}
-			if refNamespace == "" {
-				refNamespace = obj.GetNamespace()
-			}
-			return []string{refNamespace + "/" + refName}
-		}); err != nil {
-			return fmt.Errorf("index %T listener target: %w", obj, err)
-		}
-	}
-
 	// The readers below only Get or List by keys that contain an environment-prefixed
 	// namespace, so every lookup stays within the source object's environment.
 	repo := NewRepository(deps.EntClient, deps.IDResolver)
-	translator := &Translator{Reader: mgr.GetClient(), OnMissingApplication: repo.Delete}
+	translator := &Translator{Reader: mgr.GetClient()}
 	proc := &listenerProcessor{
 		processor:  runtime.NewProcessor[*spectrev1.Listener, *Data, Key](translator, repo),
-		translator: translator, repo: repo,
-		recovery: &approvalRecovery{reader: mgr.GetClient(),
-			approvals: approval.NewRepository(deps.EntClient, deps.EdgeCache, deps.IDResolver),
-			requests:  approvalrequest.NewRepository(deps.EntClient, deps.EdgeCache, deps.IDResolver)},
+		translator: translator,
+		repo:       repo,
 	}
 	rec := runtime.NewReadOnlyReconciler(mgr.GetClient(), proc, deps.DeleteCache, "listener",
 		func() *spectrev1.Listener { return &spectrev1.Listener{} }, runtime.NewErrorPolicyFromConfig(deps.Config))

@@ -46,17 +46,26 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 
 	observerID, err := r.deps.FindApplicationByMeta(ctx, data.Observer.Namespace, data.Observer.Name)
 	if err != nil {
-		return r.handleDependencyError(ctx, data, "application", data.Observer.Namespace+"/"+data.Observer.Name, err)
+		if errors.Is(err, infrastructure.ErrEntityNotFound) {
+			return runtime.WrapDependencyMissing("application", data.Observer.Namespace+"/"+data.Observer.Name)
+		}
+		return fmt.Errorf("find application %s/%s: %w", data.Observer.Namespace, data.Observer.Name, err)
 	}
 	consumerTeam := shared.TeamNameFromNamespace(data.Consumer.Namespace)
 	subID, err := r.deps.FindAPISubscriptionID(ctx, data.BasePath, data.Consumer.Name, consumerTeam)
 	if err != nil {
-		return r.handleDependencyError(ctx, data, "api_subscription", data.Consumer.Namespace+"/"+data.Consumer.Name+data.BasePath, err)
+		if errors.Is(err, infrastructure.ErrEntityNotFound) {
+			return runtime.WrapDependencyMissing("api_subscription", data.Consumer.Namespace+"/"+data.Consumer.Name+data.BasePath)
+		}
+		return fmt.Errorf("find api_subscription %s/%s%s: %w", data.Consumer.Namespace, data.Consumer.Name, data.BasePath, err)
 	}
 	providerTeam := shared.TeamNameFromNamespace(data.Provider.Namespace)
 	exposureID, err := r.deps.FindAPIExposureID(ctx, data.BasePath, data.Provider.Name, providerTeam)
 	if err != nil {
-		return r.handleDependencyError(ctx, data, "api_exposure", data.Provider.Namespace+"/"+data.Provider.Name+data.BasePath, err)
+		if errors.Is(err, infrastructure.ErrEntityNotFound) {
+			return runtime.WrapDependencyMissing("api_exposure", data.Provider.Namespace+"/"+data.Provider.Name+data.BasePath)
+		}
+		return fmt.Errorf("find api_exposure %s/%s%s: %w", data.Provider.Namespace, data.Provider.Name, data.BasePath, err)
 	}
 
 	create := r.client.Listener.Create().
@@ -97,17 +106,6 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 		return fmt.Errorf("upsert listener %s/%s: %w", data.Meta.Namespace, data.Meta.Name, err)
 	}
 	return nil
-}
-
-func (r *Repository) handleDependencyError(ctx context.Context, data *Data, kind, key string, err error) error {
-	if !errors.Is(err, infrastructure.ErrEntityNotFound) {
-		return fmt.Errorf("find %s %s: %w", kind, key, err)
-	}
-	// A retargeted Listener must not remain visible with its previous owner edges.
-	if err := r.Delete(ctx, Key{Namespace: data.Meta.Namespace, Name: data.Meta.Name}); err != nil {
-		return fmt.Errorf("remove stale listener before retry: %w", err)
-	}
-	return runtime.WrapDependencyMissing(kind, key)
 }
 
 func (r *Repository) Delete(ctx context.Context, key Key) error {

@@ -20,8 +20,6 @@ import (
 
 type Translator struct {
 	Reader client.Reader
-	// OnMissingApplication removes an old projection when its SpectreApplication is absent.
-	OnMissingApplication func(context.Context, Key) error
 }
 
 var _ runtime.Translator[*spectrev1.Listener, *Data, Key] = (*Translator)(nil)
@@ -43,36 +41,23 @@ func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*D
 		ref.Namespace = obj.Namespace
 	}
 	env := shared.EnvironmentFromLabels(obj.Labels)
-	app := &spectrev1.SpectreApplication{}
-	var err error
 	if env != "" && ref.Namespace != obj.Namespace && !strings.HasPrefix(ref.Namespace, env+"--") {
-		err = apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("spectreapplications").GroupResource(), ref.Name)
-	} else {
-		// ref.Namespace is constrained above to obj.Namespace or the "<env>--" namespace
-		// prefix of the Listener's environment; the label check below also verifies the label.
-		err = t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app)
-		if err == nil && shared.EnvironmentFromLabels(app.Labels) != env {
-			err = apierrors.NewNotFound(spectrev1.GroupVersion.WithResource("spectreapplications").GroupResource(), ref.Name)
-		}
+		return nil, runtime.WrapDependencyMissing("spectre_application", ref.String())
 	}
-	if err != nil {
+	app := &spectrev1.SpectreApplication{}
+	// ref.Namespace is constrained above to obj.Namespace or the "<env>--" namespace
+	// prefix of the Listener's environment; the label check below also verifies the label.
+	if err := t.Reader.Get(ctx, client.ObjectKey{Namespace: ref.Namespace, Name: ref.Name}, app); err != nil {
 		if apierrors.IsNotFound(err) {
-			if t.OnMissingApplication != nil {
-				if deleteErr := t.OnMissingApplication(ctx, Key{Namespace: obj.Namespace, Name: obj.Name}); deleteErr != nil {
-					return nil, fmt.Errorf("remove listener after missing spectre_application %s: %w", ref.String(), deleteErr)
-				}
-			}
 			return nil, runtime.WrapDependencyMissing("spectre_application", ref.String())
 		}
 		return nil, fmt.Errorf("get spectre_application %s: %w", ref.String(), err)
 	}
+	if shared.EnvironmentFromLabels(app.Labels) != env {
+		return nil, runtime.WrapDependencyMissing("spectre_application", ref.String())
+	}
 	observer := app.Spec.Application.ObjectRef
 	if observer.Name == "" || observer.Namespace == "" {
-		if t.OnMissingApplication != nil {
-			if err := t.OnMissingApplication(ctx, Key{Namespace: obj.Namespace, Name: obj.Name}); err != nil {
-				return nil, fmt.Errorf("remove listener without observer: %w", err)
-			}
-		}
 		return nil, runtime.WrapDependencyMissing("application", ref.String())
 	}
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)

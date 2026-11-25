@@ -59,31 +59,22 @@ var _ = Describe("Listener translator", func() {
 	})
 
 	It("retries when SpectreApplication is absent", func() {
-		var removed Key
-		translator.OnMissingApplication = func(_ context.Context, key Key) error { removed = key; return nil }
 		obj.Spec.Application.Name = "missing"
 		_, err := translator.Translate(context.Background(), obj)
 		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
-		Expect(removed).To(Equal(Key{Namespace: namespace, Name: "listener"}))
 	})
 
 	It("treats a SpectreApplication from another environment as absent", func() {
-		var removed Key
-		translator.OnMissingApplication = func(_ context.Context, key Key) error { removed = key; return nil }
 		obj.Labels = map[string]string{shared.EnvironmentLabelKey: "qa"}
 		_, err := translator.Translate(context.Background(), obj)
 		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
-		Expect(removed).To(Equal(Key{Namespace: namespace, Name: "listener"}))
 	})
 
 	It("rejects a SpectreApplication reference in another environment namespace before reading", func() {
-		var removed Key
-		translator.OnMissingApplication = func(_ context.Context, key Key) error { removed = key; return nil }
 		obj.Labels = map[string]string{shared.EnvironmentLabelKey: "prod"}
 		obj.Spec.Application.Namespace = "qa--observer"
 		_, err := translator.Translate(context.Background(), obj)
 		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
-		Expect(removed).To(Equal(Key{Namespace: namespace, Name: "listener"}))
 	})
 
 	It("skips unsupported event-only listeners", func() {
