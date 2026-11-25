@@ -25,6 +25,10 @@ governs:
   - "pubsub/**/go.mod"
   - "sftp/**/go.mod"
   - ".github/ci/module-graph.json"
+  - "controlplane-api/cmd/**"
+  - "controlplane-api/internal/service/**"
+  - "projector/internal/**"
+  - "discovery-server/internal/server/**"
 evidence:
   - docs/docs/architecture/overview.md#layer-architecture
   - docs/docs/architecture/overview.md#domain-interaction-model
@@ -38,17 +42,21 @@ evidence:
   - docs/docs/architecture/spectre.mdx
   - docs/docs/architecture/controlplane-api.mdx
   - discovery-server/internal/server/deprecated.go
+  - controlplane-api/cmd/main.go
+  - controlplane-api/internal/service/services_k8s.go
+  - projector/internal/infrastructure/idresolver.go
+  - https://github.com/telekom/controlplane/pull/344
   - .github/ci/module-graph.json
   - https://github.com/telekom/controlplane/pull/306
 ---
 
 ## Context
 
-A customer describes what they want in a Rover file: APIs to expose, subscriptions, events, files. In the end, that wish has to become concrete settings on the components that carry the traffic, such as the API gateway, the identity provider and the event backbone. In between, the platform has to check the request, run approvals and resolve how the pieces depend on each other. Alongside, user interfaces need to see the resulting platform state without being able to change it.
+A customer describes what they want in a Rover file: APIs to expose, subscriptions, events, files. In the end, that wish has to become concrete settings on the components that carry the traffic, such as the API gateway, the identity provider and the event backbone. In between, the platform has to check the request, run approvals and resolve how the pieces depend on each other. Alongside, user interfaces need to see the resulting platform state.
 
 ## Decision
 
-The Control Plane splits this path into three layers, and a request always moves through them in the same order. A fourth layer reads beside them, and a few services are shared by all.
+The Control Plane splits this path into three layers, and a request always moves through them in the same order. A fourth layer serves user interfaces beside them, and a few services are shared by all.
 
 - **Customer-Config layer.** The entry point for customers: the Rover file, Rover Server and Rover-CTL. It receives what the customer submits and does most of the validation, so that only well-formed requests travel further.
 - **Logic layer.** The business rules: applications, organizations and permissions, API, event and file exposures and subscriptions, MCP servers, listeners, and approvals. It decides what the customer may get and resolves dependencies between domains.
@@ -56,7 +64,13 @@ The Control Plane splits this path into three layers, and a request always moves
 
 Each layer hands over by creating resources that the next layer processes. A layer only sees the API module of the layer directly below it. It never skips a layer, never reaches into another domain's internals, and never looks upward. Domains within the same layer also talk to each other only through their API modules.
 
-The UI layer, made up of the ControlPlane API, the Projector and the Discovery Server, sits next to the Customer-Config layer and follows the same rule: it sees only the Logic layer's API modules. It only reads. It never changes anything in the cluster, and no other layer depends on it, so the read side cannot leak into the business rules.
+The UI layer, made up of the ControlPlane API, the Projector and the Discovery Server, sits next to the Customer-Config layer and follows the same rule: it sees only the Logic layer's API modules. No other layer depends on it, so the UI cannot leak into the business rules.
+
+- **Projector.** Copies the state of the Logic layer's resources into a database. It never changes anything in the cluster.
+- **ControlPlane API.** Serves that database to user interfaces. It also lets them change teams, groups, applications and approvals. Like the Customer-Config layer, it does so only by writing resources through the Logic layer's API modules.
+- **Discovery Server.** Only reads.
+
+The Projector and the ControlPlane API are the one exception to the same-layer rule. They share the database types that ent generates in the ControlPlane API module. Those types are their interface: the Projector writes them into the database, and the ControlPlane API reads them.
 
 Administration, notifications and secret management sit outside the chain. They are shared by all domains in every layer.
 
@@ -78,7 +92,7 @@ flowchart TD
         Runtime["Gateway · Identity<br/>PubSub · SFTP"]
     end
     CC -->|"creates resources<br/>via the API module"| LG
-    UI -.->|"reads via<br/>the API module"| LG
+    UI -->|"reads and writes<br/>via the API module"| LG
     LG -->|"creates resources<br/>via the API module"| RT
     RT -->|configures| DataPlane["Gateway<br/>Identity provider<br/>Event backbone<br/>SFTP"]
 ```
