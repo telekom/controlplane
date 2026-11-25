@@ -21,6 +21,7 @@ import (
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 type GatewayAdminConfig interface {
@@ -70,6 +71,7 @@ const (
 
 var (
 	migrator      legacy.Migrator = legacy.None()
+	guard         *migration.Guard
 	migratorMutex sync.RWMutex
 )
 
@@ -82,6 +84,21 @@ func SetMigrator(m legacy.Migrator) {
 		m = legacy.None()
 	}
 	migrator = m
+}
+
+// SetMigrationGuard enables Migration Mode for every Kong client created afterwards: their
+// writes and deletes are checked against the current Kong state first. nil disables it.
+func SetMigrationGuard(g *migration.Guard) {
+	migratorMutex.Lock()
+	defer migratorMutex.Unlock()
+	guard = g
+}
+
+// MigrationGuard returns the guard set by SetMigrationGuard, or nil if Migration Mode is off.
+func MigrationGuard() *migration.Guard {
+	migratorMutex.RLock()
+	defer migratorMutex.RUnlock()
+	return guard
 }
 
 // profile holds the HTTP settings of all Gateway admin API clients.
@@ -157,9 +174,9 @@ func (f *ClientFactory) ClientFor(ctx context.Context, gw *gatewayv1.Gateway) (k
 		return nil, nil, fmt.Errorf("creating kong client: %w", err)
 	}
 	migratorMutex.RLock()
-	m := migrator
+	m, g := migrator, guard
 	migratorMutex.RUnlock()
-	return kongclient.NewKongClient(apiClient, kongclient.WithMigrator(m)), lease.Release, nil
+	return kongclient.NewKongClient(apiClient, kongclient.WithMigrator(m), kongclient.WithMigrationGuard(g)), lease.Release, nil
 }
 
 func (f *ClientFactory) acquire(ctx context.Context, gw *gatewayv1.Gateway) (*tlsclient.Lease, error) {

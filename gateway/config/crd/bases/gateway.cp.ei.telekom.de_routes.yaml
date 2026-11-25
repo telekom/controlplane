@@ -773,6 +773,79 @@ spec:
                 items:
                   type: string
                 type: array
+              migration:
+                description: |-
+                  Migration is the pending Kong change that Migration Mode blocked. It is set only
+                  while the change is blocked.
+                properties:
+                  changes:
+                    description: Changes are the Kong entities the change creates,
+                      updates or deletes.
+                    items:
+                      description: MigrationChange is the change of one Kong entity.
+                      properties:
+                        diffs:
+                          description: Diffs are the differences between the desired
+                            and the current entity.
+                          items:
+                            description: MigrationDiff is one difference between the
+                              desired and the current state of a Kong entity.
+                            properties:
+                              current:
+                                description: |-
+                                  Current is the value Kong holds, as JSON. It is empty if the operator adds a value.
+                                  Long values are truncated.
+                                type: string
+                              desired:
+                                description: |-
+                                  Desired is the value the operator writes, as JSON. It is empty if Kong has a value the
+                                  operator removes. Long values are truncated.
+                                type: string
+                              ignored:
+                                description: Ignored is true if the difference is
+                                  on the ignore list.
+                                type: boolean
+                              path:
+                                description: Path is the JSON path of the difference,
+                                  such as $.tags or $.config.minute.
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        kind:
+                          description: Kind is the Kong entity kind, such as route,
+                            service or plugin.
+                          type: string
+                        name:
+                          description: |-
+                            Name is the Kong name of the entity: the plugin name for plugins, the target for
+                            targets and the username for consumers.
+                          type: string
+                        operation:
+                          description: Operation is create, update or delete.
+                          type: string
+                      required:
+                      - kind
+                      - name
+                      - operation
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  hash:
+                    description: |-
+                      Hash identifies the pending change. Setting the annotation
+                      gateway.cp.ei.telekom.de/migration-approved-hash to this value approves it.
+                    type: string
+                  mode:
+                    description: 'Mode is the Migration Mode that blocked the change:
+                      on or strict.'
+                    type: string
+                required:
+                - hash
+                - mode
+                type: object
               properties:
                 additionalProperties:
                   type: string

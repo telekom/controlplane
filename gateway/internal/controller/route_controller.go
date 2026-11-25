@@ -64,7 +64,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Route{}, builder.WithPredicates(cc.Count("route", cc.RoleFor,
-			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})))).
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}, MigrationApprovalChangedPredicate())))).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).

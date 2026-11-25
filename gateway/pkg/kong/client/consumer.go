@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer CustomConsumer) (*kong.Consumer, error) {
@@ -27,7 +28,7 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 		Tags:     normalizeSet(&tags),
 	}
 
-	kongConsumer, _, err := reconcile(ctx, consumerEntity{client: c.client, name: consumerName}, body)
+	kongConsumer, _, err := reconcile(ctx, c.guard, consumerEntity{client: c.client, name: consumerName}, body)
 	if err != nil {
 		return nil, err
 	}
@@ -35,9 +36,13 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 		return nil, fmt.Errorf("consumer response ID is missing")
 	}
 
-	isInGroup, err := c.isConsumerInGroup(ctx, consumerName)
-	if err != nil {
-		return nil, err
+	// A planned consumer does not exist in Kong yet, so it is in no group.
+	isInGroup := false
+	if !migration.IsPlanned(*kongConsumer.Id) {
+		isInGroup, err = c.isConsumerInGroup(ctx, consumerName)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !isInGroup {
 		if err := c.addConsumerToGroup(ctx, consumerName); err != nil {
@@ -50,6 +55,9 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 }
 
 func (c *kongClient) DeleteConsumer(ctx context.Context, consumer CustomConsumer) error {
+	if write, err := c.guard.CheckDelete(ctx, "consumer", consumer.GetConsumerName()); err != nil || !write {
+		return err
+	}
 	response, err := c.client.DeleteConsumerWithResponse(ctx, consumer.GetConsumerName())
 	if err != nil {
 		return fmt.Errorf("failed to delete consumer: %w", HandleClientError(err))
@@ -62,6 +70,9 @@ func (c *kongClient) DeleteConsumer(ctx context.Context, consumer CustomConsumer
 
 func (c *kongClient) addConsumerToGroup(ctx context.Context, consumerName string) error {
 	groupName := consumerName
+	if write, err := c.guard.CheckWrite(ctx, "consumer_group", consumerName, map[string]string{"group": groupName}, nil, false); err != nil || !write {
+		return err
+	}
 	response, err := c.client.AddConsumerToGroupWithResponse(ctx, consumerName, kong.AddConsumerToGroupJSONRequestBody{
 		Group: &groupName,
 	})

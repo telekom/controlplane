@@ -164,7 +164,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		Tags:     normalizeSet(&tags),
 	}
 
-	service, _, err := reconcile(ctx, entities.service, serviceBody)
+	service, _, err := reconcile(ctx, c.guard, entities.service, serviceBody)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		routeBody.Methods = &[]string{http.MethodHead}
 	}
 
-	kongRoute, _, err := reconcile(ctx, entities.route, routeBody)
+	kongRoute, _, err := reconcile(ctx, c.guard, entities.route, routeBody)
 	if err != nil {
 		return err
 	}
@@ -236,10 +236,10 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 	}
 
 	routeName := route.GetName()
-	if err := c.deleteRouteByIDOrName(ctx, routeName); err != nil {
+	if err := c.deleteRouteByIDOrName(ctx, routeName, routeName); err != nil {
 		return err
 	}
-	if err := c.deleteServiceByIDOrName(ctx, routeName); err != nil {
+	if err := c.deleteServiceByIDOrName(ctx, routeName, routeName); err != nil {
 		return err
 	}
 	return c.DeleteUpstream(ctx, route)
@@ -261,20 +261,24 @@ func (c *kongClient) deleteRealmRoute(ctx context.Context, route CustomRoute) er
 	log := logr.FromContextOrDiscard(ctx)
 	if id := entities.located.foundID(); id != "" {
 		log.V(1).Info("Deleting kong route", "routeId", id)
-		if err := c.deleteRouteByIDOrName(ctx, id); err != nil {
+		if err := c.deleteRouteByIDOrName(ctx, id, entities.name); err != nil {
 			return err
 		}
 	}
 	if id := entities.svc.foundID(); id != "" {
 		log.V(1).Info("Deleting kong service", "serviceId", id)
-		if err := c.deleteServiceByIDOrName(ctx, id); err != nil {
+		if err := c.deleteServiceByIDOrName(ctx, id, entities.name); err != nil {
 			return err
 		}
 	}
 	return c.deleteUpstreamAndTargets(ctx, upstreamRef)
 }
 
-func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName string) error {
+// deleteRouteByIDOrName deletes a Kong route. name identifies it for Migration Mode.
+func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName, name string) error {
+	if write, err := c.guard.CheckDelete(ctx, "route", name); err != nil || !write {
+		return err
+	}
 	routeResponse, err := c.client.DeleteRouteWithResponse(ctx, idOrName)
 	if err != nil {
 		return fmt.Errorf("failed to delete route: %w", HandleClientError(err))
@@ -285,7 +289,11 @@ func (c *kongClient) deleteRouteByIDOrName(ctx context.Context, idOrName string)
 	return nil
 }
 
-func (c *kongClient) deleteServiceByIDOrName(ctx context.Context, idOrName string) error {
+// deleteServiceByIDOrName deletes a Kong service. name identifies it for Migration Mode.
+func (c *kongClient) deleteServiceByIDOrName(ctx context.Context, idOrName, name string) error {
+	if write, err := c.guard.CheckDelete(ctx, "service", name); err != nil || !write {
+		return err
+	}
 	serviceResponse, err := c.client.DeleteServiceWithResponse(ctx, idOrName)
 	if err != nil {
 		return fmt.Errorf("failed to delete service: %w", HandleClientError(err))

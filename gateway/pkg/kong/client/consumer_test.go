@@ -16,6 +16,7 @@ import (
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	clientpkg "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	mockclient "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -54,6 +55,24 @@ var _ = Describe("CreateOrReplaceConsumer", func() {
 			}, nil,
 		)
 	}
+
+	It("plans a new consumer and its group without writing in migration mode", func() {
+		guard, err := migration.New(migration.Config{}, migration.ModeOn)
+		Expect(err).NotTo(HaveOccurred())
+		client = clientpkg.NewKongClient(api, clientpkg.WithMigrationGuard(guard))
+		api.EXPECT().GetConsumerWithResponse(mock.Anything, "test-consumer").Return(
+			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
+		)
+		plan := migration.NewPlan()
+
+		_, err = client.CreateOrReplaceConsumer(migration.WithPlan(ctx, plan), consumer)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(plan.Changes()).To(HaveExactElements(
+			HaveField("Kind", "consumer"),
+			HaveField("Kind", "consumer_group"),
+		))
+	})
 
 	It("does not upsert a matching consumer and restores its ID", func() {
 		api.EXPECT().GetConsumerWithResponse(mock.Anything, "test-consumer").Return(matchingConsumer(), nil)

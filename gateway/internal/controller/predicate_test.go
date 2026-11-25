@@ -11,6 +11,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -107,5 +108,28 @@ var _ = Describe("RouteRelevantForConsumeRoutePredicate", func() {
 			Expect(p.Delete(event.DeleteEvent{Object: readyRoute(true)})).To(BeTrue())
 			Expect(p.Generic(event.GenericEvent{Object: readyRoute(true)})).To(BeTrue())
 		})
+	})
+})
+
+var _ = Describe("MigrationApprovalChangedPredicate", func() {
+	p := MigrationApprovalChangedPredicate()
+
+	route := func(annotations map[string]string) *gatewayv1.Route {
+		return &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "route", Annotations: annotations}}
+	}
+
+	DescribeTable("admits only a changed approval",
+		func(old, updated map[string]string, expected bool) {
+			Expect(p.Update(event.UpdateEvent{ObjectOld: route(old), ObjectNew: route(updated)})).To(Equal(expected))
+		},
+		Entry("approval set", nil, map[string]string{migration.ApprovalAnnotation: "2"}, true),
+		Entry("approval changed", map[string]string{migration.ApprovalAnnotation: "2"}, map[string]string{migration.ApprovalAnnotation: "3"}, true),
+		Entry("approval removed", map[string]string{migration.ApprovalAnnotation: "2"}, nil, true),
+		Entry("other annotation changed", map[string]string{"a": "1"}, map[string]string{"a": "2"}, false),
+	)
+
+	It("ignores creates and deletes", func() {
+		Expect(p.Create(event.CreateEvent{Object: route(nil)})).To(BeFalse())
+		Expect(p.Delete(event.DeleteEvent{Object: route(nil)})).To(BeFalse())
 	})
 })
