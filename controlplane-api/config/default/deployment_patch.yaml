@@ -51,6 +51,24 @@
     mountPath: /var/run/secrets/rover
     readOnly: true
 
+# [FILE_MANAGER] This patch will configure the service account token projection for the file-manager client (file download proxy)
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: filemgr-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            path: token
+            expirationSeconds: 600
+            audience: file-manager
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: filemgr-token
+    mountPath: /var/run/secrets/filemgr
+    readOnly: true
+
 # This patch will add the trust-manager bundle to the deployment
 # Only if trust-manager is installed, see https://cert-manager.io/docs/trust/trust-manager
 - op: add

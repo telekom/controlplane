@@ -7,3 +7,4 @@ kind: Namespace
 metadata:
   labels:
     cp.ei.telekom.de/controlplane-api: enabled
+    cp.ei.telekom.de/file-manager: enabled

@@ -163,7 +163,7 @@ var _ = Describe("McpServer resolvers", func() {
 		Expect(team.GroupName).To(Equal("group-a"))
 	})
 
-	DescribeTable("should build the specification url",
+	DescribeTable("AC-8: should build the specification url from the public base url",
 		func(baseURL, specification, expected string) {
 			ctx := testutil.AllowContext()
 			rURL := resolvers.NewResolver(client, service.Services{}, nil, baseURL)
@@ -182,23 +182,32 @@ var _ = Describe("McpServer resolvers", func() {
 			Expect(url).NotTo(BeNil())
 			Expect(*url).To(Equal(expected))
 		},
-		Entry("plain base url", "https://files.example.com/api", "file-id-123",
-			"https://files.example.com/api/v1/files/file-id-123"),
-		Entry("base url with a trailing slash", "https://files.example.com/api/", "file-id-123",
-			"https://files.example.com/api/v1/files/file-id-123"),
-		Entry("base url with a path prefix", "https://files.example.com/prefix/api/", "file-id-123",
-			"https://files.example.com/prefix/api/v1/files/file-id-123"),
-		Entry("file id with a query character", "https://files.example.com/api", "a?x=1",
-			"https://files.example.com/api/v1/files/a%3Fx=1"),
-		Entry("file id with a percent sign", "https://files.example.com/api", "a%",
-			"https://files.example.com/api/v1/files/a%25"),
-		Entry("file id with a slash", "https://files.example.com/api", "a/b",
-			"https://files.example.com/api/v1/files/a%2Fb"),
-		Entry("file id with dot segments", "https://files.example.com/api", "../../x",
-			"https://files.example.com/api/v1/files/..%2F..%2Fx"),
+		Entry("plain base url", "https://cp.example.com", "file-id-123",
+			"https://cp.example.com/files/v1/file-id-123"),
+		Entry("base url with a trailing slash", "https://cp.example.com/", "file-id-123",
+			"https://cp.example.com/files/v1/file-id-123"),
+		Entry("base url with a path prefix", "https://cp.example.com/prefix/", "file-id-123",
+			"https://cp.example.com/prefix/files/v1/file-id-123"),
+		Entry("file id with a query character", "https://cp.example.com", "a?x=1",
+			"https://cp.example.com/files/v1/a%3Fx=1"),
+		Entry("file id with a percent sign", "https://cp.example.com", "a%",
+			"https://cp.example.com/files/v1/a%25"),
+		Entry("file id with a slash", "https://cp.example.com", "a/b",
+			"https://cp.example.com/files/v1/a%2Fb"),
+		Entry("file id with dot segments", "https://cp.example.com", "../../x",
+			"https://cp.example.com/files/v1/..%2F..%2Fx"),
 	)
 
-	It("should return nil specification url when specification is empty", func() {
+	It("AC-8: should return nil specification url when public base url is empty", func() {
+		ctx := testutil.AllowContext()
+		rEmpty := resolvers.NewResolver(client, service.Services{}, nil, "")
+		withSpec := &ent.McpServer{Specification: "file-id-123"}
+		url, err := rEmpty.McpServer().SpecificationURL(ctx, withSpec)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(url).To(BeNil())
+	})
+
+	It("AC-8: should return nil specification url when specification is empty", func() {
 		ctx := testutil.AllowContext()
 		url, err := r.McpServer().SpecificationURL(ctx, s.McpServerAlpha)
 		Expect(err).NotTo(HaveOccurred())
@@ -387,5 +396,64 @@ var _ = Describe("AgenticSubscriptionInfo.StatusPhase resolver", func() {
 		phase, err := r.AgenticSubscriptionInfo().StatusPhase(context.TODO(), &gqlmodel.AgenticSubscriptionInfo{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(phase).To(BeNil())
+	})
+})
+
+var _ = Describe("specificationUrl for all entity types", func() {
+	const (
+		baseURL = "https://cp.example.com/prefix/"
+		fileID  = "0190a5b2-7c3d-7e4f-8a9b-0c1d2e3f4a5b"
+		want    = "https://cp.example.com/prefix/files/v1/0190a5b2-7c3d-7e4f-8a9b-0c1d2e3f4a5b"
+	)
+
+	var (
+		ctx context.Context
+		r   *resolvers.Resolver
+	)
+
+	BeforeEach(func() {
+		ctx = testutil.AllowContext()
+		r = resolvers.NewResolver(nil, service.Services{}, nil, baseURL)
+	})
+
+	It("AC-8: Api uses the public download endpoint", func() {
+		url, err := r.Api().SpecificationURL(ctx, &ent.Api{Specification: fileID})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(url).NotTo(BeNil())
+		Expect(*url).To(Equal(want))
+	})
+
+	It("AC-8: EventType uses the public download endpoint", func() {
+		url, err := r.EventType().SpecificationURL(ctx, &ent.EventType{Specification: fileID})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(url).NotTo(BeNil())
+		Expect(*url).To(Equal(want))
+	})
+
+	It("AC-8: McpServer uses the public download endpoint", func() {
+		url, err := r.McpServer().SpecificationURL(ctx, &ent.McpServer{Specification: fileID})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(url).NotTo(BeNil())
+		Expect(*url).To(Equal(want))
+	})
+
+	It("AC-8: AgentCard uses the public download endpoint", func() {
+		url, err := r.AgentCard().SpecificationURL(ctx, &ent.AgentCard{Specification: fileID})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(url).NotTo(BeNil())
+		Expect(*url).To(Equal(want))
+	})
+
+	It("AC-8: all entity types return nil without a specification", func() {
+		for _, call := range []func() (*string, error){
+			func() (*string, error) { return r.Api().SpecificationURL(ctx, &ent.Api{}) },
+			func() (*string, error) { return r.EventType().SpecificationURL(ctx, &ent.EventType{}) },
+			func() (*string, error) { return r.McpServer().SpecificationURL(ctx, &ent.McpServer{}) },
+			func() (*string, error) { return r.AgentCard().SpecificationURL(ctx, &ent.AgentCard{}) },
+		} {
+			url, err := call()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(url).To(BeNil())
+		}
 	})
 })

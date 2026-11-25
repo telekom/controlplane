@@ -492,7 +492,7 @@ extend type ApprovalRequest {
 # -- Catalogue extensions --
 
 extend type Api {
-  "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
+  "URL to download the OpenAPI specification through the controlplane-api file download endpoint (/files/v1/{fileId}). Null if no specification is associated or no public base URL is configured."
   specificationUrl: String @goField(forceResolver: true)
   "The currently active exposure of this API, or null if no exposure is active."
   activeExposure: ApiExposureInfo @goField(forceResolver: true)
@@ -501,7 +501,7 @@ extend type Api {
 }
 
 extend type EventType {
-  "URL to download the JSON schema from the file-manager. Null if no specification is associated."
+  "URL to download the JSON schema through the controlplane-api file download endpoint (/files/v1/{fileId}). Null if no specification is associated or no public base URL is configured."
   specificationUrl: String @goField(forceResolver: true)
   "The currently active exposure of this event type, or null if no exposure is active."
   activeExposure: EventExposureInfo @goField(forceResolver: true)
@@ -510,7 +510,7 @@ extend type EventType {
 }
 
 extend type McpServer {
-  "URL to download the MCP server specification from the file-manager. Null if no specification is associated."
+  "URL to download the MCP server specification through the controlplane-api file download endpoint (/files/v1/{fileId}). Null if no specification is associated or no public base URL is configured."
   specificationUrl: String @goField(forceResolver: true)
   "The currently active exposure of this MCP server, or null if no exposure is active."
   activeExposure: AgenticExposureInfo @goField(forceResolver: true)
@@ -519,7 +519,7 @@ extend type McpServer {
 }
 
 extend type AgentCard {
-  "URL to download the agent specification from the file-manager. Null if no specification is associated."
+  "URL to download the agent specification through the controlplane-api file download endpoint (/files/v1/{fileId}). Null if no specification is associated or no public base URL is configured."
   specificationUrl: String @goField(forceResolver: true)
   "The currently active exposure of this agent, or null if no exposure is active."
   activeExposure: AgenticExposureInfo @goField(forceResolver: true)

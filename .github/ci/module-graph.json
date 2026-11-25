@@ -70,6 +70,7 @@
       "approval",
       "common",
       "common-server",
+      "file-manager",
       "organization",
       "secret-manager"
     ]

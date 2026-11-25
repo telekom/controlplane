@@ -17,40 +17,40 @@ import (
 
 // Resolver is the root resolver for the GraphQL API.
 type Resolver struct {
-	client             *ent.Client
-	services           service.Services
-	secrets            *secrets.Resolver
-	fileManagerBaseURL string
+	client               *ent.Client
+	services             service.Services
+	secrets              *secrets.Resolver
+	specificationBaseURL string
 }
 
 // NewResolver creates a new root resolver with the given ent client, services,
-// secret resolver, and file-manager base URL for specification URL construction.
-func NewResolver(client *ent.Client, services service.Services, secretResolver *secrets.Resolver, fileManagerBaseURL string) *Resolver {
+// secret resolver, and public base URL of the controlplane-api for specification
+// URL construction.
+func NewResolver(client *ent.Client, services service.Services, secretResolver *secrets.Resolver, specificationBaseURL string) *Resolver {
 	return &Resolver{
-		client:             client,
-		services:           services,
-		secrets:            secretResolver,
-		fileManagerBaseURL: fileManagerBaseURL,
+		client:               client,
+		services:             services,
+		secrets:              secretResolver,
+		specificationBaseURL: specificationBaseURL,
 	}
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, services service.Services, secretResolver *secrets.Resolver, fileManagerBaseURL string) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, services service.Services, secretResolver *secrets.Resolver, specificationBaseURL string) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(client, services, secretResolver, fileManagerBaseURL),
+		Resolvers: NewResolver(client, services, secretResolver, specificationBaseURL),
 	})
 }
 
-// buildSpecificationURL constructs the file-manager download URL
-// (<baseURL>/v1/files/<fileId>) for a file ID. The base URL is the base URL of
-// the file-manager API, including the /api prefix. The file ID is a UUID; it is
-// path-escaped.
-// Returns nil if the specification is empty or the file-manager base URL is not configured.
+// buildSpecificationURL constructs the public download URL
+// (<publicBaseURL>/files/v1/<fileId>) served by the controlplane-api file
+// download endpoint. The file ID is path-escaped.
+// Returns nil if the specification is empty or the public base URL is not configured.
 func (r *Resolver) buildSpecificationURL(specification string) (*string, error) {
-	if specification == "" || r.fileManagerBaseURL == "" {
+	if specification == "" || r.specificationBaseURL == "" {
 		return nil, nil
 	}
-	specURL, err := url.JoinPath(r.fileManagerBaseURL, "v1", "files", url.PathEscape(specification))
+	specURL, err := url.JoinPath(r.specificationBaseURL, "files", "v1", url.PathEscape(specification))
 	if err != nil {
 		return nil, fmt.Errorf("building specification url: %w", err)
 	}

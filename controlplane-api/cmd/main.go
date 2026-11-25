@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/gofiber/fiber/v2"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -38,6 +39,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/internal/database"
+	"github.com/telekom/controlplane/controlplane-api/internal/files"
 	gqlcontroller "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
@@ -100,12 +102,19 @@ func main() {
 	}
 
 	secretResolver := secrets.NewResolver(secretsapi.NewSecrets())
-	srv := newGraphQLServer(client, services, secretResolver, cfg.FileManager.BaseURL)
+	srv := newGraphQLServer(client, services, secretResolver, cfg.FileDownload.PublicBaseURL)
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
 	appCfg.EnableCors = true
 
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
+
+	var filesCtrl *files.Controller
+	if cfg.FileManager.BaseURL != "" {
+		filesCtrl = files.NewController(files.NewFileManagerClient(cfg.FileManager.BaseURL, cfg.FileManager.TokenFilePath))
+	} else {
+		log.Info("file download disabled, fileManager.baseUrl is empty")
+	}
 
 	// jwtOpts turns the listener's jwt block into full SecurityOpts. controlplane-api
 	// has no server-specific check-access templates (GraphQL guards via business
@@ -150,7 +159,12 @@ func main() {
 			Internal: buildListener(cfg.Listeners.Internal, true),
 			External: buildListener(cfg.Listeners.External, false),
 		},
-		Register: gqlCtrl.RegisterRoutes,
+		Register: func(r fiber.Router, guard []fiber.Handler) {
+			gqlCtrl.RegisterRoutes(r, guard)
+			if filesCtrl != nil {
+				filesCtrl.RegisterRoutes(r, guard)
+			}
+		},
 	}
 
 	ctx = logr.NewContext(ctx, log.WithName("server"))
@@ -207,8 +221,8 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, fileManagerBaseURL string) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver, fileManagerBaseURL))
+func newGraphQLServer(entClient *ent.Client, services service.Services, secretResolver *secrets.Resolver, specificationBaseURL string) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, services, secretResolver, specificationBaseURL))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})

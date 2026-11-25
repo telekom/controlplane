@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This patch is only needed when you want to use the network policy
+# This patch is only needed when you want to use the network policy.
+# The file-manager label allows the file download proxy to reach file-manager.
 - op: add
   path: /metadata/labels/cp.ei.telekom.de~1secret-manager
+  value: "enabled"
+- op: add
+  path: /metadata/labels/cp.ei.telekom.de~1file-manager
   value: "enabled"
