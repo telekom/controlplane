@@ -1,0 +1,31 @@
+.agents/skills/review-architecture/scripts/adr.py
+  s_7fe8a2269e95bf::t_71328c9fe27c50 321-329,343-358
+  s_8feb2417cda658::t_d447b06fec76f5 359-360
+.agents/skills/review-architecture/scripts/tests/test_adr.py
+  s_7fe8a2269e95bf::t_a8cbf3a317b66e 218-226
+  s_7fe8a2269e95bf::t_3729bff184c038 195-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8f3b7c506b2e15dc3acb865a69ab781d23c8b806",
+  "prompts": {},
+  "sessions": {
+    "s_7fe8a2269e95bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b2b35c6f-044a-4bf4-af1b-668b466fb36b",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    },
+    "s_8feb2417cda658": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9bb37df4-6e82-48b0-9c1d-85435181678e",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
