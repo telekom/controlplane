@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -78,5 +79,15 @@ func (Listener) Annotations() []schema.Annotation {
 		entgql.QueryField(),
 		entgql.MultiOrder(),
 		entgql.RelayConnection(),
+	}
+}
+
+func (Listener) Indexes() []ent.Index {
+	return []ent.Index{
+		// FK lookups for application/subscription/exposure -> listeners traversals,
+		// team filter interceptor predicates, and ON DELETE CASCADE operations.
+		index.Edges("application"),
+		index.Edges("subscription"),
+		index.Edges("exposure"),
 	}
 }

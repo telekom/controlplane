@@ -552,6 +552,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ApprovalRequestsColumns[20]},
 			},
+			{
+				Name:    "approvalrequest_listener_approval_requests",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalRequestsColumns[21]},
+			},
 		},
 	}
 	// EventExposuresColumns holds the columns for the "event_exposures" table.
@@ -925,6 +930,21 @@ var (
 				Name:    "listener_namespace_name",
 				Unique:  true,
 				Columns: []*schema.Column{ListenersColumns[6], ListenersColumns[7]},
+			},
+			{
+				Name:    "listener_application_listeners",
+				Unique:  false,
+				Columns: []*schema.Column{ListenersColumns[13]},
+			},
+			{
+				Name:    "listener_api_subscription_listeners",
+				Unique:  false,
+				Columns: []*schema.Column{ListenersColumns[12]},
+			},
+			{
+				Name:    "listener_api_exposure_listeners",
+				Unique:  false,
+				Columns: []*schema.Column{ListenersColumns[11]},
 			},
 		},
 	}
