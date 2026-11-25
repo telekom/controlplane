@@ -59,12 +59,7 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 		return r.handleDependencyError(ctx, data, "api_exposure", data.Provider.Namespace+"/"+data.Provider.Name+data.BasePath, err)
 	}
 
-	// Both the insert and the edge update are atomic; a failed retarget must not leave old edges.
-	tx, err := r.client.Tx(ctx)
-	if err != nil {
-		return fmt.Errorf("begin listener transaction: %w", err)
-	}
-	create := tx.Listener.Create().
+	create := r.client.Listener.Create().
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
 		SetEnvironment(data.Meta.Environment).
@@ -80,24 +75,19 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	if data.ResponseFilter != nil {
 		create.SetResponseFilter(data.ResponseFilter)
 	}
-	id, err := create.OnConflictColumns(entlistener.FieldNamespace, entlistener.FieldName).UpdateNewValues().ID(ctx)
-	if err == nil {
-		update := tx.Listener.UpdateOneID(id).
-			SetApplicationID(observerID).
-			SetSubscriptionID(subID).
-			SetExposureID(exposureID)
-		if data.RequestFilter == nil {
-			update.ClearRequestFilter()
-		}
-		if data.ResponseFilter == nil {
-			update.ClearResponseFilter()
-		}
-		err = update.Exec(ctx)
-	}
+	err = create.
+		OnConflictColumns(entlistener.FieldNamespace, entlistener.FieldName).
+		UpdateNewValues().
+		Update(func(u *ent.ListenerUpsert) {
+			if data.RequestFilter == nil {
+				u.ClearRequestFilter()
+			}
+			if data.ResponseFilter == nil {
+				u.ClearResponseFilter()
+			}
+		}).
+		Exec(ctx)
 	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf("upsert listener %s/%s: %w (rollback: %v)", data.Meta.Namespace, data.Meta.Name, err, rollbackErr)
-		}
 		if infrastructure.IsFKViolation(err, "") {
 			r.deps.EvictApplicationByMeta(data.Observer.Namespace, data.Observer.Name)
 			r.deps.EvictAPISubscriptionID(data.BasePath, data.Consumer.Name, consumerTeam)
@@ -105,12 +95,6 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 			return runtime.WrapDependencyMissing("listener edge", data.Meta.Namespace+"/"+data.Meta.Name)
 		}
 		return fmt.Errorf("upsert listener %s/%s: %w", data.Meta.Namespace, data.Meta.Name, err)
-	}
-	if err := tx.Commit(); err != nil {
-		r.deps.EvictApplicationByMeta(data.Observer.Namespace, data.Observer.Name)
-		r.deps.EvictAPISubscriptionID(data.BasePath, data.Consumer.Name, consumerTeam)
-		r.deps.EvictAPIExposureID(data.BasePath, data.Provider.Name, providerTeam)
-		return fmt.Errorf("commit listener %s/%s: %w", data.Meta.Namespace, data.Meta.Name, err)
 	}
 	return nil
 }

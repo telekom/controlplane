@@ -336,7 +336,9 @@ var _ = Describe("Approval Repository", func() {
 			data.Meta.Name = "first-provider"
 			Expect(repo.Upsert(ctx, data)).To(Succeed())
 			data.Meta.Name = "second-provider"
-			Expect(repo.Upsert(ctx, data)).To(MatchError(ContainSubstring("already belongs to")))
+			err = repo.Upsert(ctx, data)
+			Expect(err).To(HaveOccurred())
+			Expect(ent.IsConstraintError(err)).To(BeTrue())
 			count, err := client.Approval.Query().Count(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(count).To(Equal(1))
@@ -628,6 +630,54 @@ var _ = Describe("Approval Repository", func() {
 			Expect(*a.StatusMessage).To(Equal("approval rejected"))
 			Expect(a.ExpiresAt).NotTo(BeNil())
 			Expect(*a.ExpiresAt).To(BeTemporally("~", time.Date(2026, 12, 31, 23, 59, 0, 0, time.UTC), time.Second))
+		})
+
+		It("clears previous target FK when retargeting across TargetKinds", func() {
+			z, err := client.Zone.Query().Where(zone.NameEQ("caas")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			app, err := client.Application.Query().Where(entapplication.NameEQ("consumer-app")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			eventSub, err := client.EventSubscription.Create().
+				SetEventType("order.created").
+				SetNamespace("platform--narvi").
+				SetName("retarget-event-sub").
+				SetDeliveryType(eventsubscription.DeliveryTypeCallback).
+				SetOwnerID(app.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.eventSubIDs["prod--platform--narvi:retarget-event-sub"] = eventSub.ID
+
+			fileSub, err := client.FileSubscription.Create().
+				SetFileType("report").
+				SetZoneName("caas").
+				SetNamespace("platform--narvi").
+				SetName("retarget-file-sub").
+				SetOwnerID(app.ID).
+				SetZoneID(z.ID).
+				Save(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			deps.fileSubIDs["prod--platform--narvi:retarget-file-sub"] = fileSub.ID
+
+			data := baseData()
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			data.TargetKind = approval.TargetKindEventSubscription
+			data.SubscriptionName = "retarget-event-sub"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			a, err := client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(a.QueryEventSubscription().OnlyID(ctx)).To(Equal(eventSub.ID))
+			Expect(a.QueryAPISubscription().Exist(ctx)).To(BeFalse())
+
+			data.TargetKind = approval.TargetKindFileSubscription
+			data.SubscriptionName = "retarget-file-sub"
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+			a, err = client.Approval.Query().Where(entapproval.NameEQ(data.Meta.Name)).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(a.QueryFileSubscription().OnlyID(ctx)).To(Equal(fileSub.ID))
+			Expect(a.QueryEventSubscription().Exist(ctx)).To(BeFalse())
+			Expect(a.QueryAPISubscription().Exist(ctx)).To(BeFalse())
 		})
 
 		It("rolls back changed fields when the edge update fails", func() {
