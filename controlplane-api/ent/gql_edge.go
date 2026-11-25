@@ -427,6 +427,22 @@ func (_m *Group) Teams(ctx context.Context) (result []*Team, err error) {
 	return result, err
 }
 
+func (_m *Listener) ProviderApproval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ProviderApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProviderApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *Listener) ConsumerApproval(ctx context.Context) (*Approval, error) {
+	result, err := _m.Edges.ConsumerApprovalOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryConsumerApproval().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *Member) Team(ctx context.Context) (*Team, error) {
 	result, err := _m.Edges.TeamOrErr()
 	if IsNotLoaded(err) {

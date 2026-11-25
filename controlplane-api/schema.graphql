@@ -33,8 +33,8 @@ type ApplicationInfo {
 }
 
 type ListenerFilter {
-  trigger: Map @goField(forceResolver: true)
-  payload: [String!]! @goField(forceResolver: true)
+  trigger: Map
+  payload: [String!]!
 }
 
 type Upstream {
@@ -483,16 +483,11 @@ extend type Listener {
   resourceName: String @goField(forceResolver: true)
   "True when both provider and consumer approvals are granted."
   approved: Boolean! @goField(forceResolver: true)
-  apiBasePath: String! @goField(forceResolver: true)
-  requestFilter: ListenerFilter @goField(forceResolver: true)
-  responseFilter: ListenerFilter @goField(forceResolver: true)
   application: ApplicationInfo! @goField(forceResolver: true)
   consumer: ApplicationInfo! @goField(forceResolver: true)
   provider: ApplicationInfo! @goField(forceResolver: true)
   subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
   exposure: ApiExposureInfo! @goField(forceResolver: true)
-  providerApproval: Approval @goField(forceResolver: true)
-  consumerApproval: Approval @goField(forceResolver: true)
 }
 
 extend type EventSubscription {

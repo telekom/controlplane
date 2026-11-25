@@ -57,7 +57,6 @@ type ResolverRoot interface {
 	FileSubscription() FileSubscriptionResolver
 	FileSubscriptionInfo() FileSubscriptionInfoResolver
 	Listener() ListenerResolver
-	ListenerFilter() ListenerFilterResolver
 	McpServer() McpServerResolver
 	Mutation() MutationResolver
 	OAuth2ClientCredentials() OAuth2ClientCredentialsResolver
@@ -10579,6 +10578,11 @@ type Listener implements Node {
   environment: String
   namespace: String!
   name: String!
+  apiBasePath: String!
+  requestFilter: ListenerFilter
+  responseFilter: ListenerFilter
+  providerApproval: Approval
+  consumerApproval: Approval
 }
 """
 A connection to a list of items.
@@ -10757,6 +10761,22 @@ input ListenerWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  api_base_path field predicates
+  """
+  apiBasePath: String
+  apiBasePathNEQ: String
+  apiBasePathIn: [String!]
+  apiBasePathNotIn: [String!]
+  apiBasePathGT: String
+  apiBasePathGTE: String
+  apiBasePathLT: String
+  apiBasePathLTE: String
+  apiBasePathContains: String
+  apiBasePathHasPrefix: String
+  apiBasePathHasSuffix: String
+  apiBasePathEqualFold: String
+  apiBasePathContainsFold: String
 }
 type McpServer implements Node {
   id: ID!
@@ -12828,8 +12848,8 @@ type ApplicationInfo {
 }
 
 type ListenerFilter {
-  trigger: Map @goField(forceResolver: true)
-  payload: [String!]! @goField(forceResolver: true)
+  trigger: Map
+  payload: [String!]!
 }
 
 type Upstream {
@@ -13278,16 +13298,11 @@ extend type Listener {
   resourceName: String @goField(forceResolver: true)
   "True when both provider and consumer approvals are granted."
   approved: Boolean! @goField(forceResolver: true)
-  apiBasePath: String! @goField(forceResolver: true)
-  requestFilter: ListenerFilter @goField(forceResolver: true)
-  responseFilter: ListenerFilter @goField(forceResolver: true)
   application: ApplicationInfo! @goField(forceResolver: true)
   consumer: ApplicationInfo! @goField(forceResolver: true)
   provider: ApplicationInfo! @goField(forceResolver: true)
   subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
   exposure: ApiExposureInfo! @goField(forceResolver: true)
-  providerApproval: Approval @goField(forceResolver: true)
-  consumerApproval: Approval @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -14959,16 +14974,20 @@ func (ec *executionContext) childFields_Listener(ctx context.Context, field grap
 		return ec.fieldContext_Listener_namespace(ctx, field)
 	case "name":
 		return ec.fieldContext_Listener_name(ctx, field)
-	case "resourceName":
-		return ec.fieldContext_Listener_resourceName(ctx, field)
-	case "approved":
-		return ec.fieldContext_Listener_approved(ctx, field)
 	case "apiBasePath":
 		return ec.fieldContext_Listener_apiBasePath(ctx, field)
 	case "requestFilter":
 		return ec.fieldContext_Listener_requestFilter(ctx, field)
 	case "responseFilter":
 		return ec.fieldContext_Listener_responseFilter(ctx, field)
+	case "providerApproval":
+		return ec.fieldContext_Listener_providerApproval(ctx, field)
+	case "consumerApproval":
+		return ec.fieldContext_Listener_consumerApproval(ctx, field)
+	case "resourceName":
+		return ec.fieldContext_Listener_resourceName(ctx, field)
+	case "approved":
+		return ec.fieldContext_Listener_approved(ctx, field)
 	case "application":
 		return ec.fieldContext_Listener_application(ctx, field)
 	case "consumer":
@@ -14979,10 +14998,6 @@ func (ec *executionContext) childFields_Listener(ctx context.Context, field grap
 		return ec.fieldContext_Listener_subscription(ctx, field)
 	case "exposure":
 		return ec.fieldContext_Listener_exposure(ctx, field)
-	case "providerApproval":
-		return ec.fieldContext_Listener_providerApproval(ctx, field)
-	case "consumerApproval":
-		return ec.fieldContext_Listener_consumerApproval(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Listener", field.Name)
 }

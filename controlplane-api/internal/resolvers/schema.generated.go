@@ -81,10 +81,6 @@ type FileExposureInfoResolver interface {
 type FileSubscriptionInfoResolver interface {
 	StatusPhase(ctx context.Context, obj *model.FileSubscriptionInfo) (*filesubscription.StatusPhase, error)
 }
-type ListenerFilterResolver interface {
-	Trigger(ctx context.Context, obj *model1.ListenerFilter) (map[string]any, error)
-	Payload(ctx context.Context, obj *model1.ListenerFilter) ([]string, error)
-}
 type OAuth2ClientCredentialsResolver interface {
 	ClientSecret(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
 	ClientKey(ctx context.Context, obj *model1.OAuth2ClientCredentials) (*string, error)
@@ -3417,7 +3413,7 @@ func (ec *executionContext) _ListenerFilter_trigger(ctx context.Context, field g
 			return ec.fieldContext_ListenerFilter_trigger(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ListenerFilter().Trigger(ctx, obj)
+			return obj.Trigger, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v map[string]any) graphql.Marshaler {
@@ -3428,7 +3424,7 @@ func (ec *executionContext) _ListenerFilter_trigger(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_ListenerFilter_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ListenerFilter", field, true, true, errors.New("field of type Map does not have child fields"))
+	return graphql.NewScalarFieldContext("ListenerFilter", field, false, false, errors.New("field of type Map does not have child fields"))
 }
 
 func (ec *executionContext) _ListenerFilter_payload(ctx context.Context, field graphql.CollectedField, obj *model1.ListenerFilter) (ret graphql.Marshaler) {
@@ -3440,7 +3436,7 @@ func (ec *executionContext) _ListenerFilter_payload(ctx context.Context, field g
 			return ec.fieldContext_ListenerFilter_payload(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.ListenerFilter().Payload(ctx, obj)
+			return obj.Payload, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
@@ -3451,7 +3447,7 @@ func (ec *executionContext) _ListenerFilter_payload(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_ListenerFilter_payload(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("ListenerFilter", field, true, true, errors.New("field of type String does not have child fields"))
+	return graphql.NewScalarFieldContext("ListenerFilter", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ListenerInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.ListenerInfo) (ret graphql.Marshaler) {
@@ -7251,81 +7247,15 @@ func (ec *executionContext) _ListenerFilter(ctx context.Context, sel ast.Selecti
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ListenerFilter")
 		case "trigger":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListenerFilter_trigger(ctx, field, obj)
-				if res == graphql.RequiredNull {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ListenerFilter_trigger(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
 			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "payload":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ListenerFilter_payload(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._ListenerFilter_payload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

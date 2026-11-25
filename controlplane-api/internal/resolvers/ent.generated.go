@@ -106,16 +106,11 @@ type FileSubscriptionResolver interface {
 type ListenerResolver interface {
 	ResourceName(ctx context.Context, obj *ent.Listener) (*string, error)
 	Approved(ctx context.Context, obj *ent.Listener) (bool, error)
-	APIBasePath(ctx context.Context, obj *ent.Listener) (string, error)
-	RequestFilter(ctx context.Context, obj *ent.Listener) (*model1.ListenerFilter, error)
-	ResponseFilter(ctx context.Context, obj *ent.Listener) (*model1.ListenerFilter, error)
 	Application(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error)
 	Consumer(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error)
 	Provider(ctx context.Context, obj *ent.Listener) (*model.ApplicationInfo, error)
 	Subscription(ctx context.Context, obj *ent.Listener) (*model.ApiSubscriptionInfo, error)
 	Exposure(ctx context.Context, obj *ent.Listener) (*model.ApiExposureInfo, error)
-	ProviderApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error)
-	ConsumerApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error)
 }
 type McpServerResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.McpServer) (*string, error)
@@ -11854,6 +11849,157 @@ func (ec *executionContext) fieldContext_Listener_name(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Listener", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _Listener_apiBasePath(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_apiBasePath(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.APIBasePath, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_apiBasePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Listener", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Listener_requestFilter(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_requestFilter(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestFilter, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ListenerFilter) graphql.Marshaler {
+			return ec.marshalOListenerFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐListenerFilter(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_requestFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Listener",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ListenerFilter(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Listener_responseFilter(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_responseFilter(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseFilter, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model1.ListenerFilter) graphql.Marshaler {
+			return ec.marshalOListenerFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐListenerFilter(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_responseFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Listener",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ListenerFilter(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Listener_providerApproval(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_providerApproval(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderApproval(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
+			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_providerApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Listener",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Approval(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Listener_consumerApproval(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Listener_consumerApproval(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ConsumerApproval(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
+			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Listener_consumerApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Listener",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Approval(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Listener_resourceName(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11898,93 +12044,6 @@ func (ec *executionContext) _Listener_approved(ctx context.Context, field graphq
 }
 func (ec *executionContext) fieldContext_Listener_approved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Listener", field, true, true, errors.New("field of type Boolean does not have child fields"))
-}
-
-func (ec *executionContext) _Listener_apiBasePath(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Listener_apiBasePath(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Listener().APIBasePath(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_Listener_apiBasePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("Listener", field, true, true, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _Listener_requestFilter(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Listener_requestFilter(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Listener().RequestFilter(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.ListenerFilter) graphql.Marshaler {
-			return ec.marshalOListenerFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐListenerFilter(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_Listener_requestFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Listener",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ListenerFilter(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Listener_responseFilter(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Listener_responseFilter(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Listener().ResponseFilter(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model1.ListenerFilter) graphql.Marshaler {
-			return ec.marshalOListenerFilter2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐListenerFilter(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_Listener_responseFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Listener",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_ListenerFilter(ctx, field)
-		},
-	}
-	return fc, nil
 }
 
 func (ec *executionContext) _Listener_application(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
@@ -12142,70 +12201,6 @@ func (ec *executionContext) fieldContext_Listener_exposure(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ApiExposureInfo(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Listener_providerApproval(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Listener_providerApproval(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Listener().ProviderApproval(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
-			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_Listener_providerApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Listener",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Approval(ctx, field)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Listener_consumerApproval(ctx context.Context, field graphql.CollectedField, obj *ent.Listener) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Listener_consumerApproval(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Listener().ConsumerApproval(ctx, obj)
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *ent.Approval) graphql.Marshaler {
-			return ec.marshalOApproval2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApproval(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_Listener_consumerApproval(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Listener",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Approval(ctx, field)
 		},
 	}
 	return fc, nil
@@ -31546,7 +31541,7 @@ func (ec *executionContext) unmarshalInputListenerWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "apiBasePath", "apiBasePathNEQ", "apiBasePathIn", "apiBasePathNotIn", "apiBasePathGT", "apiBasePathGTE", "apiBasePathLT", "apiBasePathLTE", "apiBasePathContains", "apiBasePathHasPrefix", "apiBasePathHasSuffix", "apiBasePathEqualFold", "apiBasePathContainsFold"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -32176,6 +32171,97 @@ func (ec *executionContext) unmarshalInputListenerWhereInput(ctx context.Context
 				return it, err
 			}
 			it.NameContainsFold = data
+		case "apiBasePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePath"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePath = data
+		case "apiBasePathNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathNEQ = data
+		case "apiBasePathIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathIn = data
+		case "apiBasePathNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathNotIn = data
+		case "apiBasePathGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathGT = data
+		case "apiBasePathGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathGTE = data
+		case "apiBasePathLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathLT = data
+		case "apiBasePathLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathLTE = data
+		case "apiBasePathContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathContains = data
+		case "apiBasePathHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathHasPrefix = data
+		case "apiBasePathHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathHasSuffix = data
+		case "apiBasePathEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathEqualFold = data
+		case "apiBasePathContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiBasePathContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIBasePathContainsFold = data
 		}
 	}
 	return it, nil
@@ -41876,6 +41962,97 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "apiBasePath":
+			out.Values[i] = ec._Listener_apiBasePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requestFilter":
+			out.Values[i] = ec._Listener_requestFilter(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "responseFilter":
+			out.Values[i] = ec._Listener_responseFilter(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "providerApproval":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Listener_providerApproval(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "consumerApproval":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Listener_consumerApproval(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "resourceName":
 			field := field
 
@@ -41925,120 +42102,6 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 				}()
 				res = ec._Listener_approved(ctx, field, obj)
 				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "apiBasePath":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Listener_apiBasePath(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "requestFilter":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Listener_requestFilter(ctx, field, obj)
-				if res == graphql.RequiredNull {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "responseFilter":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Listener_responseFilter(ctx, field, obj)
-				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res
@@ -42229,82 +42292,6 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 				}()
 				res = ec._Listener_exposure(ctx, field, obj)
 				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "providerApproval":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Listener_providerApproval(ctx, field, obj)
-				if res == graphql.RequiredNull {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.IsDeferred() {
-				deferredFieldSet.AddField(field)
-				fieldIndex := len(deferredFieldSet.Values) - 1
-				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, deferredFieldSet)
-				})
-
-				for _, deferrable := range field.Deferrables {
-					view, ok := deferLabelToView[deferrable.Label]
-					if !ok {
-						view = deferredFieldSet.NewView()
-						deferLabelToView[deferrable.Label] = view
-					}
-					view.AddIndices(fieldIndex)
-				}
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "consumerApproval":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Listener_consumerApproval(ctx, field, obj)
-				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res

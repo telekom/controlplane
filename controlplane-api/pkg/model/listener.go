@@ -6,6 +6,6 @@ package model
 
 // ListenerFilter describes conditions and payload paths applied by a Listener.
 type ListenerFilter struct {
-	Trigger map[string]string `json:"trigger,omitempty"`
-	Payload []string          `json:"payload,omitempty"`
+	Trigger map[string]any `json:"trigger,omitempty"`
+	Payload []string       `json:"payload,omitempty"`
 }

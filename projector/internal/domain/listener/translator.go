@@ -71,12 +71,23 @@ func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*D
 		Provider:      Key{Namespace: obj.Spec.Provider.Namespace, Name: obj.Spec.Provider.Name},
 	}
 	if f := obj.Spec.ApiListener.RequestFilter; f != nil {
-		data.RequestFilter = &model.ListenerFilter{Trigger: f.Trigger, Payload: f.Payload}
+		data.RequestFilter = mapListenerFilter(f)
 	}
 	if f := obj.Spec.ApiListener.ResponseFilter; f != nil {
-		data.ResponseFilter = &model.ListenerFilter{Trigger: f.Trigger, Payload: f.Payload}
+		data.ResponseFilter = mapListenerFilter(f)
 	}
 	return data, nil
+}
+
+func mapListenerFilter(f *spectrev1.ListenerFilter) *model.ListenerFilter {
+	var trigger map[string]any
+	if f.Trigger != nil {
+		trigger = make(map[string]any, len(f.Trigger))
+		for k, v := range f.Trigger {
+			trigger[k] = v
+		}
+	}
+	return &model.ListenerFilter{Trigger: trigger, Payload: f.Payload}
 }
 
 func (t *Translator) KeyFromObject(obj *spectrev1.Listener) Key {

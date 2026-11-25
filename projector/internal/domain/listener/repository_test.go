@@ -89,7 +89,7 @@ var _ = Describe("Listener repository", func() {
 	})
 
 	It("retargets all edges and clears filters on conflict", func() {
-		data.RequestFilter = &model.ListenerFilter{Trigger: map[string]string{"method": "GET"}}
+		data.RequestFilter = &model.ListenerFilter{Trigger: map[string]any{"method": "GET"}}
 		Expect(repo.Upsert(ctx, data)).To(Succeed())
 		id := client.Listener.Query().OnlyX(ctx).ID
 		data.Observer = Key{Namespace: consumer.Namespace, Name: consumer.Name}

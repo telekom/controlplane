@@ -133,7 +133,7 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetName("listener-ready").
 		SetAPIBasePath("/alpha").
 		SetStatusPhase(listener.StatusPhaseReady).
-		SetRequestFilter(&model.ListenerFilter{Trigger: map[string]string{"method": "GET"}, Payload: []string{"request.id"}}).
+		SetRequestFilter(&model.ListenerFilter{Trigger: map[string]any{"method": "GET"}, Payload: []string{"request.id"}}).
 		SetResponseFilter(&model.ListenerFilter{Payload: []string{"response.id"}}).
 		SetApplication(s.AppBeta).
 		SetSubscription(s.Subscription).

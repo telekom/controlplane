@@ -3495,6 +3495,28 @@ func (_q *ListenerQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "providerApproval":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
+				return err
+			}
+			_q.withProviderApproval = query
+
+		case "consumerApproval":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ApprovalClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, approvalImplementors)...); err != nil {
+				return err
+			}
+			_q.withConsumerApproval = query
 		case "createdAt":
 			if _, ok := fieldSeen[listener.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, listener.FieldCreatedAt)
@@ -3529,6 +3551,21 @@ func (_q *ListenerQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 			if _, ok := fieldSeen[listener.FieldName]; !ok {
 				selectedFields = append(selectedFields, listener.FieldName)
 				fieldSeen[listener.FieldName] = struct{}{}
+			}
+		case "apiBasePath":
+			if _, ok := fieldSeen[listener.FieldAPIBasePath]; !ok {
+				selectedFields = append(selectedFields, listener.FieldAPIBasePath)
+				fieldSeen[listener.FieldAPIBasePath] = struct{}{}
+			}
+		case "requestFilter":
+			if _, ok := fieldSeen[listener.FieldRequestFilter]; !ok {
+				selectedFields = append(selectedFields, listener.FieldRequestFilter)
+				fieldSeen[listener.FieldRequestFilter] = struct{}{}
+			}
+		case "responseFilter":
+			if _, ok := fieldSeen[listener.FieldResponseFilter]; !ok {
+				selectedFields = append(selectedFields, listener.FieldResponseFilter)
+				fieldSeen[listener.FieldResponseFilter] = struct{}{}
 			}
 		case "id":
 		case "__typename":

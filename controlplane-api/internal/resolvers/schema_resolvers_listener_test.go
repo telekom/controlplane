@@ -5,7 +5,13 @@
 package resolvers_test
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
@@ -43,16 +49,10 @@ var _ = Describe("Listener resolvers", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(approved).To(BeTrue())
 
-		basePath, err := r.Listener().APIBasePath(ctx, s.ListenerReady)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(basePath).To(Equal("/alpha"))
-		Expect(s.ListenerReady.RequestFilter.Trigger).To(Equal(map[string]string{"method": "GET"}))
-		requestFilter, err := r.Listener().RequestFilter(ctx, s.ListenerReady)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(requestFilter.Payload).To(Equal([]string{"request.id"}))
-		responseFilter, err := r.Listener().ResponseFilter(ctx, s.ListenerReady)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(responseFilter.Payload).To(Equal([]string{"response.id"}))
+		Expect(s.ListenerReady.APIBasePath).To(Equal("/alpha"))
+		Expect(s.ListenerReady.RequestFilter.Trigger).To(Equal(map[string]any{"method": "GET"}))
+		Expect(s.ListenerReady.RequestFilter.Payload).To(Equal([]string{"request.id"}))
+		Expect(s.ListenerReady.ResponseFilter.Payload).To(Equal([]string{"response.id"}))
 
 		consumer, err := r.Listener().Consumer(ctx, s.ListenerReady)
 		Expect(err).NotTo(HaveOccurred())
@@ -77,10 +77,10 @@ var _ = Describe("Listener resolvers", func() {
 		exposure, err := r.Listener().Exposure(ctx, s.ListenerReady)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exposure.ID).To(Equal(s.ExposureAlpha.ID))
-		providerApproval, err := r.Listener().ProviderApproval(ctx, s.ListenerReady)
+		providerApproval, err := s.ListenerReady.ProviderApproval(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(providerApproval.ID).To(Equal(s.ListenerApproval.ID))
-		consumerApproval, err := r.Listener().ConsumerApproval(ctx, s.ListenerReady)
+		consumerApproval, err := s.ListenerReady.ConsumerApproval(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(consumerApproval.ID).To(Equal(s.ListenerConsumerApproval.ID))
 
@@ -108,7 +108,7 @@ var _ = Describe("Listener resolvers", func() {
 		info, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info[0].Approved).To(BeFalse())
-		consumerApproval, err := r.Listener().ConsumerApproval(ctx, s.ListenerReady)
+		consumerApproval, err := s.ListenerReady.ConsumerApproval(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(consumerApproval).To(BeNil())
 		client.Listener.UpdateOne(s.ListenerReady).SetConsumerApproval(s.ListenerConsumerApproval).ClearProviderApproval().ExecX(ctx)
@@ -166,8 +166,8 @@ var _ = Describe("Listener resolvers", func() {
 		Expect(info[0].Provider.ID).To(Equal(s.AppAlpha.ID))
 
 		for _, approval := range []*ent.Approval{s.ListenerApproval, s.ListenerConsumerApproval} {
-			subscription, err := r.Approval().Subscription(ctx, approval)
-			Expect(err).NotTo(HaveOccurred())
+			subscription, subErr := r.Approval().Subscription(ctx, approval)
+			Expect(subErr).NotTo(HaveOccurred())
 			Expect(subscription.(*gqlmodel.ListenerInfo).Application.ID).To(Equal(application.ID))
 			Expect(subscription.GetOwnerApplication().ID).To(Equal(application.ID))
 		}
@@ -292,9 +292,9 @@ var _ = Describe("Listener resolvers", func() {
 				Expect(exp.ID).To(Equal(s.ExposureAlpha.ID))
 				Expect(exp.OwnerTeam.GroupName).To(BeEmpty())
 
-				providerApproval, err := r.Listener().ProviderApproval(ctx, node)
+				providerApproval, err := node.ProviderApproval(ctx)
 				Expect(err).NotTo(HaveOccurred())
-				consumerApproval, err := r.Listener().ConsumerApproval(ctx, node)
+				consumerApproval, err := node.ConsumerApproval(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				if node.ID == s.ListenerReady.ID {
 					Expect(providerApproval).NotTo(BeNil())
@@ -307,15 +307,96 @@ var _ = Describe("Listener resolvers", func() {
 		}
 	})
 
-	It("maps filter values for GraphQL", func() {
-		trigger, err := r.ListenerFilter().Trigger(context.Background(), s.ListenerReady.RequestFilter)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(trigger).To(Equal(map[string]any{"method": "GET"}))
+	It("serializes filter trigger and nil payload via GraphQL", func() {
+		ctx := testutil.AllowContext()
+		client.Listener.UpdateOne(s.ListenerPending).
+			SetRequestFilter(&model.ListenerFilter{Trigger: map[string]any{"method": "POST"}}).
+			ExecX(ctx)
 
-		payload, err := r.ListenerFilter().Payload(context.Background(), &model.ListenerFilter{})
+		server := handler.New(resolvers.NewExecutableSchema(resolvers.Config{
+			Resolvers: r,
+		}))
+		server.AddTransport(transport.POST{})
+		body, err := json.Marshal(map[string]string{"query": `{
+			listeners(where: { apiBasePath: "/alpha" }) {
+				edges {
+					node {
+						name
+						apiBasePath
+						requestFilter { trigger payload }
+						responseFilter { trigger payload }
+						providerApproval { id }
+						consumerApproval { id }
+					}
+				}
+			}
+		}`})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(payload).NotTo(BeNil())
-		Expect(payload).To(BeEmpty())
+		req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body)).WithContext(ctx)
+		req.Header.Set("Content-Type", "application/json")
+		recorder := httptest.NewRecorder()
+		server.ServeHTTP(recorder, req)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+
+		var result struct {
+			Data struct {
+				Listeners struct {
+					Edges []struct {
+						Node struct {
+							Name             string
+							APIBasePath      string
+							RequestFilter    *model.ListenerFilter
+							ResponseFilter   *model.ListenerFilter
+							ProviderApproval *struct{ ID string }
+							ConsumerApproval *struct{ ID string }
+						}
+					}
+				}
+			}
+			Errors []any
+		}
+		Expect(json.Unmarshal(recorder.Body.Bytes(), &result)).To(Succeed())
+		Expect(result.Errors).To(BeEmpty(), recorder.Body.String())
+		Expect(result.Data.Listeners.Edges).To(HaveLen(2))
+
+		byName := make(map[string]struct {
+			apiBasePath      string
+			requestFilter    *model.ListenerFilter
+			responseFilter   *model.ListenerFilter
+			providerApproval bool
+			consumerApproval bool
+		})
+		for _, edge := range result.Data.Listeners.Edges {
+			n := edge.Node
+			byName[n.Name] = struct {
+				apiBasePath      string
+				requestFilter    *model.ListenerFilter
+				responseFilter   *model.ListenerFilter
+				providerApproval bool
+				consumerApproval bool
+			}{
+				apiBasePath:      n.APIBasePath,
+				requestFilter:    n.RequestFilter,
+				responseFilter:   n.ResponseFilter,
+				providerApproval: n.ProviderApproval != nil,
+				consumerApproval: n.ConsumerApproval != nil,
+			}
+		}
+
+		ready := byName["listener-ready"]
+		Expect(ready.apiBasePath).To(Equal("/alpha"))
+		Expect(ready.requestFilter.Trigger).To(Equal(map[string]any{"method": "GET"}))
+		Expect(ready.requestFilter.Payload).To(Equal([]string{"request.id"}))
+		Expect(ready.responseFilter.Payload).To(Equal([]string{"response.id"}))
+		Expect(ready.providerApproval).To(BeTrue())
+		Expect(ready.consumerApproval).To(BeTrue())
+
+		pending := byName["listener-pending"]
+		Expect(pending.requestFilter.Trigger).To(Equal(map[string]any{"method": "POST"}))
+		Expect(pending.requestFilter.Payload).NotTo(BeNil())
+		Expect(pending.requestFilter.Payload).To(BeEmpty())
+		Expect(pending.providerApproval).To(BeFalse())
+		Expect(pending.consumerApproval).To(BeFalse())
 	})
 
 	It("resolves Listener approval subscriptions", func() {

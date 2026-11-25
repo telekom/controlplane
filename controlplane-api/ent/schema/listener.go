@@ -35,14 +35,13 @@ func (Listener) Mixin() []ent.Mixin {
 func (Listener) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("api_base_path").
-			NotEmpty().
-			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
+			NotEmpty(),
 		field.JSON("request_filter", &model.ListenerFilter{}).
 			Optional().
-			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
+			Annotations(entgql.Type("ListenerFilter"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("response_filter", &model.ListenerFilter{}).
 			Optional().
-			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
+			Annotations(entgql.Type("ListenerFilter"), entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 
@@ -65,10 +64,10 @@ func (Listener) Edges() []ent.Edge {
 			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.To("provider_approval", Approval.Type).
 			Unique().
-			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+			Annotations(entgql.Skip(entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 		edge.To("consumer_approval", Approval.Type).
 			Unique().
-			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+			Annotations(entgql.Skip(entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 		edge.To("approval_requests", ApprovalRequest.Type).
 			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 	}

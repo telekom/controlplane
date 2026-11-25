@@ -4567,6 +4567,11 @@ type Listener implements Node {
   environment: String
   namespace: String!
   name: String!
+  apiBasePath: String!
+  requestFilter: ListenerFilter
+  responseFilter: ListenerFilter
+  providerApproval: Approval
+  consumerApproval: Approval
 }
 """
 A connection to a list of items.
@@ -4745,6 +4750,22 @@ input ListenerWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  api_base_path field predicates
+  """
+  apiBasePath: String
+  apiBasePathNEQ: String
+  apiBasePathIn: [String!]
+  apiBasePathNotIn: [String!]
+  apiBasePathGT: String
+  apiBasePathGTE: String
+  apiBasePathLT: String
+  apiBasePathLTE: String
+  apiBasePathContains: String
+  apiBasePathHasPrefix: String
+  apiBasePathHasSuffix: String
+  apiBasePathEqualFold: String
+  apiBasePathContainsFold: String
 }
 type McpServer implements Node {
   id: ID!

@@ -990,21 +990,6 @@ func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (boo
 	return consumerApproval.State == approval.StateGranted, nil
 }
 
-// APIBasePath is the resolver for the apiBasePath field.
-func (r *listenerResolver) APIBasePath(ctx context.Context, obj *ent.Listener) (string, error) {
-	return obj.APIBasePath, nil
-}
-
-// RequestFilter is the resolver for the requestFilter field.
-func (r *listenerResolver) RequestFilter(ctx context.Context, obj *ent.Listener) (*model.ListenerFilter, error) {
-	return obj.RequestFilter, nil
-}
-
-// ResponseFilter is the resolver for the responseFilter field.
-func (r *listenerResolver) ResponseFilter(ctx context.Context, obj *ent.Listener) (*model.ListenerFilter, error) {
-	return obj.ResponseFilter, nil
-}
-
 // Application is the resolver for the application field.
 func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
@@ -1082,56 +1067,6 @@ func (r *listenerResolver) Exposure(ctx context.Context, obj *ent.Listener) (*gq
 		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
 	}
 	return loadApiExposureInfo(sysCtx, exposure)
-}
-
-// ProviderApproval is the resolver for the providerApproval field.
-func (r *listenerResolver) ProviderApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
-	providerApproval, err := obj.Edges.ProviderApprovalOrErr()
-	if ent.IsNotLoaded(err) {
-		providerApproval, err = obj.QueryProviderApproval().Only(viewer.SystemContext(ctx))
-	}
-	if ent.IsNotFound(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
-	}
-	return providerApproval, nil
-}
-
-// ConsumerApproval is the resolver for the consumerApproval field.
-func (r *listenerResolver) ConsumerApproval(ctx context.Context, obj *ent.Listener) (*ent.Approval, error) {
-	consumerApproval, err := obj.Edges.ConsumerApprovalOrErr()
-	if ent.IsNotLoaded(err) {
-		consumerApproval, err = obj.QueryConsumerApproval().Only(viewer.SystemContext(ctx))
-	}
-	if ent.IsNotFound(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("loading consumer approval for listener %d: %w", obj.ID, err)
-	}
-	return consumerApproval, nil
-}
-
-// Trigger is the resolver for the trigger field.
-func (r *listenerFilterResolver) Trigger(ctx context.Context, obj *model.ListenerFilter) (map[string]any, error) {
-	if obj.Trigger == nil {
-		return nil, nil
-	}
-	trigger := make(map[string]any, len(obj.Trigger))
-	for key, value := range obj.Trigger {
-		trigger[key] = value
-	}
-	return trigger, nil
-}
-
-// Payload is the resolver for the payload field.
-func (r *listenerFilterResolver) Payload(ctx context.Context, obj *model.ListenerFilter) ([]string, error) {
-	if obj.Payload == nil {
-		return []string{}, nil
-	}
-	return obj.Payload, nil
 }
 
 // SpecificationURL is the resolver for the specificationUrl field.
@@ -1348,9 +1283,6 @@ func (r *Resolver) FileSubscriptionInfo() FileSubscriptionInfoResolver {
 	return &fileSubscriptionInfoResolver{r}
 }
 
-// ListenerFilter returns ListenerFilterResolver implementation.
-func (r *Resolver) ListenerFilter() ListenerFilterResolver { return &listenerFilterResolver{r} }
-
 // OAuth2ClientCredentials returns OAuth2ClientCredentialsResolver implementation.
 func (r *Resolver) OAuth2ClientCredentials() OAuth2ClientCredentialsResolver {
 	return &oAuth2ClientCredentialsResolver{r}
@@ -1378,7 +1310,6 @@ type (
 	externalIdentityProviderResolver struct{ *Resolver }
 	fileExposureInfoResolver         struct{ *Resolver }
 	fileSubscriptionInfoResolver     struct{ *Resolver }
-	listenerFilterResolver           struct{ *Resolver }
 	oAuth2ClientCredentialsResolver  struct{ *Resolver }
 	responseFilterResolver           struct{ *Resolver }
 	selectionFilterResolver          struct{ *Resolver }

@@ -11217,6 +11217,21 @@ type ListenerWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "api_base_path" field predicates.
+	APIBasePath             *string  `json:"apiBasePath,omitempty"`
+	APIBasePathNEQ          *string  `json:"apiBasePathNEQ,omitempty"`
+	APIBasePathIn           []string `json:"apiBasePathIn,omitempty"`
+	APIBasePathNotIn        []string `json:"apiBasePathNotIn,omitempty"`
+	APIBasePathGT           *string  `json:"apiBasePathGT,omitempty"`
+	APIBasePathGTE          *string  `json:"apiBasePathGTE,omitempty"`
+	APIBasePathLT           *string  `json:"apiBasePathLT,omitempty"`
+	APIBasePathLTE          *string  `json:"apiBasePathLTE,omitempty"`
+	APIBasePathContains     *string  `json:"apiBasePathContains,omitempty"`
+	APIBasePathHasPrefix    *string  `json:"apiBasePathHasPrefix,omitempty"`
+	APIBasePathHasSuffix    *string  `json:"apiBasePathHasSuffix,omitempty"`
+	APIBasePathEqualFold    *string  `json:"apiBasePathEqualFold,omitempty"`
+	APIBasePathContainsFold *string  `json:"apiBasePathContainsFold,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -11547,6 +11562,45 @@ func (i *ListenerWhereInput) P() (predicate.Listener, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, listener.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.APIBasePath != nil {
+		predicates = append(predicates, listener.APIBasePathEQ(*i.APIBasePath))
+	}
+	if i.APIBasePathNEQ != nil {
+		predicates = append(predicates, listener.APIBasePathNEQ(*i.APIBasePathNEQ))
+	}
+	if len(i.APIBasePathIn) > 0 {
+		predicates = append(predicates, listener.APIBasePathIn(i.APIBasePathIn...))
+	}
+	if len(i.APIBasePathNotIn) > 0 {
+		predicates = append(predicates, listener.APIBasePathNotIn(i.APIBasePathNotIn...))
+	}
+	if i.APIBasePathGT != nil {
+		predicates = append(predicates, listener.APIBasePathGT(*i.APIBasePathGT))
+	}
+	if i.APIBasePathGTE != nil {
+		predicates = append(predicates, listener.APIBasePathGTE(*i.APIBasePathGTE))
+	}
+	if i.APIBasePathLT != nil {
+		predicates = append(predicates, listener.APIBasePathLT(*i.APIBasePathLT))
+	}
+	if i.APIBasePathLTE != nil {
+		predicates = append(predicates, listener.APIBasePathLTE(*i.APIBasePathLTE))
+	}
+	if i.APIBasePathContains != nil {
+		predicates = append(predicates, listener.APIBasePathContains(*i.APIBasePathContains))
+	}
+	if i.APIBasePathHasPrefix != nil {
+		predicates = append(predicates, listener.APIBasePathHasPrefix(*i.APIBasePathHasPrefix))
+	}
+	if i.APIBasePathHasSuffix != nil {
+		predicates = append(predicates, listener.APIBasePathHasSuffix(*i.APIBasePathHasSuffix))
+	}
+	if i.APIBasePathEqualFold != nil {
+		predicates = append(predicates, listener.APIBasePathEqualFold(*i.APIBasePathEqualFold))
+	}
+	if i.APIBasePathContainsFold != nil {
+		predicates = append(predicates, listener.APIBasePathContainsFold(*i.APIBasePathContainsFold))
 	}
 
 	switch len(predicates) {
