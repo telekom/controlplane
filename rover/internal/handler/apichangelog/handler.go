@@ -34,7 +34,8 @@ func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *rov
 
 	apiSpec := &roverv1.ApiSpecification{}
 	ref := changelog.Spec.SpecificationRef
-	err := c.Get(ctx, crclient.ObjectKey{Name: ref.Name, Namespace: ref.Namespace}, apiSpec)
+	// The specification must live in the changelog's own namespace (= its environment).
+	err := c.Get(ctx, crclient.ObjectKey{Name: ref.Name, Namespace: changelog.Namespace}, apiSpec)
 	if apierrors.IsNotFound(err) {
 		return ctrlerrors.BlockedErrorf("ApiSpecification %q not found, apply it first", ref.Name)
 	}
@@ -54,6 +55,7 @@ func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *rov
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		// audit:ignore 06-rover-child-labels/missing-ownership-labels mirror is owned by an ApiChangelog (per base path), not a Rover/Application; identity label only, like the shared Api
 		mirror.Labels = map[string]string{
 			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiSpec.Spec.BasePath),
 		}
@@ -82,6 +84,13 @@ func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *rov
 	return nil
 }
 
-func (h *ApiChangelogHandler) Delete(_ context.Context, _ *roverv1.ApiChangelog) error {
+func (h *ApiChangelogHandler) Delete(ctx context.Context, changelog *roverv1.ApiChangelog) error {
+	c := client.ClientFromContextOrDie(ctx)
+	mirror := &apiapi.ApiChangelog{
+		ObjectMeta: metav1.ObjectMeta{Name: changelog.Name, Namespace: changelog.Namespace},
+	}
+	if err := c.Delete(ctx, mirror); err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrap(err, "failed to delete api ApiChangelog")
+	}
 	return nil
 }

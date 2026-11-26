@@ -6,6 +6,7 @@ package apichangelog_test
 
 import (
 	"context"
+	"errors"
 
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -81,6 +82,17 @@ func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiChan
 	return cclient.WithClient(context.Background(), fakeClient)
 }
 
+// newDeleteContext injects a mock client whose Delete records the object and returns err.
+func newDeleteContext(err error, deleted **apiapi.ApiChangelog) context.Context {
+	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+	fakeClient.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) error {
+			*deleted = obj.(*apiapi.ApiChangelog)
+			return err
+		})
+	return cclient.WithClient(context.Background(), fakeClient)
+}
+
 var _ = Describe("ApiChangelog Handler", func() {
 	var changelogHandler *apichangelog.ApiChangelogHandler
 	var apiSpec *roverv1.ApiSpecification
@@ -130,6 +142,22 @@ var _ = Describe("ApiChangelog Handler", func() {
 			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 		})
 
+		It("should look up the ApiSpecification in its own namespace, ignoring the ref namespace", func() {
+			var key client.ObjectKey
+			fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+			fakeClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
+				RunAndReturn(func(_ context.Context, k client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+					key = k
+					return apierrors.NewNotFound(schema.GroupResource{Resource: "apispecifications"}, k.Name)
+				})
+			changelogObj := createApiChangelogObject()
+			changelogObj.Spec.SpecificationRef.Namespace = "other-env--team"
+
+			_ = changelogHandler.CreateOrUpdate(cclient.WithClient(context.Background(), fakeClient), changelogObj)
+
+			Expect(key.Namespace).To(Equal(changelogObj.Namespace))
+		})
+
 		It("should be blocked and not mirror if the ApiSpecification does not exist", func() {
 			var mirror *apiapi.ApiChangelog
 			ctx := newMockContext(nil, &mirror, false)
@@ -145,8 +173,30 @@ var _ = Describe("ApiChangelog Handler", func() {
 	})
 
 	Context("Delete", func() {
-		It("should be a no-op", func() {
-			Expect(changelogHandler.Delete(context.Background(), createApiChangelogObject())).To(Succeed())
+		It("should delete the mirror explicitly", func() {
+			var deleted *apiapi.ApiChangelog
+			ctx := newDeleteContext(nil, &deleted)
+			changelogObj := createApiChangelogObject()
+
+			Expect(changelogHandler.Delete(ctx, changelogObj)).To(Succeed())
+
+			Expect(deleted).NotTo(BeNil())
+			Expect(deleted.Name).To(Equal(changelogObj.Name))
+			Expect(deleted.Namespace).To(Equal(changelogObj.Namespace))
+		})
+
+		It("should succeed if the mirror is already gone", func() {
+			var deleted *apiapi.ApiChangelog
+			ctx := newDeleteContext(apierrors.NewNotFound(schema.GroupResource{Resource: "apichangelogs"}, "x"), &deleted)
+
+			Expect(changelogHandler.Delete(ctx, createApiChangelogObject())).To(Succeed())
+		})
+
+		It("should return other delete errors", func() {
+			var deleted *apiapi.ApiChangelog
+			ctx := newDeleteContext(errors.New("boom"), &deleted)
+
+			Expect(changelogHandler.Delete(ctx, createApiChangelogObject())).To(HaveOccurred())
 		})
 	})
 })

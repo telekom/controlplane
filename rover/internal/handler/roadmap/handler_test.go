@@ -6,6 +6,7 @@ package roadmap_test
 
 import (
 	"context"
+	"errors"
 
 	"github.com/stretchr/testify/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -82,6 +83,17 @@ func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiRoad
 	return cclient.WithClient(context.Background(), fakeClient)
 }
 
+// newDeleteContext injects a mock client whose Delete records the object and returns err.
+func newDeleteContext(err error, deleted **apiapi.ApiRoadmap) context.Context {
+	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+	fakeClient.EXPECT().Delete(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, obj client.Object, _ ...client.DeleteOption) error {
+			*deleted = obj.(*apiapi.ApiRoadmap)
+			return err
+		})
+	return cclient.WithClient(context.Background(), fakeClient)
+}
+
 var _ = Describe("Roadmap Handler", func() {
 	var roadmapHandler *roadmap.RoadmapHandler
 	var apiSpec *roverv1.ApiSpecification
@@ -141,6 +153,35 @@ var _ = Describe("Roadmap Handler", func() {
 			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
 		})
 
+		It("should remove an existing mirror when the kind is switched away from ApiSpecification", func() {
+			var deleted *apiapi.ApiRoadmap
+			ctx := newDeleteContext(nil, &deleted)
+			roadmapObj := createRoadmapObject("EventSpecification")
+			roadmapObj.Status.ApiRoadmap = types.ObjectRef{Name: roadmapObj.Name, Namespace: roadmapObj.Namespace}
+
+			Expect(roadmapHandler.CreateOrUpdate(ctx, roadmapObj)).To(Succeed())
+
+			Expect(deleted).NotTo(BeNil())
+			Expect(deleted.Name).To(Equal(roadmapObj.Name))
+			Expect(roadmapObj.Status.ApiRoadmap.Name).To(BeEmpty())
+		})
+
+		It("should look up the ApiSpecification in its own namespace, ignoring the ref namespace", func() {
+			var key client.ObjectKey
+			fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+			fakeClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).
+				RunAndReturn(func(_ context.Context, k client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+					key = k
+					return apierrors.NewNotFound(schema.GroupResource{Resource: "apispecifications"}, k.Name)
+				})
+			roadmapObj := createRoadmapObject("ApiSpecification")
+			roadmapObj.Spec.SpecificationRef.Namespace = "other-env--team"
+
+			_ = roadmapHandler.CreateOrUpdate(cclient.WithClient(context.Background(), fakeClient), roadmapObj)
+
+			Expect(key.Namespace).To(Equal(roadmapObj.Namespace))
+		})
+
 		It("should be blocked and not mirror if the ApiSpecification does not exist", func() {
 			var mirror *apiapi.ApiRoadmap
 			ctx := newMockContext(nil, &mirror, false)
@@ -156,8 +197,34 @@ var _ = Describe("Roadmap Handler", func() {
 	})
 
 	Context("Delete", func() {
-		It("should be a no-op", func() {
-			Expect(roadmapHandler.Delete(context.Background(), createRoadmapObject("ApiSpecification"))).To(Succeed())
+		It("should delete the mirror explicitly", func() {
+			var deleted *apiapi.ApiRoadmap
+			ctx := newDeleteContext(nil, &deleted)
+			roadmapObj := createRoadmapObject("ApiSpecification")
+
+			Expect(roadmapHandler.Delete(ctx, roadmapObj)).To(Succeed())
+
+			Expect(deleted).NotTo(BeNil())
+			Expect(deleted.Name).To(Equal(roadmapObj.Name))
+			Expect(deleted.Namespace).To(Equal(roadmapObj.Namespace))
+		})
+
+		It("should succeed if the mirror is already gone", func() {
+			var deleted *apiapi.ApiRoadmap
+			ctx := newDeleteContext(apierrors.NewNotFound(schema.GroupResource{Resource: "apiroadmaps"}, "x"), &deleted)
+
+			Expect(roadmapHandler.Delete(ctx, createRoadmapObject("ApiSpecification"))).To(Succeed())
+		})
+
+		It("should return other delete errors", func() {
+			var deleted *apiapi.ApiRoadmap
+			ctx := newDeleteContext(errors.New("boom"), &deleted)
+
+			Expect(roadmapHandler.Delete(ctx, createRoadmapObject("ApiSpecification"))).To(HaveOccurred())
+		})
+
+		It("should not touch the client for a roadmap that is not for an ApiSpecification", func() {
+			Expect(roadmapHandler.Delete(context.Background(), createRoadmapObject("EventSpecification"))).To(Succeed())
 		})
 	})
 })

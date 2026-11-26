@@ -35,6 +35,13 @@ type RoadmapHandler struct{}
 func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Roadmap) error {
 	ref := roadmap.Spec.SpecificationRef
 	if ref.Kind != apiSpecificationKind {
+		// The kind may have been switched away from ApiSpecification: drop a previously created mirror.
+		if roadmap.Status.ApiRoadmap.Name != "" {
+			if err := h.deleteMirror(ctx, roadmap); err != nil {
+				return err
+			}
+			roadmap.Status.ApiRoadmap = types.ObjectRef{}
+		}
 		roadmap.SetCondition(condition.NewDoneProcessingCondition("Roadmap processed"))
 		roadmap.SetCondition(condition.NewReadyCondition(condition.ReasonProvisioned, "Roadmap is ready"))
 		return nil
@@ -43,7 +50,8 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 	c := client.ClientFromContextOrDie(ctx)
 
 	apiSpec := &roverv1.ApiSpecification{}
-	err := c.Get(ctx, crclient.ObjectKey{Name: ref.Name, Namespace: ref.Namespace}, apiSpec)
+	// The specification must live in the roadmap's own namespace (= its environment).
+	err := c.Get(ctx, crclient.ObjectKey{Name: ref.Name, Namespace: roadmap.Namespace}, apiSpec)
 	if apierrors.IsNotFound(err) {
 		return ctrlerrors.BlockedErrorf("ApiSpecification %q not found, apply it first", ref.Name)
 	}
@@ -63,6 +71,7 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		// audit:ignore 06-rover-child-labels/missing-ownership-labels mirror is owned by an ApiRoadmap (per base path), not a Rover/Application; identity label only, like the shared Api
 		mirror.Labels = map[string]string{
 			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiSpec.Spec.BasePath),
 		}
@@ -91,8 +100,23 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 	return nil
 }
 
-// Delete is a no-op: the mirror is garbage-collected via its owner reference.
+// Delete removes the mirror explicitly: the api controller adds the Api as a second owner,
+// so garbage collection alone would keep the mirror alive after the rover object is gone.
 // Files in file-manager are cleaned up by the REST API layer, not by the operator.
-func (h *RoadmapHandler) Delete(_ context.Context, _ *roverv1.Roadmap) error {
+func (h *RoadmapHandler) Delete(ctx context.Context, roadmap *roverv1.Roadmap) error {
+	if roadmap.Spec.SpecificationRef.Kind != apiSpecificationKind {
+		return nil
+	}
+	return h.deleteMirror(ctx, roadmap)
+}
+
+func (h *RoadmapHandler) deleteMirror(ctx context.Context, roadmap *roverv1.Roadmap) error {
+	c := client.ClientFromContextOrDie(ctx)
+	mirror := &apiapi.ApiRoadmap{
+		ObjectMeta: metav1.ObjectMeta{Name: roadmap.Name, Namespace: roadmap.Namespace},
+	}
+	if err := c.Delete(ctx, mirror); err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrap(err, "failed to delete api ApiRoadmap")
+	}
 	return nil
 }

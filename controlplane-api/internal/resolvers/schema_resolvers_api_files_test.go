@@ -62,8 +62,12 @@ var _ = Describe("Api changelog and roadmap URLs", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(r.Api().ChangelogURL(ctx, api)).To(BeNil())
-		Expect(r.Api().RoadmapURL(ctx, api)).To(BeNil())
+		changelogURL, err := r.Api().ChangelogURL(ctx, api)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(changelogURL).To(BeNil())
+		roadmapURL, err := r.Api().RoadmapURL(ctx, api)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(roadmapURL).To(BeNil())
 	})
 
 	It("returns nil when the file-manager base URL is not configured", func() {
@@ -78,6 +82,8 @@ var _ = Describe("Api changelog and roadmap URLs", func() {
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(r.Api().ChangelogURL(ctx, api)).To(BeNil())
+		changelogURL, err := r.Api().ChangelogURL(ctx, api)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(changelogURL).To(BeNil())
 	})
 })
