@@ -167,6 +167,8 @@ The prefix may contain lowercase letters, digits and single hyphens, up to 63 ch
 
 The Route handler copies the Gateway's prefix onto the Route in memory before every reconcile and delete. When the prefix of a Gateway changes, the Route controller reconciles all Routes that reference it. Every Route on the Gateway is renamed, including identity, zone-health and Admin managed routes.
 
+The same applies to the other Gateway fields the Routes are built from: a change of `spec.redis`, such as a rotated Redis password of the rate-limiting plugins, or of `spec.features` also reconciles all Routes of the Gateway, so it reaches Kong without waiting for the periodic reconcile. A change of `spec.admin` or `spec.tls` only configures the connection to Kong and reconciles no Route.
+
 One Gateway can serve several presets. API and AI Routes then share the prefix, and their names stay apart through the agentic `ai-gateway--` name:
 
 | Route on Gateway `aws-standard` (prefix `cit2`) | Kong name | Legacy name adopted |

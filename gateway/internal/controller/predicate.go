@@ -7,6 +7,7 @@ package controller
 import (
 	"slices"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -49,4 +50,27 @@ func (RouteRelevantForConsumeRoutePredicate) Update(e event.UpdateEvent) bool {
 	// Status.Consumers is sorted by the Route handler before it is stored, so a
 	// plain comparison does not flap on ordering.
 	return !slices.Equal(oldRoute.Status.Consumers, newRoute.Status.Consumers)
+}
+
+// RouteRelevantGatewayChangedPredicate passes only updates of a Gateway that change a field
+// the Route handler builds the Kong entities from: spec.namePrefix, spec.redis (the
+// rate-limiting plugins, including the Redis password) and spec.features. Without it, a
+// rotated Redis password reaches Kong only with the next periodic reconcile. spec.admin and
+// spec.tls only configure the connection to Kong and do not change any Route.
+func RouteRelevantGatewayChangedPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc:  func(event.CreateEvent) bool { return false },
+		DeleteFunc:  func(event.DeleteEvent) bool { return false },
+		GenericFunc: func(event.GenericEvent) bool { return false },
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldGateway, okOld := e.ObjectOld.(*gatewayv1.Gateway)
+			newGateway, okNew := e.ObjectNew.(*gatewayv1.Gateway)
+			if !okOld || !okNew {
+				return false
+			}
+			return oldGateway.Spec.NamePrefix != newGateway.Spec.NamePrefix ||
+				!equality.Semantic.DeepEqual(oldGateway.Spec.Redis, newGateway.Spec.Redis) ||
+				!equality.Semantic.DeepEqual(oldGateway.Spec.Features, newGateway.Spec.Features)
+		},
+	}
 }

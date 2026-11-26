@@ -369,6 +369,16 @@ The entity name is the Kong name for routes, services and upstreams. For plugins
 
 A path starts with `$`, followed by `.key` and `[index]` parts. `.*` matches any key and `[*]` any index. `$` alone covers the whole entity, including its creation and deletion.
 
+A change of the Gateway's `spec.redis`, such as a rotated Redis password, reconciles every Route of the Gateway and changes `$.config.redis_password` of each rate-limiting plugin. Without a matching rule, every one of these Routes is blocked at once in mode `on`. The sample rule for `rate-limiting-merged` covers it; a narrower rule only allows the password change:
+
+```yaml
+- kind: plugin
+  name: rate-limiting-merged
+  paths: ["$.config.redis_password"]
+```
+
+In mode `strict`, every Route still needs its own approval.
+
 ## Scope and limitations
 
 - **Who sets the prefix.** The Admin operator sets `Gateway.spec.namePrefix` to the environment's realm name, except for the realm `default` while `FEATURE_LEGACY_GATEWAY_NAMING_ENABLED` is `true`. The Event operator names its Routes after the legacy-compatible base names. The API and Agentic operators are unchanged.

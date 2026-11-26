@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -71,7 +70,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.Gateway{},
 			handler.EnqueueRequestsFromMapFunc(r.mapGatewayToRoutes),
-			builder.WithPredicates(cc.Count("route", cc.RoleWatches, NamePrefixChangedPredicate(), cc.SkipInitialListPredicate{}))).
+			builder.WithPredicates(cc.Count("route", cc.RoleWatches, RouteRelevantGatewayChangedPredicate(), cc.SkipInitialListPredicate{}))).
 		Watches(&gatewayv1.RouteListener{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteListenerToRoute),
 			builder.WithPredicates(cc.Count("route", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{}))).
@@ -121,20 +120,6 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 		requests = append(requests, reconcile.Request{NamespacedName: key})
 	}
 	return requests
-}
-
-// NamePrefixChangedPredicate passes only updates of a Gateway that change spec.namePrefix.
-func NamePrefixChangedPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc:  func(event.CreateEvent) bool { return false },
-		DeleteFunc:  func(event.DeleteEvent) bool { return false },
-		GenericFunc: func(event.GenericEvent) bool { return false },
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldGateway, okOld := e.ObjectOld.(*gatewayv1.Gateway)
-			newGateway, okNew := e.ObjectNew.(*gatewayv1.Gateway)
-			return okOld && okNew && oldGateway.Spec.NamePrefix != newGateway.Spec.NamePrefix
-		},
-	}
 }
 
 // mapGatewayToRoutes enqueues every Route that references the Gateway, sorted by key.
