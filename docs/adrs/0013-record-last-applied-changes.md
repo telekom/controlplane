@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC0-1.0
 
 # ADR-0013: Record the last applied changes in the status
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-20
 - Related: Supersedes [ADR-0011](0011-pending-changes-in-status.md); [ADR-0012](0012-shared-changeset-for-all-backend-operators.md)
 
@@ -35,7 +35,7 @@ The diff is useful beyond the migration: it is an audit trail of what each opera
 
 - A reconcile without any change leaves `lastAppliedChanges` as it is. `appliedAt` is not part of the hash.
 - Every applied bundle also emits a Kubernetes Event `ChangesApplied` with the hash, and a log entry with all changes.
-- Size limits keep the object small: a value is cut after 1024 characters, the body of a new entity is stored as its hash, and at most 100 diffs are stored. The hash always covers the full bundle.
+- Size limits keep the object small: a value is cut after 1024 characters and at most 100 diffs are stored, in both fields. `lastAppliedChanges` records a created entity by the hash of its body; `status.migration` shows the body, because the reviewer needs to see what would be created. The hash always covers the full bundle.
 
 ## Consequences
 

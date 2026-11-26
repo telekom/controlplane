@@ -11,12 +11,12 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	clientpkg "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	mockclient "github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -57,15 +57,15 @@ var _ = Describe("CreateOrReplaceConsumer", func() {
 	}
 
 	It("plans a new consumer and its group without writing in migration mode", func() {
-		guard, err := migration.New(migration.Config{}, migration.ModeOn)
+		guard, err := changeset.New(changeset.Options{Operator: "gateway", Mode: changeset.ModeOn, Kinds: clientpkg.EntityKinds}, changeset.Config{})
 		Expect(err).NotTo(HaveOccurred())
-		client = clientpkg.NewKongClient(api, clientpkg.WithMigrationGuard(guard))
+		client = clientpkg.NewKongClient(api, clientpkg.WithGate(guard))
 		api.EXPECT().GetConsumerWithResponse(mock.Anything, "test-consumer").Return(
 			&kong.GetConsumerResponse{HTTPResponse: &http.Response{StatusCode: http.StatusNotFound}}, nil,
 		)
-		plan := migration.NewPlan()
+		plan := changeset.NewPlan()
 
-		_, err = client.CreateOrReplaceConsumer(migration.WithPlan(ctx, plan), consumer)
+		_, err = client.CreateOrReplaceConsumer(changeset.WithPlan(ctx, plan), consumer)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(plan.Changes()).To(HaveExactElements(

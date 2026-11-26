@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package migration
+package changeset
 
 import (
 	"context"
@@ -11,12 +11,15 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+	"time"
 
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 const (
-	// plannedIDPrefix marks the ID of an entity that a plan would create. Kong never
+	// plannedIDPrefix marks the ID of an entity that a plan would create. A backend never
 	// returns it, so a lookup by it finds nothing.
 	plannedIDPrefix = "planned--"
 	// hashLength is the number of hex digits of a plan hash. 64 bits are enough to tell
@@ -24,6 +27,8 @@ const (
 	hashLength = 16
 	// maxValueLength limits a diff value in the status. The hash covers the full value.
 	maxValueLength = 1024
+	// maxRecordedDiffs limits the diffs in the status. The hash covers all of them.
+	maxRecordedDiffs = 100
 )
 
 // Operations of a Change.
@@ -33,7 +38,7 @@ const (
 	OperationDelete = "delete"
 )
 
-// Change is the change of one Kong entity.
+// Change is the change of one backend entity.
 type Change struct {
 	Kind      string `json:"kind"`
 	Name      string `json:"name"`
@@ -41,8 +46,8 @@ type Change struct {
 	Diffs     []Diff `json:"diffs,omitempty"`
 }
 
-// Plan collects the Kong changes of one reconcile without writing them. The changes of a
-// Route or Consumer are approved or blocked together.
+// Plan collects the backend changes of one reconcile without writing them. The changes of
+// one object are approved or blocked together.
 type Plan struct {
 	mu      sync.Mutex
 	changes []Change
@@ -58,14 +63,14 @@ type planKey struct{}
 
 type applyKey struct{}
 
-// WithPlan returns a ctx in which Kong writes and deletes are recorded in plan instead of
-// being executed.
+// WithPlan returns a ctx in which backend writes and deletes are recorded in plan instead
+// of being executed.
 func WithPlan(ctx context.Context, plan *Plan) context.Context {
 	return context.WithValue(ctx, planKey{}, plan)
 }
 
-// WithApply returns a ctx in which Kong writes and deletes are executed without a check,
-// because the plan of the same reconcile was allowed or approved.
+// WithApply returns a ctx in which backend writes and deletes are executed without a
+// check, because the plan of the same reconcile was allowed or approved.
 func WithApply(ctx context.Context) context.Context {
 	return context.WithValue(ctx, applyKey{}, true)
 }
@@ -155,34 +160,65 @@ func (p *Plan) unexpected() int {
 	return count
 }
 
-// Status returns the plan as the temporary migration status of a Route or Consumer.
-func (p *Plan) Status(hash string, mode Mode) *gatewayv1.MigrationStatus {
-	status := &gatewayv1.MigrationStatus{Hash: hash, Mode: string(mode)}
-	for _, change := range p.Changes() {
-		c := gatewayv1.MigrationChange{Kind: change.Kind, Name: change.Name, Operation: change.Operation}
-		for _, diff := range change.Diffs {
-			c.Diffs = append(c.Diffs, gatewayv1.MigrationDiff{
-				Path:    diff.Path,
-				Desired: statusValue(diff.Desired),
-				Current: statusValue(diff.Current),
-				Ignored: diff.Ignored,
-			})
-		}
-		status.Changes = append(status.Changes, c)
-	}
-	return status
+// Status returns the plan as the pending migration status of an object. Created entities
+// show their whole body, so that the reviewer sees what would be created.
+func (p *Plan) Status(hash string, mode Mode) *types.MigrationStatus {
+	changes, truncated := recordChanges(p.Changes(), false)
+	return &types.MigrationStatus{Hash: hash, Mode: string(mode), Changes: changes, Truncated: truncated}
 }
 
-func statusValue(v any) string {
+// Applied returns the plan as the record of an applied change. Created entities are
+// recorded by the hash of their body, to keep the record small.
+func (p *Plan) Applied(hash string, mode Mode, decision Decision, approvedHash string, generation int64, at time.Time) *types.AppliedChanges {
+	changes, truncated := recordChanges(p.Changes(), true)
+	return &types.AppliedChanges{
+		Hash:         hash,
+		AppliedAt:    metav1.NewTime(at),
+		Generation:   generation,
+		Mode:         string(mode),
+		Decision:     string(decision),
+		ApprovedHash: approvedHash,
+		Changes:      changes,
+		Truncated:    truncated,
+	}
+}
+
+// recordChanges converts changes into status records within the size limits.
+func recordChanges(changes []Change, hashCreates bool) ([]types.Change, bool) {
+	records := make([]types.Change, 0, len(changes))
+	truncated, diffs := false, 0
+	for _, change := range changes {
+		record := types.Change{Kind: change.Kind, Name: change.Name, Operation: change.Operation}
+		for _, diff := range change.Diffs {
+			if diffs == maxRecordedDiffs {
+				truncated = true
+				break
+			}
+			diffs++
+			desired, cut := recordValue(diff.Desired)
+			if hashCreates && change.Operation == OperationCreate && diff.Path == Root {
+				desired, cut = recordValue(mask(diff.Desired))
+			}
+			current, cutCurrent := recordValue(diff.Current)
+			truncated = truncated || cut || cutCurrent
+			record.Diffs = append(record.Diffs, types.Diff{Path: diff.Path, Desired: desired, Current: current, Ignored: diff.Ignored})
+		}
+		records = append(records, record)
+	}
+	return records, truncated
+}
+
+// recordValue returns v as JSON, cut to maxValueLength, and whether it was cut.
+func recordValue(v any) (string, bool) {
 	if v == nil {
-		return ""
+		return "", false
 	}
 	raw, err := json.Marshal(v)
 	if err != nil {
-		return err.Error()
+		return err.Error(), false
 	}
 	if len(raw) > maxValueLength {
-		return string(raw[:maxValueLength]) + "...(truncated)"
+		return string(raw[:maxValueLength]) + "...(truncated)", true
 	}
-	return string(raw)
+	return string(raw), false
 }

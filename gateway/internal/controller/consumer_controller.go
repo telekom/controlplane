@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -54,7 +55,7 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.Count("consumer", cc.RoleFor,
-			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}, MigrationApprovalChangedPredicate())))).
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}, changeset.ApprovalChangedPredicate())))).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

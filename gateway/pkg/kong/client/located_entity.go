@@ -27,7 +27,7 @@ func newLocatedEntity[Req, Resp any](d *discovery[Req, Resp]) *locatedEntity[Req
 	return &locatedEntity[Req, Resp]{discovery: d}
 }
 
-func (e *locatedEntity[Req, Resp]) Name() string { return e.discovery.kind.name }
+func (e *locatedEntity[Req, Resp]) Kind() string { return e.discovery.kind.name }
 
 // locate runs the discovery once and remembers its result.
 func (e *locatedEntity[Req, Resp]) locate(ctx context.Context) (*Resp, error) {
@@ -83,7 +83,10 @@ func (e *locatedEntity[Req, Resp]) Project(current *Resp) (Req, error) {
 // Comparable merges the legacy tags of the found entity into the desired body.
 func (e *locatedEntity[Req, Resp]) Comparable(desired, current Req) (Req, Req) {
 	desired = e.withLegacyTags(desired)
-	return comparedBodies(e.discovery.kind.plain(e.discovery.api, ""), desired, current)
+	if c, ok := e.discovery.kind.plain(e.discovery.api, "").(comparer[Req]); ok {
+		return c.Comparable(desired, current)
+	}
+	return desired, current
 }
 
 func (e *locatedEntity[Req, Resp]) Write(ctx context.Context, desired *Req) (*Resp, error) {

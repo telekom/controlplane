@@ -11,7 +11,6 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -111,25 +110,35 @@ var _ = Describe("RouteRelevantForConsumeRoutePredicate", func() {
 	})
 })
 
-var _ = Describe("MigrationApprovalChangedPredicate", func() {
-	p := MigrationApprovalChangedPredicate()
+var _ = Describe("RouteRelevantGatewayChangedPredicate", func() {
+	p := RouteRelevantGatewayChangedPredicate()
 
-	route := func(annotations map[string]string) *gatewayv1.Route {
-		return &gatewayv1.Route{ObjectMeta: metav1.ObjectMeta{Name: "route", Annotations: annotations}}
-	}
-
-	DescribeTable("admits only a changed approval",
-		func(old, updated map[string]string, expected bool) {
-			Expect(p.Update(event.UpdateEvent{ObjectOld: route(old), ObjectNew: route(updated)})).To(Equal(expected))
+	DescribeTable("admits only changes of the fields the Routes are built from",
+		func(change func(gw *gatewayv1.Gateway), expected bool) {
+			old := newGateway("gateway", "default")
+			old.Spec.NamePrefix = "bond"
+			old.Spec.Features = []gatewayv1.FeatureType{gatewayv1.FeatureTypeRateLimit}
+			updated := old.DeepCopy()
+			change(updated)
+			Expect(p.Update(event.UpdateEvent{ObjectOld: old, ObjectNew: updated})).To(Equal(expected))
 		},
-		Entry("approval set", nil, map[string]string{migration.ApprovalAnnotation: "2"}, true),
-		Entry("approval changed", map[string]string{migration.ApprovalAnnotation: "2"}, map[string]string{migration.ApprovalAnnotation: "3"}, true),
-		Entry("approval removed", map[string]string{migration.ApprovalAnnotation: "2"}, nil, true),
-		Entry("other annotation changed", map[string]string{"a": "1"}, map[string]string{"a": "2"}, false),
+		Entry("name prefix", func(gw *gatewayv1.Gateway) { gw.Spec.NamePrefix = "cit2" }, true),
+		Entry("Redis password", func(gw *gatewayv1.Gateway) { gw.Spec.Redis.Password = "rotated" }, true),
+		Entry("Redis host", func(gw *gatewayv1.Gateway) { gw.Spec.Redis.Host = "redis-2" }, true),
+		Entry("Redis TLS", func(gw *gatewayv1.Gateway) { gw.Spec.Redis.EnableTLS = true }, true),
+		Entry("Redis removed", func(gw *gatewayv1.Gateway) { gw.Spec.Redis = nil }, true),
+		Entry("feature added", func(gw *gatewayv1.Gateway) {
+			gw.Spec.Features = append(gw.Spec.Features, gatewayv1.FeatureTypeCircuitBreaker)
+		}, true),
+		Entry("admin client secret", func(gw *gatewayv1.Gateway) { gw.Spec.Admin.ClientSecret = "rotated" }, false),
+		Entry("label", func(gw *gatewayv1.Gateway) { gw.Labels["team"] = "a" }, false),
+		Entry("status", func(gw *gatewayv1.Gateway) {
+			gw.Status.Conditions = []metav1.Condition{{Type: condition.ConditionTypeReady, Status: metav1.ConditionTrue}}
+		}, false),
 	)
 
 	It("ignores creates and deletes", func() {
-		Expect(p.Create(event.CreateEvent{Object: route(nil)})).To(BeFalse())
-		Expect(p.Delete(event.DeleteEvent{Object: route(nil)})).To(BeFalse())
+		Expect(p.Create(event.CreateEvent{Object: newGateway("gateway", "default")})).To(BeFalse())
+		Expect(p.Delete(event.DeleteEvent{Object: newGateway("gateway", "default")})).To(BeFalse())
 	})
 })

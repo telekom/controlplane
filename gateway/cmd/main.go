@@ -29,10 +29,11 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/controller"
+	kongclient "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/legacy"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	// +kubebuilder:scaffold:imports
 )
@@ -56,8 +57,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var legacyNamingConfig string
-	var migrationMode string
-	var migrationIgnoreConfig string
+	var changesetFlags changeset.Flags
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -71,12 +71,7 @@ func main() {
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&legacyNamingConfig, "legacy-naming-config", "",
 		"Path to the optional legacy naming config used to adopt legacy Kong entities.")
-	flag.StringVar(&migrationMode, "migration-mode", string(migration.ModeOff),
-		"Migration mode: off, on or strict. With on, every Kong write and delete is compared with the current "+
-			"Kong state first and blocked if it has a diff that is neither ignored nor approved. "+
-			"With strict, every write and delete needs an approval.")
-	flag.StringVar(&migrationIgnoreConfig, "migration-ignore-config", "",
-		"Path to the optional ignore list of expected Kong diffs in migration mode.")
+	changesetFlags.Bind(flag.CommandLine)
 	opts := zap.Options{
 		Development: true,
 	}
@@ -94,18 +89,13 @@ func main() {
 	}
 	kongutil.SetMigrator(migrator)
 
-	mode, modeErr := migration.ParseMode(migrationMode)
-	if modeErr != nil {
-		setupLog.Error(modeErr, "invalid --migration-mode")
+	gate, gateErr := changesetFlags.Gate("gateway", kongclient.EntityKinds)
+	if gateErr != nil {
+		setupLog.Error(gateErr, "unable to configure the change pipeline", "ignoreConfig", changesetFlags.IgnoreConfig)
 		os.Exit(1)
 	}
-	migrationGuard, loadErr := migration.Load(migrationIgnoreConfig, mode)
-	if loadErr != nil {
-		setupLog.Error(loadErr, "unable to load migration ignore config", "path", migrationIgnoreConfig)
-		os.Exit(1)
-	}
-	kongutil.SetMigrationGuard(migrationGuard)
-	setupLog.Info("Migration mode", "mode", mode, "ignoreConfig", migrationIgnoreConfig)
+	kongutil.SetGate(gate)
+	setupLog.Info("Change pipeline configured", "migrationMode", gate.Mode(), "ignoreConfig", changesetFlags.IgnoreConfig)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will

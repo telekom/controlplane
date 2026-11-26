@@ -65,7 +65,7 @@ func pageResult[R interface{ StatusCode() int }](response R, body func(R) []byte
 }
 
 var routeKind = kind[kong.CreateRouteJSONRequestBody, kong.Route]{
-	name: "route", collection: "routes",
+	name: kindRoute, collection: "routes",
 	plain: func(api KongAdminApi, n string) entity[kong.CreateRouteJSONRequestBody, kong.Route] {
 		return routeEntity{api, n}
 	},
@@ -75,7 +75,7 @@ var routeKind = kind[kong.CreateRouteJSONRequestBody, kong.Route]{
 }
 
 var serviceKind = kind[kong.CreateServiceJSONRequestBody, kong.Service]{
-	name: "service", collection: "services",
+	name: kindService, collection: "services",
 	plain: func(api KongAdminApi, n string) entity[kong.CreateServiceJSONRequestBody, kong.Service] {
 		return serviceEntity{api, n}
 	},
@@ -85,7 +85,7 @@ var serviceKind = kind[kong.CreateServiceJSONRequestBody, kong.Service]{
 }
 
 var upstreamKind = kind[kong.CreateUpstreamJSONRequestBody, kong.Upstream]{
-	name: "upstream", collection: "upstreams",
+	name: kindUpstream, collection: "upstreams",
 	plain: func(api KongAdminApi, n string) entity[kong.CreateUpstreamJSONRequestBody, kong.Upstream] {
 		return upstreamEntity{api, n}
 	},

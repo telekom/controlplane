@@ -280,26 +280,34 @@ var _ = Describe("Controller Integration", Ordered, func() {
 			Expect(kongNamesOf(route.Name)).To(HaveEach(route.Name))
 		})
 
-		It("requeues the Routes when the prefix changes, not on other Gateway changes", func() {
+		It("requeues the Routes when a Gateway field they are built from changes, not on other Gateway changes", func() {
 			gw := createGateway("watched-gateway", "bond")
 			route := createRoute("watched-gateway")
 			expectProperties(route, HaveKeyWithValue("namePrefix", "bond"))
+			updateGateway := func(change func()) {
+				Eventually(func() error {
+					Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(gw), gw)).To(Succeed())
+					change()
+					return k8sClient.Update(ctx, gw)
+				}, timeout, interval).Should(Succeed())
+			}
 
-			By("changing an unrelated field")
+			By("changing the admin client secret, which only configures the connection to Kong")
 			calls := len(kongNamesOf(route.Name))
-			Eventually(func() error {
-				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(gw), gw)).To(Succeed())
-				gw.Spec.Features = []gatewayv1.FeatureType{gatewayv1.FeatureTypeCircuitBreaker}
-				return k8sClient.Update(ctx, gw)
-			}, timeout, interval).Should(Succeed())
+			updateGateway(func() { gw.Spec.Admin.ClientSecret = "rotated-client-secret" })
 			Consistently(func() int { return len(kongNamesOf(route.Name)) }, shortTimeout, shortInterval).Should(Equal(calls))
 
+			By("rotating the Redis password")
+			updateGateway(func() { gw.Spec.Redis.Password = "rotated-redis-password" })
+			Eventually(func() int { return len(kongNamesOf(route.Name)) }, timeout, interval).Should(BeNumerically(">", calls))
+
+			By("changing the features")
+			calls = len(kongNamesOf(route.Name))
+			updateGateway(func() { gw.Spec.Features = []gatewayv1.FeatureType{gatewayv1.FeatureTypeCircuitBreaker} })
+			Eventually(func() int { return len(kongNamesOf(route.Name)) }, timeout, interval).Should(BeNumerically(">", calls))
+
 			By("changing the prefix")
-			Eventually(func() error {
-				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(gw), gw)).To(Succeed())
-				gw.Spec.NamePrefix = "cit2"
-				return k8sClient.Update(ctx, gw)
-			}, timeout, interval).Should(Succeed())
+			updateGateway(func() { gw.Spec.NamePrefix = "cit2" })
 			expectProperties(route, And(
 				HaveKeyWithValue("routeName", "cit2--"+route.Name),
 				HaveKeyWithValue("namePrefix", "cit2"),

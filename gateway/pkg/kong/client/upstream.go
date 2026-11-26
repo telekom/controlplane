@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 )
 
 // CreateOrReplaceUpstream normalizes the given bodies in place before comparing
@@ -61,7 +61,7 @@ func (c *kongClient) prepareUpstream(ctx context.Context, route CustomRoute, ups
 }
 
 func (c *kongClient) writeUpstream(ctx context.Context, route CustomRoute, prepared *preparedUpstream) error {
-	kongUpstream, _, err := reconcile(ctx, c.guard, prepared.entity, *prepared.body)
+	kongUpstream, _, err := reconcile(ctx, c.gate, prepared.entity, *prepared.body)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (c *kongClient) writeUpstream(ctx context.Context, route CustomRoute, prepa
 	if prepared.byID {
 		upstreamRef = *kongUpstream.Id
 	}
-	kongTarget, _, err := reconcile(ctx, c.guard, targetEntity{
+	kongTarget, _, err := reconcile(ctx, c.gate, targetEntity{
 		client:       c.client,
 		upstreamName: upstreamRef,
 		address:      prepared.target.Target,
@@ -147,7 +147,7 @@ func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, upstreamRef s
 	if upstreamRef == "" {
 		return nil
 	}
-	if write, err := c.guard.CheckDelete(ctx, "upstream", upstreamRef); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindUpstream, upstreamRef); err != nil || !write {
 		return err
 	}
 	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, upstreamRef)
@@ -167,7 +167,7 @@ type upstreamEntity struct {
 
 var _ entity[kong.CreateUpstreamJSONRequestBody, kong.Upstream] = upstreamEntity{}
 
-func (e upstreamEntity) Name() string { return "upstream" }
+func (e upstreamEntity) Kind() string { return kindUpstream }
 
 func (e upstreamEntity) Get(ctx context.Context) (*kong.Upstream, bool, error) {
 	response, err := e.client.GetUpstreamWithResponse(ctx, e.name)
@@ -309,11 +309,11 @@ type targetEntity struct {
 
 var _ entity[kong.CreateTargetForUpstreamJSONRequestBody, kong.Target] = targetEntity{}
 
-func (e targetEntity) Name() string { return "target" }
+func (e targetEntity) Kind() string { return kindTarget }
 
 func (e targetEntity) Get(ctx context.Context) (*kong.Target, bool, error) {
 	// A planned upstream does not exist in Kong yet, so it has no targets.
-	if _, planned := migration.LookupPlanned(ctx, "upstream", e.upstreamName); planned {
+	if _, planned := changeset.LookupPlanned(ctx, "upstream", e.upstreamName); planned {
 		return nil, false, nil
 	}
 	size := 1000

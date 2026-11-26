@@ -188,17 +188,19 @@ data:
 
 Migration Mode makes the switch from the legacy operator safe. The Gateway operator compares the Kong changes of a Route or Consumer with the current Kong state before it writes any of them. A difference that is not expected blocks all of them and is shown on the Route or Consumer. Kong stays as the legacy operator left it until the difference is expected, fixed or approved.
 
+The comparison is the shared change pipeline in `common/pkg/changeset` ([ADR-0012](https://github.com/telekom/controlplane/blob/main/docs/adrs/0012-shared-changeset-for-all-backend-operators.md)). It always runs; Migration Mode only decides whether a change needs an approval. Every applied change is recorded on the Route or Consumer, also with Migration Mode `off`.
+
 | Mode | The Kong changes of a Route or Consumer are written if |
 | ---- | ------------------------------------------------------ |
 | `off` | always. This is the default. |
 | `on` | every diff is on the ignore list, or the changes are approved. |
 | `strict` | the changes are approved, even if every diff is on the ignore list. |
 
-A reconcile without any Kong change writes nothing, so it needs no approval in either mode.
+A reconcile without any Kong change writes nothing, so it needs no approval in either mode, and it reads Kong only once.
 
 ### One plan for the whole Route
 
-Each reconcile runs twice. The first run is the plan: it goes through every Kong entity of the Route or Consumer and records each create, update and delete instead of executing it. Together, these changes are the bundle. The operator then decides on the bundle as a whole. Only an allowed or approved bundle is written, in a second run.
+Each reconcile first runs the plan: it goes through every Kong entity of the Route or Consumer and records each create, update and delete instead of executing it. Together, these changes are the bundle. The operator then decides on the bundle as a whole. A bundle without changes is done after the plan. Only an allowed or approved bundle is written, in a second run.
 
 | Object | Bundle |
 | ------ | ------ |
@@ -229,6 +231,7 @@ sequenceDiagram
         O->>K: Write the bundle
         O->>R: Remove status.migration
     end
+    O->>R: Record status.lastAppliedChanges
 ```
 
 ### What is compared
@@ -240,6 +243,8 @@ sequenceDiagram
 | Deletion of a route, service, upstream, plugin or consumer | One diff at `$` |
 
 Both sides are compared as the operator compares them for a normal reconcile. Tags, hosts and protocols are sorted. Legacy tags of an adopted entity are kept. Plugin config fields the operator does not set are left out. A missing value, `null`, an empty list and an empty object count as the same. Lists of different length differ as a whole; lists of equal length differ per element.
+
+Secrets never appear in clear ([ADR-0014](https://github.com/telekom/controlplane/blob/main/docs/adrs/0014-mask-secrets-in-change-records.md)). The Redis password of rate limiting and the values of the `jumper_config` and `routing_config` request headers, which carry client secrets and basic-auth passwords, are replaced on both sides with `sha256:` and the first 16 hex digits of their hash. A failover route passes its jumper config inside `routing_config`. A changed secret is still a diff, but its value is not shown.
 
 ### Reviewing blocked changes
 
@@ -272,12 +277,12 @@ status:
             current: '"/eni/echo/v2"'
 ```
 
-Values are JSON. A value longer than 1024 characters is cut off; the hash covers the full value. The operator log has the full changes under `Migration mode blocked kong changes`.
+Values are JSON. A value longer than 1024 characters is cut off, and at most 100 diffs are shown; `truncated: true` marks a cut status. The hash covers all changes and full values. The operator log has the full changes under `Migration mode blocked backend changes`.
 
-Two metrics count the checks:
+Two metrics count the checks, with the label `operator="gateway"`:
 
-- `gateway_kong_migration_checks_total` counts reconciles per kind (`Route`, `Consumer`), with the outcome `unchanged`, `allowed`, `approved` or `blocked`.
-- `gateway_kong_migration_diffs_total` counts diffs per entity kind, with the outcome `ignored` or `unexpected`.
+- `controlplane_migration_checks_total` counts reconciles per kind (`Route`, `Consumer`), with the outcome `unchanged`, `allowed`, `approved` or `blocked`.
+- `controlplane_migration_diffs_total` counts diffs per entity kind, with the outcome `ignored` or `unexpected`.
 
 ### Approving blocked changes
 
@@ -285,19 +290,49 @@ Approve the reviewed changes with their hash:
 
 ```bash
 kubectl annotate route eni-echo-v1 \
-  gateway.cp.ei.telekom.de/migration-approved-hash=7fb798163a653a9e --overwrite
+  cp.ei.telekom.de/migration-approved-hash=7fb798163a653a9e --overwrite
 ```
 
-The annotation starts a new reconcile. It plans again and writes the bundle only if the new plan has the same hash. The hash covers every change and every value, so an approval covers exactly what was reviewed. If the Route changes or the legacy operator changes Kong in between, the hash changes, and the new changes are blocked and shown again. Approved changes are logged under `Migration mode applied approved kong changes`.
+The annotation starts a new reconcile. It plans again and writes the bundle only if the new plan has the same hash. The hash covers every change and every value, so an approval covers exactly what was reviewed. If the Route changes or the legacy operator changes Kong in between, the hash changes, and the new changes are blocked and shown again. Approved changes are logged under `Migration mode applies approved backend changes`.
 
-An approval stays valid as long as the hash does not change. It does not have to be removed.
+An approval stays valid as long as the hash does not change. It does not have to be removed. Who set the annotation is recorded in the Kubernetes API audit log.
+
+### Last applied changes
+
+Every bundle that is written is recorded in `status.lastAppliedChanges` ([ADR-0013](https://github.com/telekom/controlplane/blob/main/docs/adrs/0013-record-last-applied-changes.md)), in every mode. The record is replaced by the next written bundle; a reconcile without changes keeps it. It is not a history: each written bundle also emits the event `ChangesApplied` with its hash, and the operator logs it.
+
+```yaml
+status:
+  lastAppliedChanges:
+    hash: 7fb798163a653a9e
+    appliedAt: "2026-11-20T15:20:00Z"
+    generation: 7
+    mode: on
+    decision: approved
+    approvedHash: 7fb798163a653a9e
+    changes:
+      - kind: route
+        name: bond--eni-echo-v1
+        operation: update
+        diffs:
+          - path: $.paths[0]
+            desired: '"/eni/echo/v3"'
+            current: '"/eni/echo/v2"'
+```
+
+| Field | Meaning |
+| ----- | ------- |
+| `decision` | `allowed` if no approval was needed, `approved` if the hash was approved |
+| `mode` | Migration Mode when the bundle was written |
+| `generation` | `metadata.generation` the bundle was built from |
+| `changes` | As in `status.migration`, but a created entity is recorded by the hash of its body |
 
 ### Configuration
 
 | Flag | Meaning |
 | ---- | ------- |
 | `--migration-mode=<off\|on\|strict>` | Sets the mode. `off` by default. |
-| `--migration-ignore-config=<path>` | Optional ignore list of expected diffs, mounted from a ConfigMap. Without it, every diff blocks. |
+| `--migration-ignore-config=<path>` | Optional ignore list of expected diffs, mounted from a ConfigMap. Without it, every diff needs an approval in mode `on`. |
 
 An unknown mode, a missing file, invalid YAML, an unknown field, an unknown kind or an invalid path stops the operator at startup.
 
@@ -320,7 +355,7 @@ data:
         paths: ["$.name", "$.tags"]
       # The operator may create and update its own rate-limiting plugins.
       - kind: plugin
-        name: rate-limiting
+        name: rate-limiting-merged
         paths: ["$"]
 ```
 
@@ -333,6 +368,16 @@ data:
 The entity name is the Kong name for routes, services and upstreams. For plugins it is the plugin name, for targets the target and for consumers the username. A deletion of a route or service uses its Kong name. A deletion of an upstream uses the name or ID it is deleted by.
 
 A path starts with `$`, followed by `.key` and `[index]` parts. `.*` matches any key and `[*]` any index. `$` alone covers the whole entity, including its creation and deletion.
+
+A change of the Gateway's `spec.redis`, such as a rotated Redis password, reconciles every Route of the Gateway and changes `$.config.redis_password` of each rate-limiting plugin. Without a matching rule, every one of these Routes is blocked at once in mode `on`. The sample rule for `rate-limiting-merged` covers it; a narrower rule only allows the password change:
+
+```yaml
+- kind: plugin
+  name: rate-limiting-merged
+  paths: ["$.config.redis_password"]
+```
+
+In mode `strict`, every Route still needs its own approval.
 
 ## Scope and limitations
 

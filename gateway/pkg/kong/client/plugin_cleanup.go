@@ -101,7 +101,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 
 // deleteObsoletePlugin deletes a plugin by ID. name identifies it for Migration Mode.
 func (c *kongClient) deleteObsoletePlugin(ctx context.Context, id, name string) error {
-	if write, err := c.guard.CheckDelete(ctx, "plugin", name); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindPlugin, name); err != nil || !write {
 		return err
 	}
 	logr.FromContextOrDiscard(ctx).V(1).Info("deleting plugin", "id", id)

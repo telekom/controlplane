@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	JumperConfigKey  = "jumper_config"
-	RoutingConfigKey = "routing_config"
+	JumperConfigKey  = client.JumperConfigKey
+	RoutingConfigKey = client.RoutingConfigKey
 )
 
 var _ client.CustomPlugin = &RequestTransformerPlugin{}

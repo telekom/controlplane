@@ -6,14 +6,19 @@ package client_test
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	clientpkg "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,7 +31,7 @@ var _ = Describe("Migration mode", func() {
 		client   clientpkg.KongClient
 		route    *v1.Route
 		upstream clientpkg.Upstream
-		plan     *migration.Plan
+		plan     *changeset.Plan
 		planCtx  context.Context
 	)
 
@@ -42,17 +47,17 @@ var _ = Describe("Migration mode", func() {
 	BeforeEach(func() {
 		ctx = contextutil.WithEnv(context.Background(), "bond")
 		kongFake = newFakeKong()
-		guard, err := migration.New(migration.Config{}, migration.ModeOn)
+		guard, err := changeset.New(changeset.Options{Operator: "gateway", Mode: changeset.ModeOn, Kinds: clientpkg.EntityKinds}, changeset.Config{})
 		Expect(err).NotTo(HaveOccurred())
-		client = clientpkg.NewKongClient(kongFake.api(), clientpkg.WithMigrator(snapshotMigrator()), clientpkg.WithMigrationGuard(guard))
+		client = clientpkg.NewKongClient(kongFake.api(), clientpkg.WithMigrator(snapshotMigrator()), clientpkg.WithGate(guard))
 		route = &v1.Route{
 			ObjectMeta: metav1.ObjectMeta{Name: "eni-example-v1"},
 			Spec:       v1.RouteSpec{Hostnames: []string{"stargate.example"}, Paths: []string{"/eni/echo/v3"}},
 		}
 		route.SetNamePrefix("bond")
 		upstream = clientpkg.NewUpstreamOrDie("http://localhost:8080/proxy")
-		plan = migration.NewPlan()
-		planCtx = migration.WithPlan(ctx, plan)
+		plan = changeset.NewPlan()
+		planCtx = changeset.WithPlan(ctx, plan)
 	})
 
 	Describe("with a legacy route", func() {
@@ -72,7 +77,7 @@ var _ = Describe("Migration mode", func() {
 		})
 
 		It("writes the adoption while the plan is applied", func() {
-			Expect(client.CreateOrReplaceRoute(migration.WithApply(ctx), route, upstream)).To(Succeed())
+			Expect(client.CreateOrReplaceRoute(changeset.WithApply(ctx), route, upstream)).To(Succeed())
 			Expect(kongFake.get("routes", "legacy-route-id")["name"]).To(Equal("bond--eni-example-v1"))
 		})
 
@@ -91,7 +96,7 @@ var _ = Describe("Migration mode", func() {
 
 	It("plans a new route with its plugins as one bundle", func() {
 		Expect(client.CreateOrReplaceRoute(planCtx, route, upstream)).To(Succeed())
-		Expect(migration.IsPlanned(route.GetRouteId())).To(BeTrue())
+		Expect(changeset.IsPlanned(route.GetRouteId())).To(BeTrue())
 
 		acl := plugin.AclPluginFromRoute(route)
 		acl.Config.AddAllow("eni--team")
@@ -101,4 +106,59 @@ var _ = Describe("Migration mode", func() {
 		Expect(kinds()).To(Equal([]string{"service create", "route create", "plugin create"}))
 		Expect(plan.Changes()[1].Diffs[0].Desired).To(HaveKeyWithValue("service", map[string]any{"id": "planned--service--bond--eni-example-v1"}))
 	})
+
+	It("never records a plugin secret in clear", func() {
+		Expect(client.CreateOrReplaceRoute(planCtx, route, upstream)).To(Succeed())
+
+		jumperConfig := plugin.ToBase64OrDie(plugin.JumperConfig{OAuth: map[plugin.ConsumerId]plugin.OauthCredentials{
+			"eni--team": {ClientSecret: "top-secret-client"},
+		}})
+		// A failover route passes the jumper config, with its secrets, inside the routing configs.
+		routingConfigs := plugin.ToBase64OrDie(plugin.RoutingConfigs{{JumperConfig: &plugin.JumperConfig{
+			BasicAuth: map[plugin.ConsumerId]plugin.BasicAuthCredentials{"default": {Username: "user", Password: "top-secret-basic"}},
+		}}})
+		rtp := plugin.RequestTransformerPluginFromRoute(route)
+		rtp.Config.Add.AddHeader(plugin.JumperConfigKey, jumperConfig)
+		rtp.Config.Append.AddHeader(plugin.RoutingConfigKey, routingConfigs)
+		rtp.Config.Append.AddHeader("realm", "visible")
+		Expect(client.CreateOrReplacePlugin(planCtx, rtp)).Error().NotTo(HaveOccurred())
+
+		rateLimit := plugin.RateLimitPluginFromRoute(route)
+		rateLimit.Config.Password = "top-secret-redis"
+		Expect(client.CreateOrReplacePlugin(planCtx, rateLimit)).Error().NotTo(HaveOccurred())
+
+		recorded := render(plan.Status(plan.Hash(), changeset.ModeOn))
+		Expect(recorded).NotTo(ContainSubstring("top-secret-redis"))
+		Expect(recorded).NotTo(ContainSubstring(jumperConfig))
+		Expect(recorded).NotTo(ContainSubstring(routingConfigs))
+		Expect(recorded).To(ContainSubstring(plugin.JumperConfigKey + `:sha256:`))
+		Expect(recorded).To(ContainSubstring(plugin.RoutingConfigKey + `:sha256:`))
+		Expect(recorded).To(ContainSubstring("realm:visible"))
+	})
+
+	It("ignores the operator's rate-limiting plugins with the shipped sample ignore list", func() {
+		data, err := os.ReadFile(filepath.Join("..", "..", "..", "config", "samples", "migration_ignore_configmap.yaml"))
+		Expect(err).NotTo(HaveOccurred())
+		configMap := corev1.ConfigMap{}
+		Expect(yaml.Unmarshal(data, &configMap)).To(Succeed())
+		cfg := changeset.Config{}
+		Expect(yaml.UnmarshalStrict([]byte(configMap.Data["migration-ignore.yaml"]), &cfg)).To(Succeed())
+		gate, err := changeset.New(changeset.Options{Operator: "gateway", Mode: changeset.ModeOn, Kinds: clientpkg.EntityKinds}, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		client = clientpkg.NewKongClient(kongFake.api(), clientpkg.WithMigrator(snapshotMigrator()), clientpkg.WithGate(gate))
+
+		Expect(client.CreateOrReplaceRoute(planCtx, route, upstream)).To(Succeed())
+		Expect(client.CreateOrReplacePlugin(planCtx, plugin.RateLimitPluginFromRoute(route))).Error().NotTo(HaveOccurred())
+
+		changes := plan.Changes()
+		Expect(changes[len(changes)-1].Kind).To(Equal("plugin"))
+		Expect(changes[len(changes)-1].Diffs).To(HaveEach(HaveField("Ignored", BeTrue())))
+	})
 })
+
+// render returns the migration status as JSON, as it is stored on the object.
+func render(status any) string {
+	raw, err := json.Marshal(status)
+	Expect(err).NotTo(HaveOccurred())
+	return string(raw)
+}

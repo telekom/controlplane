@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -16,7 +17,6 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	gatewayhandler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
@@ -28,23 +28,8 @@ type ConsumerHandler struct {
 }
 
 func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv1.Consumer) error {
-	consumer.Status.Migration = nil
-	if guard := kongutil.MigrationGuard(); guard != nil {
-		// Migration Mode compares the Kong entities of the Consumer as one bundle before any
-		// of them is written. The plan runs on a copy, so its placeholder IDs never reach the status.
-		plan := migration.NewPlan()
-		if err := h.build(migration.WithPlan(ctx, plan), consumer.DeepCopy()); err != nil {
-			return errors.Wrap(err, "failed to plan consumer")
-		}
-		status, err := guard.Decide(ctx, plan, "Consumer", consumer)
-		consumer.Status.Migration = status
-		if err != nil {
-			return err
-		}
-		ctx = migration.WithApply(ctx)
-	}
-
-	if err := h.build(ctx, consumer); err != nil {
+	// The Kong changes of the Consumer are planned, decided on as one bundle and only then written.
+	if err := changeset.Run(ctx, kongutil.Gate(), consumer, "Consumer", h.build); err != nil {
 		return err
 	}
 
@@ -66,30 +51,16 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consum
 	}
 	defer release()
 
-	consumer.Status.Migration = nil
-	if guard := kongutil.MigrationGuard(); guard != nil {
-		plan := migration.NewPlan()
-		if planErr := kc.DeleteConsumer(migration.WithPlan(ctx, plan), consumer.DeepCopy()); planErr != nil {
-			return errors.Wrap(planErr, "failed to plan consumer deletion")
+	return changeset.Run(ctx, kongutil.Gate(), consumer, "Consumer", func(ctx context.Context, target *gatewayv1.Consumer) error {
+		if err := kc.DeleteConsumer(ctx, target); err != nil {
+			return errors.Wrap(err, "failed to delete consumer")
 		}
-		status, decideErr := guard.Decide(ctx, plan, "Consumer", consumer)
-		consumer.Status.Migration = status
-		if decideErr != nil {
-			return decideErr
-		}
-		ctx = migration.WithApply(ctx)
-	}
-
-	err = kc.DeleteConsumer(ctx, consumer)
-	if err != nil {
-		return errors.Wrap(err, "failed to create or update consumer")
-	}
-
-	return nil
+		return nil
+	})
 }
 
-// build builds the Kong entities of consumer. In a ctx with a migration plan, it records
-// them without writing.
+// build builds the Kong entities of consumer. In a ctx with a plan, it records them
+// without writing.
 func (h *ConsumerHandler) build(ctx context.Context, consumer *gatewayv1.Consumer) error {
 	builder, release, err := h.newFeatureBuilder(ctx, consumer)
 	if err != nil {

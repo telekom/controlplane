@@ -133,6 +133,30 @@ var _ = Describe("Builder", func() {
 				err := builder.Build(ctx)
 				Expect(err).ToNot(HaveOccurred())
 			})
+
+			It("writes the plugins in the same order on every build", func() {
+				var written []string
+				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				mockKC.EXPECT().CreateOrReplacePlugin(mock.Anything, mock.Anything).
+					Run(func(_ context.Context, p client.CustomPlugin) { written = append(written, p.GetName()) }).
+					Return(nil, nil)
+				mockKC.EXPECT().CleanupPlugins(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+				// Each build uses a new map, so an order taken from map iteration would differ.
+				for range 20 {
+					written = nil
+					builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+					builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
+					builder.RequestTransformerPlugin()
+					builder.RequestTerminationPlugin()
+					builder.RateLimitPluginRoute()
+					builder.JwtPlugin()
+					builder.AclPlugin()
+
+					Expect(builder.Build(ctx)).To(Succeed())
+					Expect(written).To(Equal([]string{"acl", "jwt-keycloak", "rate-limiting-merged", "request-termination", "request-transformer"}))
+				}
+			})
 		})
 
 		Context("when a feature returns IsUsed=false", func() {

@@ -7,6 +7,7 @@ module github.com/telekom/controlplane/common
 go 1.26.11
 
 require (
+	github.com/go-logr/logr v1.4.4
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
 	github.com/pkg/errors v0.9.1
@@ -19,6 +20,7 @@ require (
 	k8s.io/client-go v0.37.2
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
@@ -31,7 +33,6 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
-	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
@@ -104,7 +105,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
-	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
 tool github.com/vektra/mockery/v2

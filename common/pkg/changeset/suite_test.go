@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package migration_test
+package changeset_test
 
 import (
 	"testing"

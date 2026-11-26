@@ -14,9 +14,19 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 
+	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kong/migration"
+)
+
+const (
+	// JumperConfigKey is the request header that passes the jumper config, base64-encoded, to
+	// the gateway. It carries client secrets and basic-auth passwords.
+	JumperConfigKey = "jumper_config"
+	// RoutingConfigKey is the request header that passes the routing configs of a failover
+	// route, base64-encoded, to the gateway. It replaces jumper_config and embeds the jumper
+	// config, so it carries the same secrets.
+	RoutingConfigKey = "routing_config"
 )
 
 // Kinds of the Kong entities a plugin can be bound to.
@@ -61,7 +71,7 @@ func (c *kongClient) CreateOrReplacePlugin(ctx context.Context, plugin CustomPlu
 		}
 	}
 
-	kongPlugin, _, err := reconcile(ctx, c.guard, &pluginEntity{client: c.client, plugin: plugin}, desired)
+	kongPlugin, _, err := reconcile(ctx, c.gate, &pluginEntity{client: c.client, plugin: plugin}, desired)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +102,7 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) erro
 		pluginId = *kongPlugin.Id
 	}
 
-	if write, err := c.guard.CheckDelete(ctx, "plugin", plugin.GetName()); err != nil || !write {
+	if write, err := c.gate.CheckDelete(ctx, kindPlugin, plugin.GetName()); err != nil || !write {
 		return err
 	}
 	response, err := c.client.DeletePluginWithResponse(ctx, pluginId)
@@ -213,7 +223,7 @@ func resolveParentID(ctx context.Context, api KongAdminApi, kind, name string) (
 // lookupParentID returns the Kong ID of a route or consumer and whether Kong
 // knows it. A found parent without an ID is an error.
 func lookupParentID(ctx context.Context, api KongAdminApi, kind, name string) (string, bool, error) {
-	if id, ok := migration.LookupPlanned(ctx, kind, name); ok {
+	if id, ok := changeset.LookupPlanned(ctx, kind, name); ok {
 		return id, true, nil
 	}
 	var id *string
@@ -260,7 +270,19 @@ var (
 	_ comparer[kong.UpsertPluginJSONRequestBody]            = &pluginEntity{}
 )
 
-func (e *pluginEntity) Name() string { return "plugin" }
+func (e *pluginEntity) Kind() string { return kindPlugin }
+
+// pluginSecrets masks the secrets of plugin configs in change records: the Redis password of
+// rate limiting and the jumper and routing configs, which carry client secrets and basic-auth
+// passwords.
+var pluginSecrets = changeset.MaskEntriesOrDie("$.config.*.headers", JumperConfigKey, RoutingConfigKey)
+
+var redisSecrets = changeset.MaskPathsOrDie("$.config.redis_password")
+
+// Masker implements changeset.SecretMasker.
+func (e *pluginEntity) Masker() changeset.Masker {
+	return func(body any) any { return redisSecrets(pluginSecrets(body)) }
+}
 
 func (e *pluginEntity) bound() bool {
 	return e.plugin.GetRoute() != nil || e.plugin.GetConsumer() != nil
@@ -304,7 +326,7 @@ func (e *pluginEntity) Get(ctx context.Context) (*kong.Plugin, bool, error) {
 		identity.routeID = routeID
 	}
 	// A plugin of a planned route or consumer cannot exist in Kong yet.
-	if migration.IsPlanned(identity.routeID) || migration.IsPlanned(identity.consumerID) {
+	if changeset.IsPlanned(identity.routeID) || changeset.IsPlanned(identity.consumerID) {
 		return nil, false, nil
 	}
 

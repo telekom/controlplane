@@ -6,6 +6,8 @@ package features
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"sort"
 
 	"github.com/go-logr/logr"
@@ -348,11 +350,8 @@ func (b *Builder) Build(ctx context.Context) (err error) {
 		return errors.Wrap(err, "failed to create or replace route")
 	}
 
-	for pn, p := range b.Plugins {
-		_, err = b.kc.CreateOrReplacePlugin(ctx, p)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create or replace plugin %s", pn)
-		}
+	if pluginErr := b.writePlugins(ctx); pluginErr != nil {
+		return pluginErr
 	}
 
 	err = b.kc.CleanupPlugins(ctx, b.Route, nil, toSlice(b.Plugins))
@@ -389,11 +388,8 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create or replace consumer")
 	}
 
-	for pn, p := range b.Plugins {
-		_, err = b.kc.CreateOrReplacePlugin(ctx, p)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create or replace plugin %s", pn)
-		}
+	if pluginErr := b.writePlugins(ctx); pluginErr != nil {
+		return pluginErr
 	}
 
 	err = b.kc.CleanupPlugins(ctx, nil, b.Consumer, toSlice(b.Plugins))
@@ -401,6 +397,18 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 		return errors.Wrap(err, "failed to cleanup plugins")
 	}
 
+	return nil
+}
+
+// writePlugins writes the plugins in the order of their keys. The order of the writes is the
+// order of the changes in a plan, which its hash covers, so it must not follow the random
+// iteration order of the map: an approved hash would otherwise not match the next plan.
+func (b *Builder) writePlugins(ctx context.Context) error {
+	for _, pn := range slices.Sorted(maps.Keys(b.Plugins)) {
+		if _, err := b.kc.CreateOrReplacePlugin(ctx, b.Plugins[pn]); err != nil {
+			return errors.Wrapf(err, "failed to create or replace plugin %s", pn)
+		}
+	}
 	return nil
 }
 
