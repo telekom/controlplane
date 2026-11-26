@@ -772,11 +772,13 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("changing the Rover so that it needs a client and a different bootstrap secret")
-			fetched := &roverv1.Rover{}
-			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
-			fetched.Spec.ClientSecret = "other"
-			fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
-			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			Eventually(func(g Gomega) {
+				fetched := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+				fetched.Spec.ClientSecret = "other"
+				fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
+				g.Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				application := &applicationv1.Application{}
