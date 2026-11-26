@@ -16,7 +16,7 @@ The Agentic domain manages the lifecycle of MCP (Model Context Protocol) servers
 
 | Resource | Purpose |
 |---|---|
-| `McpServer` | Registers an MCP server endpoint for a given `basePath`. Created and owned by the Rover domain via `McpSpecification`. Only the oldest active McpServer per basePath is considered active. |
+| `McpServer` / `AgentCard` | Register MCP or A2A endpoints for a given `basePath`. `McpServer` is created and owned by the Rover domain via `McpSpecification`. Registrations of either kind share one oldest-wins active slot per exact basePath; ties are resolved deterministically. |
 | `McpExposure` | Exposes an active McpServer on the AI Gateway by creating gateway Routes. Only one McpExposure per basePath can be active at a time (oldest-wins). |
 | `McpSubscription` | Requests access to an MCP exposure. Triggers an approval workflow; once approved, a `ConsumeRoute` is created on the gateway. |
 

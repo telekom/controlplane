@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -38,6 +38,7 @@ type McpServerReconciler struct {
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=mcpservers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=agentic.cp.ei.telekom.de,resources=agentcards,verbs=get;list;watch
 
 func (r *McpServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &agenticv1.McpServer{})
@@ -51,7 +52,11 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&agenticv1.McpServer{}, builder.WithPredicates(cc.Count("mcpserver", cc.RoleFor))).
 		Watches(&agenticv1.McpServer{},
-			handler.EnqueueRequestsFromMapFunc(r.MapMcpServerToMcpServer),
+			enqueueMappedObjects(r.MapMcpServerToMcpServer),
+			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
+		).
+		Watches(&agenticv1.AgentCard{},
+			enqueueMappedObjects(r.MapAgentCardToMcpServer),
 			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
@@ -76,6 +81,8 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 		cconfig.EnvironmentLabelKey: server.Labels[cconfig.EnvironmentLabelKey],
 		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(server.Spec.BasePath),
 	}); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list McpServers for basePath",
+			"basePath", server.Spec.BasePath)
 		return nil
 	}
 
@@ -89,6 +96,35 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 			})
 		}
+	}
+	return reqs
+}
+
+// MapAgentCardToMcpServer enqueues McpServers with the same exact basePath when an AgentCard changes.
+func (r *McpServerReconciler) MapAgentCardToMcpServer(ctx context.Context, obj client.Object) []reconcile.Request {
+	card, ok := obj.(*agenticv1.AgentCard)
+	if !ok {
+		return nil
+	}
+
+	list := &agenticv1.McpServerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: card.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(card.Spec.BasePath),
+	}); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list McpServers for AgentCard basePath",
+			"basePath", card.Spec.BasePath)
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		if list.Items[i].Spec.BasePath != card.Spec.BasePath {
+			continue
+		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }
