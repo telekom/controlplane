@@ -756,21 +756,13 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 			By("Granting the provider approval the way the real approval controller does")
 			// The first reconcile only adds the finalizer and returns early
 			// (common/pkg/controller.FirstSetup), so reconcile until the
-			// ApprovalRequest actually exists, then grant it with ApprovedRequest
-			// set — exactly what the approval controller does.
+			// ApprovalRequests of both gates actually exist, then grant them with
+			// ApprovedRequest set — exactly what the approval controller does.
+			// Each gate is built independently, so one may lag behind the other.
 			Eventually(func(g Gomega) {
 				_, _ = listenerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: crossNN})
-				arList := &approvalv1.ApprovalRequestList{}
-				g.Expect(directClient.List(ctx, arList, client.InNamespace(testNamespace))).To(Succeed())
-				found := false
-				for i := range arList.Items {
-					for _, ref := range arList.Items[i].OwnerReferences {
-						if ref.Name == "cross-team-listener" {
-							found = true
-						}
-					}
-				}
-				g.Expect(found).To(BeTrue(), "ApprovalRequest for cross-team-listener should exist")
+				ownedApprovalRequest(ctx, g, "cross-team-listener", "provider")
+				ownedApprovalRequest(ctx, g, "cross-team-listener", "consumer")
 			}, testTimeout, testInterval).Should(Succeed())
 
 			By("Keeping capture blocked while the Granted Approvals have no controller owner")
