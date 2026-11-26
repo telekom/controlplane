@@ -103,6 +103,16 @@ func Specification(v string) predicate.Api {
 	return predicate.Api(sql.FieldEQ(FieldSpecification, v))
 }
 
+// Changelog applies equality check predicate on the "changelog" field. It's identical to ChangelogEQ.
+func Changelog(v string) predicate.Api {
+	return predicate.Api(sql.FieldEQ(FieldChangelog, v))
+}
+
+// Roadmap applies equality check predicate on the "roadmap" field. It's identical to RoadmapEQ.
+func Roadmap(v string) predicate.Api {
+	return predicate.Api(sql.FieldEQ(FieldRoadmap, v))
+}
+
 // Active applies equality check predicate on the "active" field. It's identical to ActiveEQ.
 func Active(v bool) predicate.Api {
 	return predicate.Api(sql.FieldEQ(FieldActive, v))
@@ -656,6 +666,156 @@ func SpecificationEqualFold(v string) predicate.Api {
 // SpecificationContainsFold applies the ContainsFold predicate on the "specification" field.
 func SpecificationContainsFold(v string) predicate.Api {
 	return predicate.Api(sql.FieldContainsFold(FieldSpecification, v))
+}
+
+// ChangelogEQ applies the EQ predicate on the "changelog" field.
+func ChangelogEQ(v string) predicate.Api {
+	return predicate.Api(sql.FieldEQ(FieldChangelog, v))
+}
+
+// ChangelogNEQ applies the NEQ predicate on the "changelog" field.
+func ChangelogNEQ(v string) predicate.Api {
+	return predicate.Api(sql.FieldNEQ(FieldChangelog, v))
+}
+
+// ChangelogIn applies the In predicate on the "changelog" field.
+func ChangelogIn(vs ...string) predicate.Api {
+	return predicate.Api(sql.FieldIn(FieldChangelog, vs...))
+}
+
+// ChangelogNotIn applies the NotIn predicate on the "changelog" field.
+func ChangelogNotIn(vs ...string) predicate.Api {
+	return predicate.Api(sql.FieldNotIn(FieldChangelog, vs...))
+}
+
+// ChangelogGT applies the GT predicate on the "changelog" field.
+func ChangelogGT(v string) predicate.Api {
+	return predicate.Api(sql.FieldGT(FieldChangelog, v))
+}
+
+// ChangelogGTE applies the GTE predicate on the "changelog" field.
+func ChangelogGTE(v string) predicate.Api {
+	return predicate.Api(sql.FieldGTE(FieldChangelog, v))
+}
+
+// ChangelogLT applies the LT predicate on the "changelog" field.
+func ChangelogLT(v string) predicate.Api {
+	return predicate.Api(sql.FieldLT(FieldChangelog, v))
+}
+
+// ChangelogLTE applies the LTE predicate on the "changelog" field.
+func ChangelogLTE(v string) predicate.Api {
+	return predicate.Api(sql.FieldLTE(FieldChangelog, v))
+}
+
+// ChangelogContains applies the Contains predicate on the "changelog" field.
+func ChangelogContains(v string) predicate.Api {
+	return predicate.Api(sql.FieldContains(FieldChangelog, v))
+}
+
+// ChangelogHasPrefix applies the HasPrefix predicate on the "changelog" field.
+func ChangelogHasPrefix(v string) predicate.Api {
+	return predicate.Api(sql.FieldHasPrefix(FieldChangelog, v))
+}
+
+// ChangelogHasSuffix applies the HasSuffix predicate on the "changelog" field.
+func ChangelogHasSuffix(v string) predicate.Api {
+	return predicate.Api(sql.FieldHasSuffix(FieldChangelog, v))
+}
+
+// ChangelogIsNil applies the IsNil predicate on the "changelog" field.
+func ChangelogIsNil() predicate.Api {
+	return predicate.Api(sql.FieldIsNull(FieldChangelog))
+}
+
+// ChangelogNotNil applies the NotNil predicate on the "changelog" field.
+func ChangelogNotNil() predicate.Api {
+	return predicate.Api(sql.FieldNotNull(FieldChangelog))
+}
+
+// ChangelogEqualFold applies the EqualFold predicate on the "changelog" field.
+func ChangelogEqualFold(v string) predicate.Api {
+	return predicate.Api(sql.FieldEqualFold(FieldChangelog, v))
+}
+
+// ChangelogContainsFold applies the ContainsFold predicate on the "changelog" field.
+func ChangelogContainsFold(v string) predicate.Api {
+	return predicate.Api(sql.FieldContainsFold(FieldChangelog, v))
+}
+
+// RoadmapEQ applies the EQ predicate on the "roadmap" field.
+func RoadmapEQ(v string) predicate.Api {
+	return predicate.Api(sql.FieldEQ(FieldRoadmap, v))
+}
+
+// RoadmapNEQ applies the NEQ predicate on the "roadmap" field.
+func RoadmapNEQ(v string) predicate.Api {
+	return predicate.Api(sql.FieldNEQ(FieldRoadmap, v))
+}
+
+// RoadmapIn applies the In predicate on the "roadmap" field.
+func RoadmapIn(vs ...string) predicate.Api {
+	return predicate.Api(sql.FieldIn(FieldRoadmap, vs...))
+}
+
+// RoadmapNotIn applies the NotIn predicate on the "roadmap" field.
+func RoadmapNotIn(vs ...string) predicate.Api {
+	return predicate.Api(sql.FieldNotIn(FieldRoadmap, vs...))
+}
+
+// RoadmapGT applies the GT predicate on the "roadmap" field.
+func RoadmapGT(v string) predicate.Api {
+	return predicate.Api(sql.FieldGT(FieldRoadmap, v))
+}
+
+// RoadmapGTE applies the GTE predicate on the "roadmap" field.
+func RoadmapGTE(v string) predicate.Api {
+	return predicate.Api(sql.FieldGTE(FieldRoadmap, v))
+}
+
+// RoadmapLT applies the LT predicate on the "roadmap" field.
+func RoadmapLT(v string) predicate.Api {
+	return predicate.Api(sql.FieldLT(FieldRoadmap, v))
+}
+
+// RoadmapLTE applies the LTE predicate on the "roadmap" field.
+func RoadmapLTE(v string) predicate.Api {
+	return predicate.Api(sql.FieldLTE(FieldRoadmap, v))
+}
+
+// RoadmapContains applies the Contains predicate on the "roadmap" field.
+func RoadmapContains(v string) predicate.Api {
+	return predicate.Api(sql.FieldContains(FieldRoadmap, v))
+}
+
+// RoadmapHasPrefix applies the HasPrefix predicate on the "roadmap" field.
+func RoadmapHasPrefix(v string) predicate.Api {
+	return predicate.Api(sql.FieldHasPrefix(FieldRoadmap, v))
+}
+
+// RoadmapHasSuffix applies the HasSuffix predicate on the "roadmap" field.
+func RoadmapHasSuffix(v string) predicate.Api {
+	return predicate.Api(sql.FieldHasSuffix(FieldRoadmap, v))
+}
+
+// RoadmapIsNil applies the IsNil predicate on the "roadmap" field.
+func RoadmapIsNil() predicate.Api {
+	return predicate.Api(sql.FieldIsNull(FieldRoadmap))
+}
+
+// RoadmapNotNil applies the NotNil predicate on the "roadmap" field.
+func RoadmapNotNil() predicate.Api {
+	return predicate.Api(sql.FieldNotNull(FieldRoadmap))
+}
+
+// RoadmapEqualFold applies the EqualFold predicate on the "roadmap" field.
+func RoadmapEqualFold(v string) predicate.Api {
+	return predicate.Api(sql.FieldEqualFold(FieldRoadmap, v))
+}
+
+// RoadmapContainsFold applies the ContainsFold predicate on the "roadmap" field.
+func RoadmapContainsFold(v string) predicate.Api {
+	return predicate.Api(sql.FieldContainsFold(FieldRoadmap, v))
 }
 
 // ActiveEQ applies the EQ predicate on the "active" field.

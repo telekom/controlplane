@@ -2277,6 +2277,40 @@ type ApiWhereInput struct {
 	SpecificationEqualFold    *string  `json:"specificationEqualFold,omitempty"`
 	SpecificationContainsFold *string  `json:"specificationContainsFold,omitempty"`
 
+	// "changelog" field predicates.
+	Changelog             *string  `json:"changelog,omitempty"`
+	ChangelogNEQ          *string  `json:"changelogNEQ,omitempty"`
+	ChangelogIn           []string `json:"changelogIn,omitempty"`
+	ChangelogNotIn        []string `json:"changelogNotIn,omitempty"`
+	ChangelogGT           *string  `json:"changelogGT,omitempty"`
+	ChangelogGTE          *string  `json:"changelogGTE,omitempty"`
+	ChangelogLT           *string  `json:"changelogLT,omitempty"`
+	ChangelogLTE          *string  `json:"changelogLTE,omitempty"`
+	ChangelogContains     *string  `json:"changelogContains,omitempty"`
+	ChangelogHasPrefix    *string  `json:"changelogHasPrefix,omitempty"`
+	ChangelogHasSuffix    *string  `json:"changelogHasSuffix,omitempty"`
+	ChangelogIsNil        bool     `json:"changelogIsNil,omitempty"`
+	ChangelogNotNil       bool     `json:"changelogNotNil,omitempty"`
+	ChangelogEqualFold    *string  `json:"changelogEqualFold,omitempty"`
+	ChangelogContainsFold *string  `json:"changelogContainsFold,omitempty"`
+
+	// "roadmap" field predicates.
+	Roadmap             *string  `json:"roadmap,omitempty"`
+	RoadmapNEQ          *string  `json:"roadmapNEQ,omitempty"`
+	RoadmapIn           []string `json:"roadmapIn,omitempty"`
+	RoadmapNotIn        []string `json:"roadmapNotIn,omitempty"`
+	RoadmapGT           *string  `json:"roadmapGT,omitempty"`
+	RoadmapGTE          *string  `json:"roadmapGTE,omitempty"`
+	RoadmapLT           *string  `json:"roadmapLT,omitempty"`
+	RoadmapLTE          *string  `json:"roadmapLTE,omitempty"`
+	RoadmapContains     *string  `json:"roadmapContains,omitempty"`
+	RoadmapHasPrefix    *string  `json:"roadmapHasPrefix,omitempty"`
+	RoadmapHasSuffix    *string  `json:"roadmapHasSuffix,omitempty"`
+	RoadmapIsNil        bool     `json:"roadmapIsNil,omitempty"`
+	RoadmapNotNil       bool     `json:"roadmapNotNil,omitempty"`
+	RoadmapEqualFold    *string  `json:"roadmapEqualFold,omitempty"`
+	RoadmapContainsFold *string  `json:"roadmapContainsFold,omitempty"`
+
 	// "active" field predicates.
 	Active    *bool `json:"active,omitempty"`
 	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
@@ -2708,6 +2742,96 @@ func (i *ApiWhereInput) P() (predicate.Api, error) {
 	}
 	if i.SpecificationContainsFold != nil {
 		predicates = append(predicates, api.SpecificationContainsFold(*i.SpecificationContainsFold))
+	}
+	if i.Changelog != nil {
+		predicates = append(predicates, api.ChangelogEQ(*i.Changelog))
+	}
+	if i.ChangelogNEQ != nil {
+		predicates = append(predicates, api.ChangelogNEQ(*i.ChangelogNEQ))
+	}
+	if len(i.ChangelogIn) > 0 {
+		predicates = append(predicates, api.ChangelogIn(i.ChangelogIn...))
+	}
+	if len(i.ChangelogNotIn) > 0 {
+		predicates = append(predicates, api.ChangelogNotIn(i.ChangelogNotIn...))
+	}
+	if i.ChangelogGT != nil {
+		predicates = append(predicates, api.ChangelogGT(*i.ChangelogGT))
+	}
+	if i.ChangelogGTE != nil {
+		predicates = append(predicates, api.ChangelogGTE(*i.ChangelogGTE))
+	}
+	if i.ChangelogLT != nil {
+		predicates = append(predicates, api.ChangelogLT(*i.ChangelogLT))
+	}
+	if i.ChangelogLTE != nil {
+		predicates = append(predicates, api.ChangelogLTE(*i.ChangelogLTE))
+	}
+	if i.ChangelogContains != nil {
+		predicates = append(predicates, api.ChangelogContains(*i.ChangelogContains))
+	}
+	if i.ChangelogHasPrefix != nil {
+		predicates = append(predicates, api.ChangelogHasPrefix(*i.ChangelogHasPrefix))
+	}
+	if i.ChangelogHasSuffix != nil {
+		predicates = append(predicates, api.ChangelogHasSuffix(*i.ChangelogHasSuffix))
+	}
+	if i.ChangelogIsNil {
+		predicates = append(predicates, api.ChangelogIsNil())
+	}
+	if i.ChangelogNotNil {
+		predicates = append(predicates, api.ChangelogNotNil())
+	}
+	if i.ChangelogEqualFold != nil {
+		predicates = append(predicates, api.ChangelogEqualFold(*i.ChangelogEqualFold))
+	}
+	if i.ChangelogContainsFold != nil {
+		predicates = append(predicates, api.ChangelogContainsFold(*i.ChangelogContainsFold))
+	}
+	if i.Roadmap != nil {
+		predicates = append(predicates, api.RoadmapEQ(*i.Roadmap))
+	}
+	if i.RoadmapNEQ != nil {
+		predicates = append(predicates, api.RoadmapNEQ(*i.RoadmapNEQ))
+	}
+	if len(i.RoadmapIn) > 0 {
+		predicates = append(predicates, api.RoadmapIn(i.RoadmapIn...))
+	}
+	if len(i.RoadmapNotIn) > 0 {
+		predicates = append(predicates, api.RoadmapNotIn(i.RoadmapNotIn...))
+	}
+	if i.RoadmapGT != nil {
+		predicates = append(predicates, api.RoadmapGT(*i.RoadmapGT))
+	}
+	if i.RoadmapGTE != nil {
+		predicates = append(predicates, api.RoadmapGTE(*i.RoadmapGTE))
+	}
+	if i.RoadmapLT != nil {
+		predicates = append(predicates, api.RoadmapLT(*i.RoadmapLT))
+	}
+	if i.RoadmapLTE != nil {
+		predicates = append(predicates, api.RoadmapLTE(*i.RoadmapLTE))
+	}
+	if i.RoadmapContains != nil {
+		predicates = append(predicates, api.RoadmapContains(*i.RoadmapContains))
+	}
+	if i.RoadmapHasPrefix != nil {
+		predicates = append(predicates, api.RoadmapHasPrefix(*i.RoadmapHasPrefix))
+	}
+	if i.RoadmapHasSuffix != nil {
+		predicates = append(predicates, api.RoadmapHasSuffix(*i.RoadmapHasSuffix))
+	}
+	if i.RoadmapIsNil {
+		predicates = append(predicates, api.RoadmapIsNil())
+	}
+	if i.RoadmapNotNil {
+		predicates = append(predicates, api.RoadmapNotNil())
+	}
+	if i.RoadmapEqualFold != nil {
+		predicates = append(predicates, api.RoadmapEqualFold(*i.RoadmapEqualFold))
+	}
+	if i.RoadmapContainsFold != nil {
+		predicates = append(predicates, api.RoadmapContainsFold(*i.RoadmapContainsFold))
 	}
 	if i.Active != nil {
 		predicates = append(predicates, api.ActiveEQ(*i.Active))

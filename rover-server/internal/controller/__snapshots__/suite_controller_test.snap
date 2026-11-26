@@ -1914,3 +1914,33 @@
  "type": "InternalError"
 }
 ---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject an invalid date, version and empty description - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items/1/version\": string doesn't match the regular expression \"^\\d+\\.\\d+\\.\\d+$\"\nSchema:\n  {\n    \"description\": \"Semantic version number\",\n    \"example\": \"1.2.3\",\n    \"pattern\": \"^\\\\d+\\\\.\\\\d+\\\\.\\\\d+$\",\n    \"type\": \"string\"\n  }\n\nValue:\n  \"v2\"\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject a changelog for an API that has no ApiSpecification - 1]
+{
+ "detail": "no ApiSpecification exists for basePath /eni/unknown-api/v1, apply it first",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should reject a roadmap for an API that has no ApiSpecification - 1]
+{
+ "detail": "no ApiSpecification exists for basePath /eni/unknown-api/v1, apply it first",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---

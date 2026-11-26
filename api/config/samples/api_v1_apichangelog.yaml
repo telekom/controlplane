@@ -1,0 +1,16 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: api.cp.ei.telekom.de/v1
+kind: ApiChangelog
+metadata:
+  labels:
+    app.kubernetes.io/name: api-operator
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+  name: eni-elmar-myapi
+spec:
+  basePath: "/eni/elmar/myapi/v1"
+  contents: "file-id-from-file-manager"
+  hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

@@ -9,4 +9,6 @@ resources:
 - api_v1_apisubscription.yaml
 - api_v1_remoteapisubscription.yaml
 - api_v1_apicategory.yaml
+- api_v1_apichangelog.yaml
+- api_v1_apiroadmap.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

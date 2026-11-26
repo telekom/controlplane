@@ -192,6 +192,38 @@ var _ = Describe("ApiChangelog Controller", func() {
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
 		})
 
+		It("should reject an invalid date, version and empty description", func() {
+			changelogReq := api.ApiChangelogUpdateRequest{
+				BasePath: "/eni/test-api/v1",
+				Items: []api.ApiChangelogItem{
+					{Date: "20.06.2022", Version: "2.0.2", Description: "bad date"},
+					{Date: "2022-06-20", Version: "v2", Description: "bad version"},
+					{Date: "2022-06-20", Version: "1.0.0", Description: " "},
+				},
+			}
+
+			reqBody, _ := json.Marshal(changelogReq)
+			req := httptest.NewRequest(http.MethodPut, "/apichangelogs/eni--hyperion--eni-test-api", bytes.NewReader(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
+
+		It("should reject a changelog for an API that has no ApiSpecification", func() {
+			changelogReq := api.ApiChangelogUpdateRequest{
+				BasePath: "/eni/unknown-api/v1",
+				Items:    changelogItems,
+			}
+
+			reqBody, _ := json.Marshal(changelogReq)
+			req := httptest.NewRequest(http.MethodPut, "/apichangelogs/eni--hyperion--eni-unknown-api", bytes.NewReader(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
+
 		It("should reject mismatched basePath and resourceId", func() {
 			changelogReq := api.ApiChangelogUpdateRequest{
 				BasePath: "/eni/different-api/v1",

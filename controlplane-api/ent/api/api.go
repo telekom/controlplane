@@ -43,6 +43,10 @@ const (
 	FieldXVendor = "x_vendor"
 	// FieldSpecification holds the string denoting the specification field in the database.
 	FieldSpecification = "specification"
+	// FieldChangelog holds the string denoting the changelog field in the database.
+	FieldChangelog = "changelog"
+	// FieldRoadmap holds the string denoting the roadmap field in the database.
+	FieldRoadmap = "roadmap"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
@@ -81,6 +85,8 @@ var Columns = []string{
 	FieldOauth2Scopes,
 	FieldXVendor,
 	FieldSpecification,
+	FieldChangelog,
+	FieldRoadmap,
 	FieldActive,
 }
 
@@ -212,6 +218,16 @@ func ByXVendor(opts ...sql.OrderTermOption) OrderOption {
 // BySpecification orders the results by the specification field.
 func BySpecification(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSpecification, opts...).ToFunc()
+}
+
+// ByChangelog orders the results by the changelog field.
+func ByChangelog(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChangelog, opts...).ToFunc()
+}
+
+// ByRoadmap orders the results by the roadmap field.
+func ByRoadmap(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoadmap, opts...).ToFunc()
 }
 
 // ByActive orders the results by the active field.

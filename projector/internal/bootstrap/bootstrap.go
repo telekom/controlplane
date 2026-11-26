@@ -49,7 +49,9 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/agenticexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/agenticsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/api"
+	"github.com/telekom/controlplane/projector/internal/domain/apichangelog"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/apiroadmap"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
@@ -82,6 +84,8 @@ var modules = []module.Module{
 	team.Module,
 	application.Module,
 	api.Module,
+	apichangelog.Module,
+	apiroadmap.Module,
 	apiexposure.Module,
 	apisubscription.Module,
 	approval.Module,

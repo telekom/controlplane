@@ -494,6 +494,10 @@ extend type ApprovalRequest {
 extend type Api {
   "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
   specificationUrl: String @goField(forceResolver: true)
+  "URL to download the API changelog from the file-manager. Null if no changelog is associated."
+  changelogUrl: String @goField(forceResolver: true)
+  "URL to download the API roadmap from the file-manager. Null if no roadmap is associated."
+  roadmapUrl: String @goField(forceResolver: true)
   "The currently active exposure of this API, or null if no exposure is active."
   activeExposure: ApiExposureInfo @goField(forceResolver: true)
   "The team that owns this API."

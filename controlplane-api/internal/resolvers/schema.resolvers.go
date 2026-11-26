@@ -187,6 +187,16 @@ func (r *apiResolver) SpecificationURL(ctx context.Context, obj *ent.Api) (*stri
 	return r.buildSpecificationURL(obj.Specification)
 }
 
+// ChangelogURL is the resolver for the changelogUrl field.
+func (r *apiResolver) ChangelogURL(ctx context.Context, obj *ent.Api) (*string, error) {
+	return r.buildSpecificationURL(obj.Changelog)
+}
+
+// RoadmapURL is the resolver for the roadmapUrl field.
+func (r *apiResolver) RoadmapURL(ctx context.Context, obj *ent.Api) (*string, error) {
+	return r.buildSpecificationURL(obj.Roadmap)
+}
+
 // ActiveExposure is the resolver for the activeExposure field.
 // Returns the active exposure for this API, or nil if none is active.
 func (r *apiResolver) ActiveExposure(ctx context.Context, obj *ent.Api) (*gqlmodel.ApiExposureInfo, error) {

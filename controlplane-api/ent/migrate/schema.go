@@ -188,6 +188,8 @@ var (
 		{Name: "oauth2_scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "x_vendor", Type: field.TypeBool, Default: false},
 		{Name: "specification", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "changelog", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "roadmap", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "active", Type: field.TypeBool, Default: false},
 		{Name: "team_apis", Type: field.TypeInt},
 	}
@@ -199,7 +201,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "apis_teams_apis",
-				Columns:    []*schema.Column{ApisColumns[13]},
+				Columns:    []*schema.Column{ApisColumns[15]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -208,7 +210,7 @@ var (
 			{
 				Name:    "api_base_path_team_apis",
 				Unique:  true,
-				Columns: []*schema.Column{ApisColumns[6], ApisColumns[13]},
+				Columns: []*schema.Column{ApisColumns[6], ApisColumns[15]},
 			},
 		},
 	}

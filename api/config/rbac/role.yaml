@@ -33,7 +33,9 @@ rules:
   - api.cp.ei.telekom.de
   resources:
   - apicategories
+  - apichangelogs
   - apiexposures
+  - apiroadmaps
   - apis
   - apisubscriptions
   - remoteapisubscriptions
@@ -49,7 +51,9 @@ rules:
   - api.cp.ei.telekom.de
   resources:
   - apicategories/finalizers
+  - apichangelogs/finalizers
   - apiexposures/finalizers
+  - apiroadmaps/finalizers
   - apis/finalizers
   - apisubscriptions/finalizers
   - remoteapisubscriptions/finalizers
@@ -59,7 +63,9 @@ rules:
   - api.cp.ei.telekom.de
   resources:
   - apicategories/status
+  - apichangelogs/status
   - apiexposures/status
+  - apiroadmaps/status
   - apis/status
   - apisubscriptions/status
   - remoteapisubscriptions/status

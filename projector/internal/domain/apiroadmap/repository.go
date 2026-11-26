@@ -1,0 +1,69 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package apiroadmap
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/telekom/controlplane/controlplane-api/ent"
+	entapi "github.com/telekom/controlplane/controlplane-api/ent/api"
+	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/projector/internal/metrics"
+	"github.com/telekom/controlplane/projector/internal/runtime"
+)
+
+const entityType = "apiroadmap"
+
+// Repository stores the roadmap file ID on the matching Api entity.
+type Repository struct {
+	client *ent.Client
+}
+
+var _ runtime.Repository[Key, *Data] = (*Repository)(nil)
+
+// NewRepository creates a roadmap repository.
+func NewRepository(client *ent.Client) *Repository {
+	return &Repository{client: client}
+}
+
+// Upsert sets the roadmap file ID on the Api. If the Api has not been
+// projected yet, it returns ErrDependencyMissing so the CR is retried.
+func (r *Repository) Upsert(ctx context.Context, data *Data) error {
+	start := time.Now()
+	defer func() {
+		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationUpsert).Observe(time.Since(start).Seconds())
+	}()
+
+	updated, err := r.client.Api.Update().
+		Where(entapi.NamespaceEQ(data.Namespace), entapi.BasePathEQ(data.BasePath), entapi.HasOwnerWith(team.NameEQ(data.TeamName))).
+		SetRoadmap(data.FileID).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("set roadmap on api %q (team %q): %w", data.BasePath, data.TeamName, err)
+	}
+	if updated == 0 {
+		return runtime.WrapDependencyMissing("api", data.BasePath)
+	}
+	return nil
+}
+
+// Delete clears the roadmap file ID. It is a no-op if the Api no longer exists.
+func (r *Repository) Delete(ctx context.Context, key Key) error {
+	start := time.Now()
+	defer func() {
+		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
+	}()
+
+	_, err := r.client.Api.Update().
+		Where(entapi.NamespaceEQ(key.Namespace), entapi.BasePathEQ(key.BasePath), entapi.HasOwnerWith(team.NameEQ(key.TeamName))).
+		ClearRoadmap().
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("clear roadmap on api %q (team %q): %w", key.BasePath, key.TeamName, err)
+	}
+	return nil
+}

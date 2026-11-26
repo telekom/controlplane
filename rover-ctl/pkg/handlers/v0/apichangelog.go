@@ -19,7 +19,7 @@ type ApiChangelogHandler struct {
 
 func NewApiChangelogHandlerInstance() *ApiChangelogHandler {
 	handler := &ApiChangelogHandler{
-		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiChangelog", "apichangelogs", 10).WithValidation(common.ValidateObjectName),
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiChangelog", "apichangelogs", 20).WithValidation(common.ValidateObjectName),
 	}
 
 	handler.AddHook(common.PreRequestHook, PatchApiChangelogRequest)

@@ -218,7 +218,7 @@ func init() {
 	// api.DefaultXVendor holds the default value on creation for the x_vendor field.
 	api.DefaultXVendor = apiDescXVendor.Default.(bool)
 	// apiDescActive is the schema descriptor for active field.
-	apiDescActive := apiFields[6].Descriptor()
+	apiDescActive := apiFields[8].Descriptor()
 	// api.DefaultActive holds the default value on creation for the active field.
 	api.DefaultActive = apiDescActive.Default.(bool)
 	apiexposureMixin := schema.ApiExposure{}.Mixin()

@@ -163,6 +163,20 @@ var _ = Describe("Roadmap Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+
+		It("should reject a roadmap for an API that has no ApiSpecification", func() {
+			roadmapReq := api.ApiRoadmapUpdateRequest{
+				BasePath: "/eni/unknown-api/v1",
+				Items:    roadmapItems,
+			}
+
+			reqBody, _ := json.Marshal(roadmapReq)
+			req := httptest.NewRequest(http.MethodPut, "/apiroadmaps/eni--hyperion--eni-unknown-api", bytes.NewReader(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
 	})
 
 	Context("Delete ApiRoadmap resource", func() {

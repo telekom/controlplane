@@ -54,4 +54,22 @@ resources:
   kind: ApiCategory
   path: github.com/telekom/controlplane/api/api/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cp.ei.telekom.de
+  group: api
+  kind: ApiChangelog
+  path: github.com/telekom/controlplane/api/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cp.ei.telekom.de
+  group: api
+  kind: ApiRoadmap
+  path: github.com/telekom/controlplane/api/api/v1
+  version: v1
 version: "3"

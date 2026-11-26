@@ -1628,6 +1628,42 @@ input ApiWhereInput {
   specificationEqualFold: String
   specificationContainsFold: String
   """
+  changelog field predicates
+  """
+  changelog: String
+  changelogNEQ: String
+  changelogIn: [String!]
+  changelogNotIn: [String!]
+  changelogGT: String
+  changelogGTE: String
+  changelogLT: String
+  changelogLTE: String
+  changelogContains: String
+  changelogHasPrefix: String
+  changelogHasSuffix: String
+  changelogIsNil: Boolean
+  changelogNotNil: Boolean
+  changelogEqualFold: String
+  changelogContainsFold: String
+  """
+  roadmap field predicates
+  """
+  roadmap: String
+  roadmapNEQ: String
+  roadmapIn: [String!]
+  roadmapNotIn: [String!]
+  roadmapGT: String
+  roadmapGTE: String
+  roadmapLT: String
+  roadmapLTE: String
+  roadmapContains: String
+  roadmapHasPrefix: String
+  roadmapHasSuffix: String
+  roadmapIsNil: Boolean
+  roadmapNotNil: Boolean
+  roadmapEqualFold: String
+  roadmapContainsFold: String
+  """
   active field predicates
   """
   active: Boolean

@@ -79,6 +79,8 @@ API lifecycle management — definitions, exposures, and subscriptions.
 | ---- | ----------- |
 | **Api** | A registered API definition with version, base path, category, and optional OAuth2 scopes. |
 | **ApiCategory** | Defines an API category with team restrictions, linting configuration, and naming requirements. |
+| **ApiChangelog** | Mirror of a Rover ApiChangelog. References the changelog file in the File Manager. Blocked until the Api with the same base path exists. Deleting it never deletes the Api. |
+| **ApiRoadmap** | Mirror of a Rover Roadmap of an ApiSpecification. References the roadmap file in the File Manager. Blocked until the Api with the same base path exists. Deleting it never deletes the Api. |
 | **ApiExposure** | Declares that a team exposes an API at a given base path with visibility, approval strategy, traffic management, and security settings. |
 | **ApiSubscription** | Represents a subscription to an API by a consuming application, with security and failover configuration. |
 | **RemoteApiSubscription** | Enables cross-organization API subscriptions between federated organizations. |

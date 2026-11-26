@@ -57,6 +57,8 @@ type AgenticSubscriptionResolver interface {
 }
 type ApiResolver interface {
 	SpecificationURL(ctx context.Context, obj *ent.Api) (*string, error)
+	ChangelogURL(ctx context.Context, obj *ent.Api) (*string, error)
+	RoadmapURL(ctx context.Context, obj *ent.Api) (*string, error)
 	ActiveExposure(ctx context.Context, obj *ent.Api) (*model.ApiExposureInfo, error)
 	Owner(ctx context.Context, obj *ent.Api) (*model1.TeamInfo, error)
 }
@@ -4060,6 +4062,52 @@ func (ec *executionContext) _Api_specificationUrl(ctx context.Context, field gra
 	)
 }
 func (ec *executionContext) fieldContext_Api_specificationUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Api", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Api_changelogUrl(ctx context.Context, field graphql.CollectedField, obj *ent.Api) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Api_changelogUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Api().ChangelogURL(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Api_changelogUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Api", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Api_roadmapUrl(ctx context.Context, field graphql.CollectedField, obj *ent.Api) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Api_roadmapUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Api().RoadmapURL(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Api_roadmapUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Api", field, true, true, errors.New("field of type String does not have child fields"))
 }
 
@@ -19688,7 +19736,7 @@ func (ec *executionContext) unmarshalInputApiWhereInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "xVendor", "xVendorNEQ", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "versionContains", "versionHasPrefix", "versionHasSuffix", "versionEqualFold", "versionContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "categoryGT", "categoryGTE", "categoryLT", "categoryLTE", "categoryContains", "categoryHasPrefix", "categoryHasSuffix", "categoryIsNil", "categoryNotNil", "categoryEqualFold", "categoryContainsFold", "xVendor", "xVendorNEQ", "specification", "specificationNEQ", "specificationIn", "specificationNotIn", "specificationGT", "specificationGTE", "specificationLT", "specificationLTE", "specificationContains", "specificationHasPrefix", "specificationHasSuffix", "specificationIsNil", "specificationNotNil", "specificationEqualFold", "specificationContainsFold", "changelog", "changelogNEQ", "changelogIn", "changelogNotIn", "changelogGT", "changelogGTE", "changelogLT", "changelogLTE", "changelogContains", "changelogHasPrefix", "changelogHasSuffix", "changelogIsNil", "changelogNotNil", "changelogEqualFold", "changelogContainsFold", "roadmap", "roadmapNEQ", "roadmapIn", "roadmapNotIn", "roadmapGT", "roadmapGTE", "roadmapLT", "roadmapLTE", "roadmapContains", "roadmapHasPrefix", "roadmapHasSuffix", "roadmapIsNil", "roadmapNotNil", "roadmapEqualFold", "roadmapContainsFold", "active", "activeNEQ", "hasOwner", "hasOwnerWith", "hasExposures", "hasExposuresWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20528,6 +20576,216 @@ func (ec *executionContext) unmarshalInputApiWhereInput(ctx context.Context, obj
 				return it, err
 			}
 			it.SpecificationContainsFold = data
+		case "changelog":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelog"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Changelog = data
+		case "changelogNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogNEQ = data
+		case "changelogIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogIn = data
+		case "changelogNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogNotIn = data
+		case "changelogGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogGT = data
+		case "changelogGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogGTE = data
+		case "changelogLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogLT = data
+		case "changelogLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogLTE = data
+		case "changelogContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogContains = data
+		case "changelogHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogHasPrefix = data
+		case "changelogHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogHasSuffix = data
+		case "changelogIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogIsNil = data
+		case "changelogNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogNotNil = data
+		case "changelogEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogEqualFold = data
+		case "changelogContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changelogContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangelogContainsFold = data
+		case "roadmap":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmap"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Roadmap = data
+		case "roadmapNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapNEQ = data
+		case "roadmapIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapIn = data
+		case "roadmapNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapNotIn = data
+		case "roadmapGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapGT = data
+		case "roadmapGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapGTE = data
+		case "roadmapLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapLT = data
+		case "roadmapLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapLTE = data
+		case "roadmapContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapContains = data
+		case "roadmapHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapHasPrefix = data
+		case "roadmapHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapHasSuffix = data
+		case "roadmapIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapIsNil = data
+		case "roadmapNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapNotNil = data
+		case "roadmapEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapEqualFold = data
+		case "roadmapContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roadmapContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoadmapContainsFold = data
 		case "active":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("active"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -35821,6 +36079,82 @@ func (ec *executionContext) _Api(ctx context.Context, sel ast.SelectionSet, obj 
 					}
 				}()
 				res = ec._Api_specificationUrl(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "changelogUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Api_changelogUrl(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "roadmapUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Api_roadmapUrl(ctx, field, obj)
 				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

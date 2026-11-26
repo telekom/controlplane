@@ -4486,6 +4486,8 @@ type APIMutation struct {
 	appendoauth2_scopes []string
 	x_vendor            *bool
 	specification       *string
+	changelog           *string
+	roadmap             *string
 	active              *bool
 	clearedFields       map[string]struct{}
 	owner               *int
@@ -5073,6 +5075,104 @@ func (m *APIMutation) ResetSpecification() {
 	delete(m.clearedFields, api.FieldSpecification)
 }
 
+// SetChangelog sets the "changelog" field.
+func (m *APIMutation) SetChangelog(s string) {
+	m.changelog = &s
+}
+
+// Changelog returns the value of the "changelog" field in the mutation.
+func (m *APIMutation) Changelog() (r string, exists bool) {
+	v := m.changelog
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChangelog returns the old "changelog" field's value of the Api entity.
+// If the Api object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldChangelog(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChangelog is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChangelog requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChangelog: %w", err)
+	}
+	return oldValue.Changelog, nil
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (m *APIMutation) ClearChangelog() {
+	m.changelog = nil
+	m.clearedFields[api.FieldChangelog] = struct{}{}
+}
+
+// ChangelogCleared returns if the "changelog" field was cleared in this mutation.
+func (m *APIMutation) ChangelogCleared() bool {
+	_, ok := m.clearedFields[api.FieldChangelog]
+	return ok
+}
+
+// ResetChangelog resets all changes to the "changelog" field.
+func (m *APIMutation) ResetChangelog() {
+	m.changelog = nil
+	delete(m.clearedFields, api.FieldChangelog)
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (m *APIMutation) SetRoadmap(s string) {
+	m.roadmap = &s
+}
+
+// Roadmap returns the value of the "roadmap" field in the mutation.
+func (m *APIMutation) Roadmap() (r string, exists bool) {
+	v := m.roadmap
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoadmap returns the old "roadmap" field's value of the Api entity.
+// If the Api object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIMutation) OldRoadmap(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoadmap is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoadmap requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoadmap: %w", err)
+	}
+	return oldValue.Roadmap, nil
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (m *APIMutation) ClearRoadmap() {
+	m.roadmap = nil
+	m.clearedFields[api.FieldRoadmap] = struct{}{}
+}
+
+// RoadmapCleared returns if the "roadmap" field was cleared in this mutation.
+func (m *APIMutation) RoadmapCleared() bool {
+	_, ok := m.clearedFields[api.FieldRoadmap]
+	return ok
+}
+
+// ResetRoadmap resets all changes to the "roadmap" field.
+func (m *APIMutation) ResetRoadmap() {
+	m.roadmap = nil
+	delete(m.clearedFields, api.FieldRoadmap)
+}
+
 // SetActive sets the "active" field.
 func (m *APIMutation) SetActive(b bool) {
 	m.active = &b
@@ -5236,7 +5336,7 @@ func (m *APIMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, api.FieldCreatedAt)
 	}
@@ -5269,6 +5369,12 @@ func (m *APIMutation) Fields() []string {
 	}
 	if m.specification != nil {
 		fields = append(fields, api.FieldSpecification)
+	}
+	if m.changelog != nil {
+		fields = append(fields, api.FieldChangelog)
+	}
+	if m.roadmap != nil {
+		fields = append(fields, api.FieldRoadmap)
 	}
 	if m.active != nil {
 		fields = append(fields, api.FieldActive)
@@ -5303,6 +5409,10 @@ func (m *APIMutation) Field(name string) (ent.Value, bool) {
 		return m.XVendor()
 	case api.FieldSpecification:
 		return m.Specification()
+	case api.FieldChangelog:
+		return m.Changelog()
+	case api.FieldRoadmap:
+		return m.Roadmap()
 	case api.FieldActive:
 		return m.Active()
 	}
@@ -5336,6 +5446,10 @@ func (m *APIMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldXVendor(ctx)
 	case api.FieldSpecification:
 		return m.OldSpecification(ctx)
+	case api.FieldChangelog:
+		return m.OldChangelog(ctx)
+	case api.FieldRoadmap:
+		return m.OldRoadmap(ctx)
 	case api.FieldActive:
 		return m.OldActive(ctx)
 	}
@@ -5424,6 +5538,20 @@ func (m *APIMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSpecification(v)
 		return nil
+	case api.FieldChangelog:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChangelog(v)
+		return nil
+	case api.FieldRoadmap:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoadmap(v)
+		return nil
 	case api.FieldActive:
 		v, ok := value.(bool)
 		if !ok {
@@ -5476,6 +5604,12 @@ func (m *APIMutation) ClearedFields() []string {
 	if m.FieldCleared(api.FieldSpecification) {
 		fields = append(fields, api.FieldSpecification)
 	}
+	if m.FieldCleared(api.FieldChangelog) {
+		fields = append(fields, api.FieldChangelog)
+	}
+	if m.FieldCleared(api.FieldRoadmap) {
+		fields = append(fields, api.FieldRoadmap)
+	}
 	return fields
 }
 
@@ -5504,6 +5638,12 @@ func (m *APIMutation) ClearField(name string) error {
 		return nil
 	case api.FieldSpecification:
 		m.ClearSpecification()
+		return nil
+	case api.FieldChangelog:
+		m.ClearChangelog()
+		return nil
+	case api.FieldRoadmap:
+		m.ClearRoadmap()
 		return nil
 	}
 	return fmt.Errorf("unknown Api nullable field %s", name)
@@ -5545,6 +5685,12 @@ func (m *APIMutation) ResetField(name string) error {
 		return nil
 	case api.FieldSpecification:
 		m.ResetSpecification()
+		return nil
+	case api.FieldChangelog:
+		m.ResetChangelog()
+		return nil
+	case api.FieldRoadmap:
+		m.ResetRoadmap()
 		return nil
 	case api.FieldActive:
 		m.ResetActive()

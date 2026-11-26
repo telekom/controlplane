@@ -28,6 +28,20 @@ func ConfigureAPISpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, moc
 func configureApiSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
 	apiSpecification := GetApiSpecification(testing, ApiSpecificationFileName) // eni-distr-v1
 
+	// Specification that the changelog and roadmap tests refer to by base path.
+	testApiSpecification := apiSpecification.DeepCopy()
+	testApiSpecification.Name = "eni-test-api-v1"
+	testApiSpecification.Spec.BasePath = "/eni/test-api/v1"
+	mockedStore.EXPECT().Get(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.MatchedBy(func(s string) bool {
+			return s == "poc--eni--hyperion"
+		}),
+		mock.MatchedBy(func(s string) bool {
+			return s == "eni-test-api-v1"
+		}),
+	).Return(testApiSpecification, nil).Maybe()
+
 	mockedStore.EXPECT().Get(
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.MatchedBy(func(s string) bool {
@@ -79,7 +93,7 @@ func configureNotFound(mockedStore *MockObjectStore[*roverv1.ApiSpecification]) 
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.MatchedBy(func(s string) bool {
-			return s != "eni-distr-v1"
+			return s != "eni-distr-v1" && s != "eni-test-api-v1"
 		}),
 	).Return(nil, problems.NotFound("apispec not found")).Maybe()
 

@@ -44,6 +44,10 @@ type Api struct {
 	XVendor bool `json:"x_vendor,omitempty"`
 	// Specification holds the value of the "specification" field.
 	Specification string `json:"specification,omitempty"`
+	// Changelog holds the value of the "changelog" field.
+	Changelog string `json:"changelog,omitempty"`
+	// Roadmap holds the value of the "roadmap" field.
+	Roadmap string `json:"roadmap,omitempty"`
 	// Only the oldest entry for a base path is active. Entries of other teams with the same base path are inactive. Filter on active to get one API per base path.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -97,7 +101,7 @@ func (*Api) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case api.FieldID:
 			values[i] = new(sql.NullInt64)
-		case api.FieldStatusPhase, api.FieldStatusMessage, api.FieldNamespace, api.FieldBasePath, api.FieldVersion, api.FieldCategory, api.FieldSpecification:
+		case api.FieldStatusPhase, api.FieldStatusMessage, api.FieldNamespace, api.FieldBasePath, api.FieldVersion, api.FieldCategory, api.FieldSpecification, api.FieldChangelog, api.FieldRoadmap:
 			values[i] = new(sql.NullString)
 		case api.FieldCreatedAt, api.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -194,6 +198,18 @@ func (_m *Api) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Specification = value.String
 			}
+		case api.FieldChangelog:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field changelog", values[i])
+			} else if value.Valid {
+				_m.Changelog = value.String
+			}
+		case api.FieldRoadmap:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field roadmap", values[i])
+			} else if value.Valid {
+				_m.Roadmap = value.String
+			}
 		case api.FieldActive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field active", values[i])
@@ -289,6 +305,12 @@ func (_m *Api) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("specification=")
 	builder.WriteString(_m.Specification)
+	builder.WriteString(", ")
+	builder.WriteString("changelog=")
+	builder.WriteString(_m.Changelog)
+	builder.WriteString(", ")
+	builder.WriteString("roadmap=")
+	builder.WriteString(_m.Roadmap)
 	builder.WriteString(", ")
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))

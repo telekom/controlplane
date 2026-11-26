@@ -149,6 +149,34 @@ func (_c *APICreate) SetNillableSpecification(v *string) *APICreate {
 	return _c
 }
 
+// SetChangelog sets the "changelog" field.
+func (_c *APICreate) SetChangelog(v string) *APICreate {
+	_c.mutation.SetChangelog(v)
+	return _c
+}
+
+// SetNillableChangelog sets the "changelog" field if the given value is not nil.
+func (_c *APICreate) SetNillableChangelog(v *string) *APICreate {
+	if v != nil {
+		_c.SetChangelog(*v)
+	}
+	return _c
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (_c *APICreate) SetRoadmap(v string) *APICreate {
+	_c.mutation.SetRoadmap(v)
+	return _c
+}
+
+// SetNillableRoadmap sets the "roadmap" field if the given value is not nil.
+func (_c *APICreate) SetNillableRoadmap(v *string) *APICreate {
+	if v != nil {
+		_c.SetRoadmap(*v)
+	}
+	return _c
+}
+
 // SetActive sets the "active" field.
 func (_c *APICreate) SetActive(v bool) *APICreate {
 	_c.mutation.SetActive(v)
@@ -367,6 +395,14 @@ func (_c *APICreate) createSpec() (*Api, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Specification(); ok {
 		_spec.SetField(api.FieldSpecification, field.TypeString, value)
 		_node.Specification = value
+	}
+	if value, ok := _c.mutation.Changelog(); ok {
+		_spec.SetField(api.FieldChangelog, field.TypeString, value)
+		_node.Changelog = value
+	}
+	if value, ok := _c.mutation.Roadmap(); ok {
+		_spec.SetField(api.FieldRoadmap, field.TypeString, value)
+		_node.Roadmap = value
 	}
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(api.FieldActive, field.TypeBool, value)
@@ -607,6 +643,42 @@ func (u *ApiUpsert) ClearSpecification() *ApiUpsert {
 	return u
 }
 
+// SetChangelog sets the "changelog" field.
+func (u *ApiUpsert) SetChangelog(v string) *ApiUpsert {
+	u.Set(api.FieldChangelog, v)
+	return u
+}
+
+// UpdateChangelog sets the "changelog" field to the value that was provided on create.
+func (u *ApiUpsert) UpdateChangelog() *ApiUpsert {
+	u.SetExcluded(api.FieldChangelog)
+	return u
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (u *ApiUpsert) ClearChangelog() *ApiUpsert {
+	u.SetNull(api.FieldChangelog)
+	return u
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (u *ApiUpsert) SetRoadmap(v string) *ApiUpsert {
+	u.Set(api.FieldRoadmap, v)
+	return u
+}
+
+// UpdateRoadmap sets the "roadmap" field to the value that was provided on create.
+func (u *ApiUpsert) UpdateRoadmap() *ApiUpsert {
+	u.SetExcluded(api.FieldRoadmap)
+	return u
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (u *ApiUpsert) ClearRoadmap() *ApiUpsert {
+	u.SetNull(api.FieldRoadmap)
+	return u
+}
+
 // SetActive sets the "active" field.
 func (u *ApiUpsert) SetActive(v bool) *ApiUpsert {
 	u.Set(api.FieldActive, v)
@@ -836,6 +908,48 @@ func (u *ApiUpsertOne) UpdateSpecification() *ApiUpsertOne {
 func (u *ApiUpsertOne) ClearSpecification() *ApiUpsertOne {
 	return u.Update(func(s *ApiUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetChangelog sets the "changelog" field.
+func (u *ApiUpsertOne) SetChangelog(v string) *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetChangelog(v)
+	})
+}
+
+// UpdateChangelog sets the "changelog" field to the value that was provided on create.
+func (u *ApiUpsertOne) UpdateChangelog() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateChangelog()
+	})
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (u *ApiUpsertOne) ClearChangelog() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearChangelog()
+	})
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (u *ApiUpsertOne) SetRoadmap(v string) *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetRoadmap(v)
+	})
+}
+
+// UpdateRoadmap sets the "roadmap" field to the value that was provided on create.
+func (u *ApiUpsertOne) UpdateRoadmap() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateRoadmap()
+	})
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (u *ApiUpsertOne) ClearRoadmap() *ApiUpsertOne {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearRoadmap()
 	})
 }
 
@@ -1236,6 +1350,48 @@ func (u *ApiUpsertBulk) UpdateSpecification() *ApiUpsertBulk {
 func (u *ApiUpsertBulk) ClearSpecification() *ApiUpsertBulk {
 	return u.Update(func(s *ApiUpsert) {
 		s.ClearSpecification()
+	})
+}
+
+// SetChangelog sets the "changelog" field.
+func (u *ApiUpsertBulk) SetChangelog(v string) *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetChangelog(v)
+	})
+}
+
+// UpdateChangelog sets the "changelog" field to the value that was provided on create.
+func (u *ApiUpsertBulk) UpdateChangelog() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateChangelog()
+	})
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (u *ApiUpsertBulk) ClearChangelog() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearChangelog()
+	})
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (u *ApiUpsertBulk) SetRoadmap(v string) *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.SetRoadmap(v)
+	})
+}
+
+// UpdateRoadmap sets the "roadmap" field to the value that was provided on create.
+func (u *ApiUpsertBulk) UpdateRoadmap() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.UpdateRoadmap()
+	})
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (u *ApiUpsertBulk) ClearRoadmap() *ApiUpsertBulk {
+	return u.Update(func(s *ApiUpsert) {
+		s.ClearRoadmap()
 	})
 }
 
