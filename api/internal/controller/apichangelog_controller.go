@@ -40,10 +40,5 @@ func (r *ApiChangelogReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apichangelog-controller")
 	r.Controller = cc.NewController(&apichangelog.ApiChangelogHandler{Client: r.Client}, r.Client, r.Recorder)
 
-	return setupBasePathController(mgr, basePathKind[*apiv1.ApiChangelog, *apiv1.ApiChangelogList]{
-		name:     "apichangelog",
-		newObj:   func() *apiv1.ApiChangelog { return &apiv1.ApiChangelog{} },
-		newList:  func() *apiv1.ApiChangelogList { return &apiv1.ApiChangelogList{} },
-		basePath: func(o *apiv1.ApiChangelog) string { return o.Spec.BasePath },
-	}, r)
+	return setupBasePathController(mgr, apiChangelogKind, r)
 }

@@ -40,10 +40,5 @@ func (r *ApiRoadmapReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apiroadmap-controller")
 	r.Controller = cc.NewController(&apiroadmap.ApiRoadmapHandler{Client: r.Client}, r.Client, r.Recorder)
 
-	return setupBasePathController(mgr, basePathKind[*apiv1.ApiRoadmap, *apiv1.ApiRoadmapList]{
-		name:     "apiroadmap",
-		newObj:   func() *apiv1.ApiRoadmap { return &apiv1.ApiRoadmap{} },
-		newList:  func() *apiv1.ApiRoadmapList { return &apiv1.ApiRoadmapList{} },
-		basePath: func(o *apiv1.ApiRoadmap) string { return o.Spec.BasePath },
-	}, r)
+	return setupBasePathController(mgr, apiRoadmapKind, r)
 }

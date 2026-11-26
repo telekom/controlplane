@@ -33,6 +33,21 @@ type basePathKind[T client.Object, L client.ObjectList] struct {
 	basePath func(T) string
 }
 
+var (
+	apiChangelogKind = basePathKind[*apiv1.ApiChangelog, *apiv1.ApiChangelogList]{
+		name:     "apichangelog",
+		newObj:   func() *apiv1.ApiChangelog { return &apiv1.ApiChangelog{} },
+		newList:  func() *apiv1.ApiChangelogList { return &apiv1.ApiChangelogList{} },
+		basePath: func(o *apiv1.ApiChangelog) string { return o.Spec.BasePath },
+	}
+	apiRoadmapKind = basePathKind[*apiv1.ApiRoadmap, *apiv1.ApiRoadmapList]{
+		name:     "apiroadmap",
+		newObj:   func() *apiv1.ApiRoadmap { return &apiv1.ApiRoadmap{} },
+		newList:  func() *apiv1.ApiRoadmapList { return &apiv1.ApiRoadmapList{} },
+		basePath: func(o *apiv1.ApiRoadmap) string { return o.Spec.BasePath },
+	}
+)
+
 // setupBasePathController registers a controller for kind K that also watches Apis,
 // so objects that reference an Api by base path are re-reconciled when the Api changes
 // (e.g. an object applied before its Api exists gets linked once the Api appears).
