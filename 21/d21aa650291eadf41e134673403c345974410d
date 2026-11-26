@@ -1,0 +1,32 @@
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_6f2e73aa649605::t_84204928d8644f 372-381
+gateway/internal/controller/predicate.go
+  s_6f2e73aa649605::t_e0d2d7160240f0 10,54-75
+  s_6f2e73aa649605::t_c7974855a9cba2 76
+gateway/internal/controller/route_controller.go
+  s_6f2e73aa649605::t_e0d2d7160240f0 73
+docs/docs/architecture/gateway.mdx
+  s_6f2e73aa649605::t_821e595baae174 170-171
+gateway/internal/controller/controller_test.go
+  s_6f2e73aa649605::t_29dc280739c541 283,287-293,295,297,300-307
+  s_6f2e73aa649605::t_7c0eff8a71b162 310
+  s_6f2e73aa649605::t_5ad876266184f1 308
+gateway/internal/controller/predicate_test.go
+  s_6f2e73aa649605::t_541148890b20b2 112-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "21d21aa650291eadf41e134673403c345974410d",
+  "prompts": {},
+  "sessions": {
+    "s_6f2e73aa649605": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "3ab004b7-5f40-4164-9fc8-15b15ff71329",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
