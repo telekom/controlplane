@@ -30,3 +30,4 @@ Each ADR is a file `NNNN-short-title.md` with the sections Context, Decision, Co
 | [0012](0012-shared-changeset-for-all-backend-operators.md) | One change pipeline for the gateway, identity and pubsub operators | Accepted |
 | [0013](0013-record-last-applied-changes.md) | Record the last applied changes in the status | Accepted |
 | [0014](0014-mask-secrets-in-change-records.md) | Mask secrets in change records | Accepted |
+| [0015](0015-single-use-approvals.md) | Approvals are single-use | Proposed |
