@@ -230,6 +230,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					By("Checking the namespace object labels")
 					g.Expect(ns.GetLabels()).To(BeEquivalentTo(map[string]string{
 						config.EnvironmentLabelKey:    testEnvironment,
+						config.BuildLabelKey("team"):  groupName + "--" + teamName,
+						config.OwnerUidLabelKey:       string(team.GetUID()),
 						"kubernetes.io/metadata.name": expectedTeamNamespaceName,
 					}))
 

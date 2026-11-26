@@ -6,10 +6,11 @@ package namespace
 
 import (
 	"context"
-	"maps"
 
 	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	handler "github.com/telekom/controlplane/organization/internal/handler/team/handler"
 )
@@ -27,7 +28,8 @@ func (n NamespaceHandler) CreateOrUpdate(ctx context.Context, owner *organizatio
 		if nsObj.Labels == nil {
 			nsObj.Labels = make(map[string]string)
 		}
-		maps.Copy(nsObj.Labels, owner.GetLabels())
+		nsObj.Labels[config.BuildLabelKey("team")] = labelutil.NormalizeLabelValue(owner.Name)
+		nsObj.Labels[config.OwnerUidLabelKey] = string(owner.GetUID())
 		return nil
 	}
 
