@@ -6,6 +6,7 @@ package namespace
 
 import (
 	"context"
+	"maps"
 
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -23,7 +24,10 @@ func (n NamespaceHandler) CreateOrUpdate(ctx context.Context, owner *organizatio
 	nsObj := buildNamespaceObj(buildNamespaceName(env, owner))
 
 	mutator := func() error {
-		nsObj.SetLabels(owner.GetLabels())
+		if nsObj.Labels == nil {
+			nsObj.Labels = make(map[string]string)
+		}
+		maps.Copy(nsObj.Labels, owner.GetLabels())
 		return nil
 	}
 

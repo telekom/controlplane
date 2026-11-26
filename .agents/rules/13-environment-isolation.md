@@ -27,10 +27,19 @@ Findings outside the affected change window remain advisory.
 Discovery and check triggers are independent of context argument names and
 argument layout, and include `Status().Update` and `Status().Patch` writes.
 
-`cclient.NewScopedClient` enforces the label automatically. Code that uses the
-raw manager client instead — `r.List`, `r.Get`, `r.Client.*`,
-`mgr.GetClient()`, typically in `Watches` map functions and webhooks — must
-scope itself, in one of these ways:
+`cclient.NewScopedClient` enforces the label automatically. So does the client a
+handler gets from `cclient.ClientFromContextOrDie(ctx)` or
+`cclient.ClientFromContext(ctx)`: the common controller stores
+`NewJanitorClient(NewScopedClient(c.Client, env))` in the context, and
+`WithClient` only accepts a `JanitorClient`, which embeds `ScopedClient`. Its
+`Delete` refuses objects of another environment, its `Get` defaults the
+namespace to the environment, and its `CreateOrUpdate` stamps the label. Calls
+on such a client — whatever the variable is named (`c`, `k8sClient`,
+`scopedClient`) — are already isolated and are not findings of this rule.
+
+Code that uses the raw manager client instead — `r.List`, `r.Get`,
+`r.Client.*`, `mgr.GetClient()`, typically in `Watches` map functions and
+webhooks — must scope itself, in one of these ways:
 
 - `client.MatchingLabels{cconfig.EnvironmentLabelKey: <source>.Labels[cconfig.EnvironmentLabelKey]}`
   (or an equivalent `env` list option) on the `List`
@@ -43,7 +52,9 @@ scope itself, in one of these ways:
 
 A genuinely cluster-wide read (e.g. listing `Environment` objects themselves)
 is allowed when a comment at the call explains why it is not
-environment-scoped. Undocumented exceptions are violations.
+environment-scoped. Undocumented exceptions are violations, and so is a comment
+that only describes the cross-environment behaviour ("lists Clients of every
+environment") without saying why that is correct.
 
 ### Store reads in REST servers
 
@@ -83,7 +94,7 @@ namespace comes from user input without the environment, crosses environments.
 - [unscoped-get] when=`\.Get\s*\(` Does the marked `Get` use a key derived neither from the authenticated environment nor from an object in the same environment (e.g. a fixed or user-supplied namespace)?
 - [unlabelled-write] when=`\.(Create|Update|Patch)\s*\(` Does the marked raw-client write either create or modify an object without preserving the source environment label, or write a status subresource without verifying the target belongs to that environment?
 - [unscoped-reader] when=`mgr\.GetClient\(\)` Is the raw manager client handed to a webhook or helper that then reads without environment scoping?
-- [unscoped-delete] when=`\.Delete\s*\(` Does the marked deletion use a raw client without verifying that the target belongs to the source environment or wrapping the client in a `NewScopedClient`?
+- [unscoped-delete] when=`\.Delete\s*\(` Does the marked deletion use a raw client — not a `NewScopedClient` wrapper and not a client obtained from `ClientFromContextOrDie`/`ClientFromContext` — without verifying that the target belongs to the source environment?
 
 ## Examples
 
@@ -129,6 +140,18 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 ```go source=file/internal/controller/filetype_controller.go:77@4fbb53d2
 	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(r.Client, exposure.Labels[cconfig.EnvironmentLabelKey])))
 ```
+
+```go source=organization/internal/handler/team/handler/namespace/namespace.go:35@14d7cd4f
+func (n NamespaceHandler) Delete(ctx context.Context, owner *organizationv1.Team) error {
+	k8sClient := client.ClientFromContextOrDie(ctx)
+	teamNamespaceObj := buildNamespaceObj(owner.Status.Namespace)
+	return k8sClient.Delete(ctx, teamNamespaceObj)
+}
+```
+
+A `Delete` with no visible environment check — but `k8sClient` comes from the
+context, so it is the `ScopedClient`, whose `Delete` rejects an object labelled
+with another environment.
 
 ```go source=discovery-server/internal/controller/application.go:58@79aab2db
 	appInfo, err := mapper.ParseApplicationId(ctx, applicationId)

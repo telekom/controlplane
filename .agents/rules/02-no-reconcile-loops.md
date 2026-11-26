@@ -37,6 +37,10 @@ built by `common/pkg/condition` (`NewReadyCondition`, `NewBlockedCondition`,
 `NewNotReadyCondition`, …) via `SetCondition` and does not write the status
 itself therefore needs no stamping of its own.
 
+So `obj.SetCondition(condition.New…Condition(...))` is always allowed. Do not
+ask for proof that the surrounding handler is registered with the common
+controller — the pattern itself is the evidence.
+
 ## Detect
 
 The rule-level detector must stay at least as broad as the union of the
@@ -54,7 +58,7 @@ with the reason recorded — asking a model to confirm that a string is missing
 is pure cost.
 
 - [self-trigger] when=`(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx)` Does this change write to a resource the same controller watches, without a guard that makes the write stop once the desired state is reached?
-- [observed-generation] when=`(SetCondition|SetStatusCondition|ObservedGeneration)` If a status condition is set, is `ObservedGeneration` stamped, either by the code itself or by the common controller (`common/pkg/controller`) that runs `Handler[T]` handlers and stamps every condition before its status write?
+- [observed-generation] when=`(SetCondition|SetStatusCondition|ObservedGeneration)` Does the change set a status condition other than through `SetCondition` with a `common/pkg/condition` constructor (`condition.New…Condition(...)`), without stamping `ObservedGeneration` on it itself?
 - [unstable-ordering] when=`(\.List\(|\.Items\b)` Is any collection derived from a `List` call stored in a spec or status without being sorted first, so cached ordering can flip between reconciles?
 - [fixed-requeue] when=`(RequeueAfter|Requeue:)` Does the change requeue on a fixed interval instead of a jittered one?
 - [cross-resource-cycle] when=`(Status\(\)\.(Update|Patch)|\.(Update|Patch|Create)\(ctx)` Does the change introduce a write chain across resources (A updates B, B updates A) that can cycle?
@@ -90,6 +94,16 @@ return cond != nil && cond.ObservedGeneration == client.Generation
 obj.SetCondition(condition.NewReadyCondition("EnvironmentProvided", "Environment has been provided"))
 obj.SetCondition(condition.NewDoneProcessingCondition("Environment has been provided"))
 ```
+
+```go source=admin/internal/handler/remoteorganization/handler.go:26@14d7cd4f
+func (h *RemoteOrganizationHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.RemoteOrganization) (err error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	envName := contextutil.EnvFromContextOrDie(ctx)
+	obj.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "RemoteOrganization is being provisioned"))
+```
+
+No comment and no registration in sight — none is needed. A `condition.New…Condition`
+passed to `SetCondition` is stamped by the common controller.
 
 ```go source=projector/internal/runtime/reconciler.go:180@b53a2d9c
 // Jittered requeue spreads resync load instead of synchronising it.
