@@ -1,0 +1,21 @@
+docs/adrs/0015-single-use-approvals.md
+  s_6f2e73aa649605::t_53be5f0ff105f1 1-57
+docs/adrs/README.md
+  s_6f2e73aa649605::t_4b17c59d2b4470 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c4c0ccfc20df589b18e4e34dd15fc593743a6fed",
+  "prompts": {},
+  "sessions": {
+    "s_6f2e73aa649605": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "3ab004b7-5f40-4164-9fc8-15b15ff71329",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
