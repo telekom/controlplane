@@ -51,6 +51,7 @@ func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *rov
 	}
 
 	mutator := func() error {
+		// audit:ignore 06-rover-child-labels/missing-ownership-labels shared per-base-path mirror, owner is not a Rover/Application
 		if err := controllerutil.SetControllerReference(changelog, mirror, c.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}

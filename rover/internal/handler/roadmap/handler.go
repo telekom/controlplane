@@ -67,6 +67,7 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 	}
 
 	mutator := func() error {
+		// audit:ignore 06-rover-child-labels/missing-ownership-labels shared per-base-path mirror, owner is not a Rover/Application
 		if err := controllerutil.SetControllerReference(roadmap, mirror, c.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
