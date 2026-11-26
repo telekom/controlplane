@@ -109,9 +109,14 @@ var _ = Describe("Migration mode", func() {
 		jumperConfig := plugin.ToBase64OrDie(plugin.JumperConfig{OAuth: map[plugin.ConsumerId]plugin.OauthCredentials{
 			"eni--team": {ClientSecret: "top-secret-client"},
 		}})
+		// A failover route passes the jumper config, with its secrets, inside the routing configs.
+		routingConfigs := plugin.ToBase64OrDie(plugin.RoutingConfigs{{JumperConfig: &plugin.JumperConfig{
+			BasicAuth: map[plugin.ConsumerId]plugin.BasicAuthCredentials{"default": {Username: "user", Password: "top-secret-basic"}},
+		}}})
 		rtp := plugin.RequestTransformerPluginFromRoute(route)
 		rtp.Config.Add.AddHeader(plugin.JumperConfigKey, jumperConfig)
-		rtp.Config.Add.AddHeader(plugin.RoutingConfigKey, "visible")
+		rtp.Config.Append.AddHeader(plugin.RoutingConfigKey, routingConfigs)
+		rtp.Config.Append.AddHeader("realm", "visible")
 		Expect(client.CreateOrReplacePlugin(planCtx, rtp)).Error().NotTo(HaveOccurred())
 
 		rateLimit := plugin.RateLimitPluginFromRoute(route)
@@ -121,8 +126,10 @@ var _ = Describe("Migration mode", func() {
 		recorded := render(plan.Status(plan.Hash(), changeset.ModeOn))
 		Expect(recorded).NotTo(ContainSubstring("top-secret-redis"))
 		Expect(recorded).NotTo(ContainSubstring(jumperConfig))
+		Expect(recorded).NotTo(ContainSubstring(routingConfigs))
 		Expect(recorded).To(ContainSubstring(plugin.JumperConfigKey + `:sha256:`))
-		Expect(recorded).To(ContainSubstring("routing_config:visible"))
+		Expect(recorded).To(ContainSubstring(plugin.RoutingConfigKey + `:sha256:`))
+		Expect(recorded).To(ContainSubstring("realm:visible"))
 	})
 })
 

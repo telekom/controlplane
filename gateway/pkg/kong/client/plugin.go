@@ -19,9 +19,15 @@ import (
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 )
 
-// JumperConfigKey is the request header that passes the jumper config, base64-encoded, to
-// the gateway. It carries client secrets and basic-auth passwords.
-const JumperConfigKey = "jumper_config"
+const (
+	// JumperConfigKey is the request header that passes the jumper config, base64-encoded, to
+	// the gateway. It carries client secrets and basic-auth passwords.
+	JumperConfigKey = "jumper_config"
+	// RoutingConfigKey is the request header that passes the routing configs of a failover
+	// route, base64-encoded, to the gateway. It replaces jumper_config and embeds the jumper
+	// config, so it carries the same secrets.
+	RoutingConfigKey = "routing_config"
+)
 
 // Kinds of the Kong entities a plugin can be bound to.
 const (
@@ -267,8 +273,9 @@ var (
 func (e *pluginEntity) Kind() string { return kindPlugin }
 
 // pluginSecrets masks the secrets of plugin configs in change records: the Redis password of
-// rate limiting and the jumper config, which carries client secrets and basic-auth passwords.
-var pluginSecrets = changeset.MaskEntriesOrDie("$.config.*.headers", JumperConfigKey)
+// rate limiting and the jumper and routing configs, which carry client secrets and basic-auth
+// passwords.
+var pluginSecrets = changeset.MaskEntriesOrDie("$.config.*.headers", JumperConfigKey, RoutingConfigKey)
 
 var redisSecrets = changeset.MaskPathsOrDie("$.config.redis_password")
 

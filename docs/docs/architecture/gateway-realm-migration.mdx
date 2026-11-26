@@ -244,7 +244,7 @@ sequenceDiagram
 
 Both sides are compared as the operator compares them for a normal reconcile. Tags, hosts and protocols are sorted. Legacy tags of an adopted entity are kept. Plugin config fields the operator does not set are left out. A missing value, `null`, an empty list and an empty object count as the same. Lists of different length differ as a whole; lists of equal length differ per element.
 
-Secrets never appear in clear ([ADR-0014](https://github.com/telekom/controlplane/blob/main/docs/adrs/0014-mask-secrets-in-change-records.md)). The Redis password of rate limiting and the value of the `jumper_config` request header, which carries client secrets and basic-auth passwords, are replaced on both sides with `sha256:` and the first 16 hex digits of their hash. A changed secret is still a diff, but its value is not shown.
+Secrets never appear in clear ([ADR-0014](https://github.com/telekom/controlplane/blob/main/docs/adrs/0014-mask-secrets-in-change-records.md)). The Redis password of rate limiting and the values of the `jumper_config` and `routing_config` request headers, which carry client secrets and basic-auth passwords, are replaced on both sides with `sha256:` and the first 16 hex digits of their hash. A failover route passes its jumper config inside `routing_config`. A changed secret is still a diff, but its value is not shown.
 
 ### Reviewing blocked changes
 
