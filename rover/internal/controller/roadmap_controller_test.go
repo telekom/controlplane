@@ -32,6 +32,25 @@ var _ = Describe("Roadmap Controller", func() {
 		obj := &roverv1.Roadmap{}
 
 		BeforeEach(func() {
+			By("creating the referenced ApiSpecification")
+			apiSpec := &roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "eni-my-api",
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: roverv1.ApiSpecificationSpec{
+					Specification: "some-random-id",
+					Category:      "other",
+					BasePath:      "/eni/my-api/v1",
+					Hash:          "someHash",
+					Version:       "1.0.0",
+				},
+			}
+			Expect(client.IgnoreAlreadyExists(k8sClient.Create(ctx, apiSpec))).To(Succeed())
+
 			By("creating the custom resource for the Kind Roadmap")
 			err := k8sClient.Get(ctx, typeNamespacedName, obj)
 			if err != nil && errors.IsNotFound(err) {
@@ -69,6 +88,12 @@ var _ = Describe("Roadmap Controller", func() {
 				By("Cleanup the specific resource instance Roadmap")
 				Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 			}
+
+			By("Cleanup the referenced ApiSpecification")
+			apiSpec := &roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{Name: "eni-my-api", Namespace: testNamespace},
+			}
+			Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, apiSpec))).To(Succeed())
 		})
 
 		It("should successfully reconcile the resource", func() {

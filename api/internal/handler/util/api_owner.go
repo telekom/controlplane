@@ -57,7 +57,11 @@ func EnsureApiOwner(ctx context.Context, c client.Client, obj client.Object, bas
 		return owner, nil
 	}
 
-	patchBase := client.MergeFrom(obj.DeepCopyObject().(client.Object))
+	original, ok := obj.DeepCopyObject().(client.Object)
+	if !ok {
+		return nil, fmt.Errorf("copying %T: not a client.Object", obj)
+	}
+	patchBase := client.MergeFrom(original)
 	if err := controllerutil.SetOwnerReference(owner, obj, c.Scheme()); err != nil {
 		return nil, fmt.Errorf("setting owner reference to Api %q: %w", owner.Name, err)
 	}
