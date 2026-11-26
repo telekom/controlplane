@@ -86,6 +86,7 @@ User-facing documentation lives in `docs/docs/` (Docusaurus). After any change t
 - `admin-journey/` — operator workflows (installation, environments, organizations, features)
 - `developer-journey/` — contributor workflows (local development, creating operators)
 - `architecture/` — per-component design docs
+- `decisions/` — architecture decision records (see "Architecture Decisions")
 - `reference/` — API reference, JSON schemas
 
 Update docs in the same PR as the code change.
@@ -99,6 +100,12 @@ The pre-commit gate blocks on `CRITICAL` findings and on files that changed afte
 A false positive is ignored with an `audit:ignore <rule-id> <reason>` comment on or above the flagged line (see "Audit ignores" in `.agents/rules/README.md`). Only a human adds one — never add an `audit:ignore` comment or `.agents/auditignore` entry to get past a finding.
 
 New rules are added with the `rule-writer` skill, and only on user request.
+
+## Architecture Decisions
+
+Decisions that are hard to reverse, surprising without context, and the result of a real trade-off are recorded as ADRs in `docs/docs/decisions/`. Only `accepted` ADRs bind a change; `proposed` ones are unverified drafts.
+
+Before changing an area an ADR governs, or when a change adds a module, a dependency between domains, a third-party library or an API kind, use the `review-architecture` skill. It checks the change against accepted ADRs and decides whether a new one is needed. Its findings are advisory. Agents draft ADRs as `proposed`; only a human accepts, rejects or supersedes one.
 
 ## Conventions
 

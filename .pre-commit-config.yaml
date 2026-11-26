@@ -53,6 +53,22 @@ repos:
         files: ^(\.agents/(judges\.yaml|skills/code-auditor/(persona/README\.md|scripts/(sync_judges\.py|auditlib/judges\.py)))|\.opencode/agents/.*|\.claude/agents/.*|\.github/agents/.*)$
         stages:
           - pre-commit
+      - id: validate-adrs
+        name: validate architecture decision records
+        entry: python3 .agents/skills/review-architecture/scripts/adr.py validate
+        language: system
+        pass_filenames: false
+        files: ^(docs/docs/decisions/.*|\.agents/skills/review-architecture/scripts/adr\.py)$
+        stages:
+          - pre-commit
+      - id: sync-architecture-reviewer
+        name: architecture-reviewer agents match the persona
+        entry: python3 .agents/skills/review-architecture/scripts/sync_reviewer.py --check
+        language: system
+        pass_filenames: false
+        files: ^(\.agents/skills/review-architecture/(reviewer/README\.md|scripts/sync_reviewer\.py)|\.(github|opencode|claude)/agents/architecture-reviewer(\.agent)?\.md)$
+        stages:
+          - pre-commit
       - id: audit-gate
         name: audit gate
         entry: python3 .agents/skills/code-auditor/scripts/audit_gate.py --mode staged --fail-on CRITICAL

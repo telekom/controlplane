@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # ControlPlane API & Projector
 
-The **ControlPlane API** and the **Projector** work together to give external clients — such as the Control Plane UI — read-only access to the platform's state. While the operators and custom resources remain the source of truth inside Kubernetes, these two components make that state available through a standard GraphQL API backed by a PostgreSQL database.
+The **ControlPlane API** and the **Projector** give external clients, such as the Control Plane UI, access to the platform's state. The cluster stays the source of truth. The two components copy its state into a PostgreSQL database and serve it through a GraphQL API.
 
 :::tip When do I need this?
 If you only manage the Control Plane through `kubectl` and Rover-CTL, you do not strictly need these components. They become essential when you want to offer a **web-based UI** or any **external tooling** that queries the platform state without direct Kubernetes API access.
@@ -37,9 +37,9 @@ graph LR
 ```
 
 - The **Projector** runs inside the Kubernetes cluster as a read-only controller. It watches custom resources (teams, applications, API exposures, subscriptions, approvals) and continuously projects their current state into PostgreSQL. It never writes back to the cluster.
-- The **ControlPlane API** is a read-only GraphQL server that queries the same PostgreSQL database. It provides paginated, filterable access to all projected resources.
+- The **ControlPlane API** is a GraphQL server that queries the same PostgreSQL database. It provides paginated, filterable access to everything the Projector has copied.
 
-Neither component modifies the Kubernetes state. All mutations continue to flow through Rover-CTL, Rover Server, or `kubectl`.
+The Projector never changes anything in the cluster. The ControlPlane API can also let clients change teams, groups, applications and approvals in its environment, when its [configuration](#controlplane-api-configuration) allows it. All other changes flow through Rover-CTL, Rover Server, or `kubectl`.
 
 ## Prerequisites
 

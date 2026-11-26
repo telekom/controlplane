@@ -4,7 +4,7 @@ sidebar_position: 13
 
 # ControlPlane API & Projector
 
-The ControlPlane API and Projector together form the **UI Layer** of the Control Plane — an external, read-only access layer that makes the platform state available to clients outside of Kubernetes. They implement a **CQRS (Command Query Responsibility Segregation)** pattern: the Projector handles the *write side* of the read model by syncing Kubernetes resources into PostgreSQL, while the ControlPlane API handles the *read side* by serving that data through a GraphQL interface.
+The ControlPlane API and Projector together form the **UI Layer** of the Control Plane — an external access layer that makes the platform state available to clients outside of Kubernetes. They implement a **CQRS (Command Query Responsibility Segregation)** pattern: the Projector handles the *write side* of the read model by syncing Kubernetes resources into PostgreSQL, while the ControlPlane API handles the *read side* by serving that data through a GraphQL interface. When Kubernetes integration is enabled (`kubernetes.enabled`), the ControlPlane API also offers mutations that write Team, Group, Application and Approval resources to the cluster.
 
 ## Architecture
 
@@ -22,7 +22,7 @@ graph TD
     DB[("PostgreSQL<br/><i>Shared database</i>")]
 
     subgraph External Access
-        API["ControlPlane API<br/><i>GraphQL · read-only</i>"]
+        API["ControlPlane API<br/><i>GraphQL</i>"]
         UI["UI / External Clients"]
     end
 
@@ -106,7 +106,7 @@ The Projector manages the database schema automatically. On startup, it runs a m
 
 ## The ControlPlane API
 
-The ControlPlane API is a **read-only GraphQL server** that serves the data projected into PostgreSQL. It is built with [gqlgen](https://gqlgen.com/) and uses the [ent](https://entgo.io/) ORM for type-safe database access.
+The ControlPlane API is a **GraphQL server** that serves the data projected into PostgreSQL. Its queries only read that database. Its mutations, available when Kubernetes integration is enabled, write Kubernetes resources through the environment's scoped client; they never write the database directly. It is built with [gqlgen](https://gqlgen.com/) and uses the [ent](https://entgo.io/) ORM for type-safe database access.
 
 ### Data Model
 
