@@ -279,7 +279,7 @@ In addition to the Kubernetes CRDs, the Control Plane exposes two REST APIs.
 
 ### ControlPlane API
 
-The ControlPlane API provides a read-only view over the resources managed by the Control Plane. It is primarily used by dashboards and internal tooling to query the current state of environments, APIs, subscriptions, and events without direct Kubernetes access.
+The ControlPlane API provides a view over the resources managed by the Control Plane, and mutations for teams, groups, applications and approvals when Kubernetes integration is enabled. It is primarily used by dashboards and internal tooling to query the current state of environments, APIs, subscriptions, and events without direct Kubernetes access.
 
 ### Rover Server
 

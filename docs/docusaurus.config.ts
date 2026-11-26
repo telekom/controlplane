@@ -61,6 +61,8 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          // Decision records keep their NNNN- prefix so pages can be cited as ADR-NNNN.
+          numberPrefixParser: false,
           beforeDefaultRemarkPlugins: [remarkCrdReference],
           editUrl:
             'https://github.com/telekom/controlplane/tree/main/docs/',

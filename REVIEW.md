@@ -23,6 +23,7 @@ Review for correctness and intent — coding conventions are documented in AGENT
 - Changed business logic has corresponding `*_test.go` coverage.
 - CRD type changes: Spec/Status separation, standard condition list markers, `types.Object` implemented.
 - `go.mod` replace directives only reference local monorepo modules.
+- Changes governed by an accepted ADR in `docs/docs/decisions/` follow it, or say why it should be reopened (advisory; see the `review-architecture` skill).
 
 ## Skip
 

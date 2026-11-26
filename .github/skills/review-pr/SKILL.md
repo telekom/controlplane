@@ -64,6 +64,7 @@ Evaluate every item below. For each, state the finding with a severity marker an
 | B4 | **Edge cases**                 | Identify at least 3 edge cases relevant to the change. State whether they are handled.                                                                         |
 | B5 | **Naming and domain language** | New types, functions, and fields use language consistent with the existing domain model and AGENTS.md conventions.                                             |
 | B6 | **Observability**              | Significant state changes or error paths use `logr` with structured key-value pairs. Events recorded via `recorder.Event()` where appropriate.                 |
+| B7 | **Architecture decisions**     | Run the `review-architecture` skill on the change. Advisory: report a contradicted or missing ADR as 🟡 at most, never 🔴.                                      |
 
 ### Phase 4: Output
 
