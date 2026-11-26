@@ -1,0 +1,25 @@
+gateway/pkg/kong/client/migration_mode_test.go
+  s_6f2e73aa649605::t_0e1912c6ca764e 112-115,118-119,129,131-132
+gateway/pkg/kong/client/plugin.go
+  s_6f2e73aa649605::t_23435354f22e16 22-30,276-278
+gateway/pkg/kong/client/plugin/rtp.go
+  s_6f2e73aa649605::t_c34b3e257b5a0d 16
+docs/docs/architecture/gateway-realm-migration.mdx
+  s_6f2e73aa649605::t_5d5a5b44592835 247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4ef501deccc01b5fd98ac1d80de910f7922172a2",
+  "prompts": {},
+  "sessions": {
+    "s_6f2e73aa649605": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "3ab004b7-5f40-4164-9fc8-15b15ff71329",
+        "model": "unknown"
+      },
+      "human_author": "Ron Gummich <ron.gummich@telekom.de>"
+    }
+  }
+}
