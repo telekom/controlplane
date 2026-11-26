@@ -1,0 +1,27 @@
+projector/internal/domain/listener/translator.go
+  s_900bed55c50332::t_1baea0e1299878 45,47-50,56-58
+projector/internal/domain/listener/processor.go
+  s_900bed55c50332::t_25033fb7a68ddf 15,29
+projector/internal/domain/listener/repository.go
+  s_900bed55c50332::t_7b048128bc0ca2 49-52,57-60,65-68
+projector/internal/domain/listener/repository_test.go
+  s_900bed55c50332::t_c2647dfe9ef21e 122,126-129,139,144,150,152
+projector/internal/domain/listener/module.go
+  s_900bed55c50332::t_4b589b92ff9881 80,83-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "634837adc77ae9b29c1d28efaed6fd59341e6972",
+  "prompts": {},
+  "sessions": {
+    "s_900bed55c50332": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ded48e708ffepwh6E0Jnzm9Kq4",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
