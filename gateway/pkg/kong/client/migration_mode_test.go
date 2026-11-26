@@ -7,8 +7,12 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/telekom/controlplane/common/pkg/changeset"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -130,6 +134,25 @@ var _ = Describe("Migration mode", func() {
 		Expect(recorded).To(ContainSubstring(plugin.JumperConfigKey + `:sha256:`))
 		Expect(recorded).To(ContainSubstring(plugin.RoutingConfigKey + `:sha256:`))
 		Expect(recorded).To(ContainSubstring("realm:visible"))
+	})
+
+	It("ignores the operator's rate-limiting plugins with the shipped sample ignore list", func() {
+		data, err := os.ReadFile(filepath.Join("..", "..", "..", "config", "samples", "migration_ignore_configmap.yaml"))
+		Expect(err).NotTo(HaveOccurred())
+		configMap := corev1.ConfigMap{}
+		Expect(yaml.Unmarshal(data, &configMap)).To(Succeed())
+		cfg := changeset.Config{}
+		Expect(yaml.UnmarshalStrict([]byte(configMap.Data["migration-ignore.yaml"]), &cfg)).To(Succeed())
+		gate, err := changeset.New(changeset.Options{Operator: "gateway", Mode: changeset.ModeOn, Kinds: clientpkg.EntityKinds}, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		client = clientpkg.NewKongClient(kongFake.api(), clientpkg.WithMigrator(snapshotMigrator()), clientpkg.WithGate(gate))
+
+		Expect(client.CreateOrReplaceRoute(planCtx, route, upstream)).To(Succeed())
+		Expect(client.CreateOrReplacePlugin(planCtx, plugin.RateLimitPluginFromRoute(route))).Error().NotTo(HaveOccurred())
+
+		changes := plan.Changes()
+		Expect(changes[len(changes)-1].Kind).To(Equal("plugin"))
+		Expect(changes[len(changes)-1].Diffs).To(HaveEach(HaveField("Ignored", BeTrue())))
 	})
 })
 

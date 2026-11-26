@@ -217,8 +217,7 @@ var _ = Describe("ConsumerHandler", func() {
 				mockKC.EXPECT().DeleteConsumer(mock.Anything, consumer).Return(fmt.Errorf("kong delete error"))
 
 				err := handler.Delete(ctx, consumer)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("failed to create or update consumer"))
+				Expect(err).To(MatchError(ContainSubstring("failed to delete consumer: kong delete error")))
 			})
 
 			It("returns error when GetClientFor fails", func() {
