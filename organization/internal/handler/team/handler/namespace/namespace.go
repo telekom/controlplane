@@ -8,7 +8,9 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	handler "github.com/telekom/controlplane/organization/internal/handler/team/handler"
 )
@@ -23,7 +25,11 @@ func (n NamespaceHandler) CreateOrUpdate(ctx context.Context, owner *organizatio
 	nsObj := buildNamespaceObj(buildNamespaceName(env, owner))
 
 	mutator := func() error {
-		nsObj.SetLabels(owner.GetLabels())
+		if nsObj.Labels == nil {
+			nsObj.Labels = make(map[string]string)
+		}
+		nsObj.Labels[config.BuildLabelKey("team")] = labelutil.NormalizeLabelValue(owner.Name)
+		nsObj.Labels[config.OwnerUidLabelKey] = string(owner.GetUID())
 		return nil
 	}
 

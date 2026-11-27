@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,11 +69,41 @@ var _ = Describe("RemoteOrganization Controller", func() {
 		})
 
 		It("should successfully reconcile the resource", func() {
+			expectedNamespaceName := "test--test-id"
 			Eventually(func(g Gomega) {
 				VerifyRemoteOrganization(ctx, g, typeNamespacedName, testRemoteorganization)
-
-				expectedNamespaceName := "test--test-id"
 				VerifyNamespace(ctx, g, expectedNamespaceName)
+			}, timeout, interval).Should(Succeed())
+
+			By("Adding a label from another source to the namespace")
+			const externalLabelKey = "policy.example.com/injected"
+			Eventually(func(g Gomega) {
+				ns := &corev1.Namespace{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: expectedNamespaceName}, ns)).To(Succeed())
+				ns.Labels[externalLabelKey] = "true"
+				g.Expect(k8sClient.Update(ctx, ns)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			By("Triggering a new reconciliation")
+			Eventually(func(g Gomega) {
+				remoteOrg := &adminv1.RemoteOrganization{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, remoteOrg)).To(Succeed())
+				remoteOrg.Spec.Url = "test-url-updated"
+				g.Expect(k8sClient.Update(ctx, remoteOrg)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				remoteOrg := &adminv1.RemoteOrganization{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, remoteOrg)).To(Succeed())
+				ready := meta.FindStatusCondition(remoteOrg.Status.Conditions, condition.ConditionTypeReady)
+				g.Expect(ready).NotTo(BeNil())
+				g.Expect(ready.ObservedGeneration).To(Equal(remoteOrg.Generation))
+
+				By("Checking that the namespace keeps both label sources")
+				ns := &corev1.Namespace{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: expectedNamespaceName}, ns)).To(Succeed())
+				g.Expect(ns.Labels).To(HaveKeyWithValue(externalLabelKey, "true"))
+				g.Expect(ns.Labels).To(HaveKey(config.EnvironmentLabelKey))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
