@@ -24,7 +24,7 @@ import (
 )
 
 var _ = Describe("server registration watches", func() {
-	It("maps cross-kind changes to exact-basePath registrations", func() {
+	It("maps changes to registrations with the same normalized basePath", func() {
 		scheme := runtime.NewScheme()
 		Expect(agenticv1.AddToScheme(scheme)).To(Succeed())
 
@@ -120,14 +120,14 @@ var _ = Describe("server registration watches", func() {
 
 		mcpReconciler := &McpServerReconciler{Client: k8sClient}
 		mcpReqs := mcpReconciler.MapAgentCardToMcpServer(context.Background(), agentCard)
-		Expect(mcpReqs).To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(mcpServer)}, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerMcpServer)}))
+		Expect(mcpReqs).To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(mcpServer)}, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(otherMcpServer)}, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerMcpServer)}))
 
 		agentReconciler := &AgentCardReconciler{Client: k8sClient}
 		agentReqs := agentReconciler.MapMcpServerToAgentCard(context.Background(), mcpServer)
 		Expect(agentReqs).To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(agentCard)}, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerAgentCard)}))
 
 		Expect(mcpReconciler.MapMcpServerToMcpServer(context.Background(), mcpServer)).
-			To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerMcpServer)}))
+			To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(otherMcpServer)}, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerMcpServer)}))
 		Expect(agentReconciler.MapAgentCardToAgentCard(context.Background(), agentCard)).
 			To(ConsistOf(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(peerAgentCard)}))
 	})

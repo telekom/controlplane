@@ -111,8 +111,8 @@ var _ = Describe("server registration acceptance criteria", func() {
 		Entry("equal timestamps, namespace and name ordered by kind", "same", "same", false, time.Duration(0), time.Duration(0), true),
 	)
 
-	It("does not block either kind for different exact paths", func() {
-		card, mcp := createRegistrationPair(namespace, namespace, namespace, "agent", "mcp", "/Shared/Path", "/shared/path")
+	It("does not block either kind for different normalized paths", func() {
+		card, mcp := createRegistrationPair(namespace, namespace, namespace, "agent", "mcp", "/shared/path", "/shared/other")
 		handlerCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, namespace)))
 
 		Expect((&agentcard.AgentCardHandler{}).CreateOrUpdate(handlerCtx, card)).To(Succeed())
@@ -121,8 +121,60 @@ var _ = Describe("server registration acceptance criteria", func() {
 		Expect(mcp.Status.Active).To(BeTrue())
 	})
 
+	It("does not block registrations in different environments", func() {
+		card := &agenticv1.AgentCard{
+			ObjectMeta: registrationMetadata(namespace, namespace, "agent", "/Shared/Path"),
+			Spec:       agenticv1.AgentCardSpec{BasePath: "/Shared/Path", Name: "Agent", Version: "1.0"},
+		}
+		mcp := &agenticv1.McpServer{
+			ObjectMeta: registrationMetadata(otherNamespace, otherNamespace, "mcp", "/shared/path"),
+			Spec:       agenticv1.McpServerSpec{BasePath: "/shared/path", Name: "MCP", Version: "1.0"},
+		}
+		Expect(k8sClient.Create(ctx, card)).To(Succeed())
+		Expect(k8sClient.Create(ctx, mcp)).To(Succeed())
+		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(card), card)).To(Succeed())
+		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(mcp), mcp)).To(Succeed())
+		card.TypeMeta = metav1.TypeMeta{APIVersion: agenticv1.GroupVersion.String(), Kind: "AgentCard"}
+		mcp.TypeMeta = metav1.TypeMeta{APIVersion: agenticv1.GroupVersion.String(), Kind: "McpServer"}
+		cardCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, namespace)))
+		mcpCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, otherNamespace)))
+
+		Expect((&agentcard.AgentCardHandler{}).CreateOrUpdate(cardCtx, card)).To(Succeed())
+		Expect((&mcpserver.McpServerHandler{}).CreateOrUpdate(mcpCtx, mcp)).To(Succeed())
+		Expect(card.Status.Active).To(BeTrue())
+		Expect(mcp.Status.Active).To(BeTrue())
+	})
+
+	DescribeTable("blocks the newer kind for a normalized path conflict",
+		func(cardPath, serverPath string, cardWins bool) {
+			card, mcp := createRegistrationPair(namespace, namespace, namespace, "agent", "mcp", cardPath, serverPath)
+			cardTime, serverTime := card.CreationTimestamp, mcp.CreationTimestamp
+			if cardWins {
+				card.CreationTimestamp = metav1.NewTime(serverTime.Add(-time.Hour))
+				mcp.CreationTimestamp = metav1.NewTime(cardTime.Add(time.Hour))
+			} else {
+				card.CreationTimestamp = metav1.NewTime(serverTime.Add(time.Hour))
+				mcp.CreationTimestamp = metav1.NewTime(cardTime.Add(-time.Hour))
+			}
+			handlerCtx := cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(k8sClient, namespace)))
+
+			Expect((&agentcard.AgentCardHandler{}).CreateOrUpdate(handlerCtx, card)).To(Succeed())
+			Expect((&mcpserver.McpServerHandler{}).CreateOrUpdate(handlerCtx, mcp)).To(Succeed())
+			Expect(card.Status.Active).To(Equal(cardWins))
+			Expect(mcp.Status.Active).To(Equal(!cardWins))
+			if cardWins {
+				expectRegistrationBlocked(Default, mcp.GetConditions(), "AgentCard", cardPath)
+			} else {
+				expectRegistrationBlocked(Default, card.GetConditions(), "McpServer", serverPath)
+			}
+		},
+		Entry("older AgentCard with different case", "/Shared/Path", "/shared/path", true),
+		Entry("older McpServer with different case", "/Shared/Path", "/shared/path", false),
+		Entry("paths differing beyond case normalize identically", "/shared/path", "/shared-path", true),
+	)
+
 	DescribeTable("reconciles both kinds after the winner changes path and the next winner is deleted",
-		func(cardFirst bool) {
+		func(cardFirst, differentCase bool) {
 			managerCtx, cancelManager := context.WithCancel(ctx)
 			skipNameValidation := true
 			mgr, err := ctrl.NewManager(testEnv.Config, ctrl.Options{
@@ -147,13 +199,17 @@ var _ = Describe("server registration acceptance criteria", func() {
 			Expect(mgr.GetCache().WaitForCacheSync(syncCtx)).To(BeTrue())
 
 			const oldPath, newPath = "/shared/old", "/shared/new"
+			cardPath := oldPath
+			if differentCase {
+				cardPath = "/Shared/Old"
+			}
 			cardName, mcpName := "a", "b"
 			if !cardFirst {
 				cardName, mcpName = "b", "a"
 			}
 			card := &agenticv1.AgentCard{
-				ObjectMeta: registrationMetadata(namespace, namespace, cardName, oldPath),
-				Spec:       agenticv1.AgentCardSpec{BasePath: oldPath, Name: "Agent", Version: "1.0"},
+				ObjectMeta: registrationMetadata(namespace, namespace, cardName, cardPath),
+				Spec:       agenticv1.AgentCardSpec{BasePath: cardPath, Name: "Agent", Version: "1.0"},
 			}
 			mcp := &agenticv1.McpServer{
 				ObjectMeta: registrationMetadata(namespace, namespace, mcpName, oldPath),
@@ -187,7 +243,7 @@ var _ = Describe("server registration acceptance criteria", func() {
 				g.Expect(card.Status.Active).To(Equal(cardFirst))
 				g.Expect(mcp.Status.Active).To(Equal(!cardFirst))
 				if cardFirst {
-					expectRegistrationBlocked(g, mcp.GetConditions(), "AgentCard", oldPath)
+					expectRegistrationBlocked(g, mcp.GetConditions(), "AgentCard", cardPath)
 				} else {
 					expectRegistrationBlocked(g, card.GetConditions(), "McpServer", oldPath)
 				}
@@ -214,7 +270,7 @@ var _ = Describe("server registration acceptance criteria", func() {
 				} else {
 					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(thirdServer), thirdServer)).To(Succeed())
 					g.Expect(thirdServer.Status.Active).To(BeFalse())
-					expectRegistrationBlocked(g, thirdServer.GetConditions(), "AgentCard", oldPath)
+					expectRegistrationBlocked(g, thirdServer.GetConditions(), "AgentCard", cardPath)
 				}
 			}, timeout, interval).Should(Succeed())
 
@@ -233,7 +289,9 @@ var _ = Describe("server registration acceptance criteria", func() {
 				}
 			}, timeout, interval).Should(Succeed(), fmt.Sprintf("remaining %s registration should take over", map[bool]string{true: "AgentCard", false: "McpServer"}[cardFirst]))
 		},
-		Entry("AgentCard moves, McpServer is deleted", true),
-		Entry("McpServer moves, AgentCard is deleted", false),
+		Entry("AgentCard moves, McpServer is deleted", true, false),
+		Entry("McpServer moves, AgentCard is deleted", false, false),
+		Entry("case-conflicting AgentCard moves, McpServer is deleted", true, true),
+		Entry("case-conflicting McpServer moves, AgentCard is deleted", false, true),
 	)
 })

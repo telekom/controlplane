@@ -66,7 +66,7 @@ func (r *AgentCardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// MapAgentCardToAgentCard enqueues other AgentCards with the same basePath
+// MapAgentCardToAgentCard enqueues other AgentCards with the same normalized basePath
 // when any AgentCard changes or is deleted.
 //
 //nolint:dupl // parallel structure with MapMcpServerToMcpServer; operates on different types
@@ -91,16 +91,14 @@ func (r *AgentCardReconciler) MapAgentCardToAgentCard(ctx context.Context, obj c
 		if list.Items[i].UID == card.UID {
 			continue
 		}
-		if list.Items[i].Spec.BasePath == card.Spec.BasePath {
-			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
-			})
-		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }
 
-// MapMcpServerToAgentCard enqueues AgentCards with the same exact basePath when an McpServer changes.
+// MapMcpServerToAgentCard enqueues AgentCards with the same normalized basePath when an McpServer changes.
 func (r *AgentCardReconciler) MapMcpServerToAgentCard(ctx context.Context, obj client.Object) []reconcile.Request {
 	server, ok := obj.(*agenticv1.McpServer)
 	if !ok {
@@ -119,9 +117,6 @@ func (r *AgentCardReconciler) MapMcpServerToAgentCard(ctx context.Context, obj c
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if list.Items[i].Spec.BasePath != server.Spec.BasePath {
-			continue
-		}
 		reqs = append(reqs, reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})

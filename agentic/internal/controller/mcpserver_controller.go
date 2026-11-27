@@ -66,7 +66,7 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// MapMcpServerToMcpServer enqueues other McpServers with the same basePath
+// MapMcpServerToMcpServer enqueues other McpServers with the same normalized basePath
 // when any McpServer changes or is deleted.
 //
 //nolint:dupl // parallel structure with MapAgenticExposureToAgenticExposure; operates on different types
@@ -91,16 +91,14 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 		if list.Items[i].UID == server.UID {
 			continue
 		}
-		if list.Items[i].Spec.BasePath == server.Spec.BasePath {
-			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
-			})
-		}
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		})
 	}
 	return reqs
 }
 
-// MapAgentCardToMcpServer enqueues McpServers with the same exact basePath when an AgentCard changes.
+// MapAgentCardToMcpServer enqueues McpServers with the same normalized basePath when an AgentCard changes.
 func (r *McpServerReconciler) MapAgentCardToMcpServer(ctx context.Context, obj client.Object) []reconcile.Request {
 	card, ok := obj.(*agenticv1.AgentCard)
 	if !ok {
@@ -119,9 +117,6 @@ func (r *McpServerReconciler) MapAgentCardToMcpServer(ctx context.Context, obj c
 
 	var reqs []reconcile.Request
 	for i := range list.Items {
-		if list.Items[i].Spec.BasePath != card.Spec.BasePath {
-			continue
-		}
 		reqs = append(reqs, reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})

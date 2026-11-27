@@ -141,6 +141,7 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -244,7 +245,7 @@ var _ = Describe("McpServerHandler", func() {
 				To(ContainSubstring("Another AgentCard"))
 		})
 
-		It("should not treat a different exact basePath from an AgentCard as a conflict", func() {
+		It("should block a normalized basePath conflict with an older AgentCard", func() {
 			now := time.Now()
 			obj := newMcpServer("mcp-1", "/shared/path/v1", "mcp-uid", now)
 			caseDifferentCard := agenticv1.AgentCard{
@@ -267,7 +268,10 @@ var _ = Describe("McpServerHandler", func() {
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Status.Active).To(BeTrue())
+			Expect(obj.Status.Active).To(BeFalse())
+			blocked := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(blocked.Message).To(ContainSubstring("AgentCard"))
+			Expect(blocked.Message).To(ContainSubstring("/Shared/Path/V1"))
 		})
 
 		It("should treat McpServers with different basePaths as case conflicts", func() {
@@ -283,6 +287,7 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 

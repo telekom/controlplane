@@ -44,19 +44,25 @@ func ServerRegistrationKind(obj client.Object) string {
 	}
 }
 
-// FindOldestPeerRegistration finds the oldest exact-basePath registration of the other kind.
-func FindOldestPeerRegistration(ctx context.Context, obj client.Object) (client.Object, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	var basePath string
+// ServerRegistrationBasePath returns the base path of a supported registration.
+func ServerRegistrationBasePath(obj client.Object) (string, error) {
 	switch registration := obj.(type) {
 	case *agenticv1.McpServer:
-		basePath = registration.Spec.BasePath
+		return registration.Spec.BasePath, nil
 	case *agenticv1.AgentCard:
-		basePath = registration.Spec.BasePath
+		return registration.Spec.BasePath, nil
 	default:
-		return nil, errors.Errorf("unsupported server registration kind %T", obj)
+		return "", errors.Errorf("unsupported server registration kind %T", obj)
 	}
+}
 
+// FindOldestPeerRegistration finds the oldest registration of the other kind with the same normalized base path.
+func FindOldestPeerRegistration(ctx context.Context, obj client.Object) (client.Object, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	basePath, err := ServerRegistrationBasePath(obj)
+	if err != nil {
+		return nil, err
+	}
 	label := client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: obj.GetLabels()[cconfig.EnvironmentLabelKey],
 		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(basePath),
@@ -70,9 +76,7 @@ func FindOldestPeerRegistration(ctx context.Context, obj client.Object) (client.
 			return nil, errors.Wrapf(err, "failed to list AgentCards for basePath %q", basePath)
 		}
 		for i := range cardList.Items {
-			if cardList.Items[i].Spec.BasePath == basePath {
-				candidates = append(candidates, &cardList.Items[i])
-			}
+			candidates = append(candidates, &cardList.Items[i])
 		}
 	case *agenticv1.AgentCard:
 		serverList := &agenticv1.McpServerList{}
@@ -80,9 +84,7 @@ func FindOldestPeerRegistration(ctx context.Context, obj client.Object) (client.
 			return nil, errors.Wrapf(err, "failed to list McpServers for basePath %q", basePath)
 		}
 		for i := range serverList.Items {
-			if serverList.Items[i].Spec.BasePath == basePath {
-				candidates = append(candidates, &serverList.Items[i])
-			}
+			candidates = append(candidates, &serverList.Items[i])
 		}
 	default:
 		return nil, errors.Errorf("unsupported server registration kind %T", obj)

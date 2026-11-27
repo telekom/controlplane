@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,50 +61,48 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 
 	activeCard := &cardList.Items[0]
 
-	if !ctypes.Equals(activeCard, obj) {
-		obj.Status.Active = false
-
-		if obj.Spec.BasePath == activeCard.Spec.BasePath {
-			// Exact same basePath — another AgentCard is older
-			msg := condition.NewWaitingForTakeoverMessage(
-				"AgentCard",
-				condition.ConflictIdentifierBasePath,
-				obj.Spec.BasePath,
-				organizationv1.TeamNameFromNamespace(activeCard.Namespace),
-				condition.NoApplication,
-			)
-			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
-			obj.SetCondition(condition.NewBlockedCondition(msg))
-			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath is already active.")
-		} else {
-			// Case conflict (e.g. /MyAgent vs /myagent)
-			obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotActive", "AgentCard is not active due to case conflict"))
-			obj.SetCondition(condition.NewBlockedCondition(
-				"AgentCard is blocked, another AgentCard with the same BasePath but different case is active. " +
-					"Please resolve the conflict by changing the BasePath of one of the AgentCards.",
-			))
-			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath but different case is already active.")
-		}
-		return nil
-	}
-
 	peer, err := util.FindOldestPeerRegistration(ctx, obj)
 	if err != nil {
 		return errors.Wrap(err, "failed to find competing McpServers")
 	}
-	if peer != nil && util.CompareServerRegistrations(peer, obj) < 0 {
+	var winner client.Object = activeCard
+	if ctypes.Equals(activeCard, obj) {
+		winner = obj
+	}
+	if peer != nil && util.CompareServerRegistrations(peer, winner) < 0 {
+		winner = peer
+	}
+
+	if winner != obj {
 		obj.Status.Active = false
+		winnerPath, err := util.ServerRegistrationBasePath(winner)
+		if err != nil {
+			return errors.Wrap(err, "failed to get winning registration basePath")
+		}
+		if winnerPath != obj.Spec.BasePath {
+			conflict := "normalized basePath conflict"
+			if strings.EqualFold(winnerPath, obj.Spec.BasePath) {
+				conflict = "basePath case conflict"
+			}
+			msg := fmt.Sprintf("AgentCard is blocked due to a %s: %s with basePath %q has the same normalized basePath as %q. Please change one of the basePaths.",
+				conflict, util.ServerRegistrationKind(winner), winnerPath, obj.Spec.BasePath)
+			obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotActive", msg))
+			obj.SetCondition(condition.NewBlockedCondition(msg))
+			logger.Info("AgentCard is blocked by a conflicting registration",
+				"conflictingKind", util.ServerRegistrationKind(winner), "basePath", winnerPath)
+			return nil
+		}
 		msg := condition.NewWaitingForTakeoverMessage(
-			util.ServerRegistrationKind(peer),
+			util.ServerRegistrationKind(winner),
 			condition.ConflictIdentifierBasePath,
 			obj.Spec.BasePath,
-			organizationv1.TeamNameFromNamespace(peer.GetNamespace()),
+			organizationv1.TeamNameFromNamespace(winner.GetNamespace()),
 			condition.NoApplication,
 		)
 		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
 		obj.SetCondition(condition.NewBlockedCondition(msg))
-		logger.Info("AgentCard is blocked by an older registration of another kind.",
-			"conflictingKind", util.ServerRegistrationKind(peer), "basePath", obj.Spec.BasePath)
+		logger.Info("AgentCard is blocked by an older registration",
+			"conflictingKind", util.ServerRegistrationKind(winner), "basePath", winnerPath)
 		return nil
 	}
 

@@ -141,6 +141,7 @@ var _ = Describe("AgentCardHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListMcpServers(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -215,6 +216,32 @@ var _ = Describe("AgentCardHandler", func() {
 			Expect(readyCond.Message).To(ContainSubstring(obj.Spec.BasePath))
 		})
 
+		It("reports the oldest registration across both kinds", func() {
+			now := time.Now()
+			obj := newAgentCard("agent-new", "/shared/path", "agent-new", now)
+			olderCard := newAgentCard("agent-old", "/shared/path", "agent-old", now.Add(-time.Hour))
+			oldestServer := agenticv1.McpServer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "mcp",
+					Namespace:         "default",
+					CreationTimestamp: metav1.NewTime(now.Add(-2 * time.Hour)),
+				},
+				Spec: agenticv1.McpServerSpec{BasePath: "/shared/path"},
+			}
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: []agenticv1.AgentCard{*obj, *olderCard}}
+				}).
+				Return(nil)
+			mockListMcpServers(fakeClient, ctx, oldestServer)
+
+			Expect(h.CreateOrUpdate(ctx, obj)).To(Succeed())
+			Expect(obj.Status.Active).To(BeFalse())
+			processing := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processing.Message).To(ContainSubstring("McpServer"))
+		})
+
 		It("should treat AgentCards with different basePaths as case conflicts", func() {
 			now := time.Now()
 			obj := newAgentCard("agent-1", "/agent/assistant/v1", "uid-1", now)
@@ -228,6 +255,7 @@ var _ = Describe("AgentCardHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListMcpServers(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
