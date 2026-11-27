@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
@@ -200,13 +201,9 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when route is nil", func() {
-			It("panics due to nil dereference before the guard check", func() {
-				// NOTE: Build() accesses b.Route.Name for logging before the nil check,
-				// so a nil route causes a panic rather than returning ErrNoRoute.
+			It("returns ErrNoRoute", func() {
 				builder := features.NewFeatureBuilder(mockKC, nil, nil, gateway)
-				Expect(func() {
-					_ = builder.Build(ctx)
-				}).To(Panic())
+				Expect(builder.Build(ctx)).To(MatchError(features.ErrNoRoute))
 			})
 		})
 
@@ -384,6 +381,157 @@ var _ = Describe("Builder", func() {
 		})
 	})
 
+	Describe("Build() status properties", func() {
+		upstreamFeature := func() features.Feature {
+			f := featmock.NewMockFeature(GinkgoT())
+			f.EXPECT().Name().Return(gatewayv1.FeatureType("upstream")).Maybe()
+			f.EXPECT().Priority().Return(1).Maybe()
+			f.EXPECT().IsUsed(mock.Anything, mock.Anything).Return(true)
+			f.EXPECT().Apply(mock.Anything, mock.Anything).
+				Run(func(_ context.Context, fb features.FeaturesBuilder) {
+					fb.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
+				}).Return(nil)
+			return f
+		}
+
+		It("captures the stored IDs before resetting the properties and records the Kong name", func() {
+			route.SetNamePrefix("bond")
+			route.SetRouteId("route-id")
+			route.SetServiceId("service-id")
+			route.SetUpstreamId("upstream-id")
+			route.SetProperty("legacyName", "bond.test-route")
+			route.SetProperty("stale", "x")
+
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).
+				Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) {
+					Expect(route.Status.Properties).NotTo(HaveKey("stale"))
+					Expect(route.Status.Properties).NotTo(HaveKey("routeId"))
+					Expect(r.(client.RealmRoute).GetStoredIds()).To(Equal(client.StoredIds{
+						RouteId: "route-id", ServiceId: "service-id", UpstreamId: "upstream-id",
+					}))
+				}).Return(nil)
+			mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.Anything).Return(nil)
+
+			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+			builder.EnableFeature(upstreamFeature())
+			Expect(builder.Build(ctx)).To(Succeed())
+
+			Expect(route.GetProperty("routeName")).To(Equal("bond--test-route"))
+			Expect(route.Status.Properties).To(HaveKeyWithValue("namePrefix", "bond"))
+			Expect(route.GetProperty("legacyName")).To(Equal("bond.test-route"))
+		})
+
+		It("records metadata.name as Kong name without name prefix", func() {
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(nil)
+			mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.Anything).Return(nil)
+
+			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+			builder.EnableFeature(upstreamFeature())
+			Expect(builder.Build(ctx)).To(Succeed())
+
+			Expect(route.GetProperty("routeName")).To(Equal("test-route"))
+			Expect(route.Status.Properties).NotTo(HaveKey("legacyName"))
+			Expect(route.Status.Properties).NotTo(HaveKey("namePrefix"))
+		})
+
+		It("binds the consumer rate-limiting plugin to the route", func() {
+			route.SetNamePrefix("bond")
+			route.SetRouteId("route-id")
+			consumeRoute := &gatewayv1.ConsumeRoute{Spec: gatewayv1.ConsumeRouteSpec{ConsumerName: "c1"}}
+
+			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+			p := builder.RateLimitPluginConsumeRoute(consumeRoute)
+			Expect(p.GetRouteId()).To(Equal("route-id"))
+			Expect(p.GetNamePrefix()).To(Equal("bond"))
+		})
+	})
+
+	Describe("Build() with the circuit breaker", func() {
+		BeforeEach(func() {
+			route.Spec.Type = gatewayv1.RouteTypePrimary
+			route.Spec.Backend.Upstreams = []gatewayv1.Upstream{{Scheme: "http", Hostname: "backend", Port: 8080, Path: "/"}}
+			ctx = contextutil.WithEnv(ctx, "test")
+		})
+
+		build := func() error {
+			upstream := featmock.NewMockFeature(GinkgoT())
+			upstream.EXPECT().Name().Return(gatewayv1.FeatureType("upstream")).Maybe()
+			upstream.EXPECT().Priority().Return(1).Maybe()
+			upstream.EXPECT().IsUsed(mock.Anything, mock.Anything).Return(true)
+			upstream.EXPECT().Apply(mock.Anything, mock.Anything).
+				Run(func(_ context.Context, fb features.FeaturesBuilder) {
+					fb.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
+				}).Return(nil)
+			builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
+			builder.EnableFeature(upstream)
+			builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
+			return builder.Build(ctx)
+		}
+
+		expectRouteAndCleanup := func() {
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).
+				Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) { r.SetRouteId("route-id") }).Return(nil)
+			mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.Anything).Return(nil)
+		}
+
+		It("keeps the upstream and target IDs written with the circuit breaker upstream", func() {
+			route.Spec.Traffic.CircuitBreaker = &gatewayv1.CircuitBreaker{Enabled: true}
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.AnythingOfType("*client.CircuitBreakerUpstream")).
+				Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) {
+					r.SetUpstreamId("upstream-id")
+					r.SetTargetsId("targets-id")
+					r.SetRouteId("route-id")
+				}).Return(nil)
+			mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.Anything).Return(nil)
+
+			Expect(build()).To(Succeed())
+			Expect(route.Status.Properties).To(HaveKeyWithValue("upstreamId", "upstream-id"))
+			Expect(route.Status.Properties).To(HaveKeyWithValue("targetsId", "targets-id"))
+			Expect(route.Status.Properties).To(HaveKeyWithValue("routeId", "route-id"))
+		})
+
+		DescribeTable("hands an upstream removal to the Kong client and drops the IDs it clears",
+			func(cb *gatewayv1.CircuitBreaker) {
+				route.Spec.Traffic.CircuitBreaker = cb
+				route.SetUpstreamId("upstream-id")
+				route.SetTargetsId("targets-id")
+				mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.AnythingOfType("*client.UpstreamRemoval")).
+					Run(func(_ context.Context, r client.CustomRoute, _ client.Upstream) {
+						Expect(r.GetTargetsId()).To(Equal("targets-id"))
+						Expect(r.(client.RealmRoute).GetStoredIds().UpstreamId).To(Equal("upstream-id"))
+						r.SetUpstreamId("")
+						r.SetTargetsId("")
+					}).Return(nil).Once()
+				mockKC.EXPECT().CleanupPlugins(mock.Anything, route, nil, mock.Anything).Return(nil)
+
+				Expect(build()).To(Succeed())
+				Expect(route.Status.Properties).NotTo(HaveKey("upstreamId"))
+				Expect(route.Status.Properties).NotTo(HaveKey("targetsId"))
+			},
+			Entry("disabled", &gatewayv1.CircuitBreaker{Enabled: false}),
+			Entry("removed", nil),
+		)
+
+		It("drops stale properties when the circuit breaker was never used", func() {
+			route.SetProperty("kongAclPluginId", "stale-plugin")
+			expectRouteAndCleanup()
+
+			Expect(build()).To(Succeed())
+			Expect(route.Status.Properties).To(Equal(map[string]string{"routeId": "route-id", "routeName": "test-route"}))
+		})
+
+		It("keeps the previous properties if the build fails", func() {
+			route.Spec.Traffic.CircuitBreaker = &gatewayv1.CircuitBreaker{Enabled: true}
+			route.SetUpstreamId("upstream-id")
+			route.SetProperty("kongAclPluginId", "plugin-id")
+			mockKC.EXPECT().CreateOrReplaceRoute(mock.Anything, route, mock.Anything).Return(errors.New("kong down"))
+
+			Expect(build()).To(MatchError(ContainSubstring("kong down")))
+			Expect(route.Status.Properties).To(HaveKeyWithValue("upstreamId", "upstream-id"))
+			Expect(route.Status.Properties).To(HaveKeyWithValue("kongAclPluginId", "plugin-id"))
+		})
+	})
+
 	Describe("BuildForConsumer()", func() {
 		var consumer *gatewayv1.Consumer
 
@@ -442,13 +590,9 @@ var _ = Describe("Builder", func() {
 		})
 
 		Context("when consumer is nil", func() {
-			It("panics due to nil dereference before the guard check", func() {
-				// NOTE: BuildForConsumer() accesses b.Consumer.Name for logging
-				// before the nil check, so a nil consumer causes a panic.
+			It("returns ErrNoConsumer", func() {
 				builder := features.NewFeatureBuilder(mockKC, route, nil, gateway)
-				Expect(func() {
-					_ = builder.BuildForConsumer(ctx)
-				}).To(Panic())
+				Expect(builder.BuildForConsumer(ctx)).To(MatchError(features.ErrNoConsumer))
 			})
 		})
 

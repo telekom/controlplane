@@ -45,8 +45,8 @@ func TestNamingConstants(t *testing.T) {
 }
 
 func TestNamingMakePublishRouteName(t *testing.T) {
-	if got := makePublishRouteName(); got != "publish" {
-		t.Errorf("makePublishRouteName() = %q, want %q", got, "publish")
+	if got := makePublishRouteName(); got != "horizon-events" {
+		t.Errorf("makePublishRouteName() = %q, want %q", got, "horizon-events")
 	}
 }
 
@@ -69,22 +69,22 @@ func TestNamingMakeSSERouteName(t *testing.T) {
 		{
 			name:      "dotted event type",
 			eventType: "de.telekom.test.v1",
-			expected:  "sse--de-telekom-test-v1",
+			expected:  "horizon-sse--de-telekom-test-v1",
 		},
 		{
 			name:      "already hyphenated",
 			eventType: "simple-event",
-			expected:  "sse--simple-event",
+			expected:  "horizon-sse--simple-event",
 		},
 		{
 			name:      "single segment",
 			eventType: "events",
-			expected:  "sse--events",
+			expected:  "horizon-sse--events",
 		},
 		{
 			name:      "uppercase letters get lowered",
 			eventType: "DE.Telekom.Test.V1",
-			expected:  "sse--de-telekom-test-v1",
+			expected:  "horizon-sse--de-telekom-test-v1",
 		},
 	}
 
@@ -140,17 +140,17 @@ func TestNamingMakeCallbackRouteName(t *testing.T) {
 		{
 			name:     "standard zone name",
 			zoneName: "zone-a",
-			expected: "callback--zone-a",
+			expected: "horizon-callback-zone-a",
 		},
 		{
 			name:     "zone name with multiple segments",
 			zoneName: "eu-west-1",
-			expected: "callback--eu-west-1",
+			expected: "horizon-callback-eu-west-1",
 		},
 		{
 			name:     "empty zone name",
 			zoneName: "",
-			expected: "callback--",
+			expected: "horizon-callback-",
 		},
 	}
 

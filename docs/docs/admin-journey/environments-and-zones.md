@@ -30,6 +30,8 @@ spec:
 
 The `realmName` field defines the name used for identity and gateway realms in this environment. It is decoupled from the environment name — for example, you could name your environment `playground` but set `realmName: default` to keep existing realm URLs stable. If omitted, it defaults to the environment's `metadata.name`.
 
+The realm name also prefixes the names of the gateway routes. A realm name with `--` or over 63 characters cannot be a prefix. The gateway routes of such an environment keep their names.
+
 :::caution
 If `realmName` differs from the environment name, set [`spec.overwriteEnvironmentName`](#event-environment-name) to the same value on every EventConfig in the environment. Otherwise Horizon drops events, and Spectre Listeners are Blocked with `event environment mismatch`.
 :::

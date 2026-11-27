@@ -28,6 +28,21 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = DescribeTable("gatewayNamePrefix",
+	func(current, realmName string, legacyNaming bool, expected string) {
+		Expect(gatewayNamePrefix(current, realmName, legacyNaming)).To(Equal(expected))
+	},
+	Entry("set from the realm", "", "bond", false, "bond"),
+	Entry("realm replaces an existing prefix", "old", "bond", false, "bond"),
+	Entry("default realm is prefixed without legacy naming", "", "default", false, "default"),
+	Entry("legacy naming omits the prefix of the default realm", "", "default", true, ""),
+	Entry("legacy naming keeps an existing prefix of the default realm", "default", "default", true, "default"),
+	Entry("legacy naming prefixes other realms", "", "bond", true, "bond"),
+	Entry("realm name with a double hyphen is no prefix", "", "qa--blue", false, ""),
+	Entry("too long realm name is no prefix", "", strings.Repeat("a", 64), false, ""),
+	Entry("invalid realm name keeps an existing prefix", "bond", "qa--blue", false, "bond"),
+)
+
 var _ = Describe("Zone Handler", func() {
 	var zone *adminv1.Zone
 	var zoneIdx int
@@ -89,7 +104,9 @@ var _ = Describe("Zone Handler", func() {
 		Expect(clients.Items[0].Name).To(Equal(naming.ForGatewayAdminClient(naming.ForIdentityProvider(zone, "primary"))))
 		Expect(clients.Items[0].Spec.ClientId).To(Equal("rover"))
 		Expect(clients.Items[0].Spec.ClientSecret).NotTo(BeEmpty())
+		Expect(zone.Status.RealmName).NotTo(BeEmpty())
 		for i := range gateways.Items {
+			Expect(gateways.Items[i].Spec.NamePrefix).To(Equal(zone.Status.RealmName))
 			Expect(gateways.Items[i].Spec.Admin.ClientId).To(Equal("rover"))
 			Expect(gateways.Items[i].Spec.Admin.ClientSecret).To(Equal(clients.Items[0].Spec.ClientSecret))
 		}

@@ -15,17 +15,52 @@ import (
 // CreateOrReplaceUpstream normalizes the given bodies in place before comparing
 // them, so the caller must not reuse them afterwards.
 func (c *kongClient) CreateOrReplaceUpstream(ctx context.Context, route CustomRoute, upstream *kong.CreateUpstreamJSONRequestBody, target *kong.CreateTargetForUpstreamJSONRequestBody) error {
+	prepared, err := c.prepareUpstream(ctx, route, upstream, target)
+	if err != nil {
+		return err
+	}
+	return c.writeUpstream(ctx, route, prepared)
+}
+
+// preparedUpstream is an upstream and target whose Kong upstream has been located.
+type preparedUpstream struct {
+	entity entity[kong.CreateUpstreamJSONRequestBody, kong.Upstream]
+	body   *kong.CreateUpstreamJSONRequestBody
+	target *kong.CreateTargetForUpstreamJSONRequestBody
+	// byID addresses the targets by upstream ID, because a realm upstream may be renamed.
+	byID bool
+}
+
+// prepareUpstream validates and normalizes the bodies and locates a realm upstream. It
+// writes nothing.
+func (c *kongClient) prepareUpstream(ctx context.Context, route CustomRoute, upstream *kong.CreateUpstreamJSONRequestBody, target *kong.CreateTargetForUpstreamJSONRequestBody) (*preparedUpstream, error) {
 	if upstream == nil {
-		return fmt.Errorf("upstream request body is missing")
+		return nil, fmt.Errorf("upstream request body is missing")
 	}
 	if target == nil {
-		return fmt.Errorf("target request body is missing")
+		return nil, fmt.Errorf("target request body is missing")
 	}
-
 	upstream.Tags = normalizeSet(upstream.Tags)
 	normalizeDesiredHealthchecks(upstream.Healthchecks)
+	target.Tags = normalizeSet(target.Tags)
 
-	kongUpstream, _, err := reconcile(ctx, upstreamEntity{client: c.client, name: upstream.Name}, *upstream)
+	prepared := &preparedUpstream{entity: upstreamEntity{client: c.client, name: upstream.Name}, body: upstream, target: target}
+	if _, ok := realmOf(route); !ok {
+		return prepared, nil
+	}
+	located, err := c.locatedUpstream(ctx, route, upstream.Name, reconcilePolicy{})
+	if err != nil {
+		return nil, err
+	}
+	if _, err := located.locate(ctx); err != nil {
+		return nil, err
+	}
+	prepared.entity, prepared.byID = located, true
+	return prepared, nil
+}
+
+func (c *kongClient) writeUpstream(ctx context.Context, route CustomRoute, prepared *preparedUpstream) error {
+	kongUpstream, _, err := reconcile(ctx, prepared.entity, *prepared.body)
 	if err != nil {
 		return err
 	}
@@ -34,13 +69,16 @@ func (c *kongClient) CreateOrReplaceUpstream(ctx context.Context, route CustomRo
 	}
 	route.SetUpstreamId(*kongUpstream.Id)
 
-	target.Tags = normalizeSet(target.Tags)
+	upstreamRef := prepared.body.Name
+	if prepared.byID {
+		upstreamRef = *kongUpstream.Id
+	}
 	kongTarget, _, err := reconcile(ctx, targetEntity{
 		client:       c.client,
-		upstreamName: upstream.Name,
-		address:      target.Target,
-		tags:         target.Tags,
-	}, *target)
+		upstreamName: upstreamRef,
+		address:      prepared.target.Target,
+		tags:         prepared.target.Tags,
+	}, *prepared.target)
 	if err != nil {
 		return err
 	}
@@ -48,13 +86,67 @@ func (c *kongClient) CreateOrReplaceUpstream(ctx context.Context, route CustomRo
 		return fmt.Errorf("target response ID is missing")
 	}
 	route.SetTargetsId(*kongTarget.Id)
-
 	return nil
+}
+
+// upstreamRefForDelete returns the name or ID of the upstream to delete: the route name for
+// a plain route, the ID of the located upstream for a realm route, or "" if none is ours.
+func (c *kongClient) upstreamRefForDelete(ctx context.Context, route CustomRoute) (string, error) {
+	if _, ok := realmOf(route); !ok {
+		return route.GetName(), nil
+	}
+	located, err := c.locatedUpstream(ctx, route, "", deletePolicy{})
+	if err != nil {
+		return "", err
+	}
+	if _, err := located.locate(ctx); err != nil {
+		return "", err
+	}
+	return located.foundID(), nil
+}
+
+// removeUpstream deletes the upstream and its target and clears their IDs.
+func (c *kongClient) removeUpstream(ctx context.Context, route CustomRoute, upstreamRef string) error {
+	if err := c.deleteUpstreamAndTargets(ctx, upstreamRef); err != nil {
+		return err
+	}
+	route.SetUpstreamId("")
+	route.SetTargetsId("")
+	return nil
+}
+
+// locatedUpstream returns the located upstream of a realm route. The desired name defaults
+// to the Kong name of the route. The supported legacy naming scheme has no upstream, so no
+// legacy candidates are tried.
+func (c *kongClient) locatedUpstream(ctx context.Context, route CustomRoute, desiredName string, policy discoveryPolicy) (*locatedEntity[kong.CreateUpstreamJSONRequestBody, kong.Upstream], error) {
+	realm, ok := realmOf(route)
+	if !ok {
+		return nil, fmt.Errorf("route %q has no name prefix", route.GetName())
+	}
+	d := discoveryFor(ctx, c, upstreamKind, realm, route, realm.GetStoredIds().UpstreamId, policy)
+	d.legacy = false
+	if desiredName != "" {
+		d.names.Desired = desiredName
+	}
+	return newLocatedEntity(d), nil
 }
 
 // DeleteUpstream deletes the upstream of the route. Kong deletes its targets with it.
 func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) error {
-	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, route.GetName())
+	upstreamRef, err := c.upstreamRefForDelete(ctx, route)
+	if err != nil {
+		return err
+	}
+	return c.deleteUpstreamAndTargets(ctx, upstreamRef)
+}
+
+// deleteUpstreamAndTargets deletes the upstream; Kong cascades the deletion to its targets. An empty reference
+// means there is nothing to delete.
+func (c *kongClient) deleteUpstreamAndTargets(ctx context.Context, upstreamRef string) error {
+	if upstreamRef == "" {
+		return nil
+	}
+	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, upstreamRef)
 	if err != nil {
 		return fmt.Errorf("failed to delete upstream: %w", HandleClientError(err))
 	}
@@ -267,7 +359,8 @@ func (e targetEntity) Write(ctx context.Context, desired *kong.CreateTargetForUp
 	if err != nil {
 		return nil, fmt.Errorf("failed to write target: %w", HandleClientError(err))
 	}
-	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON201}, http.StatusCreated)
+	return writeOne("target", readResult[kong.Target]{response.StatusCode(), response.Body, response.JSON201},
+		http.StatusOK, http.StatusCreated)
 }
 
 // isLaterTarget reports whether candidate supersedes effective. Targets created
