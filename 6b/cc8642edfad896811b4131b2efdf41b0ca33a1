@@ -1,0 +1,110 @@
+projector/internal/domain/listener/repository_test.go
+  s_2979f842e09533::t_5f794c146662c5 212-213,216
+  s_2979f842e09533::t_b456f87758868e 81,85-86,108-109,114-176,183,187,190,196-197
+controlplane-api/ent/listener_create.go
+  s_2979f842e09533::t_f735a3ed05e82a 145-166,173-180,192-199,352-353,355-356,442-475
+controlplane-api/ent/mutation.go
+  s_2979f842e09533::t_f735a3ed05e82a 9150-9155,10658-10765,11308,11342-11347,11420-11431,11442,11470-11475,11537-11548,11555,11589-11594,11627-11630,11691-11696,23497-23500,24079-24156,24686,24690-24695,24722-24729,24758,24781,24785-24790,24815-24818,24840-24845,24869-24874
+projector/README.md
+  s_2979f842e09533::t_b18a31d095d85f 39
+  s_2979f842e09533::t_a139b17ad5829e 107
+controlplane-api/internal/interceptor/team_filter_test.go
+  s_2979f842e09533::t_a809040fed5dc7 380-422
+controlplane-api/ent/application_query.go
+  s_2979f842e09533::t_f735a3ed05e82a 53-54,68-69,348-391,617-618,747-768,865,877-878,990-1003,1073-1086,1438-1499,1739-1765
+  s_2979f842e09533::t_bf756a726baddb 1766
+projector/internal/domain/listener/translator_test.go
+  s_2979f842e09533::t_c0d009ea14880f 100-105
+  s_2979f842e09533::t_669a59837710d7 30-31,39
+  s_2979f842e09533::t_26d212ea257ad3 81-99,106-108
+docs/docs/architecture/controlplane-api.mdx
+  s_2979f842e09533::t_12fecdacfecd69 126-127
+  s_2979f842e09533::t_6c2004651e73a9 147
+  s_2979f842e09533::t_89719ea961fbb4 138-139
+  s_2979f842e09533::t_e5baa09680c62e 232,234
+controlplane-api/ent/application_update.go
+  s_2979f842e09533::t_f735a3ed05e82a 511-540,766-807,1477-1566,2079-2108,2334-2375,3075-3164
+controlplane-api/internal/interceptor/team_filter.go
+  s_2979f842e09533::t_20bd0cbd6f05f0 56-57,59-60
+controlplane-api/ent/schema/api_subscription.go
+  s_2979f842e09533::t_e949ec68f76338 75
+controlplane-api/ent/listener/listener.go
+  s_2979f842e09533::t_f735a3ed05e82a 46-49,69-82,141-142,262-275,324-337
+controlplane-api/ent/migrate/schema.go
+  s_2979f842e09533::t_f735a3ed05e82a 899-900,902-903,915,921,929-940,953-962,1211-1212
+controlplane-api/schema.graphql
+  s_2979f842e09533::t_2712d5c7f7e0e4 331
+  s_2979f842e09533::t_d53afc24c2dd83 482,489-492
+controlplane-api/ent/application_create.go
+  s_2979f842e09533::t_f735a3ed05e82a 426-455,869-900
+controlplane-api/ent/listener_query.go
+  s_2979f842e09533::t_f735a3ed05e82a 36-37,105-148,452-453,476-497,638,640-641,649,682-693,772-835
+controlplane-api/ent/schema/api_exposure.go
+  s_2979f842e09533::t_54168349695e4e 93
+controlplane-api/ent/listener_update.go
+  s_2979f842e09533::t_f735a3ed05e82a 183-204,211-218,230-237,307-318,431-432,434-435,523-580,905-926,933-940,952-959,1029-1040,1166-1167,1169-1170,1275-1332
+controlplane-api/ent/application/where.go
+  s_2979f842e09533::t_f735a3ed05e82a 1364-1409
+projector/internal/domain/listener/translator.go
+  s_2979f842e09533::t_238040ea8cf8fc 38,43-44,51,67,70-75
+  s_2979f842e09533::t_af0761ec6213a0 39-42
+controlplane-api/ent/schema/listener.go
+  s_2979f842e09533::t_f60f92a209fb3b 55-64,94-95,97-98
+controlplane-api/ent/application.go
+  s_2979f842e09533::t_f735a3ed05e82a 96-99,104,117-118,224-241,247,496-505,829-875
+  s_2979f842e09533::t_b79569f26656c9 876
+controlplane-api/ent/client.go
+  s_2979f842e09533::t_f735a3ed05e82a 1829-1860,3761-3791
+  s_2979f842e09533::t_86d71f0e55e0ac 3792
+controlplane-api/internal/testutil/seed.go
+  s_2979f842e09533::t_b13e2cf780ec20 139-140,150-151
+controlplane-api/internal/resolvers/subscription_info_test.go
+  s_2979f842e09533::t_a13175f1a2ef65 88,92-93,95-97
+controlplane-api/ent/schema/application.go
+  s_2979f842e09533::t_3cd643715cc275 113-116
+controlplane-api/ent/application/application.go
+  s_2979f842e09533::t_f735a3ed05e82a 82-85,167-180,545-572,656-669
+controlplane-api/internal/resolvers/schema_resolvers_listener_test.go
+  s_2979f842e09533::t_f547a0bfc9e123 278-279,281,299-303,326-335,518-535
+  s_2979f842e09533::t_3a66470f7af8b4 228-257
+  s_2979f842e09533::t_13a6c8e6973188 536
+projector/internal/domain/approvalrequest/repository_test.go
+  s_2979f842e09533::t_c0b8065a922853 308-309
+  s_2979f842e09533::t_fe2aba3cecd0b9 224-225
+projector/internal/domain/listener/repository.go
+  s_2979f842e09533::t_fe3eafbe62b43f 54,57,59,61,64-90,92-94,105-108,119-124,136-137,144-149
+projector/internal/domain/approval/repository_test.go
+  s_2979f842e09533::t_8cc15894e09624 329-330
+  s_2979f842e09533::t_1e8bd01e825fd1 226-227
+controlplane-api/ent/listener/where.go
+  s_2979f842e09533::t_f735a3ed05e82a 594-639
+controlplane-api/internal/resolvers/mapper.go
+  s_2979f842e09533::t_bd1c02ee55bcd7 217,221,238,240,242-250,273-274
+controlplane-api/ent/listener.go
+  s_2979f842e09533::t_f735a3ed05e82a 51-57,64-67,80,98-119,125,136,147,158,167,192-195,305-318,335-344
+controlplane-api/internal/resolvers/schema.resolvers.go
+  s_2979f842e09533::t_9acb5f1c87b7ce 932-934
+  s_2979f842e09533::t_d311a7e6516fd3 988,998,1009-1011,1022-1024
+controlplane-api/internal/resolvers/ent.generated.go
+  s_2979f842e09533::t_bb281f11b504da 12158,12161,12190,12193,42256,42294
+controlplane-api/internal/resolvers/root_.generated.go
+  s_2979f842e09533::t_b8e878998e1aae 13146,13297,13304-13307
+controlplane-api/internal/resolvers/schema.generated.go
+  s_2979f842e09533::t_05a090d0361fb4 8663-8669
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.7",
+  "base_commit_sha": "6bcc8642edfad896811b4131b2efdf41b0ca33a1",
+  "prompts": {},
+  "sessions": {
+    "s_2979f842e09533": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_de3497e0bffeBR0OodkgdGuTWI",
+        "model": "gemini-4-neon"
+      },
+      "human_author": "Miká Juznik <mika.juznik@telekom.de>"
+    }
+  }
+}
