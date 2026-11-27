@@ -230,6 +230,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					By("Checking the namespace object labels")
 					g.Expect(ns.GetLabels()).To(BeEquivalentTo(map[string]string{
 						config.EnvironmentLabelKey:    testEnvironment,
+						config.BuildLabelKey("team"):  groupName + "--" + teamName,
+						config.OwnerUidLabelKey:       string(team.GetUID()),
 						"kubernetes.io/metadata.name": expectedTeamNamespaceName,
 					}))
 
@@ -315,6 +317,15 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
 				}, timeout, interval).Should(Succeed())
 
+				By("Adding a label from another source to the team namespace")
+				const externalLabelKey = "policy.example.com/injected"
+				Eventually(func(g Gomega) {
+					ns := newNamespaceObj(expectedTeamNamespaceName)
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)).To(Succeed())
+					ns.Labels[externalLabelKey] = "true"
+					g.Expect(k8sClient.Update(ctx, ns)).To(Succeed())
+				}, timeout, interval).Should(Succeed())
+
 				By("Updating team members to trigger member change notification")
 				var originalMemberChangeRef *types.ObjectRef
 				Eventually(func(g Gomega) {
@@ -339,6 +350,15 @@ var _ = Describe("Team Controller", Ordered, func() {
 					memberChangeNotification := &notificationv1.Notification{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["team-members-changed"].K8s(), memberChangeNotification)).NotTo(HaveOccurred())
 					g.Expect(memberChangeNotification.Spec.Purpose).To(Equal("team-members-changed"))
+
+					By("Checking the team namespace keeps labels from other sources")
+					ready := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeReady)
+					g.Expect(ready).NotTo(BeNil())
+					g.Expect(ready.ObservedGeneration).To(Equal(team.Generation))
+					ns := newNamespaceObj(team.Status.Namespace)
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns)).To(Succeed())
+					g.Expect(ns.GetLabels()).To(HaveKeyWithValue(externalLabelKey, "true"))
+					g.Expect(ns.GetLabels()).To(HaveKeyWithValue(config.EnvironmentLabelKey, testEnvironment))
 				}, timeout, interval).Should(Succeed())
 			})
 		})

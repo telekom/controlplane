@@ -17,7 +17,6 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
@@ -35,9 +34,6 @@ func (h *RemoteOrganizationHandler) CreateOrUpdate(ctx context.Context, obj *adm
 	}
 
 	mutator := func() error {
-		namespace.Labels = map[string]string{
-			config.EnvironmentLabelKey: envName,
-		}
 		return nil
 	}
 

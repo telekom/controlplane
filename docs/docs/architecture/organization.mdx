@@ -14,7 +14,9 @@ The Organization domain manages teams and groups within the Control Plane. It is
 
 When a Team is created, the Organization operator automatically provisions:
 
-- A **dedicated namespace** — `{environment}--{group}--{team}`
+- A **dedicated namespace** — `{environment}--{group}--{team}`, labelled with
+  the environment, the team (`{group}--{team}`) and the Team's UID. Labels added
+  by other tools, such as policy engines, are kept.
 - An **Identity Client** — for authenticating with the platform
 - A **Gateway Consumer** — for accessing APIs through the gateway
 - A **Notification Channel** — for receiving platform notifications
