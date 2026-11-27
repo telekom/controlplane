@@ -57,13 +57,14 @@ var _ = Describe("SecurityConfig", func() {
 	})
 
 	Describe("FileManagerConfig", func() {
-		It("defaults to the in-cluster file-manager API", func() {
+		It("AC-9: defaults to the in-cluster file-manager API and token path", func() {
 			cfg := config.DefaultConfig()
 			Expect(cfg.FileManager.BaseURL).To(Equal("https://file-manager.controlplane-system.svc.cluster.local/api"))
+			Expect(cfg.FileManager.TokenFilePath).To(Equal("/var/run/secrets/filemgr/token"))
 			Expect(cfg.FileManager.Validate()).To(Succeed())
 		})
 
-		DescribeTable("Validate",
+		DescribeTable("AC-9: Validate",
 			func(baseURL string, valid bool) {
 				err := config.FileManagerConfig{BaseURL: baseURL}.Validate()
 				if valid {
@@ -81,7 +82,65 @@ var _ = Describe("SecurityConfig", func() {
 		)
 	})
 
+	Describe("FileDownloadConfig", func() {
+		It("AC-9: defaults to an empty public base URL", func() {
+			cfg := config.DefaultConfig()
+			Expect(cfg.FileDownload.PublicBaseURL).To(BeEmpty())
+			Expect(cfg.FileDownload.Validate()).To(Succeed())
+		})
+
+		DescribeTable("AC-9: Validate",
+			func(publicBaseURL string, valid bool) {
+				err := config.FileDownloadConfig{PublicBaseURL: publicBaseURL}.Validate()
+				if valid {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+			Entry("empty", "", true),
+			Entry("absolute https url", "https://cp.example.com", true),
+			Entry("absolute url with trailing slash", "https://cp.example.com/", true),
+			Entry("absolute url with path prefix", "https://cp.example.com/prefix", true),
+			Entry("missing scheme", "cp.example.com", false),
+			Entry("missing host", "https://", false),
+			Entry("unparsable", "https://cp example.com/%zz", false),
+		)
+	})
+
 	Describe("GetConfigOrDie", func() {
+		DescribeTable("AC-9: fails fast on a relative url",
+			func(yaml string) {
+				path := writeConfig(`
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock
+` + yaml)
+				Expect(func() { config.GetConfigOrDie(path) }).To(Panic())
+			},
+			Entry("fileDownload.publicBaseUrl", "fileDownload:\n  publicBaseUrl: cp.example.com\n"),
+			Entry("fileManager.baseUrl", "fileManager:\n  baseUrl: file-manager.svc\n"),
+		)
+
+		It("AC-9: loads the file download keys from the config file", func() {
+			path := writeConfig(`
+listeners:
+  external:
+    address: ":8443"
+    jwt:
+      mode: mock
+fileManager:
+  tokenFilePath: /tmp/token
+fileDownload:
+  publicBaseUrl: https://cp.example.com
+`)
+			cfg := config.GetConfigOrDie(path)
+			Expect(cfg.FileManager.TokenFilePath).To(Equal("/tmp/token"))
+			Expect(cfg.FileDownload.PublicBaseURL).To(Equal("https://cp.example.com"))
+		})
+
 		It("accepts jwt mode with trusted issuers", func() {
 			path := writeConfig(`
 listeners:

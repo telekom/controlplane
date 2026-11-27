@@ -154,4 +154,31 @@ The following fields can be configured:
 | `graphql.playgroundEnabled` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
 | `security.enabled`          | `false`                                                                            | Enable JWT authentication                |
 | `log.level`                 | `info`                                                                             | Log level (debug, info, warn, error)     |
-| `fileManager.baseUrl`       | `https://file-manager.controlplane-system.svc.cluster.local/api`                   | Base URL of the file-manager API, including `/api`. Used to build `specificationUrl` (`<baseUrl>/v1/files/<fileId>`). Empty disables `specificationUrl`. |
+| `fileManager.baseUrl`       | `https://file-manager.controlplane-system.svc.cluster.local/api`                   | Internal base URL of the file-manager API, including `/api`. Used only by the download proxy to reach file-manager. Must be an absolute URL. Empty disables the download route. |
+| `fileManager.tokenFilePath` | `/var/run/secrets/filemgr/token`                                                   | Path of the projected service-account token (audience `file-manager`) used to authenticate against file-manager. |
+| `fileDownload.publicBaseUrl` | _(empty)_                                                                         | Externally reachable base URL of controlplane-api (e.g. `https://api.example.com`, optionally with a path prefix). Used to build `specificationUrl` (`<publicBaseUrl>/files/v1/<fileId>`). Must be an absolute URL. Empty makes `specificationUrl` null. |
+
+### File Download Proxy
+
+controlplane-api exposes `GET /files/v1/{fileId}`, which proxies file downloads (e.g. API specifications) from the internal file-manager. The file-manager is only reachable in-cluster and secured with a Kubernetes service-account token, so the proxy authenticates with its own projected token (`fileManager.tokenFilePath`); the caller's `Authorization` header is never forwarded.
+
+- **Public**: the route is registered without a guard, so on the external listener anyone can download a file without credentials. Any file ID known to file-manager is served; there is no database lookup.
+- **GET only**: other methods are not proxied (`405`).
+- **File ID**: a lowercase UUID, or a legacy ID with at least four non-empty `--` separated parts using only `a-z`, `0-9`, `-` and `.` (no `..`). Anything else is answered with `400`.
+- **Status codes** (errors are RFC 9457 problems):
+
+  | Status | Meaning |
+  |--------|---------|
+  | `200`  | File content with the stored `Content-Type` (fallback `application/octet-stream`) and an `ETag` derived from the file checksum |
+  | `400`  | Malformed file ID, file-manager is not called |
+  | `404`  | file-manager does not know the file |
+  | `502`  | file-manager failed, was unreachable or the checksum did not match; no partial body is sent |
+
+- **Headers**: responses carry `X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox; default-src 'none'`.
+- **Limits**: files are buffered in memory before they are sent (file-manager limits uploads to 10 MB). Rate limiting is expected at the ingress or gateway.
+
+Deployment prerequisites (included in `config/default`): a projected `filemgr-token` volume with audience `file-manager` mounted read-only at `/var/run/secrets/filemgr`, and the namespace label `cp.ei.telekom.de/file-manager: enabled` required by file-manager's network policy. The CA trust bundle at `/var/run/secrets/trust-bundle/trust-bundle.pem` must be mounted as well.
+
+> **Migration note:** `specificationUrl` previously contained the internal file-manager URL. It now points to the download proxy and is `null` until `fileDownload.publicBaseUrl` is set. Operators must set this value (e.g. to the ingress host) when upgrading.
+
+> **Local development:** the file-manager client loads the trust bundle at startup and exits if it is missing. Provide the bundle, set `SKIP_TLS_VERIFY=true`, or leave `fileManager.baseUrl` empty to disable the download route.

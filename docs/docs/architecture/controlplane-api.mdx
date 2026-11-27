@@ -265,6 +265,36 @@ Both modes require a **JWT bearer token** in the `Authorization` header. The tok
 
 See the [Admin Journey: ControlPlane API](../admin-journey/controlplane-api.md) page for configuration examples and Keycloak integration guidance.
 
+### File Download Proxy
+
+Specifications referenced by `specificationUrl` are stored in the internal file-manager, which only accepts in-cluster service-account tokens. The ControlPlane API therefore exposes a public, read-only, GET-only route `GET /files/v1/{fileId}` that proxies the download. The route is registered without a guard, so anonymous clients can use it on the external listener. It serves any file ID known to file-manager and does not consult the database.
+
+```mermaid
+sequenceDiagram
+  participant U as Public client
+  participant CP as ControlPlane API
+  participant FM as file-manager (k8s service)
+  U->>CP: GET /files/v1/{fileId} (no credentials)
+  CP->>CP: validate fileId format
+  alt invalid id
+    CP-->>U: 400 problem (file-manager not called)
+  else valid id
+    CP->>FM: GET /api/v1/files/{fileId} with Bearer service-account token (audience file-manager)
+    alt file exists, checksum ok
+      FM-->>CP: 200 bytes + content type + checksum
+      CP-->>U: 200 bytes, Content-Type, ETag
+    else unknown id
+      FM-->>CP: 404
+      CP-->>U: 404 problem
+    else failure or checksum mismatch
+      FM-->>CP: error
+      CP-->>U: 502 problem (no partial body)
+    end
+  end
+```
+
+The proxy authenticates with its own projected token (`fileManager.tokenFilePath`) and never forwards the caller's `Authorization` header. The file is buffered before it is sent, so a checksum failure never results in a truncated response. The `specificationUrl` field of `Api`, `EventType`, `McpServer` and `AgentCard` is built from `fileDownload.publicBaseUrl` and is `null` while that setting is empty. See the [ControlPlane API README](https://github.com/telekom/controlplane/blob/main/controlplane-api/README.md) for the configuration keys.
+
 ## Domain Interactions
 
 - **All domain operators** — The Projector reads custom resources managed by Admin, Organization, Application, API, Approval, and Agentic operators. It depends on these operators to create and reconcile the source resources.

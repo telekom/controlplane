@@ -11,15 +11,17 @@ import (
 	commonconfig "github.com/telekom/controlplane/common-server/pkg/config"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	filemanager "github.com/telekom/controlplane/file-manager/api"
 )
 
 type ServerConfig struct {
 	commonconfig.BaseConfig `mapstructure:",squash"`
-	Database                DatabaseConfig    `mapstructure:"database"`
-	GraphQL                 GraphQLConfig     `mapstructure:"graphql"`
-	Kubernetes              KubernetesConfig  `mapstructure:"kubernetes"`
-	FileManager             FileManagerConfig `mapstructure:"fileManager"`
-	RoverServer             RoverServerConfig `mapstructure:"roverServer"`
+	Database                DatabaseConfig     `mapstructure:"database"`
+	GraphQL                 GraphQLConfig      `mapstructure:"graphql"`
+	Kubernetes              KubernetesConfig   `mapstructure:"kubernetes"`
+	FileManager             FileManagerConfig  `mapstructure:"fileManager"`
+	FileDownload            FileDownloadConfig `mapstructure:"fileDownload"`
+	RoverServer             RoverServerConfig  `mapstructure:"roverServer"`
 }
 
 type KubernetesConfig struct {
@@ -36,11 +38,21 @@ type GraphQLConfig struct {
 	PlaygroundEnabled bool `mapstructure:"playgroundEnabled"`
 }
 
-// FileManagerConfig holds the configuration for constructing specification
-// download URLs. The BaseURL is the base URL of the file-manager API, including
-// the /api prefix (for example https://file-manager.example.svc/api).
+// FileManagerConfig holds the configuration of the internal file-manager
+// client used by the file download proxy. The BaseURL is the internal base URL
+// of the file-manager API, including the /api prefix (for example
+// https://file-manager.example.svc/api). TokenFilePath points to the projected
+// service-account token (audience file-manager) used to authenticate to it.
 type FileManagerConfig struct {
-	BaseURL string `mapstructure:"baseUrl"`
+	BaseURL       string `mapstructure:"baseUrl"`
+	TokenFilePath string `mapstructure:"tokenFilePath"`
+}
+
+// FileDownloadConfig holds the configuration for the public file download
+// endpoint. PublicBaseURL is the externally reachable base URL of the
+// controlplane-api, used to build specification download URLs.
+type FileDownloadConfig struct {
+	PublicBaseURL string `mapstructure:"publicBaseUrl"`
 }
 
 // RoverServerConfig holds the configuration for the rover-server integration
@@ -93,8 +105,10 @@ func DefaultConfig() *ServerConfig {
 			Environment: "poc", // TODO: for now, this is fine. Needs to be refined later
 		},
 		FileManager: FileManagerConfig{
-			BaseURL: "https://file-manager.controlplane-system.svc.cluster.local/api",
+			BaseURL:       "https://file-manager.controlplane-system.svc.cluster.local/api",
+			TokenFilePath: filemanager.TokenFilePath,
 		},
+		FileDownload: FileDownloadConfig{},
 		RoverServer: RoverServerConfig{
 			BaseURL:       "https://rover-server-service.controlplane-system.svc.cluster.local:9443",
 			TokenFilePath: "/var/run/secrets/rover/token",
@@ -103,20 +117,32 @@ func DefaultConfig() *ServerConfig {
 	}
 }
 
+// validateAbsoluteURL checks that value is empty or an absolute URL with a
+// scheme and a host.
+func validateAbsoluteURL(field, value string) error {
+	if value == "" {
+		return nil
+	}
+	u, err := url.Parse(value)
+	if err != nil {
+		return fmt.Errorf("parsing %s: %w", field, err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("%s %q must be an absolute URL with scheme and host", field, value)
+	}
+	return nil
+}
+
 // Validate checks that the base URL is empty or an absolute URL with a
 // scheme and a host.
 func (c FileManagerConfig) Validate() error {
-	if c.BaseURL == "" {
-		return nil
-	}
-	u, err := url.Parse(c.BaseURL)
-	if err != nil {
-		return fmt.Errorf("parsing baseUrl: %w", err)
-	}
-	if u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("baseUrl %q must be an absolute URL with scheme and host", c.BaseURL)
-	}
-	return nil
+	return validateAbsoluteURL("baseUrl", c.BaseURL)
+}
+
+// Validate checks that the public base URL is empty or an absolute URL with a
+// scheme and a host.
+func (c FileDownloadConfig) Validate() error {
+	return validateAbsoluteURL("publicBaseUrl", c.PublicBaseURL)
 }
 
 // GetConfigOrDie loads the server configuration from an optional YAML file,
@@ -129,6 +155,9 @@ func GetConfigOrDie(filepath string) *ServerConfig {
 	}
 	if err := cfg.FileManager.Validate(); err != nil {
 		panic(fmt.Errorf("validating fileManager config: %w", err))
+	}
+	if err := cfg.FileDownload.Validate(); err != nil {
+		panic(fmt.Errorf("validating fileDownload config: %w", err))
 	}
 	return cfg
 }
