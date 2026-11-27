@@ -26,6 +26,7 @@ rules:
   - api.cp.ei.telekom.de
   resources:
   - apiexposures
+  - apisubscriptions
   verbs:
   - get
   - list

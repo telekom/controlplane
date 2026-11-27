@@ -268,6 +268,12 @@ var _ = Describe("Integration: Two-Tier Reconcile Cycle", Ordered, func() {
 		}
 		Expect(k8sClient.Status().Update(ctx, crossExposure)).To(Succeed())
 
+		By("Creating the consumer's ApiSubscriptions (required by Listeners on these paths)")
+		consumerRef := ctypes.ObjectRef{Name: consumerName, Namespace: testNamespace}
+		zoneRef := ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace}
+		createConsumerSubscription(ctx, envName, consumerRef, testBasePath, zoneRef)
+		createConsumerSubscription(ctx, envName, consumerRef, "/api/v1/cross", zoneRef)
+
 		By("Creating gateway Route CRs (prerequisites for RouteListener path resolution)")
 		gatewayRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1447,6 +1453,9 @@ func createCrossTeamListener(
 	}
 	Expect(k8sClient.Create(ctx, route)).To(Succeed())
 
+	createConsumerSubscription(ctx, envName, ctypes.ObjectRef{Name: consumerName, Namespace: testNamespace}, basePath,
+		ctypes.ObjectRef{Name: zoneName, Namespace: zoneNamespace})
+
 	By("Creating the cross-team Listener " + name)
 	listener := &spectrev1.Listener{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1479,6 +1488,24 @@ func createCrossTeamListener(
 		{Name: util.MakeSubscriberName(util.MakeBridgeSubscriberId(consumerClientID, appId, basePath, "rp")), Namespace: zoneStatusNs},
 	}
 	return nn, rlKey, subKeys
+}
+
+// createConsumerSubscription creates the consumer Application's
+// ApiSubscription for basePath, without which a Listener on basePath is blocked.
+func createConsumerSubscription(ctx context.Context, env string, consumer ctypes.ObjectRef, basePath string, zone ctypes.ObjectRef) {
+	sub := &apiv1.ApiSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      consumer.Name + "--" + util.MakeRouteName(basePath),
+			Namespace: consumer.Namespace,
+			Labels:    map[string]string{envLabelKey: env},
+		},
+		Spec: apiv1.ApiSubscriptionSpec{
+			ApiBasePath: basePath,
+			Requestor:   apiv1.Requestor{Application: consumer},
+			Zone:        zone,
+		},
+	}
+	ExpectWithOffset(1, directClient.Create(ctx, sub)).To(Succeed())
 }
 
 // ownedApprovalRequest returns the ApprovalRequest for key that the Listener

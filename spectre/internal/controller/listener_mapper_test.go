@@ -443,6 +443,54 @@ var _ = Describe("Listener Mapper Tests", Ordered, func() {
 		})
 	})
 
+	Describe("mapApiSubscriptionToListeners", func() {
+		subscription := func(env, requestorName, requestorNs, path string) *apiv1.ApiSubscription {
+			labels := map[string]string{}
+			if env != "" {
+				labels[envLabelKey] = env
+			}
+			return &apiv1.ApiSubscription{
+				ObjectMeta: metav1.ObjectMeta{Name: "mapper-subscription", Namespace: mapNs, Labels: labels},
+				Spec: apiv1.ApiSubscriptionSpec{
+					ApiBasePath: path,
+					Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: requestorName, Namespace: requestorNs}},
+				},
+			}
+		}
+		mapperListener := reconcile.Request{NamespacedName: types.NamespacedName{Name: "mapper-listener", Namespace: mapNs}}
+
+		DescribeTable("should match only the Listeners whose consumer is the requestor and whose apiBasePath is the subscription's",
+			func(requestorNs string) {
+				reqs := reconciler.mapApiSubscriptionToListeners(ctx, subscription(mapEnv, appName, requestorNs, basePath))
+				Expect(reqs).To(ConsistOf(mapperListener))
+			},
+			Entry("a requestor in the subscription's namespace", mapNs),
+			Entry("a requestor without a namespace, defaulting to the subscription's", ""),
+		)
+
+		DescribeTable("should not match",
+			func(env, requestorName, requestorNs, path string) {
+				reqs := reconciler.mapApiSubscriptionToListeners(ctx, subscription(env, requestorName, requestorNs, path))
+				Expect(reqs).To(BeEmpty())
+			},
+			Entry("another apiBasePath", mapEnv, appName, mapNs, "/api/v1/other"),
+			Entry("another requestor Application", mapEnv, provName, mapNs, basePath),
+			Entry("a requestor Application in another namespace", mapEnv, appName, "other-ns", basePath),
+			Entry("another environment", "other-env", appName, mapNs, basePath),
+			Entry("no environment label", "", appName, mapNs, basePath),
+		)
+
+		It("should skip a subscription to another organization's API", func() {
+			sub := subscription(mapEnv, appName, mapNs, basePath)
+			sub.Spec.Organization = "remote-org"
+			Expect(reconciler.mapApiSubscriptionToListeners(ctx, sub)).To(BeEmpty())
+		})
+
+		It("should ignore objects that are not ApiSubscriptions", func() {
+			Expect(reconciler.mapApiSubscriptionToListeners(ctx, &apiv1.ApiExposure{})).To(BeEmpty())
+		})
+	})
+
 	Describe("mapZoneToListeners", func() {
 		It("should match when Zone is referenced by the consumer Application", func() {
 			// Create the consumer Application with a Zone reference.

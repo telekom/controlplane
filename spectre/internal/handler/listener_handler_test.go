@@ -289,6 +289,24 @@ var _ = Describe("ListenerHandler", func() {
 		_ = approvalv1.AddToScheme(scheme)
 		_ = applicationv1.AddToScheme(scheme)
 		fakeClient.EXPECT().Scheme().Return(scheme).Maybe()
+		// The consumer subscribes to testApiBasePath in every spec; the
+		// subscription check itself is covered by the placement specs. A spec
+		// cannot override this list: the mock answers with the first matching
+		// expectation, which is this one.
+		fakeClient.EXPECT().
+			List(mock.Anything, mock.AnythingOfType("*v1.ApiSubscriptionList"), mock.Anything).
+			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+				*list.(*apiv1.ApiSubscriptionList) = apiv1.ApiSubscriptionList{Items: []apiv1.ApiSubscription{{
+					ObjectMeta: metav1.ObjectMeta{Name: consumerAppName + "--api-v1-orders", Namespace: listenerNamespace},
+					Spec: apiv1.ApiSubscriptionSpec{
+						ApiBasePath: testApiBasePath,
+						Requestor: apiv1.Requestor{Application: ctypes.ObjectRef{
+							Name: consumerAppName, Namespace: listenerNamespace,
+						}},
+					},
+				}}}
+			}).
+			Return(nil).Maybe()
 	})
 
 	// --- Mock helpers ---

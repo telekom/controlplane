@@ -206,6 +206,9 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 		}
 		Expect(directClient.Status().Update(ctx, watchExposure)).To(Succeed())
 
+		createConsumerSubscription(ctx, watchEnv, ctypes.ObjectRef{Name: watchConsumerName, Namespace: watchNs}, "/api/v1/watch",
+			ctypes.ObjectRef{Name: "aws", Namespace: watchNs})
+
 		// Gateway Route for the listener's apiBasePath.
 		gwRoute := &gatewayv1.Route{
 			ObjectMeta: metav1.ObjectMeta{
@@ -644,6 +647,9 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			provApp.Spec.Team = "team-watch"
 			Expect(directClient.Update(ctx, provApp)).To(Succeed())
 
+			createConsumerSubscription(ctx, watchEnv, ctypes.ObjectRef{Name: watchConsumerName, Namespace: watchNs}, s3BasePath,
+				ctypes.ObjectRef{Name: "aws", Namespace: watchNs})
+
 			listener := &spectrev1.Listener{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "s3-listener", Namespace: watchNs,
@@ -1020,6 +1026,9 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 			}
 			Expect(directClient.Create(ctx, sa)).To(Succeed())
 
+			createConsumerSubscription(ctx, s9Env, ctypes.ObjectRef{Name: "s9-consumer", Namespace: s9Ns}, s9Path,
+				ctypes.ObjectRef{Name: "aws", Namespace: s9Ns})
+
 			listener := &spectrev1.Listener{
 				ObjectMeta: metav1.ObjectMeta{Name: listenerNN.Name, Namespace: s9Ns, Labels: s9Labels()},
 				Spec: spectrev1.ListenerSpec{
@@ -1196,6 +1205,163 @@ var _ = Describe("Watch-Driven Integration", Ordered, func() {
 	// the Spectre controller's own domain and would need a separate test suite
 	// in rover/internal/controller/. Omitted here with a note.
 	// -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Scenario 10: the consumer's ApiSubscription unblocks a Listener, and its
+	// deletion stops applied capture. Only the ApiSubscription watch wakes the
+	// Listener: a Blocked Listener is otherwise requeued after the long
+	// interval.
+	// -----------------------------------------------------------------------
+	Describe("Scenario 10: the consumer ApiSubscription unblocks a Listener and its deletion drains capture", func() {
+		It("should block without the subscription, provision once it exists, and drain once it is deleted", func() {
+			const (
+				s10Path     = "/api/v1/s10"
+				s10Listener = "s10-listener"
+				s10Timeout  = 20 * time.Second
+				s10Interval = 250 * time.Millisecond
+			)
+			listenerNN := types.NamespacedName{Name: s10Listener, Namespace: watchNs}
+			rlKey := types.NamespacedName{
+				Name:      util.MakeRouteListenerName(watchConsumerCID, s10Path, watchConsumerCID, watchProviderCID),
+				Namespace: watchZNs,
+			}
+			missing := fmt.Sprintf("has no ApiSubscription for apiBasePath %q", s10Path)
+			expectBlockedOnSubscription := func(g Gomega) {
+				l := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, l)).To(Succeed())
+				processing := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeProcessing)
+				g.Expect(processing).NotTo(BeNil())
+				g.Expect(processing.Reason).To(Equal(condition.ReasonBlocked))
+				g.Expect(processing.Message).To(ContainSubstring(missing))
+			}
+			// expectQuiet waits until the Listener stops changing, so that a later
+			// reconcile can only come from the ApiSubscription watch.
+			expectQuiet := func() {
+				Eventually(func(g Gomega) {
+					current := &spectrev1.Listener{}
+					g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+					g.Consistently(func(g Gomega) {
+						again := &spectrev1.Listener{}
+						g.Expect(directClient.Get(ctx, listenerNN, again)).To(Succeed())
+						g.Expect(again.ResourceVersion).To(Equal(current.ResourceVersion))
+					}, 2*time.Second, s10Interval).Should(Succeed())
+				}, s10Timeout, s10Interval).Should(Succeed())
+			}
+
+			By("Creating the exposure and Route for the path")
+			exposure := &apiv1.ApiExposure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: watchProviderName + "--" + util.MakeRouteName(s10Path), Namespace: watchNs,
+					Labels: map[string]string{
+						envLabelKey:                          watchEnv,
+						cconfig.BuildLabelKey("application"): watchProviderName,
+					},
+				},
+				Spec: apiv1.ApiExposureSpec{
+					ApiBasePath: s10Path,
+					Upstreams:   []apiv1.Upstream{{Url: "https://api.s10.example.com"}},
+					Visibility:  apiv1.VisibilityZone,
+					Approval:    apiv1.Approval{Strategy: apiv1.ApprovalStrategyAuto},
+					Zone:        ctypes.ObjectRef{Name: "aws", Namespace: watchNs},
+				},
+			}
+			Expect(directClient.Create(ctx, exposure)).To(Succeed())
+			exposure.Status = apiv1.ApiExposureStatus{
+				Active: true,
+				Route:  &ctypes.ObjectRef{Name: util.MakeRouteName(s10Path), Namespace: watchZNs},
+			}
+			Expect(directClient.Status().Update(ctx, exposure)).To(Succeed())
+			route := &gatewayv1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: util.MakeRouteName(s10Path), Namespace: watchZNs,
+					Labels: map[string]string{
+						envLabelKey:              watchEnv,
+						cconfig.OwnerUidLabelKey: string(exposure.UID),
+					},
+				},
+				Spec: gatewayv1.RouteSpec{
+					GatewayRef: ctypes.ObjectRef{Name: "gw-aws", Namespace: watchZNs},
+					Type:       gatewayv1.RouteTypePrimary,
+					Paths:      []string{"/gateway" + s10Path},
+					Backend: gatewayv1.Backend{
+						Upstreams: []gatewayv1.Upstream{
+							{Scheme: "https", Hostname: "api.s10.example.com", Port: 443, Path: s10Path},
+						},
+					},
+				},
+			}
+			Expect(directClient.Create(ctx, route)).To(Succeed())
+
+			By("Creating the Listener without a consumer ApiSubscription")
+			listener := &spectrev1.Listener{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: s10Listener, Namespace: watchNs,
+					Labels: map[string]string{envLabelKey: watchEnv},
+				},
+				Spec: spectrev1.ListenerSpec{
+					Consumer: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: watchConsumerName, Namespace: watchNs},
+					},
+					Provider: ctypes.TypedObjectRef{
+						TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+						ObjectRef: ctypes.ObjectRef{Name: watchProviderName, Namespace: watchNs},
+					},
+					Application: ctypes.ObjectRef{Name: watchSAName, Namespace: watchNs},
+					ApiListener: &spectrev1.ApiListener{ApiBasePath: s10Path},
+				},
+			}
+			Expect(directClient.Create(ctx, listener)).To(Succeed())
+
+			By("Verifying the Listener is Blocked on the missing subscription and requests no approval")
+			Eventually(expectBlockedOnSubscription, s10Timeout, s10Interval).Should(Succeed())
+			expectQuiet()
+			l := &spectrev1.Listener{}
+			Expect(directClient.Get(ctx, listenerNN, l)).To(Succeed())
+			Expect(l.Status.ProviderApprovalRequest).To(BeNil())
+			Expect(l.Status.ConsumerApprovalRequest).To(BeNil())
+
+			By("Creating the consumer ApiSubscription — only its watch can wake the Listener")
+			createConsumerSubscription(ctx, watchEnv, ctypes.ObjectRef{Name: watchConsumerName, Namespace: watchNs}, s10Path,
+				ctypes.ObjectRef{Name: "aws", Namespace: watchNs})
+			Eventually(func(g Gomega) {
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+				g.Expect(current.Status.ProviderApprovalRequest).NotTo(BeNil())
+				g.Expect(current.Status.ConsumerApprovalRequest).NotTo(BeNil())
+			}, s10Timeout, s10Interval).Should(Succeed())
+
+			By("Granting both gates and waiting for the RouteListener")
+			Eventually(func(g Gomega) { upsertGrantedApprovals(g, listenerNN) }, s10Timeout, s10Interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{})).To(Succeed())
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+				g.Expect(current.Status.AppliedPlacement).NotTo(BeNil())
+			}, s10Timeout, s10Interval).Should(Succeed())
+			expectQuiet()
+
+			By("Deleting the consumer ApiSubscription — only its watch can wake the Listener")
+			sub := &apiv1.ApiSubscription{ObjectMeta: metav1.ObjectMeta{
+				Name: watchConsumerName + "--" + util.MakeRouteName(s10Path), Namespace: watchNs,
+			}}
+			Expect(directClient.Delete(ctx, sub)).To(Succeed())
+			Eventually(func(g Gomega) {
+				current := &spectrev1.Listener{}
+				g.Expect(directClient.Get(ctx, listenerNN, current)).To(Succeed())
+				if current.Status.Draining != nil {
+					g.Expect(current.Status.Draining.Reason).To(Equal("consumer subscription missing"))
+					return
+				}
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).To(BeTrue())
+				expectBlockedOnSubscription(g)
+			}, s10Timeout, s10Interval).Should(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(apierrors.IsNotFound(directClient.Get(ctx, rlKey, &gatewayv1.RouteListener{}))).To(BeTrue())
+				expectBlockedOnSubscription(g)
+			}, s10Timeout, s10Interval).Should(Succeed())
+		})
+	})
+
 	Describe("Scenario 8: Rover→Spectre chain (noted)", func() {
 		It("is documented as requiring a separate rover test suite", func() {
 			Skip(fmt.Sprintf(
