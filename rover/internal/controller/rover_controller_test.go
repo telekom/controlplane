@@ -772,11 +772,14 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("changing the Rover so that it needs a client and a different bootstrap secret")
-			fetched := &roverv1.Rover{}
-			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
-			fetched.Spec.ClientSecret = "other"
-			fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
-			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			// Retry on conflict, as the controller writes the status concurrently
+			Eventually(func(g Gomega) {
+				fetched := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+				fetched.Spec.ClientSecret = "other"
+				fetched.Spec.Subscriptions = []roverv1.Subscription{{Api: &roverv1.ApiSubscription{BasePath: BasePath}}}
+				g.Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				application := &applicationv1.Application{}
@@ -815,12 +818,15 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("updating the Rover's ExternalIds")
-			fetched := &roverv1.Rover{}
-			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
-			fetched.Spec.ExternalIds = []roverv1.ExternalId{
-				{Scheme: "psi", Id: "PSI-999999"},
-			}
-			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			// Retry on conflict, as the controller writes the status concurrently
+			Eventually(func(g Gomega) {
+				fetched := &roverv1.Rover{}
+				g.Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+				fetched.Spec.ExternalIds = []roverv1.ExternalId{
+					{Scheme: "psi", Id: "PSI-999999"},
+				}
+				g.Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				application := &applicationv1.Application{}

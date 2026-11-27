@@ -378,6 +378,20 @@ var _ = Describe("Notification Controller", Ordered, func() {
 			channelName = randName("eni--hyperion--mail")
 			channel = newTestNotificationChannel(ctx, channelName, defaultNamespace)
 
+			// A Notification without channels is not re-enqueued when a channel of its
+			// namespace or its template becomes Ready, so both must be Ready in the
+			// reconciler's cache before it is created.
+			By("waiting until the template and channel are Ready in the manager's cache")
+			Eventually(func(g Gomega) {
+				cached := k8sManager.GetClient()
+				t := &notificationv1.NotificationTemplate{}
+				g.Expect(cached.Get(ctx, client.ObjectKeyFromObject(template), t)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(t.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+				c := &notificationv1.NotificationChannel{}
+				g.Expect(cached.Get(ctx, client.ObjectKeyFromObject(channel), c)).To(Succeed())
+				g.Expect(meta.IsStatusConditionTrue(c.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
 			By("creating the custom resource for the Kind Notification without channels")
 			notificationName = randName("notification")
 			notification = newTestNotification(ctx, notificationName, defaultNamespace, withPurpose(purposeName))
