@@ -59,6 +59,7 @@ type ListenerReconciler struct {
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apiexposures,verbs=get;list;watch
+// +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apisubscriptions,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -152,6 +153,12 @@ func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&apiv1.ApiExposure{},
 			crhandler.EnqueueRequestsFromMapFunc(r.mapApiExposureToListeners),
+			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
+		).
+		// Consumer ApiSubscriptions — creation unblocks a Listener, deletion stops its capture.
+		Watches(
+			&apiv1.ApiSubscription{},
+			crhandler.EnqueueRequestsFromMapFunc(r.mapApiSubscriptionToListeners),
 			builder.WithPredicates(cc.Count("listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
@@ -490,6 +497,52 @@ func (r *ListenerReconciler) mapApiExposureToListeners(
 				NamespacedName: client.ObjectKeyFromObject(l),
 			})
 		}
+	}
+
+	return reqs
+}
+
+// mapApiSubscriptionToListeners maps an ApiSubscription change to Listeners
+// whose consumer is the subscription's requestor Application and whose
+// apiBasePath is the subscription's. A requestor without a namespace refers to
+// the subscription's own namespace. A subscription to another organization's
+// API is skipped: it never satisfies a Listener.
+func (r *ListenerReconciler) mapApiSubscriptionToListeners(
+	ctx context.Context,
+	obj client.Object,
+) []reconcile.Request {
+	sub, ok := obj.(*apiv1.ApiSubscription)
+	if !ok {
+		return nil
+	}
+
+	envLabel := sub.Labels[cconfig.EnvironmentLabelKey]
+	if envLabel == "" || sub.Spec.Organization != "" {
+		return nil
+	}
+	requestor := sub.Spec.Requestor.Application
+	if requestor.Namespace == "" {
+		requestor.Namespace = sub.Namespace
+	}
+
+	list := &spectrev1.ListenerList{}
+	if err := r.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: envLabel,
+	}); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list Listeners for ApiSubscription")
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for i := range list.Items {
+		l := &list.Items[i]
+		if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath != sub.Spec.ApiBasePath {
+			continue
+		}
+		if l.Spec.Consumer.Name != requestor.Name || l.Spec.Consumer.Namespace != requestor.Namespace {
+			continue
+		}
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(l)})
 	}
 
 	return reqs

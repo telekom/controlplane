@@ -41,6 +41,17 @@ func (e *basePathMismatchError) Error() string { return e.msg }
 // IsBlocked implements ctrlerrors.BlockedError.
 func (e *basePathMismatchError) IsBlocked() bool { return true }
 
+// consumerSubscriptionMissingError reports that the consumer Application has no
+// ApiSubscription for the Listener's apiBasePath. The gateway rejects the
+// consumer's calls without it, so there is no traffic to capture. It drains
+// applied capture.
+type consumerSubscriptionMissingError struct{ msg string }
+
+func (e *consumerSubscriptionMissingError) Error() string { return e.msg }
+
+// IsBlocked implements ctrlerrors.BlockedError.
+func (e *consumerSubscriptionMissingError) IsBlocked() bool { return true }
+
 // onConsumerPath reports whether a provider-bound Route in zone carries C's
 // traffic to P. In C's zone, C calls the Route the exposure assigned to that
 // zone (real or proxy). Outside C's zone only the exposure's primary route
@@ -226,15 +237,17 @@ func warnEnvironmentAliases(ctx context.Context, obj runtime.Object, aliases ...
 // the error to report. When no candidate supports capture, the capture zone
 // cannot deliver to A, a zone publishes events with another environment than
 // its EventStore subscribes with, the apiBasePath is not spelled like the
-// exposure's, or the provider binding is definitively invalidated, capture is
-// drained (checkpoint first), including untracked children of a partial
-// provisioning. Other errors, including read errors, leave capture untouched:
-// a transient failure must not stop or move it.
+// exposure's, the consumer has no ApiSubscription for it, or the provider
+// binding is definitively invalidated, capture is drained (checkpoint first),
+// including untracked children of a partial provisioning. Other errors,
+// including read errors, leave capture untouched: a transient failure must not
+// stop or move it.
 func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *spectrev1.Listener, err error) error {
 	var noCandidate *util.NoCaptureCandidateError
 	var bindingErr *providerBindingError
 	var envMismatch *util.EnvironmentMismatchError
 	var pathMismatch *basePathMismatchError
+	var noSubscription *consumerSubscriptionMissingError
 	reason, notStarted := "", err
 	switch {
 	case errors.As(err, &noCandidate) && noCandidate.DeliveryPath != nil:
@@ -245,6 +258,8 @@ func (h *ListenerHandler) handlePlacementError(ctx context.Context, listener *sp
 		reason = "event environment mismatch"
 	case errors.As(err, &pathMismatch):
 		reason = "apiBasePath mismatch"
+	case errors.As(err, &noSubscription):
+		reason = "consumer subscription missing"
 	case errors.As(err, &bindingErr):
 		reason, notStarted = "provider binding invalidated", errors.Wrap(err, "provider binding check failed")
 	default:

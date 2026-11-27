@@ -113,8 +113,10 @@ type plFixtures struct {
 	apps     []*applicationv1.Application
 	provider *applicationv1.Application
 	exposure *apiv1.ApiExposure
-	sa       *spectrev1.SpectreApplication
-	listener *spectrev1.Listener
+	// subscription is C's ApiSubscription for plPath.
+	subscription *apiv1.ApiSubscription
+	sa           *spectrev1.SpectreApplication
+	listener     *spectrev1.Listener
 }
 
 // newPlFixtures places C in c, P in p (exposure zone, primary route) with a
@@ -194,6 +196,14 @@ func newPlFixtures(observerZone string) *plFixtures {
 			ProxyRoutes: []ctypes.ObjectRef{plRouteRef("c")},
 		},
 	}
+	f.subscription = &apiv1.ApiSubscription{
+		ObjectMeta: metav1.ObjectMeta{Name: "c-app--api-v1-orders", Namespace: plTeamNs},
+		Spec: apiv1.ApiSubscriptionSpec{
+			ApiBasePath: plPath,
+			Requestor:   apiv1.Requestor{Application: ctypes.ObjectRef{Name: "c-app", Namespace: plTeamNs}},
+			Zone:        plZoneRef("c"),
+		},
+	}
 	f.sa = &spectrev1.SpectreApplication{
 		ObjectMeta: metav1.ObjectMeta{Name: "pl-sa", Namespace: plTeamNs, UID: "pl-sa-uid"},
 		Spec:       spectrev1.SpectreApplicationSpec{Application: plAppRef("a-app")},
@@ -244,6 +254,7 @@ func (f *plFixtures) objects() []client.Object {
 		add(a)
 	}
 	add(f.exposure)
+	add(f.subscription)
 	add(f.sa)
 	add(f.listener)
 	return objs
@@ -1378,6 +1389,156 @@ var _ = Describe("Listener apiBasePath spelling (controller)", func() {
 		Expect(ready.ObservedGeneration).To(Equal(l.Generation))
 		Expect(ready.Message).To(ContainSubstring(plPathMismatch(upper)))
 		Expect(ready.Message).ToNot(ContainSubstring(fmt.Sprintf("%q", trailing)))
+	})
+})
+
+// plNoSubscription is the Blocked message for the consumer c-app without an
+// ApiSubscription for plPath.
+var plNoSubscription = fmt.Sprintf("consumer application %q has no ApiSubscription for apiBasePath %q", plTeamNs+"/c-app", plPath)
+
+var _ = Describe("Listener consumer subscription (controller)", func() {
+	// expectBlockedWithoutApproval runs the startup passes and one more and
+	// asserts that the Listener blocks on the missing subscription without
+	// requesting approval or capturing.
+	expectBlockedWithoutApproval := func(h *plHarness) {
+		all := h.startup()
+		all = append(all, h.mustReconcile()...)
+
+		l := h.listener()
+		ExpectWithOffset(1, plBlocked(l)).To(ContainSubstring(plNoSubscription))
+		ready := meta.FindStatusCondition(l.Status.Conditions, condition.ConditionTypeReady)
+		ExpectWithOffset(1, ready).ToNot(BeNil())
+		ExpectWithOffset(1, ready.Status).To(Equal(metav1.ConditionFalse))
+		ExpectWithOffset(1, ready.Message).To(ContainSubstring(plNoSubscription))
+		ExpectWithOffset(1, l.Status.ProviderApprovalRequest).To(BeNil())
+		ExpectWithOffset(1, l.Status.ConsumerApprovalRequest).To(BeNil())
+		ExpectWithOffset(1, l.Status.Draining).To(BeNil())
+		ExpectWithOffset(1, l.Status.RouteListener).To(BeNil())
+		ExpectWithOffset(1, plCount(all, "Create", "ApprovalRequest", "")).To(BeZero())
+		ExpectWithOffset(1, plCount(all, "Create", "Approval", "")).To(BeZero())
+		plExpectNoCaptureWrites(all)
+		ExpectWithOffset(1, h.plRouteListeners()).To(BeEmpty())
+	}
+
+	It("C1: a consumer without an ApiSubscription blocks without requesting approval or capturing", func() {
+		f := newPlFixtures("c")
+		f.subscription = nil
+		expectBlockedWithoutApproval(newPlHarness(f))
+	})
+
+	DescribeTable("C2: an ApiSubscription that does not subscribe the consumer to the path blocks without requesting approval or capturing",
+		func(mutate func(s *apiv1.ApiSubscription)) {
+			f := newPlFixtures("c")
+			mutate(f.subscription)
+			expectBlockedWithoutApproval(newPlHarness(f))
+		},
+		Entry("another apiBasePath", func(s *apiv1.ApiSubscription) { s.Spec.ApiBasePath = "/api/v1/other" }),
+		Entry("the path spelled with a trailing slash", func(s *apiv1.ApiSubscription) { s.Spec.ApiBasePath = plPath + "/" }),
+		Entry("another requestor Application", func(s *apiv1.ApiSubscription) { s.Spec.Requestor.Application.Name = "a-app" }),
+		Entry("a requestor Application in another namespace", func(s *apiv1.ApiSubscription) {
+			s.Spec.Requestor.Application.Namespace = "other-team"
+		}),
+		Entry("only a subscription to another organization's API", func(s *apiv1.ApiSubscription) {
+			s.Spec.Organization = "remote-org"
+		}),
+		Entry("an ApiSubscription being deleted", func(s *apiv1.ApiSubscription) {
+			s.DeletionTimestamp = new(metav1.Now())
+			s.Finalizers = []string{"test.example/keep"}
+		}),
+	)
+
+	DescribeTable("C3: the consumer's ApiSubscription for the path lets the Listener request approval and capture",
+		func(mutate func(s *apiv1.ApiSubscription)) {
+			f := newPlFixtures("c")
+			mutate(f.subscription)
+			h := newPlHarness(f)
+			l, _ := h.provision()
+			plExpectPlacement(l, "c", "c", "c", f.ecs["c"].Status.CallbackURL)
+		},
+		Entry("requestor with namespace", func(*apiv1.ApiSubscription) {}),
+		Entry("requestor without namespace", func(s *apiv1.ApiSubscription) { s.Spec.Requestor.Application.Namespace = "" }),
+	)
+
+	It("C3b: a local subscription next to a subscription to another organization's API lets the Listener request approval and capture", func() {
+		f := newPlFixtures("c")
+		remote := f.subscription.DeepCopy()
+		remote.Name = "c-app--api-v1-orders--remote-org"
+		remote.Spec.Organization = "remote-org"
+		remote.Labels = map[string]string{cconfig.EnvironmentLabelKey: plEnv}
+		h := newPlHarness(f)
+		Expect(h.raw.Create(context.Background(), remote)).To(Succeed())
+		l, _ := h.provision()
+		plExpectPlacement(l, "c", "c", "c", f.ecs["c"].Status.CallbackURL)
+	})
+
+	It("C4: applied capture whose consumer ApiSubscription is deleted checkpoints, drains, and resumes unchanged once it is recreated", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		oldFP := l.Status.AppliedPlacement.Fingerprint
+		rl := l.Status.RouteListener.DeepCopy()
+		subRefs := append([]ctypes.ObjectRef(nil), l.Status.EventSubscriptions...)
+
+		Expect(h.raw.Delete(context.Background(), f.subscription.DeepCopy())).To(Succeed())
+
+		// Checkpoint only: the drain is persisted before anything is deleted.
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).ToNot(BeNil())
+		Expect(l.Status.Draining.Phase).To(Equal(handler.ExportDrainPhaseStopping))
+		Expect(l.Status.Draining.Reason).To(Equal("consumer subscription missing"))
+		Expect(l.Status.Draining.OldFingerprint).To(Equal(oldFP))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
+		Expect(plCountVerb(calls, "Create")).To(BeZero())
+		Expect(plBlocked(l)).To(ContainSubstring(plNoSubscription))
+
+		h.drain(rl)
+		Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), rl.K8s(), &gatewayv1.RouteListener{}))).To(BeTrue())
+		for i := range subRefs {
+			Expect(apierrors.IsNotFound(h.raw.Get(context.Background(), subRefs[i].K8s(), &pubsubv1.Subscriber{}))).To(BeTrue())
+		}
+		Expect(h.listener().Status.AppliedPlacement).To(BeNil())
+		Expect(plBlocked(h.listener())).To(ContainSubstring(plNoSubscription))
+		h.expectSteadyStop()
+
+		sub := f.subscription.DeepCopy()
+		sub.ResourceVersion = ""
+		Expect(h.raw.Create(context.Background(), sub)).To(Succeed())
+		calls = h.mustReconcile()
+		l = h.listener()
+		plExpectPlacement(l, "c", "c", "c", f.ecs["c"].Status.CallbackURL)
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(oldFP))
+		Expect(plCount(calls, "Create", "ApprovalRequest", "")).To(BeZero())
+	})
+
+	It("C5: an ApiSubscription read error with applied capture errors without draining or deleting", func() {
+		f := newPlFixtures("c")
+		h := newPlHarness(f)
+		l, _ := h.provision()
+		applied := l.Status.AppliedPlacement.DeepCopy()
+
+		h.listErr = func(list client.ObjectList) error {
+			if _, ok := list.(*apiv1.ApiSubscriptionList); ok {
+				return apierrors.NewServiceUnavailable("etcd leader changed")
+			}
+			return nil
+		}
+		for range 3 {
+			calls, err := h.reconcile()
+			Expect(err).To(MatchError(ContainSubstring("etcd leader changed")))
+			l = h.listener()
+			Expect(l.Status.Draining).To(BeNil())
+			Expect(l.Status.AppliedPlacement).To(Equal(applied))
+			Expect(plCountVerb(calls, "Delete")).To(BeZero(), "unexpected delete in %+v", calls)
+			plExpectNoCaptureWrites(calls)
+		}
+
+		h.listErr = nil
+		calls := h.mustReconcile()
+		l = h.listener()
+		Expect(l.Status.Draining).To(BeNil())
+		Expect(l.Status.AppliedPlacement.Fingerprint).To(Equal(applied.Fingerprint))
+		Expect(plCountVerb(calls, "Delete")).To(BeZero())
 	})
 })
 

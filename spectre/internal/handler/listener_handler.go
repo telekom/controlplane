@@ -247,6 +247,12 @@ func (h *ListenerHandler) CreateOrUpdate(ctx context.Context, listener *spectrev
 	if err != nil {
 		return h.handlePlacementError(ctx, listener, err)
 	}
+	// Placement has checked that apiBasePath is the exposure's exact basePath.
+	// Without C's ApiSubscription for it the gateway rejects C's calls, so no
+	// approval is requested and applied capture is drained.
+	if err = h.verifyConsumerSubscription(ctx, consumerApp, apiBasePath); err != nil {
+		return h.handlePlacementError(ctx, listener, err)
+	}
 	warnEnvironmentAliases(ctx, listener, lp.EnvironmentAliases...)
 
 	// Compute the canonical authorization intent and fingerprint.
@@ -574,6 +580,45 @@ func (h *ListenerHandler) findRouteByPath(ctx context.Context, namespace, apiBas
 	}
 
 	return route, nil
+}
+
+// verifyConsumerSubscription checks that the consumer Application has an
+// ApiSubscription for apiBasePath in its namespace. A requestor without a
+// namespace refers to the subscription's own namespace. A subscription to
+// another organization's API (spec.organization set) does not count, because
+// placement resolves the local exposure. It returns a
+// *consumerSubscriptionMissingError when no such ApiSubscription exists or every
+// match is being deleted, and a wrapped read error when the list fails.
+//
+// Only existence is checked, not whether the subscription is granted.
+// Consumers usually apply the subscription and the Listener together, so the
+// subscription is often still pending; requiring a grant would hold the
+// Listener approvals back until then. A temporary subscription state, such as
+// a scope change being approved again, would also drain applied capture. A
+// Listener whose subscription is pending or denied still requests its
+// approvals but captures nothing until the gateway accepts the consumer.
+func (h *ListenerHandler) verifyConsumerSubscription(
+	ctx context.Context,
+	consumerApp *applicationv1.Application,
+	apiBasePath string,
+) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	subs := &apiv1.ApiSubscriptionList{}
+	if err := c.List(ctx, subs, client.InNamespace(consumerApp.Namespace)); err != nil {
+		return errors.Wrapf(err, "failed to list ApiSubscriptions in namespace %q", consumerApp.Namespace)
+	}
+	for i := range subs.Items {
+		sub := &subs.Items[i]
+		requestor := sub.Spec.Requestor.Application
+		if sub.Spec.ApiBasePath == apiBasePath && sub.Spec.Organization == "" && requestor.Name == consumerApp.Name &&
+			(requestor.Namespace == "" || requestor.Namespace == consumerApp.Namespace) &&
+			!controller.IsBeingDeleted(sub) {
+			return nil
+		}
+	}
+	return &consumerSubscriptionMissingError{msg: fmt.Sprintf(
+		"consumer application %q has no ApiSubscription for apiBasePath %q. Subscribe the consumer application to the API before listening to it",
+		ctypes.ObjectRefFromObject(consumerApp).String(), apiBasePath)}
 }
 
 // ensureRouteListener creates or updates the RouteListener CR for this Listener.

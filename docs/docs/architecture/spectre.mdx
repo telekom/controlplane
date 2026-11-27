@@ -51,7 +51,11 @@ The result is recorded in `Listener.status.appliedPlacement` (`captureZone`, `de
 
 ## Blocked Listeners
 
-When placement fails for good, the Listener is Blocked and its applied capture is drained. The reason is recorded in `status.draining.reason`.
+The consumer must subscribe to the API before a Listener on it can capture: the gateway rejects the consumer's calls without an ApiSubscription. A Listener whose consumer Application has no ApiSubscription for its `apiBasePath` requests no approval. A subscription to another organization's API (`spec.organization` set) does not count, because capture is placed on the local exposure.
+
+Spectre checks only that the subscription exists, not that it is granted. Consumers usually apply the subscription and the Listener together, so the subscription is often still pending; requiring a grant would hold the Listener approvals back until then, and a temporary state such as a scope change being approved again would drain applied capture. A Listener whose subscription is pending or denied still requests its approvals, but captures nothing until the subscription works.
+
+When placement or this subscription check fails for good, the Listener is Blocked and its applied capture is drained. The reason is recorded in `status.draining.reason`.
 
 | Reason | Cause | Fix |
 |---|---|---|
@@ -59,6 +63,7 @@ When placement fails for good, the Listener is Blocked and its applied capture i
 | `capture zone cannot deliver to observer` | The capture zone's EventConfig does not mesh with A's zone, or the callback URL for A's zone is missing. Capture does not fall back to P's zone. | Add A's zone to the capture zone's mesh, and check the EventConfig status. |
 | `event environment mismatch` | The realm of the capture or observer zone differs from the environment of its EventStore. The realm is the Environment `spec.realmName`, else the Environment name. The EventStore environment is the EventConfig `spec.overwriteEnvironmentName`, else the Control Plane environment name. | Set `spec.overwriteEnvironmentName` or `spec.realmName` so both values match. |
 | `apiBasePath mismatch` | The Listener's `apiBasePath` differs from the exposed API basePath, for example by case or a trailing slash. The message names the exact basePath. | Use the exact basePath of the API, including case. |
+| `consumer subscription missing` | The consumer Application has no ApiSubscription for the Listener's `apiBasePath`, or it is being deleted. The message names the consumer application and the path. | Subscribe the consumer application to the API with the same `apiBasePath`. |
 | `provider binding invalidated` | The capture Route is no longer owned by an active ApiExposure of the declared provider Application. | Check the provider's ApiExposure and its Route. |
 
 An environment mismatch in the observer zone also blocks the SpectreApplication.
