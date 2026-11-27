@@ -67,6 +67,57 @@ func expectRegistrationBlocked(g Gomega, conditions []metav1.Condition, kind, pa
 	g.Expect(processing.Message).To(ContainSubstring(path))
 }
 
+func watchedRegistration(namespace, kind, name, path string) client.Object {
+	metadata := registrationMetadata(namespace, namespace, name, path)
+	if kind == "AgentCard" {
+		return &agenticv1.AgentCard{
+			ObjectMeta: metadata,
+			Spec:       agenticv1.AgentCardSpec{BasePath: path, Name: "Agent", Version: "1.0"},
+		}
+	}
+	return &agenticv1.McpServer{
+		ObjectMeta: metadata,
+		Spec:       agenticv1.McpServerSpec{BasePath: path, Name: "MCP", Version: "1.0"},
+	}
+}
+
+func registrationState(obj client.Object) (bool, []metav1.Condition) {
+	switch registration := obj.(type) {
+	case *agenticv1.AgentCard:
+		return registration.Status.Active, registration.GetConditions()
+	case *agenticv1.McpServer:
+		return registration.Status.Active, registration.GetConditions()
+	default:
+		Fail(fmt.Sprintf("unsupported registration kind %T", obj))
+		return false, nil
+	}
+}
+
+func startRegistrationManager(namespace string) {
+	managerCtx, cancelManager := context.WithCancel(ctx)
+	skipNameValidation := true
+	mgr, err := ctrl.NewManager(testEnv.Config, ctrl.Options{
+		Scheme: k8sClient.Scheme(),
+		Cache: cache.Options{DefaultNamespaces: map[string]cache.Config{
+			namespace: {},
+		}},
+		Metrics: metricsserver.Options{BindAddress: "0"}, HealthProbeBindAddress: "0",
+		Controller: controllerconfig.Controller{SkipNameValidation: &skipNameValidation},
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect((&AgentCardReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr)).To(Succeed())
+	Expect((&McpServerReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr)).To(Succeed())
+	done := make(chan error, 1)
+	go func() { done <- mgr.Start(managerCtx) }()
+	DeferCleanup(func() {
+		cancelManager()
+		Eventually(done, timeout, interval).Should(Receive(Succeed()))
+	})
+	syncCtx, cancelSync := context.WithTimeout(managerCtx, timeout)
+	defer cancelSync()
+	Expect(mgr.GetCache().WaitForCacheSync(syncCtx)).To(BeTrue())
+}
+
 var _ = Describe("server registration acceptance criteria", func() {
 	var namespace, otherNamespace string
 
@@ -173,30 +224,112 @@ var _ = Describe("server registration acceptance criteria", func() {
 		Entry("paths differing beyond case normalize identically", "/shared/path", "/shared-path", true),
 	)
 
+	DescribeTable("reconciles peers after a label-only correction",
+		func(sourceKind, peerKind string, missingLabel bool) {
+			startRegistrationManager(namespace)
+
+			const path, otherPath = "/shared/new", "/shared/old"
+			peerPath := path
+			source := watchedRegistration(namespace, sourceKind, "a", path)
+			if missingLabel {
+				delete(source.GetLabels(), agenticv1.BasePathLabelKey)
+			} else {
+				source.GetLabels()[agenticv1.BasePathLabelKey] = labelutil.NormalizeLabelValue(otherPath)
+				peerPath = otherPath
+			}
+			peer := watchedRegistration(namespace, peerKind, "b", peerPath)
+			Expect(k8sClient.Create(ctx, source)).To(Succeed())
+			Expect(k8sClient.Create(ctx, peer)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(peer), peer)).To(Succeed())
+				active, conditions := registrationState(peer)
+				g.Expect(active).To(Equal(missingLabel))
+				if !missingLabel {
+					expectRegistrationBlocked(g, conditions, sourceKind, path)
+				}
+			}, timeout, interval).Should(Succeed())
+
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(source), source)).To(Succeed())
+			generation := source.GetGeneration()
+			source.GetLabels()[agenticv1.BasePathLabelKey] = labelutil.NormalizeLabelValue(path)
+			Expect(k8sClient.Update(ctx, source)).To(Succeed())
+			Expect(source.GetGeneration()).To(Equal(generation))
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(source), source)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(peer), peer)).To(Succeed())
+				sourceActive, _ := registrationState(source)
+				peerActive, conditions := registrationState(peer)
+				g.Expect(sourceActive).To(BeTrue())
+				g.Expect(peerActive).To(Equal(!missingLabel))
+				if missingLabel {
+					expectRegistrationBlocked(g, conditions, sourceKind, path)
+				}
+			}, timeout, interval).Should(Succeed())
+		},
+		Entry("restored AgentCard label requeues McpServer", "AgentCard", "McpServer", true),
+		Entry("restored McpServer label requeues AgentCard", "McpServer", "AgentCard", true),
+		Entry("restored AgentCard label requeues AgentCard", "AgentCard", "AgentCard", true),
+		Entry("restored McpServer label requeues McpServer", "McpServer", "McpServer", true),
+		Entry("corrected AgentCard label releases McpServer", "AgentCard", "McpServer", false),
+		Entry("corrected McpServer label releases AgentCard", "McpServer", "AgentCard", false),
+		Entry("corrected AgentCard label releases AgentCard", "AgentCard", "AgentCard", false),
+		Entry("corrected McpServer label releases McpServer", "McpServer", "McpServer", false),
+	)
+
+	DescribeTable("reconciles old and new environments after a label-only change",
+		func(sourceKind, peerKind string) {
+			startRegistrationManager(namespace)
+			const path = "/shared/environment"
+			source := watchedRegistration(namespace, sourceKind, "a", path)
+			oldPeer := watchedRegistration(namespace, peerKind, "b", path)
+			newPeer := watchedRegistration(namespace, peerKind, "c", path)
+			newPeer.GetLabels()[cconfig.EnvironmentLabelKey] = otherNamespace
+			Expect(k8sClient.Create(ctx, source)).To(Succeed())
+			Expect(k8sClient.Create(ctx, oldPeer)).To(Succeed())
+			Expect(k8sClient.Create(ctx, newPeer)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(source), source)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(oldPeer), oldPeer)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(newPeer), newPeer)).To(Succeed())
+				sourceActive, _ := registrationState(source)
+				oldActive, conditions := registrationState(oldPeer)
+				newActive, _ := registrationState(newPeer)
+				g.Expect(sourceActive).To(BeTrue())
+				g.Expect(oldActive).To(BeFalse())
+				expectRegistrationBlocked(g, conditions, sourceKind, path)
+				g.Expect(newActive).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
+			generation := source.GetGeneration()
+			source.GetLabels()[cconfig.EnvironmentLabelKey] = otherNamespace
+			Expect(k8sClient.Update(ctx, source)).To(Succeed())
+			Expect(source.GetGeneration()).To(Equal(generation))
+
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(source), source)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(oldPeer), oldPeer)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(newPeer), newPeer)).To(Succeed())
+				sourceActive, _ := registrationState(source)
+				oldActive, _ := registrationState(oldPeer)
+				newActive, conditions := registrationState(newPeer)
+				g.Expect(sourceActive).To(BeTrue())
+				g.Expect(oldActive).To(BeTrue())
+				g.Expect(newActive).To(BeFalse())
+				expectRegistrationBlocked(g, conditions, sourceKind, path)
+			}, timeout, interval).Should(Succeed())
+		},
+		Entry("AgentCard requeues McpServers", "AgentCard", "McpServer"),
+		Entry("McpServer requeues AgentCards", "McpServer", "AgentCard"),
+		Entry("AgentCard requeues AgentCards", "AgentCard", "AgentCard"),
+		Entry("McpServer requeues McpServers", "McpServer", "McpServer"),
+	)
+
 	DescribeTable("reconciles both kinds after the winner changes path and the next winner is deleted",
 		func(cardFirst, differentCase bool) {
-			managerCtx, cancelManager := context.WithCancel(ctx)
-			skipNameValidation := true
-			mgr, err := ctrl.NewManager(testEnv.Config, ctrl.Options{
-				Scheme: k8sClient.Scheme(),
-				Cache: cache.Options{DefaultNamespaces: map[string]cache.Config{
-					namespace: {},
-				}},
-				Metrics: metricsserver.Options{BindAddress: "0"}, HealthProbeBindAddress: "0",
-				Controller: controllerconfig.Controller{SkipNameValidation: &skipNameValidation},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect((&AgentCardReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr)).To(Succeed())
-			Expect((&McpServerReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}).SetupWithManager(mgr)).To(Succeed())
-			done := make(chan error, 1)
-			go func() { done <- mgr.Start(managerCtx) }()
-			DeferCleanup(func() {
-				cancelManager()
-				Eventually(done, timeout, interval).Should(Receive(Succeed()))
-			})
-			syncCtx, cancelSync := context.WithTimeout(managerCtx, timeout)
-			defer cancelSync()
-			Expect(mgr.GetCache().WaitForCacheSync(syncCtx)).To(BeTrue())
+			startRegistrationManager(namespace)
 
 			const oldPath, newPath = "/shared/old", "/shared/new"
 			cardPath := oldPath

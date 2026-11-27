@@ -22,7 +22,6 @@ import (
 	"github.com/telekom/controlplane/agentic/internal/handler/mcpserver"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 )
 
 // McpServerReconciler reconciles a McpServer object
@@ -53,11 +52,11 @@ func (r *McpServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&agenticv1.McpServer{}, builder.WithPredicates(cc.Count("mcpserver", cc.RoleFor))).
 		Watches(&agenticv1.McpServer{},
 			enqueueMappedObjects(r.MapMcpServerToMcpServer),
-			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
+			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}), cc.SkipInitialListPredicate{})),
 		).
 		Watches(&agenticv1.AgentCard{},
 			enqueueMappedObjects(r.MapAgentCardToMcpServer),
-			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.GenerationChangedPredicate{}, cc.SkipInitialListPredicate{})),
+			builder.WithPredicates(cc.Count("mcpserver", cc.RoleWatches, predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}), cc.SkipInitialListPredicate{})),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -76,10 +75,14 @@ func (r *McpServerReconciler) MapMcpServerToMcpServer(ctx context.Context, obj c
 		return nil
 	}
 
+	selector, err := registrationWatchSelector(server, server.Spec.BasePath)
+	if err != nil {
+		log.FromContext(ctx).Error(err, "Failed to select McpServers for basePath", "basePath", server.Spec.BasePath)
+		return nil
+	}
 	list := &agenticv1.McpServerList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.List(ctx, list, selector, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: server.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(server.Spec.BasePath),
 	}); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list McpServers for basePath",
 			"basePath", server.Spec.BasePath)
@@ -105,10 +108,14 @@ func (r *McpServerReconciler) MapAgentCardToMcpServer(ctx context.Context, obj c
 		return nil
 	}
 
+	selector, err := registrationWatchSelector(card, card.Spec.BasePath)
+	if err != nil {
+		log.FromContext(ctx).Error(err, "Failed to select McpServers for AgentCard basePath", "basePath", card.Spec.BasePath)
+		return nil
+	}
 	list := &agenticv1.McpServerList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.List(ctx, list, selector, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: card.Labels[cconfig.EnvironmentLabelKey],
-		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(card.Spec.BasePath),
 	}); err != nil {
 		log.FromContext(ctx).Error(err, "Failed to list McpServers for AgentCard basePath",
 			"basePath", card.Spec.BasePath)
