@@ -1826,6 +1826,38 @@ func (c *ApplicationClient) QueryListeners(_m *Application) *ListenerQuery {
 	return query
 }
 
+// QueryConsumerListeners queries the consumer_listeners edge of a Application.
+func (c *ApplicationClient) QueryConsumerListeners(_m *Application) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ConsumerListenersTable, application.ConsumerListenersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProviderListeners queries the provider_listeners edge of a Application.
+func (c *ApplicationClient) QueryProviderListeners(_m *Application) *ListenerQuery {
+	query := (&ListenerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ProviderListenersTable, application.ProviderListenersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPermissionSet queries the permission_set edge of a Application.
 func (c *ApplicationClient) QueryPermissionSet(_m *Application) *PermissionSetQuery {
 	query := (&PermissionSetClient{config: c.config}).Query()
@@ -3719,6 +3751,38 @@ func (c *ListenerClient) QueryApplication(_m *Listener) *ApplicationQuery {
 			sqlgraph.From(listener.Table, listener.FieldID, id),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, listener.ApplicationTable, listener.ApplicationColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsumer queries the consumer edge of a Listener.
+func (c *ListenerClient) QueryConsumer(_m *Listener) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.ConsumerTable, listener.ConsumerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProvider queries the provider edge of a Listener.
+func (c *ListenerClient) QueryProvider(_m *Listener) *ApplicationQuery {
+	query := (&ApplicationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(listener.Table, listener.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, listener.ProviderTable, listener.ProviderColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

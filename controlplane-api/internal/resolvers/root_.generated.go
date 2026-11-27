@@ -13143,7 +13143,7 @@ type ApiSubscriptionInfo implements SubscriptionInfo {
 "Reduced Listener information used by exposure, subscription, and approval relationships."
 type ListenerInfo implements SubscriptionInfo {
   id: ID!
-  "Kubernetes resource name of the target API, or null when the exposure has no linked API or projected name."
+  "Kubernetes resource name of the target API, or null when the exposure is missing, has no linked API, or has no projected name."
   resourceName: String
   "True when both provider and consumer approvals are granted."
   approved: Boolean!
@@ -13294,15 +13294,17 @@ extend type ApiExposure {
 }
 
 extend type Listener {
-  "Kubernetes resource name of the target API, or null when the exposure has no linked API or projected name."
+  "Kubernetes resource name of the target API, or null when the exposure is missing, has no linked API, or has no projected name."
   resourceName: String @goField(forceResolver: true)
   "True when both provider and consumer approvals are granted."
   approved: Boolean! @goField(forceResolver: true)
   application: ApplicationInfo! @goField(forceResolver: true)
   consumer: ApplicationInfo! @goField(forceResolver: true)
   provider: ApplicationInfo! @goField(forceResolver: true)
-  subscription: ApiSubscriptionInfo! @goField(forceResolver: true)
-  exposure: ApiExposureInfo! @goField(forceResolver: true)
+  "Consumer's API subscription (reduced view — cross-tenant boundary). Null when the consumer has not subscribed yet."
+  subscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  "Provider's API exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
+  exposure: ApiExposureInfo @goField(forceResolver: true)
 }
 
 extend type EventSubscription {

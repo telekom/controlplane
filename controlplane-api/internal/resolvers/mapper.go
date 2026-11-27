@@ -210,23 +210,15 @@ func loadEdge[T any](ctx context.Context, loaded func() (T, error), query func(c
 
 func mapListenerInfo(ctx context.Context, listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
 	sysCtx := viewer.SystemContext(ctx)
-	subscription, err := listener.Edges.SubscriptionOrErr()
-	if err != nil {
-		return nil, fmt.Errorf("loading subscription edge for listener %d: %w", listener.ID, err)
-	}
-	exposure, err := listener.Edges.ExposureOrErr()
-	if err != nil {
-		return nil, fmt.Errorf("loading exposure edge for listener %d: %w", listener.ID, err)
-	}
 	application, err := listener.Edges.ApplicationOrErr()
 	if err != nil {
 		return nil, fmt.Errorf("loading listener application for listener %d: %w", listener.ID, err)
 	}
-	consumer, err := subscription.Edges.OwnerOrErr()
+	consumer, err := listener.Edges.ConsumerOrErr()
 	if err != nil {
 		return nil, fmt.Errorf("loading consumer application for listener %d: %w", listener.ID, err)
 	}
-	provider, err := exposure.Edges.OwnerOrErr()
+	provider, err := listener.Edges.ProviderOrErr()
 	if err != nil {
 		return nil, fmt.Errorf("loading provider application for listener %d: %w", listener.ID, err)
 	}
@@ -243,13 +235,19 @@ func mapListenerInfo(ctx context.Context, listener *ent.Listener) (*gqlmodel.Lis
 		return nil, fmt.Errorf("loading provider application info for listener %d: %w", listener.ID, err)
 	}
 	var resourceName *string
-	apiDefinition, err := exposure.Edges.APIOrErr()
+	exposure, err := listener.Edges.ExposureOrErr()
 	if err != nil && !ent.IsNotFound(err) {
-		return nil, fmt.Errorf("loading api edge for listener %d: %w", listener.ID, err)
+		return nil, fmt.Errorf("loading exposure edge for listener %d: %w", listener.ID, err)
 	}
-	if apiDefinition != nil && apiDefinition.Name != nil && *apiDefinition.Name != "" {
-		name := *apiDefinition.Name
-		resourceName = &name
+	if exposure != nil {
+		apiDefinition, err := exposure.Edges.APIOrErr()
+		if err != nil && !ent.IsNotFound(err) {
+			return nil, fmt.Errorf("loading api edge for listener %d: %w", listener.ID, err)
+		}
+		if apiDefinition != nil && apiDefinition.Name != nil && *apiDefinition.Name != "" {
+			name := *apiDefinition.Name
+			resourceName = &name
+		}
 	}
 
 	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted &&
@@ -272,6 +270,8 @@ func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
 	}
 	return query.
 		WithApplication(withAppInfo).
+		WithConsumer(withAppInfo).
+		WithProvider(withAppInfo).
 		WithSubscription(func(q *ent.ApiSubscriptionQuery) {
 			q.WithOwner(withAppInfo)
 		}).

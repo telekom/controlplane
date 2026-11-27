@@ -53,15 +53,11 @@ func TeamFilterInterceptor() ent.Interceptor {
 				listener.HasApplicationWith(
 					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				),
-				listener.HasSubscriptionWith(
-					apisubscription.HasOwnerWith(
-						application.HasOwnerTeamWith(team.NameIn(teams...)),
-					),
+				listener.HasConsumerWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				),
-				listener.HasExposureWith(
-					apiexposure.HasOwnerWith(
-						application.HasOwnerTeamWith(team.NameIn(teams...)),
-					),
+				listener.HasProviderWith(
+					application.HasOwnerTeamWith(team.NameIn(teams...)),
 				),
 			)
 

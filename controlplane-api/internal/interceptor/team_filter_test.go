@@ -377,6 +377,49 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		})
 	})
 
+	Context("when Listener has no subscription or exposure yet", func() {
+		BeforeEach(func() {
+			s := testutil.SeedStandard(client)
+			ctx := testutil.AllowContext()
+			observerTeam := client.Team.Create().
+				SetNamespace("default").SetName("team-observer").SetEmail("observer@test.dev").SetGroup(s.GroupA).SaveX(ctx)
+			observerApp := client.Application.Create().
+				SetNamespace("default").SetName("app-observer").SetOwnerTeam(observerTeam).SetZone(s.ZoneEU).SaveX(ctx)
+			client.Listener.Update().
+				SetApplication(observerApp).
+				ClearSubscription().
+				ClearExposure().
+				ExecX(ctx)
+		})
+
+		DescribeTable("should stay visible to observer, consumer, and provider teams",
+			func(teamName string, expectedApprovals, expectedRequests int) {
+				ctx := viewerCtx(&viewer.Viewer{Teams: []string{teamName}})
+				listeners, err := client.Listener.Query().All(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(listeners).To(HaveLen(2))
+
+				approvals, err := client.Approval.Query().All(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(approvals).To(HaveLen(expectedApprovals))
+
+				requests, err := client.ApprovalRequest.Query().All(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(requests).To(HaveLen(expectedRequests))
+			},
+			Entry("observer team", "team-observer", 2, 1),
+			Entry("consumer team", "team-beta", 4, 3),
+			Entry("provider team", "team-alpha", 4, 3),
+		)
+
+		It("should remain hidden from an unrelated team", func() {
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-gamma"}})
+			Expect(client.Listener.Query().All(ctx)).To(BeEmpty())
+			Expect(client.Approval.Query().All(ctx)).To(BeEmpty())
+			Expect(client.ApprovalRequest.Query().All(ctx)).To(BeEmpty())
+		})
+	})
+
 	Context("public entities (no team filtering)", func() {
 		BeforeEach(func() { seed() })
 

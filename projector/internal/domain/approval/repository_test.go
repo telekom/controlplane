@@ -223,7 +223,8 @@ var _ = Describe("Approval Repository", func() {
 			Expect(err).NotTo(HaveOccurred())
 			makeListener := func(name string) int {
 				l, err := client.Listener.Create().SetName(name).SetNamespace("ns").SetAPIBasePath("/api/v1/users").
-					SetApplicationID(app.ID).SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
+					SetApplicationID(app.ID).SetConsumerID(app.ID).SetProviderID(app.ID).
+					SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				return l.ID
 			}
@@ -325,7 +326,8 @@ var _ = Describe("Approval Repository", func() {
 			exposure, err := client.ApiExposure.Query().Only(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			listener, err := client.Listener.Create().SetName("gate").SetNamespace("ns").SetAPIBasePath("/api/v1/users").
-				SetApplicationID(app.ID).SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
+				SetApplicationID(app.ID).SetConsumerID(app.ID).SetProviderID(app.ID).
+				SetSubscriptionID(subID).SetExposureID(exposure.ID).Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			data := baseData()
 			data.TargetKind = approval.TargetKindListener

@@ -8357,24 +8357,6 @@ func (ec *executionContext) marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekom
 	return ret
 }
 
-func (ec *executionContext) marshalNApiExposureInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiExposureInfo) graphql.Marshaler {
-	return ec._ApiExposureInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiExposureInfo(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNApiSubscriptionInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v model.ApiSubscriptionInfo) graphql.Marshaler {
-	return ec._ApiSubscriptionInfo(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ApiSubscriptionInfo) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -8676,6 +8658,13 @@ func (ec *executionContext) marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋ
 
 func (ec *executionContext) marshalOApiExposureSecurity2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiExposureSecurity(ctx context.Context, sel ast.SelectionSet, v model1.ApiExposureSecurity) graphql.Marshaler {
 	return ec._ApiExposureSecurity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiSubscriptionInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ApiSubscriptionInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOApiSubscriptionSecurity2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋpkgᚋmodelᚐApiSubscriptionSecurity(ctx context.Context, sel ast.SelectionSet, v *model1.ApiSubscriptionSecurity) graphql.Marshaler {

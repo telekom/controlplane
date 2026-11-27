@@ -12155,10 +12155,10 @@ func (ec *executionContext) _Listener_subscription(ctx context.Context, field gr
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiSubscriptionInfo) graphql.Marshaler {
-			return ec.marshalNApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx, selections, v)
+			return ec.marshalOApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_Listener_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12187,10 +12187,10 @@ func (ec *executionContext) _Listener_exposure(ctx context.Context, field graphq
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.ApiExposureInfo) graphql.Marshaler {
-			return ec.marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx, selections, v)
+			return ec.marshalOApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo(ctx, selections, v)
 		},
 		true,
-		true,
+		false,
 	)
 }
 func (ec *executionContext) fieldContext_Listener_exposure(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -42253,7 +42253,7 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Listener_subscription(ctx, field, obj)
-				if res == graphql.Null {
+				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res
@@ -42291,7 +42291,7 @@ func (ec *executionContext) _Listener(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Listener_exposure(ctx, field, obj)
-				if res == graphql.Null {
+				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res

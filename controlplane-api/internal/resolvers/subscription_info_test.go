@@ -85,11 +85,16 @@ var _ = Describe("SubscriptionInfo", func() {
 		}
 	})
 
-	It("exposes Listener resourceName as nullable", func() {
+	It("exposes Listener resourceName, subscription, and exposure as nullable while keeping consumer and provider non-null", func() {
 		schema := resolvers.NewExecutableSchema(resolvers.Config{}).Schema()
 		for _, typeName := range []string{"Listener", "ListenerInfo"} {
 			Expect(schema.Types[typeName].Fields.ForName("resourceName").Type.String()).To(Equal("String"))
+			Expect(schema.Types[typeName].Fields.ForName("consumer").Type.String()).To(Equal("ApplicationInfo!"))
+			Expect(schema.Types[typeName].Fields.ForName("provider").Type.String()).To(Equal("ApplicationInfo!"))
 		}
+		listenerType := schema.Types["Listener"]
+		Expect(listenerType.Fields.ForName("subscription").Type.String()).To(Equal("ApiSubscriptionInfo"))
+		Expect(listenerType.Fields.ForName("exposure").Type.String()).To(Equal("ApiExposureInfo"))
 	})
 
 	Describe("GraphQL execution", func() {

@@ -123,6 +123,8 @@ erDiagram
     Application ||--o{ ApiExposure : "exposes"
     Application ||--o{ ApiSubscription : "subscribes"
     Application ||--o{ Listener : "declares"
+    Application ||--o{ Listener : "consumes"
+    Application ||--o{ Listener : "provides"
     ApiExposure |o--o{ ApiSubscription : "target of"
     ApiSubscription ||--o| Approval : "has"
     ApiSubscription ||--o| ApprovalRequest : "has"
@@ -133,8 +135,8 @@ erDiagram
     AgenticExposure |o--o{ AgenticSubscription : "target of"
     AgenticSubscription ||--o| Approval : "has"
     AgenticSubscription ||--o| ApprovalRequest : "has"
-    ApiSubscription ||--o{ Listener : "consumed by"
-    ApiExposure ||--o{ Listener : "provided by"
+    ApiSubscription |o--o{ Listener : "consumed by"
+    ApiExposure |o--o{ Listener : "provided by"
     Listener ||--o| Approval : "provider approval"
     Listener ||--o| Approval : "consumer approval"
     Listener ||--o{ ApprovalRequest : "has"
@@ -142,7 +144,7 @@ erDiagram
 
 Each entity carries common fields such as `id`, `createdAt`, `lastModifiedAt`, `statusPhase` (Ready, Pending, Error, or Unknown), `statusMessage`, `environment`, and `namespace`.
 
-API, event, and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error.
+API, event, and agentic subscriptions can exist without a target exposure. In that case, their GraphQL `target` field returns `null` without an error. Listeners can likewise exist before a consumer `ApiSubscription` or provider `ApiExposure` is created (for example while blocked in Spectre): their `subscription`, `exposure`, and `resourceName` fields return `null` while `statusPhase`, `statusMessage`, `consumer`, and `provider` remain available.
 
 File subscription and exposure details are returned through the reduced `FileSubscriptionInfo` and `FileExposureInfo` views. Their `serviceUrl` and `serviceExternalUrl` fields are nullable: GraphQL returns `null` when the corresponding URL is unset on the file subscription or exposure.
 
@@ -227,9 +229,9 @@ The ControlPlane API enforces strict team-level isolation through a **privacy la
 
 This filtering is applied transparently — the GraphQL schema is the same for all callers, but the results are scoped automatically. No additional configuration is needed.
 
-For Listeners and their approvals and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team owns the listener application, the consumer application, or the provider application. This allows all three parties to inspect the Listener and its approval workflow. While a retargeted Listener waits for a missing dependency, its projected row keeps its previous relationships and remains visible to the previous parties until the retarget resolves.
+For Listeners and their approvals and approval requests, isolation uses an **OR** rule: a resource is visible if the caller's team owns the listener application, the consumer application, or the provider application. This allows all three parties to inspect the Listener and its approval workflow, even while `subscription` or `exposure` is still `null`. While a retargeted Listener waits for a missing Application dependency, its projected row keeps its previous relationships and remains visible to the previous parties until the retarget resolves.
 
-`Listener.application` identifies the application that declared the Listener and receives captured events. `Listener.consumer` and `Listener.provider` are derived from the related API subscription and exposure. `Application.listeners` follows the listener-application relationship, not the consumer relationship.
+`Listener.application` identifies the application that declared the Listener and receives captured events, while `Listener.consumer` and `Listener.provider` reference the consumer and provider applications directly so all three parties stay resolved even before an `ApiSubscription` or `ApiExposure` exists. `Application.listeners` follows the listener-application relationship, not the consumer relationship.
 
 `ApiExposure.listeners` and `ApiSubscription.listeners` return only Listeners whose projected `Ready` condition is true. `Application.listeners` and top-level Listener queries include non-ready Listeners. API-specific values such as `apiBasePath`, `requestFilter`, and `responseFilter` are flat Listener fields. `approved` is true only when both the provider and consumer approvals are granted. `providerApproval` and `consumerApproval` expose the separate decisions. Monitoring state is not stored or exposed; clients derive it from projected state.
 

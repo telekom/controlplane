@@ -43,6 +43,10 @@ const (
 	FieldResponseFilter = "response_filter"
 	// EdgeApplication holds the string denoting the application edge name in mutations.
 	EdgeApplication = "application"
+	// EdgeConsumer holds the string denoting the consumer edge name in mutations.
+	EdgeConsumer = "consumer"
+	// EdgeProvider holds the string denoting the provider edge name in mutations.
+	EdgeProvider = "provider"
 	// EdgeSubscription holds the string denoting the subscription edge name in mutations.
 	EdgeSubscription = "subscription"
 	// EdgeExposure holds the string denoting the exposure edge name in mutations.
@@ -62,6 +66,20 @@ const (
 	ApplicationInverseTable = "applications"
 	// ApplicationColumn is the table column denoting the application relation/edge.
 	ApplicationColumn = "application_listeners"
+	// ConsumerTable is the table that holds the consumer relation/edge.
+	ConsumerTable = "listeners"
+	// ConsumerInverseTable is the table name for the Application entity.
+	// It exists in this package in order to avoid circular dependency with the "application" package.
+	ConsumerInverseTable = "applications"
+	// ConsumerColumn is the table column denoting the consumer relation/edge.
+	ConsumerColumn = "application_consumer_listeners"
+	// ProviderTable is the table that holds the provider relation/edge.
+	ProviderTable = "listeners"
+	// ProviderInverseTable is the table name for the Application entity.
+	// It exists in this package in order to avoid circular dependency with the "application" package.
+	ProviderInverseTable = "applications"
+	// ProviderColumn is the table column denoting the provider relation/edge.
+	ProviderColumn = "application_provider_listeners"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
 	SubscriptionTable = "listeners"
 	// SubscriptionInverseTable is the table name for the ApiSubscription entity.
@@ -120,6 +138,8 @@ var ForeignKeys = []string{
 	"api_exposure_listeners",
 	"api_subscription_listeners",
 	"application_listeners",
+	"application_consumer_listeners",
+	"application_provider_listeners",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -239,6 +259,20 @@ func ByApplicationField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByConsumerField orders the results by consumer field.
+func ByConsumerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsumerStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByProviderField orders the results by provider field.
+func ByProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProviderStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySubscriptionField orders the results by subscription field.
 func BySubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -285,6 +319,20 @@ func newApplicationStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApplicationInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, ApplicationTable, ApplicationColumn),
+	)
+}
+func newConsumerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsumerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ConsumerTable, ConsumerColumn),
+	)
+}
+func newProviderStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProviderInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ProviderTable, ProviderColumn),
 	)
 }
 func newSubscriptionStep() *sqlgraph.Step {

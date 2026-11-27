@@ -110,6 +110,10 @@ func (Application) Edges() []ent.Edge {
 			Annotations(entgql.RelayConnection()),
 		edge.To("listeners", Listener.Type).
 			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+		edge.To("consumer_listeners", Listener.Type).
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+		edge.To("provider_listeners", Listener.Type).
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
 		edge.To("permission_set", PermissionSet.Type).
 			Unique(),
 	}

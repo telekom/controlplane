@@ -51,23 +51,51 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 		}
 		return fmt.Errorf("find application %s/%s: %w", data.Observer.Namespace, data.Observer.Name, err)
 	}
-	consumerTeam := shared.TeamNameFromNamespace(data.Consumer.Namespace)
-	subID, err := r.deps.FindAPISubscriptionID(ctx, data.BasePath, data.Consumer.Name, consumerTeam)
+	consumerID, err := r.deps.FindApplicationByMeta(ctx, data.Consumer.Namespace, data.Consumer.Name)
 	if err != nil {
 		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("api_subscription", data.Consumer.Namespace+"/"+data.Consumer.Name+data.BasePath)
+			return runtime.WrapDependencyMissing("application", data.Consumer.Namespace+"/"+data.Consumer.Name)
 		}
-		return fmt.Errorf("find api_subscription %s/%s%s: %w", data.Consumer.Namespace, data.Consumer.Name, data.BasePath, err)
+		return fmt.Errorf("find consumer application %s/%s: %w", data.Consumer.Namespace, data.Consumer.Name, err)
 	}
-	providerTeam := shared.TeamNameFromNamespace(data.Provider.Namespace)
-	exposureID, err := r.deps.FindAPIExposureID(ctx, data.BasePath, data.Provider.Name, providerTeam)
+	providerID, err := r.deps.FindApplicationByMeta(ctx, data.Provider.Namespace, data.Provider.Name)
 	if err != nil {
 		if errors.Is(err, infrastructure.ErrEntityNotFound) {
-			return runtime.WrapDependencyMissing("api_exposure", data.Provider.Namespace+"/"+data.Provider.Name+data.BasePath)
+			return runtime.WrapDependencyMissing("application", data.Provider.Namespace+"/"+data.Provider.Name)
 		}
-		return fmt.Errorf("find api_exposure %s/%s%s: %w", data.Provider.Namespace, data.Provider.Name, data.BasePath, err)
+		return fmt.Errorf("find provider application %s/%s: %w", data.Provider.Namespace, data.Provider.Name, err)
 	}
 
+	// Subscription and exposure edges are optional — a Listener may exist while
+	// blocked waiting for the consumer's ApiSubscription or provider's ApiExposure.
+	// Persist the row with NULL FKs so its blocked status is visible in the API,
+	// then report the missing dependency so the reconciler retries.
+	consumerTeam := shared.TeamNameFromNamespace(data.Consumer.Namespace)
+	var subID *int
+	subMissing := false
+	if id, findErr := r.deps.FindAPISubscriptionID(ctx, data.BasePath, data.Consumer.Name, consumerTeam); findErr != nil {
+		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
+			return fmt.Errorf("find api_subscription %s/%s%s: %w", data.Consumer.Namespace, data.Consumer.Name, data.BasePath, findErr)
+		}
+		subMissing = true
+	} else {
+		subID = &id
+	}
+
+	providerTeam := shared.TeamNameFromNamespace(data.Provider.Namespace)
+	var exposureID *int
+	exposureMissing := false
+	if id, findErr := r.deps.FindAPIExposureID(ctx, data.BasePath, data.Provider.Name, providerTeam); findErr != nil {
+		if !errors.Is(findErr, infrastructure.ErrEntityNotFound) {
+			return fmt.Errorf("find api_exposure %s/%s%s: %w", data.Provider.Namespace, data.Provider.Name, data.BasePath, findErr)
+		}
+		exposureMissing = true
+	} else {
+		exposureID = &id
+	}
+
+	// Persist the read-model projection in PostgreSQL via ent (not a Kubernetes write);
+	// data.Meta.Environment preserves the source Listener's environment label.
 	create := r.client.Listener.Create().
 		SetNamespace(data.Meta.Namespace).
 		SetName(data.Meta.Name).
@@ -76,8 +104,10 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 		SetStatusMessage(data.StatusMessage).
 		SetAPIBasePath(data.BasePath).
 		SetApplicationID(observerID).
-		SetSubscriptionID(subID).
-		SetExposureID(exposureID)
+		SetConsumerID(consumerID).
+		SetProviderID(providerID).
+		SetNillableSubscriptionID(subID).
+		SetNillableExposureID(exposureID)
 	if data.RequestFilter != nil {
 		create.SetRequestFilter(data.RequestFilter)
 	}
@@ -88,6 +118,12 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 		OnConflictColumns(entlistener.FieldNamespace, entlistener.FieldName).
 		UpdateNewValues().
 		Update(func(u *ent.ListenerUpsert) {
+			if subID == nil {
+				u.SetNull(entlistener.SubscriptionColumn)
+			}
+			if exposureID == nil {
+				u.SetNull(entlistener.ExposureColumn)
+			}
 			if data.RequestFilter == nil {
 				u.ClearRequestFilter()
 			}
@@ -99,11 +135,19 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	if err != nil {
 		if infrastructure.IsFKViolation(err, "") {
 			r.deps.EvictApplicationByMeta(data.Observer.Namespace, data.Observer.Name)
+			r.deps.EvictApplicationByMeta(data.Consumer.Namespace, data.Consumer.Name)
+			r.deps.EvictApplicationByMeta(data.Provider.Namespace, data.Provider.Name)
 			r.deps.EvictAPISubscriptionID(data.BasePath, data.Consumer.Name, consumerTeam)
 			r.deps.EvictAPIExposureID(data.BasePath, data.Provider.Name, providerTeam)
 			return runtime.WrapDependencyMissing("listener edge", data.Meta.Namespace+"/"+data.Meta.Name)
 		}
 		return fmt.Errorf("upsert listener %s/%s: %w", data.Meta.Namespace, data.Meta.Name, err)
+	}
+	if subMissing {
+		return runtime.WrapDependencyMissing("api_subscription", data.Consumer.Namespace+"/"+data.Consumer.Name+data.BasePath)
+	}
+	if exposureMissing {
+		return runtime.WrapDependencyMissing("api_exposure", data.Provider.Namespace+"/"+data.Provider.Name+data.BasePath)
 	}
 	return nil
 }

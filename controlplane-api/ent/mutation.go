@@ -9147,6 +9147,12 @@ type ApplicationMutation struct {
 	listeners                    map[int]struct{}
 	removedlisteners             map[int]struct{}
 	clearedlisteners             bool
+	consumer_listeners           map[int]struct{}
+	removedconsumer_listeners    map[int]struct{}
+	clearedconsumer_listeners    bool
+	provider_listeners           map[int]struct{}
+	removedprovider_listeners    map[int]struct{}
+	clearedprovider_listeners    bool
 	permission_set               *int
 	clearedpermission_set        bool
 	done                         bool
@@ -10649,6 +10655,114 @@ func (m *ApplicationMutation) ResetListeners() {
 	m.removedlisteners = nil
 }
 
+// AddConsumerListenerIDs adds the "consumer_listeners" edge to the Listener entity by ids.
+func (m *ApplicationMutation) AddConsumerListenerIDs(ids ...int) {
+	if m.consumer_listeners == nil {
+		m.consumer_listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.consumer_listeners[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsumerListeners clears the "consumer_listeners" edge to the Listener entity.
+func (m *ApplicationMutation) ClearConsumerListeners() {
+	m.clearedconsumer_listeners = true
+}
+
+// ConsumerListenersCleared reports if the "consumer_listeners" edge to the Listener entity was cleared.
+func (m *ApplicationMutation) ConsumerListenersCleared() bool {
+	return m.clearedconsumer_listeners
+}
+
+// RemoveConsumerListenerIDs removes the "consumer_listeners" edge to the Listener entity by IDs.
+func (m *ApplicationMutation) RemoveConsumerListenerIDs(ids ...int) {
+	if m.removedconsumer_listeners == nil {
+		m.removedconsumer_listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.consumer_listeners, ids[i])
+		m.removedconsumer_listeners[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsumerListeners returns the removed IDs of the "consumer_listeners" edge to the Listener entity.
+func (m *ApplicationMutation) RemovedConsumerListenersIDs() (ids []int) {
+	for id := range m.removedconsumer_listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsumerListenersIDs returns the "consumer_listeners" edge IDs in the mutation.
+func (m *ApplicationMutation) ConsumerListenersIDs() (ids []int) {
+	for id := range m.consumer_listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsumerListeners resets all changes to the "consumer_listeners" edge.
+func (m *ApplicationMutation) ResetConsumerListeners() {
+	m.consumer_listeners = nil
+	m.clearedconsumer_listeners = false
+	m.removedconsumer_listeners = nil
+}
+
+// AddProviderListenerIDs adds the "provider_listeners" edge to the Listener entity by ids.
+func (m *ApplicationMutation) AddProviderListenerIDs(ids ...int) {
+	if m.provider_listeners == nil {
+		m.provider_listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.provider_listeners[ids[i]] = struct{}{}
+	}
+}
+
+// ClearProviderListeners clears the "provider_listeners" edge to the Listener entity.
+func (m *ApplicationMutation) ClearProviderListeners() {
+	m.clearedprovider_listeners = true
+}
+
+// ProviderListenersCleared reports if the "provider_listeners" edge to the Listener entity was cleared.
+func (m *ApplicationMutation) ProviderListenersCleared() bool {
+	return m.clearedprovider_listeners
+}
+
+// RemoveProviderListenerIDs removes the "provider_listeners" edge to the Listener entity by IDs.
+func (m *ApplicationMutation) RemoveProviderListenerIDs(ids ...int) {
+	if m.removedprovider_listeners == nil {
+		m.removedprovider_listeners = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.provider_listeners, ids[i])
+		m.removedprovider_listeners[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedProviderListeners returns the removed IDs of the "provider_listeners" edge to the Listener entity.
+func (m *ApplicationMutation) RemovedProviderListenersIDs() (ids []int) {
+	for id := range m.removedprovider_listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ProviderListenersIDs returns the "provider_listeners" edge IDs in the mutation.
+func (m *ApplicationMutation) ProviderListenersIDs() (ids []int) {
+	for id := range m.provider_listeners {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetProviderListeners resets all changes to the "provider_listeners" edge.
+func (m *ApplicationMutation) ResetProviderListeners() {
+	m.provider_listeners = nil
+	m.clearedprovider_listeners = false
+	m.removedprovider_listeners = nil
+}
+
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by id.
 func (m *ApplicationMutation) SetPermissionSetID(id int) {
 	m.permission_set = &id
@@ -11191,7 +11305,7 @@ func (m *ApplicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ApplicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 14)
 	if m.zone != nil {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -11224,6 +11338,12 @@ func (m *ApplicationMutation) AddedEdges() []string {
 	}
 	if m.listeners != nil {
 		edges = append(edges, application.EdgeListeners)
+	}
+	if m.consumer_listeners != nil {
+		edges = append(edges, application.EdgeConsumerListeners)
+	}
+	if m.provider_listeners != nil {
+		edges = append(edges, application.EdgeProviderListeners)
 	}
 	if m.permission_set != nil {
 		edges = append(edges, application.EdgePermissionSet)
@@ -11297,6 +11417,18 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeConsumerListeners:
+		ids := make([]ent.Value, 0, len(m.consumer_listeners))
+		for id := range m.consumer_listeners {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeProviderListeners:
+		ids := make([]ent.Value, 0, len(m.provider_listeners))
+		for id := range m.provider_listeners {
+			ids = append(ids, id)
+		}
+		return ids
 	case application.EdgePermissionSet:
 		if id := m.permission_set; id != nil {
 			return []ent.Value{*id}
@@ -11307,7 +11439,7 @@ func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ApplicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 14)
 	if m.removedexposed_apis != nil {
 		edges = append(edges, application.EdgeExposedApis)
 	}
@@ -11334,6 +11466,12 @@ func (m *ApplicationMutation) RemovedEdges() []string {
 	}
 	if m.removedlisteners != nil {
 		edges = append(edges, application.EdgeListeners)
+	}
+	if m.removedconsumer_listeners != nil {
+		edges = append(edges, application.EdgeConsumerListeners)
+	}
+	if m.removedprovider_listeners != nil {
+		edges = append(edges, application.EdgeProviderListeners)
 	}
 	return edges
 }
@@ -11396,13 +11534,25 @@ func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case application.EdgeConsumerListeners:
+		ids := make([]ent.Value, 0, len(m.removedconsumer_listeners))
+		for id := range m.removedconsumer_listeners {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeProviderListeners:
+		ids := make([]ent.Value, 0, len(m.removedprovider_listeners))
+		for id := range m.removedprovider_listeners {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ApplicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 14)
 	if m.clearedzone {
 		edges = append(edges, application.EdgeZone)
 	}
@@ -11436,6 +11586,12 @@ func (m *ApplicationMutation) ClearedEdges() []string {
 	if m.clearedlisteners {
 		edges = append(edges, application.EdgeListeners)
 	}
+	if m.clearedconsumer_listeners {
+		edges = append(edges, application.EdgeConsumerListeners)
+	}
+	if m.clearedprovider_listeners {
+		edges = append(edges, application.EdgeProviderListeners)
+	}
 	if m.clearedpermission_set {
 		edges = append(edges, application.EdgePermissionSet)
 	}
@@ -11468,6 +11624,10 @@ func (m *ApplicationMutation) EdgeCleared(name string) bool {
 		return m.clearedsubscribed_agentics
 	case application.EdgeListeners:
 		return m.clearedlisteners
+	case application.EdgeConsumerListeners:
+		return m.clearedconsumer_listeners
+	case application.EdgeProviderListeners:
+		return m.clearedprovider_listeners
 	case application.EdgePermissionSet:
 		return m.clearedpermission_set
 	}
@@ -11527,6 +11687,12 @@ func (m *ApplicationMutation) ResetEdge(name string) error {
 		return nil
 	case application.EdgeListeners:
 		m.ResetListeners()
+		return nil
+	case application.EdgeConsumerListeners:
+		m.ResetConsumerListeners()
+		return nil
+	case application.EdgeProviderListeners:
+		m.ResetProviderListeners()
 		return nil
 	case application.EdgePermissionSet:
 		m.ResetPermissionSet()
@@ -23328,6 +23494,10 @@ type ListenerMutation struct {
 	clearedFields            map[string]struct{}
 	application              *int
 	clearedapplication       bool
+	consumer                 *int
+	clearedconsumer          bool
+	provider                 *int
+	clearedprovider          bool
 	subscription             *int
 	clearedsubscription      bool
 	exposure                 *int
@@ -23906,6 +24076,84 @@ func (m *ListenerMutation) ResetApplication() {
 	m.clearedapplication = false
 }
 
+// SetConsumerID sets the "consumer" edge to the Application entity by id.
+func (m *ListenerMutation) SetConsumerID(id int) {
+	m.consumer = &id
+}
+
+// ClearConsumer clears the "consumer" edge to the Application entity.
+func (m *ListenerMutation) ClearConsumer() {
+	m.clearedconsumer = true
+}
+
+// ConsumerCleared reports if the "consumer" edge to the Application entity was cleared.
+func (m *ListenerMutation) ConsumerCleared() bool {
+	return m.clearedconsumer
+}
+
+// ConsumerID returns the "consumer" edge ID in the mutation.
+func (m *ListenerMutation) ConsumerID() (id int, exists bool) {
+	if m.consumer != nil {
+		return *m.consumer, true
+	}
+	return
+}
+
+// ConsumerIDs returns the "consumer" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ConsumerID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ConsumerIDs() (ids []int) {
+	if id := m.consumer; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConsumer resets all changes to the "consumer" edge.
+func (m *ListenerMutation) ResetConsumer() {
+	m.consumer = nil
+	m.clearedconsumer = false
+}
+
+// SetProviderID sets the "provider" edge to the Application entity by id.
+func (m *ListenerMutation) SetProviderID(id int) {
+	m.provider = &id
+}
+
+// ClearProvider clears the "provider" edge to the Application entity.
+func (m *ListenerMutation) ClearProvider() {
+	m.clearedprovider = true
+}
+
+// ProviderCleared reports if the "provider" edge to the Application entity was cleared.
+func (m *ListenerMutation) ProviderCleared() bool {
+	return m.clearedprovider
+}
+
+// ProviderID returns the "provider" edge ID in the mutation.
+func (m *ListenerMutation) ProviderID() (id int, exists bool) {
+	if m.provider != nil {
+		return *m.provider, true
+	}
+	return
+}
+
+// ProviderIDs returns the "provider" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProviderID instead. It exists only for internal usage by the builders.
+func (m *ListenerMutation) ProviderIDs() (ids []int) {
+	if id := m.provider; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProvider resets all changes to the "provider" edge.
+func (m *ListenerMutation) ResetProvider() {
+	m.provider = nil
+	m.clearedprovider = false
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by id.
 func (m *ListenerMutation) SetSubscriptionID(id int) {
 	m.subscription = &id
@@ -24435,9 +24683,15 @@ func (m *ListenerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ListenerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 8)
 	if m.application != nil {
 		edges = append(edges, listener.EdgeApplication)
+	}
+	if m.consumer != nil {
+		edges = append(edges, listener.EdgeConsumer)
+	}
+	if m.provider != nil {
+		edges = append(edges, listener.EdgeProvider)
 	}
 	if m.subscription != nil {
 		edges = append(edges, listener.EdgeSubscription)
@@ -24463,6 +24717,14 @@ func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case listener.EdgeApplication:
 		if id := m.application; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeConsumer:
+		if id := m.consumer; id != nil {
+			return []ent.Value{*id}
+		}
+	case listener.EdgeProvider:
+		if id := m.provider; id != nil {
 			return []ent.Value{*id}
 		}
 	case listener.EdgeSubscription:
@@ -24493,7 +24755,7 @@ func (m *ListenerMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ListenerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 8)
 	if m.removedapproval_requests != nil {
 		edges = append(edges, listener.EdgeApprovalRequests)
 	}
@@ -24516,9 +24778,15 @@ func (m *ListenerMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ListenerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 8)
 	if m.clearedapplication {
 		edges = append(edges, listener.EdgeApplication)
+	}
+	if m.clearedconsumer {
+		edges = append(edges, listener.EdgeConsumer)
+	}
+	if m.clearedprovider {
+		edges = append(edges, listener.EdgeProvider)
 	}
 	if m.clearedsubscription {
 		edges = append(edges, listener.EdgeSubscription)
@@ -24544,6 +24812,10 @@ func (m *ListenerMutation) EdgeCleared(name string) bool {
 	switch name {
 	case listener.EdgeApplication:
 		return m.clearedapplication
+	case listener.EdgeConsumer:
+		return m.clearedconsumer
+	case listener.EdgeProvider:
+		return m.clearedprovider
 	case listener.EdgeSubscription:
 		return m.clearedsubscription
 	case listener.EdgeExposure:
@@ -24564,6 +24836,12 @@ func (m *ListenerMutation) ClearEdge(name string) error {
 	switch name {
 	case listener.EdgeApplication:
 		m.ClearApplication()
+		return nil
+	case listener.EdgeConsumer:
+		m.ClearConsumer()
+		return nil
+	case listener.EdgeProvider:
+		m.ClearProvider()
 		return nil
 	case listener.EdgeSubscription:
 		m.ClearSubscription()
@@ -24587,6 +24865,12 @@ func (m *ListenerMutation) ResetEdge(name string) error {
 	switch name {
 	case listener.EdgeApplication:
 		m.ResetApplication()
+		return nil
+	case listener.EdgeConsumer:
+		m.ResetConsumer()
+		return nil
+	case listener.EdgeProvider:
+		m.ResetProvider()
 		return nil
 	case listener.EdgeSubscription:
 		m.ResetSubscription()

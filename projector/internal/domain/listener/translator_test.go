@@ -27,7 +27,8 @@ var _ = Describe("Listener translator", func() {
 		translator *Translator
 	)
 	BeforeEach(func() {
-		obj = &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Name: "listener", Namespace: namespace}, Spec: spectrev1.ListenerSpec{
+		envLabels := map[string]string{shared.EnvironmentLabelKey: "prod"}
+		obj = &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Name: "listener", Namespace: namespace, Labels: envLabels}, Spec: spectrev1.ListenerSpec{
 			Application: ctypes.ObjectRef{Name: "spectre-app"},
 			Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "consumer", Namespace: "prod--consumer"}},
 			Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "provider", Namespace: "prod--provider"}},
@@ -35,7 +36,7 @@ var _ = Describe("Listener translator", func() {
 				Trigger: map[string]string{"method": "GET"}, Payload: []string{"$.id"},
 			}},
 		}}
-		app = &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Name: "spectre-app", Namespace: namespace},
+		app = &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Name: "spectre-app", Namespace: namespace, Labels: envLabels},
 			Spec: spectrev1.SpectreApplicationSpec{Application: ctypes.TypedObjectRef{
 				ObjectRef: ctypes.ObjectRef{Name: "observer", Namespace: namespace},
 			}}}
@@ -74,6 +75,34 @@ var _ = Describe("Listener translator", func() {
 		obj.Labels = map[string]string{shared.EnvironmentLabelKey: "prod"}
 		obj.Spec.Application.Namespace = "qa--observer"
 		_, err := translator.Translate(context.Background(), obj)
+		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
+	})
+
+	It("rejects observer, consumer, or provider references in another environment namespace", func() {
+		scheme := runtime.NewScheme()
+		Expect(spectrev1.AddToScheme(scheme)).To(Succeed())
+
+		badObserverApp := app.DeepCopy()
+		badObserverApp.Spec.Application.Namespace = "qa--observer"
+		t := &Translator{Reader: fake.NewClientBuilder().WithScheme(scheme).WithObjects(badObserverApp).Build()}
+		_, err := t.Translate(context.Background(), obj)
+		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
+
+		t = &Translator{Reader: fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()}
+		badConsumer := obj.DeepCopy()
+		badConsumer.Spec.Consumer.Namespace = "qa--consumer"
+		_, err = t.Translate(context.Background(), badConsumer)
+		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
+
+		badProvider := obj.DeepCopy()
+		badProvider.Spec.Provider.Namespace = "qa--provider"
+		_, err = t.Translate(context.Background(), badProvider)
+		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
+
+		unlabeled := obj.DeepCopy()
+		unlabeled.Labels = nil
+		unlabeled.Spec.Application.Namespace = "prod--other"
+		_, err = t.Translate(context.Background(), unlabeled)
 		Expect(projectorruntime.IsDependencyMissing(err)).To(BeTrue())
 	})
 

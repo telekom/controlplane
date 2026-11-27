@@ -35,13 +35,20 @@ func (t *Translator) ShouldSkip(obj *spectrev1.Listener) (bool, string) {
 	return false, ""
 }
 
+func sameEnvironmentNamespace(env, objNamespace, targetNamespace string) bool {
+	if targetNamespace == objNamespace {
+		return true
+	}
+	return env != "" && strings.HasPrefix(targetNamespace, env+"--")
+}
+
 func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*Data, error) {
 	ref := obj.Spec.Application
 	if ref.Namespace == "" {
 		ref.Namespace = obj.Namespace
 	}
 	env := shared.EnvironmentFromLabels(obj.Labels)
-	if env != "" && ref.Namespace != obj.Namespace && !strings.HasPrefix(ref.Namespace, env+"--") {
+	if !sameEnvironmentNamespace(env, obj.Namespace, ref.Namespace) {
 		return nil, runtime.WrapDependencyMissing("spectre_application", ref.String())
 	}
 	app := &spectrev1.SpectreApplication{}
@@ -57,8 +64,14 @@ func (t *Translator) Translate(ctx context.Context, obj *spectrev1.Listener) (*D
 		return nil, runtime.WrapDependencyMissing("spectre_application", ref.String())
 	}
 	observer := app.Spec.Application.ObjectRef
-	if observer.Name == "" || observer.Namespace == "" {
+	if observer.Name == "" || observer.Namespace == "" || !sameEnvironmentNamespace(env, obj.Namespace, observer.Namespace) {
 		return nil, runtime.WrapDependencyMissing("application", ref.String())
+	}
+	if !sameEnvironmentNamespace(env, obj.Namespace, obj.Spec.Consumer.Namespace) {
+		return nil, runtime.WrapDependencyMissing("application", obj.Spec.Consumer.String())
+	}
+	if !sameEnvironmentNamespace(env, obj.Namespace, obj.Spec.Provider.Namespace) {
+		return nil, runtime.WrapDependencyMissing("application", obj.Spec.Provider.String())
 	}
 	phase, message := shared.StatusFromConditions(obj.Status.Conditions)
 	data := &Data{

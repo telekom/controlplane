@@ -78,10 +78,12 @@ var _ = Describe("Listener repository", func() {
 		cache.Close()
 	})
 
-	It("links exactly the observer, consumer subscription and provider exposure", func() {
+	It("links observer, consumer, provider applications along with subscription and exposure", func() {
 		Expect(repo.Upsert(ctx, data)).To(Succeed())
 		row := client.Listener.Query().OnlyX(ctx)
 		Expect(row.QueryApplication().OnlyX(ctx).ID).To(Equal(observer.ID))
+		Expect(row.QueryConsumer().OnlyX(ctx).ID).To(Equal(consumer.ID))
+		Expect(row.QueryProvider().OnlyX(ctx).ID).To(Equal(provider.ID))
 		Expect(row.QuerySubscription().OnlyX(ctx).ID).To(Equal(sub.ID))
 		Expect(row.QueryExposure().OnlyX(ctx).QueryOwner().OnlyX(ctx).ID).To(Equal(provider.ID))
 		Expect(observer.QueryListeners().CountX(ctx)).To(Equal(1))
@@ -103,28 +105,96 @@ var _ = Describe("Listener repository", func() {
 		Expect(*row.StatusPhase).To(Equal(entlistener.StatusPhaseError))
 		Expect(row.RequestFilter).To(BeNil())
 		Expect(row.QueryApplication().OnlyX(ctx).ID).To(Equal(consumer.ID))
+		Expect(row.QueryConsumer().OnlyX(ctx).ID).To(Equal(otherConsumer.ID))
+		Expect(row.QueryProvider().OnlyX(ctx).ID).To(Equal(otherProvider.ID))
 		Expect(row.QuerySubscription().OnlyX(ctx).QueryOwner().OnlyX(ctx).ID).To(Equal(otherConsumer.ID))
 		Expect(row.QueryExposure().OnlyX(ctx).QueryOwner().OnlyX(ctx).ID).To(Equal(otherProvider.ID))
 	})
 
-	It("retries instead of adopting a different owner's dependency", func() {
+	It("persists a blocked Listener with nil subscription or exposure and links them once present", func() {
+		// Remove subscription first — Listener should still persist with nil subscription and requeue.
+		client.ApiSubscription.DeleteOne(sub).ExecX(ctx)
+		resolver.EvictAPISubscriptionID(data.BasePath, consumer.Name, "consumer-team")
+		data.StatusPhase = "PENDING"
+		data.StatusMessage = "blocked: no ApiSubscription for consumer"
+		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
+
+		row := client.Listener.Query().OnlyX(ctx)
+		Expect(row.StatusPhase).To(HaveValue(Equal(entlistener.StatusPhasePending)))
+		Expect(row.StatusMessage).To(HaveValue(Equal("blocked: no ApiSubscription for consumer")))
+		Expect(row.QueryApplication().OnlyX(ctx).ID).To(Equal(observer.ID))
+		Expect(row.QueryConsumer().OnlyX(ctx).ID).To(Equal(consumer.ID))
+		Expect(row.QueryProvider().OnlyX(ctx).ID).To(Equal(provider.ID))
+		Expect(row.QuerySubscription().ExistX(ctx)).To(BeFalse())
+		Expect(row.QueryExposure().ExistX(ctx)).To(BeTrue())
+
+		// Also remove exposure — both optional edges become nil while row stays visible.
+		client.ApiExposure.Delete().Where(entexposure.HasOwnerWith()).ExecX(ctx)
+		resolver.EvictAPIExposureID(data.BasePath, provider.Name, "provider-team")
+		data.StatusMessage = "blocked: no ApiSubscription or ApiExposure"
+		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
+
+		row = client.Listener.Query().OnlyX(ctx)
+		Expect(row.StatusMessage).To(HaveValue(Equal("blocked: no ApiSubscription or ApiExposure")))
+		Expect(row.QuerySubscription().ExistX(ctx)).To(BeFalse())
+		Expect(row.QueryExposure().ExistX(ctx)).To(BeFalse())
+
+		// Create subscription and exposure — next upsert links both edges and succeeds.
+		newSub := client.ApiSubscription.Create().SetBasePath(data.BasePath).
+			SetNamespace(consumer.Namespace).SetName("consumer-sub-new").SetOwnerID(consumer.ID).SaveX(ctx)
+		newExposure := client.ApiExposure.Create().SetBasePath(data.BasePath).
+			SetNamespace(provider.Namespace).SetVisibility(entexposure.VisibilityWorld).
+			SetActive(true).SetFeatures([]string{}).SetOwnerID(provider.ID).SaveX(ctx)
+		data.StatusPhase = "READY"
+		data.StatusMessage = "provisioned"
+		Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+		row = client.Listener.Query().OnlyX(ctx)
+		Expect(row.StatusPhase).To(HaveValue(Equal(entlistener.StatusPhaseReady)))
+		Expect(row.QuerySubscription().OnlyX(ctx).ID).To(Equal(newSub.ID))
+		Expect(row.QueryExposure().OnlyX(ctx).ID).To(Equal(newExposure.ID))
+	})
+
+	It("clears subscription and exposure FKs on conflict when retargeted to a path without them", func() {
+		Expect(repo.Upsert(ctx, data)).To(Succeed())
+		row := client.Listener.Query().OnlyX(ctx)
+		Expect(row.QuerySubscription().ExistX(ctx)).To(BeTrue())
+		Expect(row.QueryExposure().ExistX(ctx)).To(BeTrue())
+
+		data.BasePath = "/unsubscribed-api"
+		data.StatusPhase = "PENDING"
+		data.StatusMessage = "blocked: waiting for subscription and exposure"
+		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
+
+		row = client.Listener.Query().OnlyX(ctx)
+		Expect(row.APIBasePath).To(Equal("/unsubscribed-api"))
+		Expect(row.StatusPhase).To(HaveValue(Equal(entlistener.StatusPhasePending)))
+		Expect(row.QuerySubscription().ExistX(ctx)).To(BeFalse())
+		Expect(row.QueryExposure().ExistX(ctx)).To(BeFalse())
+	})
+
+	It("retries without inserting when observer, consumer, or provider Application is missing", func() {
 		data.Consumer.Name = "missing"
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
 		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
 		data.Consumer = Key{Namespace: consumer.Namespace, Name: consumer.Name}
 		data.Provider.Name = "missing"
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
+		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
 		data.Provider = Key{Namespace: provider.Namespace, Name: provider.Name}
 		data.Observer.Name = "missing"
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
+		Expect(client.Listener.Query().CountX(ctx)).To(BeZero())
 	})
 
-	It("keeps previous edges when retargeting waits for a dependency", func() {
+	It("keeps previous edges when retargeting waits for a missing Application", func() {
 		Expect(repo.Upsert(ctx, data)).To(Succeed())
 		data.Observer = Key{Namespace: observer.Namespace, Name: "missing"}
 		Expect(projectorruntime.IsDependencyMissing(repo.Upsert(ctx, data))).To(BeTrue())
 		row := client.Listener.Query().OnlyX(ctx)
 		Expect(row.QueryApplication().OnlyX(ctx).ID).To(Equal(observer.ID))
+		Expect(row.QueryConsumer().OnlyX(ctx).ID).To(Equal(consumer.ID))
+		Expect(row.QueryProvider().OnlyX(ctx).ID).To(Equal(provider.ID))
 		Expect(row.QuerySubscription().OnlyX(ctx).ID).To(Equal(sub.ID))
 		Expect(row.QueryExposure().OnlyX(ctx).QueryOwner().OnlyX(ctx).ID).To(Equal(provider.ID))
 	})
@@ -139,10 +209,11 @@ var _ = Describe("Listener repository", func() {
 	It("removes stale projections when a Listener is skipped", func() {
 		scheme := runtime.NewScheme()
 		Expect(spectrev1.AddToScheme(scheme)).To(Succeed())
-		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app"},
+		envLabels := map[string]string{shared.EnvironmentLabelKey: "prod"}
+		app := &spectrev1.SpectreApplication{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: "spectre-app", Labels: envLabels},
 			Spec: spectrev1.SpectreApplicationSpec{Application: ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: observer.Namespace, Name: observer.Name}}}}
 		reader := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
-		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name},
+		obj := &spectrev1.Listener{ObjectMeta: metav1.ObjectMeta{Namespace: data.Meta.Namespace, Name: data.Meta.Name, Labels: envLabels},
 			Spec: spectrev1.ListenerSpec{Application: ctypes.ObjectRef{Name: app.Name},
 				Consumer:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: consumer.Namespace, Name: consumer.Name}},
 				Provider:    ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Namespace: provider.Namespace, Name: provider.Name}},

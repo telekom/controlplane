@@ -36,7 +36,7 @@ main.go                          26-line entrypoint → bootstrap.Run()
        ├── application/          Level 2 — required Team + Zone FKs
        ├── apiexposure/          Level 3 — required Application FK
        ├── apisubscription/      Level 3 — required Application FK, optional target ApiExposure FK
-       ├── listener/             Required observer Application, consumer ApiSubscription, provider ApiExposure (FeatureSpectre)
+       ├── listener/             Required observer, consumer, and provider Application FKs; optional ApiSubscription and ApiExposure FKs (FeatureSpectre)
        ├── approval/             Level 4 — required ApiSubscription FK
        ├── approvalrequest/      Level 4 — required ApiSubscription FK
        ├── eventtype/            Level 0 — no FK dependencies (gated behind FeaturePubSub)
@@ -104,7 +104,7 @@ Some modules are only registered (and their CRD scheme only added to the manager
 
 When a flag is disabled, its modules are not registered with the controller manager and their CRDs are never watched or reconciled.
 
-The Listener module watches `Listener`, `SpectreApplication`, `Application`, `ApiSubscription`, and `ApiExposure`. It resolves the observer through `SpectreApplication.spec.application` and matches the consumer subscription and provider exposure by owner and exact base path. Missing dependencies retry, and a projected Listener keeps its previous relationships until the missing dependency resolves. Spectre is disabled by default. The local Spectre overlay enables it through `controlplane-env`; other installations that include Spectre must set `FEATURE_SPECTRE_ENABLED=true` in `controlplane-env` or `projector-env`.
+The Listener module watches `Listener`, `SpectreApplication`, `Application`, `ApiSubscription`, and `ApiExposure`. It resolves the observer through `SpectreApplication.spec.application` along with the consumer and provider Applications, and optionally matches the consumer subscription and provider exposure by owner and exact base path. When the consumer subscription or provider exposure does not exist yet, the Listener is still persisted with `NULL` foreign keys (preserving its blocked `statusPhase` and `statusMessage`) and requeued until they appear; when an Application dependency is missing, a projected Listener keeps its previous relationships until it resolves. Spectre is disabled by default. The local Spectre overlay enables it through `controlplane-env`; other installations that include Spectre must set `FEATURE_SPECTRE_ENABLED=true` in `controlplane-env` or `projector-env`.
 
 ## Adding a New Entity
 

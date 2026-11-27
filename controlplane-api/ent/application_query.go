@@ -50,6 +50,8 @@ type ApplicationQuery struct {
 	withExposedAgentics          *AgenticExposureQuery
 	withSubscribedAgentics       *AgenticSubscriptionQuery
 	withListeners                *ListenerQuery
+	withConsumerListeners        *ListenerQuery
+	withProviderListeners        *ListenerQuery
 	withPermissionSet            *PermissionSetQuery
 	withFKs                      bool
 	modifiers                    []func(*sql.Selector)
@@ -63,6 +65,8 @@ type ApplicationQuery struct {
 	withNamedExposedAgentics     map[string]*AgenticExposureQuery
 	withNamedSubscribedAgentics  map[string]*AgenticSubscriptionQuery
 	withNamedListeners           map[string]*ListenerQuery
+	withNamedConsumerListeners   map[string]*ListenerQuery
+	withNamedProviderListeners   map[string]*ListenerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -341,6 +345,50 @@ func (_q *ApplicationQuery) QueryListeners() *ListenerQuery {
 	return query
 }
 
+// QueryConsumerListeners chains the current query on the "consumer_listeners" edge.
+func (_q *ApplicationQuery) QueryConsumerListeners() *ListenerQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, selector),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ConsumerListenersTable, application.ConsumerListenersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProviderListeners chains the current query on the "provider_listeners" edge.
+func (_q *ApplicationQuery) QueryProviderListeners() *ListenerQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, selector),
+			sqlgraph.To(listener.Table, listener.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.ProviderListenersTable, application.ProviderListenersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPermissionSet chains the current query on the "permission_set" edge.
 func (_q *ApplicationQuery) QueryPermissionSet() *PermissionSetQuery {
 	query := (&PermissionSetClient{config: _q.config}).Query()
@@ -566,6 +614,8 @@ func (_q *ApplicationQuery) Clone() *ApplicationQuery {
 		withExposedAgentics:     _q.withExposedAgentics.Clone(),
 		withSubscribedAgentics:  _q.withSubscribedAgentics.Clone(),
 		withListeners:           _q.withListeners.Clone(),
+		withConsumerListeners:   _q.withConsumerListeners.Clone(),
+		withProviderListeners:   _q.withProviderListeners.Clone(),
 		withPermissionSet:       _q.withPermissionSet.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -694,6 +744,28 @@ func (_q *ApplicationQuery) WithListeners(opts ...func(*ListenerQuery)) *Applica
 	return _q
 }
 
+// WithConsumerListeners tells the query-builder to eager-load the nodes that are connected to
+// the "consumer_listeners" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithConsumerListeners(opts ...func(*ListenerQuery)) *ApplicationQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsumerListeners = query
+	return _q
+}
+
+// WithProviderListeners tells the query-builder to eager-load the nodes that are connected to
+// the "provider_listeners" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithProviderListeners(opts ...func(*ListenerQuery)) *ApplicationQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withProviderListeners = query
+	return _q
+}
+
 // WithPermissionSet tells the query-builder to eager-load the nodes that are connected to
 // the "permission_set" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *ApplicationQuery) WithPermissionSet(opts ...func(*PermissionSetQuery)) *ApplicationQuery {
@@ -790,7 +862,7 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*Application{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [14]bool{
 			_q.withZone != nil,
 			_q.withOwnerTeam != nil,
 			_q.withExposedApis != nil,
@@ -802,6 +874,8 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			_q.withExposedAgentics != nil,
 			_q.withSubscribedAgentics != nil,
 			_q.withListeners != nil,
+			_q.withConsumerListeners != nil,
+			_q.withProviderListeners != nil,
 			_q.withPermissionSet != nil,
 		}
 	)
@@ -913,6 +987,20 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			return nil, err
 		}
 	}
+	if query := _q.withConsumerListeners; query != nil {
+		if err := _q.loadConsumerListeners(ctx, query, nodes,
+			func(n *Application) { n.Edges.ConsumerListeners = []*Listener{} },
+			func(n *Application, e *Listener) { n.Edges.ConsumerListeners = append(n.Edges.ConsumerListeners, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withProviderListeners; query != nil {
+		if err := _q.loadProviderListeners(ctx, query, nodes,
+			func(n *Application) { n.Edges.ProviderListeners = []*Listener{} },
+			func(n *Application, e *Listener) { n.Edges.ProviderListeners = append(n.Edges.ProviderListeners, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withPermissionSet; query != nil {
 		if err := _q.loadPermissionSet(ctx, query, nodes, nil,
 			func(n *Application, e *PermissionSet) { n.Edges.PermissionSet = e }); err != nil {
@@ -979,6 +1067,20 @@ func (_q *ApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		if err := _q.loadListeners(ctx, query, nodes,
 			func(n *Application) { n.appendNamedListeners(name) },
 			func(n *Application, e *Listener) { n.appendNamedListeners(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConsumerListeners {
+		if err := _q.loadConsumerListeners(ctx, query, nodes,
+			func(n *Application) { n.appendNamedConsumerListeners(name) },
+			func(n *Application, e *Listener) { n.appendNamedConsumerListeners(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedProviderListeners {
+		if err := _q.loadProviderListeners(ctx, query, nodes,
+			func(n *Application) { n.appendNamedProviderListeners(name) },
+			func(n *Application, e *Listener) { n.appendNamedProviderListeners(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1333,6 +1435,68 @@ func (_q *ApplicationQuery) loadListeners(ctx context.Context, query *ListenerQu
 	}
 	return nil
 }
+func (_q *ApplicationQuery) loadConsumerListeners(ctx context.Context, query *ListenerQuery, nodes []*Application, init func(*Application), assign func(*Application, *Listener)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Application)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Listener(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.ConsumerListenersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.application_consumer_listeners
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "application_consumer_listeners" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "application_consumer_listeners" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ApplicationQuery) loadProviderListeners(ctx context.Context, query *ListenerQuery, nodes []*Application, init func(*Application), assign func(*Application, *Listener)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Application)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Listener(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(application.ProviderListenersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.application_provider_listeners
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "application_provider_listeners" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "application_provider_listeners" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *ApplicationQuery) loadPermissionSet(ctx context.Context, query *PermissionSetQuery, nodes []*Application, init func(*Application), assign func(*Application, *PermissionSet)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Application)
@@ -1569,6 +1733,34 @@ func (_q *ApplicationQuery) WithNamedListeners(name string, opts ...func(*Listen
 		_q.withNamedListeners = make(map[string]*ListenerQuery)
 	}
 	_q.withNamedListeners[name] = query
+	return _q
+}
+
+// WithNamedConsumerListeners tells the query-builder to eager-load the nodes that are connected to the "consumer_listeners"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithNamedConsumerListeners(name string, opts ...func(*ListenerQuery)) *ApplicationQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConsumerListeners == nil {
+		_q.withNamedConsumerListeners = make(map[string]*ListenerQuery)
+	}
+	_q.withNamedConsumerListeners[name] = query
+	return _q
+}
+
+// WithNamedProviderListeners tells the query-builder to eager-load the nodes that are connected to the "provider_listeners"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApplicationQuery) WithNamedProviderListeners(name string, opts ...func(*ListenerQuery)) *ApplicationQuery {
+	query := (&ListenerClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedProviderListeners == nil {
+		_q.withNamedProviderListeners = make(map[string]*ListenerQuery)
+	}
+	_q.withNamedProviderListeners[name] = query
 	return _q
 }
 

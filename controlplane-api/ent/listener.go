@@ -48,17 +48,23 @@ type Listener struct {
 	ResponseFilter *model.ListenerFilter `json:"response_filter,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ListenerQuery when eager-loading is set.
-	Edges                      ListenerEdges `json:"edges"`
-	api_exposure_listeners     *int
-	api_subscription_listeners *int
-	application_listeners      *int
-	selectValues               sql.SelectValues
+	Edges                          ListenerEdges `json:"edges"`
+	api_exposure_listeners         *int
+	api_subscription_listeners     *int
+	application_listeners          *int
+	application_consumer_listeners *int
+	application_provider_listeners *int
+	selectValues                   sql.SelectValues
 }
 
 // ListenerEdges holds the relations/edges for other nodes in the graph.
 type ListenerEdges struct {
 	// Application holds the value of the application edge.
 	Application *Application `json:"application,omitempty"`
+	// Consumer holds the value of the consumer edge.
+	Consumer *Application `json:"consumer,omitempty"`
+	// Provider holds the value of the provider edge.
+	Provider *Application `json:"provider,omitempty"`
 	// Subscription holds the value of the subscription edge.
 	Subscription *ApiSubscription `json:"subscription,omitempty"`
 	// Exposure holds the value of the exposure edge.
@@ -71,7 +77,7 @@ type ListenerEdges struct {
 	ApprovalRequests []*ApprovalRequest `json:"approval_requests,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [8]bool
 	// totalCount holds the count of the edges above.
 	totalCount [2]map[string]int
 
@@ -89,12 +95,34 @@ func (e ListenerEdges) ApplicationOrErr() (*Application, error) {
 	return nil, &NotLoadedError{edge: "application"}
 }
 
+// ConsumerOrErr returns the Consumer value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ListenerEdges) ConsumerOrErr() (*Application, error) {
+	if e.Consumer != nil {
+		return e.Consumer, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: application.Label}
+	}
+	return nil, &NotLoadedError{edge: "consumer"}
+}
+
+// ProviderOrErr returns the Provider value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ListenerEdges) ProviderOrErr() (*Application, error) {
+	if e.Provider != nil {
+		return e.Provider, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: application.Label}
+	}
+	return nil, &NotLoadedError{edge: "provider"}
+}
+
 // SubscriptionOrErr returns the Subscription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ListenerEdges) SubscriptionOrErr() (*ApiSubscription, error) {
 	if e.Subscription != nil {
 		return e.Subscription, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: apisubscription.Label}
 	}
 	return nil, &NotLoadedError{edge: "subscription"}
@@ -105,7 +133,7 @@ func (e ListenerEdges) SubscriptionOrErr() (*ApiSubscription, error) {
 func (e ListenerEdges) ExposureOrErr() (*ApiExposure, error) {
 	if e.Exposure != nil {
 		return e.Exposure, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: apiexposure.Label}
 	}
 	return nil, &NotLoadedError{edge: "exposure"}
@@ -116,7 +144,7 @@ func (e ListenerEdges) ExposureOrErr() (*ApiExposure, error) {
 func (e ListenerEdges) ProviderApprovalOrErr() (*Approval, error) {
 	if e.ProviderApproval != nil {
 		return e.ProviderApproval, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[5] {
 		return nil, &NotFoundError{label: approval.Label}
 	}
 	return nil, &NotLoadedError{edge: "provider_approval"}
@@ -127,7 +155,7 @@ func (e ListenerEdges) ProviderApprovalOrErr() (*Approval, error) {
 func (e ListenerEdges) ConsumerApprovalOrErr() (*Approval, error) {
 	if e.ConsumerApproval != nil {
 		return e.ConsumerApproval, nil
-	} else if e.loadedTypes[4] {
+	} else if e.loadedTypes[6] {
 		return nil, &NotFoundError{label: approval.Label}
 	}
 	return nil, &NotLoadedError{edge: "consumer_approval"}
@@ -136,7 +164,7 @@ func (e ListenerEdges) ConsumerApprovalOrErr() (*Approval, error) {
 // ApprovalRequestsOrErr returns the ApprovalRequests value or an error if the edge
 // was not loaded in eager-loading.
 func (e ListenerEdges) ApprovalRequestsOrErr() ([]*ApprovalRequest, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[7] {
 		return e.ApprovalRequests, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_requests"}
@@ -160,6 +188,10 @@ func (*Listener) scanValues(columns []string) ([]any, error) {
 		case listener.ForeignKeys[1]: // api_subscription_listeners
 			values[i] = new(sql.NullInt64)
 		case listener.ForeignKeys[2]: // application_listeners
+			values[i] = new(sql.NullInt64)
+		case listener.ForeignKeys[3]: // application_consumer_listeners
+			values[i] = new(sql.NullInt64)
+		case listener.ForeignKeys[4]: // application_provider_listeners
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -270,6 +302,20 @@ func (_m *Listener) assignValues(columns []string, values []any) error {
 				_m.application_listeners = new(int)
 				*_m.application_listeners = int(value.Int64)
 			}
+		case listener.ForeignKeys[3]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field application_consumer_listeners", value)
+			} else if value.Valid {
+				_m.application_consumer_listeners = new(int)
+				*_m.application_consumer_listeners = int(value.Int64)
+			}
+		case listener.ForeignKeys[4]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field application_provider_listeners", value)
+			} else if value.Valid {
+				_m.application_provider_listeners = new(int)
+				*_m.application_provider_listeners = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -286,6 +332,16 @@ func (_m *Listener) Value(name string) (ent.Value, error) {
 // QueryApplication queries the "application" edge of the Listener entity.
 func (_m *Listener) QueryApplication() *ApplicationQuery {
 	return NewListenerClient(_m.config).QueryApplication(_m)
+}
+
+// QueryConsumer queries the "consumer" edge of the Listener entity.
+func (_m *Listener) QueryConsumer() *ApplicationQuery {
+	return NewListenerClient(_m.config).QueryConsumer(_m)
+}
+
+// QueryProvider queries the "provider" edge of the Listener entity.
+func (_m *Listener) QueryProvider() *ApplicationQuery {
+	return NewListenerClient(_m.config).QueryProvider(_m)
 }
 
 // QuerySubscription queries the "subscription" edge of the Listener entity.

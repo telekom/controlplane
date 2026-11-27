@@ -225,6 +225,36 @@ var _ = Describe("Listener resolvers", func() {
 		// Case 2: ApiExposure has no linked Api catalogue row (e.g. inactive exposure or deleted Api).
 		client.ApiExposure.UpdateOne(s.ExposureAlpha).ClearAPI().ExecX(ctx)
 		assertNilResourceName()
+
+		// Case 3: Listener has no linked ApiExposure or ApiSubscription yet (blocked Listener).
+		client.Listener.UpdateOne(s.ListenerReady).ClearSubscription().ClearExposure().ExecX(ctx)
+		s.ListenerReady = client.Listener.GetX(ctx, s.ListenerReady.ID)
+		resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resourceName).To(BeNil())
+
+		subscription, err := r.Listener().Subscription(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscription).To(BeNil())
+
+		exposure, err := r.Listener().Exposure(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposure).To(BeNil())
+
+		consumer, err := r.Listener().Consumer(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumer.Name).To(Equal("app-beta"))
+
+		provider, err := r.Listener().Provider(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(provider.Name).To(Equal("app-alpha"))
+
+		approvalTarget, err := r.Approval().Subscription(ctx, s.ListenerApproval)
+		Expect(err).NotTo(HaveOccurred())
+		listenerInfo := approvalTarget.(*gqlmodel.ListenerInfo)
+		Expect(listenerInfo.ResourceName).To(BeNil())
+		Expect(listenerInfo.Consumer.Name).To(Equal("app-beta"))
+		Expect(listenerInfo.Provider.Name).To(Equal("app-alpha"))
 	})
 
 	It("includes non-ready Listeners on the listener application", func() {
@@ -245,8 +275,10 @@ var _ = Describe("Listener resolvers", func() {
 
 	It("resolves Listener fields from eager-loaded connections without extra DB queries", func() {
 		ctx := testutil.AllowContext()
-		// Clear Group on TeamAlpha to verify optional nil edges are also reused without querying.
+		// Clear Group on TeamAlpha and clear optional edges on ListenerPending to verify
+		// optional nil edges are also reused without querying.
 		client.Team.UpdateOne(s.TeamAlpha).ClearGroup().ExecX(ctx)
+		client.Listener.UpdateOne(s.ListenerPending).ClearSubscription().ClearExposure().ExecX(ctx)
 
 		queryConn, err := r.Query().Listeners(ctx, nil, nil, nil, nil, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -264,7 +296,11 @@ var _ = Describe("Listener resolvers", func() {
 				node := edge.Node
 				resourceName, err := r.Listener().ResourceName(ctx, node)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resourceName).To(HaveValue(Equal("api-alpha")))
+				if node.ID == s.ListenerReady.ID {
+					Expect(resourceName).To(HaveValue(Equal("api-alpha")))
+				} else {
+					Expect(resourceName).To(BeNil())
+				}
 
 				approved, err := r.Listener().Approved(ctx, node)
 				Expect(err).NotTo(HaveOccurred())
@@ -285,12 +321,18 @@ var _ = Describe("Listener resolvers", func() {
 
 				sub, err := r.Listener().Subscription(ctx, node)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(sub.ID).To(Equal(s.Subscription.ID))
-
 				exp, err := r.Listener().Exposure(ctx, node)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(exp.ID).To(Equal(s.ExposureAlpha.ID))
-				Expect(exp.OwnerTeam.GroupName).To(BeEmpty())
+				if node.ID == s.ListenerReady.ID {
+					Expect(sub).NotTo(BeNil())
+					Expect(sub.ID).To(Equal(s.Subscription.ID))
+					Expect(exp).NotTo(BeNil())
+					Expect(exp.ID).To(Equal(s.ExposureAlpha.ID))
+					Expect(exp.OwnerTeam.GroupName).To(BeEmpty())
+				} else {
+					Expect(sub).To(BeNil())
+					Expect(exp).To(BeNil())
+				}
 
 				providerApproval, err := node.ProviderApproval(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -472,5 +514,24 @@ var _ = Describe("Listener resolvers", func() {
 		Expect(ent.IsNotFound(err)).To(BeTrue())
 		_, err = client.ApprovalRequest.Get(ctx, s.ListenerApprovalRequest.ID)
 		Expect(ent.IsNotFound(err)).To(BeTrue())
+	})
+
+	It("preserves Listener and its approvals when subscription or exposure is deleted", func() {
+		ctx := testutil.AllowContext()
+		client.Approval.DeleteOne(s.Approval).ExecX(ctx)
+		client.ApprovalRequest.DeleteOne(s.ApprovalRequest).ExecX(ctx)
+		client.ApiSubscription.DeleteOne(s.Subscription).ExecX(ctx)
+		client.ApiExposure.DeleteOne(s.ExposureAlpha).ExecX(ctx)
+
+		reloaded := client.Listener.GetX(ctx, s.ListenerReady.ID)
+		sub, err := r.Listener().Subscription(ctx, reloaded)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(sub).To(BeNil())
+		exp, err := r.Listener().Exposure(ctx, reloaded)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exp).To(BeNil())
+		Expect(client.Approval.Get(ctx, s.ListenerApproval.ID)).NotTo(BeNil())
+		Expect(client.Approval.Get(ctx, s.ListenerConsumerApproval.ID)).NotTo(BeNil())
+		Expect(client.ApprovalRequest.Get(ctx, s.ListenerApprovalRequest.ID)).NotTo(BeNil())
 	})
 })

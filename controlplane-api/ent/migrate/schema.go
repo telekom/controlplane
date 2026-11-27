@@ -896,9 +896,11 @@ var (
 		{Name: "api_base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "request_filter", Type: field.TypeJSON, Nullable: true},
 		{Name: "response_filter", Type: field.TypeJSON, Nullable: true},
-		{Name: "api_exposure_listeners", Type: field.TypeInt},
-		{Name: "api_subscription_listeners", Type: field.TypeInt},
+		{Name: "api_exposure_listeners", Type: field.TypeInt, Nullable: true},
+		{Name: "api_subscription_listeners", Type: field.TypeInt, Nullable: true},
 		{Name: "application_listeners", Type: field.TypeInt},
+		{Name: "application_consumer_listeners", Type: field.TypeInt},
+		{Name: "application_provider_listeners", Type: field.TypeInt},
 	}
 	// ListenersTable holds the schema information for the "listeners" table.
 	ListenersTable = &schema.Table{
@@ -910,17 +912,29 @@ var (
 				Symbol:     "listeners_api_exposures_listeners",
 				Columns:    []*schema.Column{ListenersColumns[11]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
-				OnDelete:   schema.Cascade,
+				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "listeners_api_subscriptions_listeners",
 				Columns:    []*schema.Column{ListenersColumns[12]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
-				OnDelete:   schema.Cascade,
+				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "listeners_applications_listeners",
 				Columns:    []*schema.Column{ListenersColumns[13]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "listeners_applications_consumer_listeners",
+				Columns:    []*schema.Column{ListenersColumns[14]},
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "listeners_applications_provider_listeners",
+				Columns:    []*schema.Column{ListenersColumns[15]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -935,6 +949,16 @@ var (
 				Name:    "listener_application_listeners",
 				Unique:  false,
 				Columns: []*schema.Column{ListenersColumns[13]},
+			},
+			{
+				Name:    "listener_application_consumer_listeners",
+				Unique:  false,
+				Columns: []*schema.Column{ListenersColumns[14]},
+			},
+			{
+				Name:    "listener_application_provider_listeners",
+				Unique:  false,
+				Columns: []*schema.Column{ListenersColumns[15]},
 			},
 			{
 				Name:    "listener_api_subscription_listeners",
@@ -1184,6 +1208,8 @@ func init() {
 	ListenersTable.ForeignKeys[0].RefTable = APIExposuresTable
 	ListenersTable.ForeignKeys[1].RefTable = APISubscriptionsTable
 	ListenersTable.ForeignKeys[2].RefTable = ApplicationsTable
+	ListenersTable.ForeignKeys[3].RefTable = ApplicationsTable
+	ListenersTable.ForeignKeys[4].RefTable = ApplicationsTable
 	McpServersTable.ForeignKeys[0].RefTable = TeamsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	PermissionSetsTable.ForeignKeys[0].RefTable = ApplicationsTable

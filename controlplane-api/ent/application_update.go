@@ -508,6 +508,36 @@ func (_u *ApplicationUpdate) AddListeners(v ...*Listener) *ApplicationUpdate {
 	return _u.AddListenerIDs(ids...)
 }
 
+// AddConsumerListenerIDs adds the "consumer_listeners" edge to the Listener entity by IDs.
+func (_u *ApplicationUpdate) AddConsumerListenerIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddConsumerListenerIDs(ids...)
+	return _u
+}
+
+// AddConsumerListeners adds the "consumer_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdate) AddConsumerListeners(v ...*Listener) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsumerListenerIDs(ids...)
+}
+
+// AddProviderListenerIDs adds the "provider_listeners" edge to the Listener entity by IDs.
+func (_u *ApplicationUpdate) AddProviderListenerIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.AddProviderListenerIDs(ids...)
+	return _u
+}
+
+// AddProviderListeners adds the "provider_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdate) AddProviderListeners(v ...*Listener) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddProviderListenerIDs(ids...)
+}
+
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
 func (_u *ApplicationUpdate) SetPermissionSetID(id int) *ApplicationUpdate {
 	_u.mutation.SetPermissionSetID(id)
@@ -731,6 +761,48 @@ func (_u *ApplicationUpdate) RemoveListeners(v ...*Listener) *ApplicationUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveListenerIDs(ids...)
+}
+
+// ClearConsumerListeners clears all "consumer_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdate) ClearConsumerListeners() *ApplicationUpdate {
+	_u.mutation.ClearConsumerListeners()
+	return _u
+}
+
+// RemoveConsumerListenerIDs removes the "consumer_listeners" edge to Listener entities by IDs.
+func (_u *ApplicationUpdate) RemoveConsumerListenerIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveConsumerListenerIDs(ids...)
+	return _u
+}
+
+// RemoveConsumerListeners removes "consumer_listeners" edges to Listener entities.
+func (_u *ApplicationUpdate) RemoveConsumerListeners(v ...*Listener) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsumerListenerIDs(ids...)
+}
+
+// ClearProviderListeners clears all "provider_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdate) ClearProviderListeners() *ApplicationUpdate {
+	_u.mutation.ClearProviderListeners()
+	return _u
+}
+
+// RemoveProviderListenerIDs removes the "provider_listeners" edge to Listener entities by IDs.
+func (_u *ApplicationUpdate) RemoveProviderListenerIDs(ids ...int) *ApplicationUpdate {
+	_u.mutation.RemoveProviderListenerIDs(ids...)
+	return _u
+}
+
+// RemoveProviderListeners removes "provider_listeners" edges to Listener entities.
+func (_u *ApplicationUpdate) RemoveProviderListeners(v ...*Listener) *ApplicationUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveProviderListenerIDs(ids...)
 }
 
 // ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
@@ -1402,6 +1474,96 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ConsumerListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsumerListenersIDs(); len(nodes) > 0 && !_u.mutation.ConsumerListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ProviderListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedProviderListenersIDs(); len(nodes) > 0 && !_u.mutation.ProviderListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProviderListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.PermissionSetCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -1914,6 +2076,36 @@ func (_u *ApplicationUpdateOne) AddListeners(v ...*Listener) *ApplicationUpdateO
 	return _u.AddListenerIDs(ids...)
 }
 
+// AddConsumerListenerIDs adds the "consumer_listeners" edge to the Listener entity by IDs.
+func (_u *ApplicationUpdateOne) AddConsumerListenerIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddConsumerListenerIDs(ids...)
+	return _u
+}
+
+// AddConsumerListeners adds the "consumer_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdateOne) AddConsumerListeners(v ...*Listener) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsumerListenerIDs(ids...)
+}
+
+// AddProviderListenerIDs adds the "provider_listeners" edge to the Listener entity by IDs.
+func (_u *ApplicationUpdateOne) AddProviderListenerIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.AddProviderListenerIDs(ids...)
+	return _u
+}
+
+// AddProviderListeners adds the "provider_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdateOne) AddProviderListeners(v ...*Listener) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddProviderListenerIDs(ids...)
+}
+
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
 func (_u *ApplicationUpdateOne) SetPermissionSetID(id int) *ApplicationUpdateOne {
 	_u.mutation.SetPermissionSetID(id)
@@ -2137,6 +2329,48 @@ func (_u *ApplicationUpdateOne) RemoveListeners(v ...*Listener) *ApplicationUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveListenerIDs(ids...)
+}
+
+// ClearConsumerListeners clears all "consumer_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdateOne) ClearConsumerListeners() *ApplicationUpdateOne {
+	_u.mutation.ClearConsumerListeners()
+	return _u
+}
+
+// RemoveConsumerListenerIDs removes the "consumer_listeners" edge to Listener entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveConsumerListenerIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveConsumerListenerIDs(ids...)
+	return _u
+}
+
+// RemoveConsumerListeners removes "consumer_listeners" edges to Listener entities.
+func (_u *ApplicationUpdateOne) RemoveConsumerListeners(v ...*Listener) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsumerListenerIDs(ids...)
+}
+
+// ClearProviderListeners clears all "provider_listeners" edges to the Listener entity.
+func (_u *ApplicationUpdateOne) ClearProviderListeners() *ApplicationUpdateOne {
+	_u.mutation.ClearProviderListeners()
+	return _u
+}
+
+// RemoveProviderListenerIDs removes the "provider_listeners" edge to Listener entities by IDs.
+func (_u *ApplicationUpdateOne) RemoveProviderListenerIDs(ids ...int) *ApplicationUpdateOne {
+	_u.mutation.RemoveProviderListenerIDs(ids...)
+	return _u
+}
+
+// RemoveProviderListeners removes "provider_listeners" edges to Listener entities.
+func (_u *ApplicationUpdateOne) RemoveProviderListeners(v ...*Listener) *ApplicationUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveProviderListenerIDs(ids...)
 }
 
 // ClearPermissionSet clears the "permission_set" edge to the PermissionSet entity.
@@ -2828,6 +3062,96 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 			Inverse: false,
 			Table:   application.ListenersTable,
 			Columns: []string{application.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsumerListenersIDs(); len(nodes) > 0 && !_u.mutation.ConsumerListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ProviderListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedProviderListenersIDs(); len(nodes) > 0 && !_u.mutation.ProviderListenersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProviderListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),

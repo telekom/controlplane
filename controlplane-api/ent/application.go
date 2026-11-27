@@ -93,11 +93,15 @@ type ApplicationEdges struct {
 	SubscribedAgentics []*AgenticSubscription `json:"subscribed_agentics,omitempty"`
 	// Listeners holds the value of the listeners edge.
 	Listeners []*Listener `json:"listeners,omitempty"`
+	// ConsumerListeners holds the value of the consumer_listeners edge.
+	ConsumerListeners []*Listener `json:"consumer_listeners,omitempty"`
+	// ProviderListeners holds the value of the provider_listeners edge.
+	ProviderListeners []*Listener `json:"provider_listeners,omitempty"`
 	// PermissionSet holds the value of the permission_set edge.
 	PermissionSet *PermissionSet `json:"permission_set,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [14]bool
 	// totalCount holds the count of the edges above.
 	totalCount [10]map[string]int
 
@@ -110,6 +114,8 @@ type ApplicationEdges struct {
 	namedExposedAgentics     map[string][]*AgenticExposure
 	namedSubscribedAgentics  map[string][]*AgenticSubscription
 	namedListeners           map[string][]*Listener
+	namedConsumerListeners   map[string][]*Listener
+	namedProviderListeners   map[string][]*Listener
 }
 
 // ZoneOrErr returns the Zone value or an error if the edge
@@ -215,12 +221,30 @@ func (e ApplicationEdges) ListenersOrErr() ([]*Listener, error) {
 	return nil, &NotLoadedError{edge: "listeners"}
 }
 
+// ConsumerListenersOrErr returns the ConsumerListeners value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) ConsumerListenersOrErr() ([]*Listener, error) {
+	if e.loadedTypes[11] {
+		return e.ConsumerListeners, nil
+	}
+	return nil, &NotLoadedError{edge: "consumer_listeners"}
+}
+
+// ProviderListenersOrErr returns the ProviderListeners value or an error if the edge
+// was not loaded in eager-loading.
+func (e ApplicationEdges) ProviderListenersOrErr() ([]*Listener, error) {
+	if e.loadedTypes[12] {
+		return e.ProviderListeners, nil
+	}
+	return nil, &NotLoadedError{edge: "provider_listeners"}
+}
+
 // PermissionSetOrErr returns the PermissionSet value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ApplicationEdges) PermissionSetOrErr() (*PermissionSet, error) {
 	if e.PermissionSet != nil {
 		return e.PermissionSet, nil
-	} else if e.loadedTypes[11] {
+	} else if e.loadedTypes[13] {
 		return nil, &NotFoundError{label: permissionset.Label}
 	}
 	return nil, &NotLoadedError{edge: "permission_set"}
@@ -467,6 +491,16 @@ func (_m *Application) QuerySubscribedAgentics() *AgenticSubscriptionQuery {
 // QueryListeners queries the "listeners" edge of the Application entity.
 func (_m *Application) QueryListeners() *ListenerQuery {
 	return NewApplicationClient(_m.config).QueryListeners(_m)
+}
+
+// QueryConsumerListeners queries the "consumer_listeners" edge of the Application entity.
+func (_m *Application) QueryConsumerListeners() *ListenerQuery {
+	return NewApplicationClient(_m.config).QueryConsumerListeners(_m)
+}
+
+// QueryProviderListeners queries the "provider_listeners" edge of the Application entity.
+func (_m *Application) QueryProviderListeners() *ListenerQuery {
+	return NewApplicationClient(_m.config).QueryProviderListeners(_m)
 }
 
 // QueryPermissionSet queries the "permission_set" edge of the Application entity.
@@ -789,6 +823,54 @@ func (_m *Application) appendNamedListeners(name string, edges ...*Listener) {
 		_m.Edges.namedListeners[name] = []*Listener{}
 	} else {
 		_m.Edges.namedListeners[name] = append(_m.Edges.namedListeners[name], edges...)
+	}
+}
+
+// NamedConsumerListeners returns the ConsumerListeners named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedConsumerListeners(name string) ([]*Listener, error) {
+	if _m.Edges.namedConsumerListeners == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedConsumerListeners[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedConsumerListeners(name string, edges ...*Listener) {
+	if _m.Edges.namedConsumerListeners == nil {
+		_m.Edges.namedConsumerListeners = make(map[string][]*Listener)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedConsumerListeners[name] = []*Listener{}
+	} else {
+		_m.Edges.namedConsumerListeners[name] = append(_m.Edges.namedConsumerListeners[name], edges...)
+	}
+}
+
+// NamedProviderListeners returns the ProviderListeners named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Application) NamedProviderListeners(name string) ([]*Listener, error) {
+	if _m.Edges.namedProviderListeners == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedProviderListeners[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Application) appendNamedProviderListeners(name string, edges ...*Listener) {
+	if _m.Edges.namedProviderListeners == nil {
+		_m.Edges.namedProviderListeners = make(map[string][]*Listener)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedProviderListeners[name] = []*Listener{}
+	} else {
+		_m.Edges.namedProviderListeners[name] = append(_m.Edges.namedProviderListeners[name], edges...)
 	}
 }
 

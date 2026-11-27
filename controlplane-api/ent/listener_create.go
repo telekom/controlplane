@@ -142,9 +142,39 @@ func (_c *ListenerCreate) SetApplication(v *Application) *ListenerCreate {
 	return _c.SetApplicationID(v.ID)
 }
 
+// SetConsumerID sets the "consumer" edge to the Application entity by ID.
+func (_c *ListenerCreate) SetConsumerID(id int) *ListenerCreate {
+	_c.mutation.SetConsumerID(id)
+	return _c
+}
+
+// SetConsumer sets the "consumer" edge to the Application entity.
+func (_c *ListenerCreate) SetConsumer(v *Application) *ListenerCreate {
+	return _c.SetConsumerID(v.ID)
+}
+
+// SetProviderID sets the "provider" edge to the Application entity by ID.
+func (_c *ListenerCreate) SetProviderID(id int) *ListenerCreate {
+	_c.mutation.SetProviderID(id)
+	return _c
+}
+
+// SetProvider sets the "provider" edge to the Application entity.
+func (_c *ListenerCreate) SetProvider(v *Application) *ListenerCreate {
+	return _c.SetProviderID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_c *ListenerCreate) SetSubscriptionID(id int) *ListenerCreate {
 	_c.mutation.SetSubscriptionID(id)
+	return _c
+}
+
+// SetNillableSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID if the given value is not nil.
+func (_c *ListenerCreate) SetNillableSubscriptionID(id *int) *ListenerCreate {
+	if id != nil {
+		_c = _c.SetSubscriptionID(*id)
+	}
 	return _c
 }
 
@@ -156,6 +186,14 @@ func (_c *ListenerCreate) SetSubscription(v *ApiSubscription) *ListenerCreate {
 // SetExposureID sets the "exposure" edge to the ApiExposure entity by ID.
 func (_c *ListenerCreate) SetExposureID(id int) *ListenerCreate {
 	_c.mutation.SetExposureID(id)
+	return _c
+}
+
+// SetNillableExposureID sets the "exposure" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_c *ListenerCreate) SetNillableExposureID(id *int) *ListenerCreate {
+	if id != nil {
+		_c = _c.SetExposureID(*id)
+	}
 	return _c
 }
 
@@ -311,11 +349,11 @@ func (_c *ListenerCreate) check() error {
 	if len(_c.mutation.ApplicationIDs()) == 0 {
 		return &ValidationError{Name: "application", err: errors.New(`ent: missing required edge "Listener.application"`)}
 	}
-	if len(_c.mutation.SubscriptionIDs()) == 0 {
-		return &ValidationError{Name: "subscription", err: errors.New(`ent: missing required edge "Listener.subscription"`)}
+	if len(_c.mutation.ConsumerIDs()) == 0 {
+		return &ValidationError{Name: "consumer", err: errors.New(`ent: missing required edge "Listener.consumer"`)}
 	}
-	if len(_c.mutation.ExposureIDs()) == 0 {
-		return &ValidationError{Name: "exposure", err: errors.New(`ent: missing required edge "Listener.exposure"`)}
+	if len(_c.mutation.ProviderIDs()) == 0 {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required edge "Listener.provider"`)}
 	}
 	return nil
 }
@@ -399,6 +437,40 @@ func (_c *ListenerCreate) createSpec() (*Listener, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.application_listeners = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsumerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ConsumerTable,
+			Columns: []string{listener.ConsumerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.application_consumer_listeners = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ProviderTable,
+			Columns: []string{listener.ProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.application_provider_listeners = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SubscriptionIDs(); len(nodes) > 0 {

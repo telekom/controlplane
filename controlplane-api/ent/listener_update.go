@@ -180,9 +180,39 @@ func (_u *ListenerUpdate) SetApplication(v *Application) *ListenerUpdate {
 	return _u.SetApplicationID(v.ID)
 }
 
+// SetConsumerID sets the "consumer" edge to the Application entity by ID.
+func (_u *ListenerUpdate) SetConsumerID(id int) *ListenerUpdate {
+	_u.mutation.SetConsumerID(id)
+	return _u
+}
+
+// SetConsumer sets the "consumer" edge to the Application entity.
+func (_u *ListenerUpdate) SetConsumer(v *Application) *ListenerUpdate {
+	return _u.SetConsumerID(v.ID)
+}
+
+// SetProviderID sets the "provider" edge to the Application entity by ID.
+func (_u *ListenerUpdate) SetProviderID(id int) *ListenerUpdate {
+	_u.mutation.SetProviderID(id)
+	return _u
+}
+
+// SetProvider sets the "provider" edge to the Application entity.
+func (_u *ListenerUpdate) SetProvider(v *Application) *ListenerUpdate {
+	return _u.SetProviderID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_u *ListenerUpdate) SetSubscriptionID(id int) *ListenerUpdate {
 	_u.mutation.SetSubscriptionID(id)
+	return _u
+}
+
+// SetNillableSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID if the given value is not nil.
+func (_u *ListenerUpdate) SetNillableSubscriptionID(id *int) *ListenerUpdate {
+	if id != nil {
+		_u = _u.SetSubscriptionID(*id)
+	}
 	return _u
 }
 
@@ -194,6 +224,14 @@ func (_u *ListenerUpdate) SetSubscription(v *ApiSubscription) *ListenerUpdate {
 // SetExposureID sets the "exposure" edge to the ApiExposure entity by ID.
 func (_u *ListenerUpdate) SetExposureID(id int) *ListenerUpdate {
 	_u.mutation.SetExposureID(id)
+	return _u
+}
+
+// SetNillableExposureID sets the "exposure" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_u *ListenerUpdate) SetNillableExposureID(id *int) *ListenerUpdate {
+	if id != nil {
+		_u = _u.SetExposureID(*id)
+	}
 	return _u
 }
 
@@ -263,6 +301,18 @@ func (_u *ListenerUpdate) Mutation() *ListenerMutation {
 // ClearApplication clears the "application" edge to the Application entity.
 func (_u *ListenerUpdate) ClearApplication() *ListenerUpdate {
 	_u.mutation.ClearApplication()
+	return _u
+}
+
+// ClearConsumer clears the "consumer" edge to the Application entity.
+func (_u *ListenerUpdate) ClearConsumer() *ListenerUpdate {
+	_u.mutation.ClearConsumer()
+	return _u
+}
+
+// ClearProvider clears the "provider" edge to the Application entity.
+func (_u *ListenerUpdate) ClearProvider() *ListenerUpdate {
+	_u.mutation.ClearProvider()
 	return _u
 }
 
@@ -378,11 +428,11 @@ func (_u *ListenerUpdate) check() error {
 	if _u.mutation.ApplicationCleared() && len(_u.mutation.ApplicationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Listener.application"`)
 	}
-	if _u.mutation.SubscriptionCleared() && len(_u.mutation.SubscriptionIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Listener.subscription"`)
+	if _u.mutation.ConsumerCleared() && len(_u.mutation.ConsumerIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.consumer"`)
 	}
-	if _u.mutation.ExposureCleared() && len(_u.mutation.ExposureIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Listener.exposure"`)
+	if _u.mutation.ProviderCleared() && len(_u.mutation.ProviderIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.provider"`)
 	}
 	return nil
 }
@@ -460,6 +510,64 @@ func (_u *ListenerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Inverse: true,
 			Table:   listener.ApplicationTable,
 			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ConsumerTable,
+			Columns: []string{listener.ConsumerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ConsumerTable,
+			Columns: []string{listener.ConsumerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ProviderCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ProviderTable,
+			Columns: []string{listener.ProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ProviderTable,
+			Columns: []string{listener.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
@@ -794,9 +902,39 @@ func (_u *ListenerUpdateOne) SetApplication(v *Application) *ListenerUpdateOne {
 	return _u.SetApplicationID(v.ID)
 }
 
+// SetConsumerID sets the "consumer" edge to the Application entity by ID.
+func (_u *ListenerUpdateOne) SetConsumerID(id int) *ListenerUpdateOne {
+	_u.mutation.SetConsumerID(id)
+	return _u
+}
+
+// SetConsumer sets the "consumer" edge to the Application entity.
+func (_u *ListenerUpdateOne) SetConsumer(v *Application) *ListenerUpdateOne {
+	return _u.SetConsumerID(v.ID)
+}
+
+// SetProviderID sets the "provider" edge to the Application entity by ID.
+func (_u *ListenerUpdateOne) SetProviderID(id int) *ListenerUpdateOne {
+	_u.mutation.SetProviderID(id)
+	return _u
+}
+
+// SetProvider sets the "provider" edge to the Application entity.
+func (_u *ListenerUpdateOne) SetProvider(v *Application) *ListenerUpdateOne {
+	return _u.SetProviderID(v.ID)
+}
+
 // SetSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID.
 func (_u *ListenerUpdateOne) SetSubscriptionID(id int) *ListenerUpdateOne {
 	_u.mutation.SetSubscriptionID(id)
+	return _u
+}
+
+// SetNillableSubscriptionID sets the "subscription" edge to the ApiSubscription entity by ID if the given value is not nil.
+func (_u *ListenerUpdateOne) SetNillableSubscriptionID(id *int) *ListenerUpdateOne {
+	if id != nil {
+		_u = _u.SetSubscriptionID(*id)
+	}
 	return _u
 }
 
@@ -808,6 +946,14 @@ func (_u *ListenerUpdateOne) SetSubscription(v *ApiSubscription) *ListenerUpdate
 // SetExposureID sets the "exposure" edge to the ApiExposure entity by ID.
 func (_u *ListenerUpdateOne) SetExposureID(id int) *ListenerUpdateOne {
 	_u.mutation.SetExposureID(id)
+	return _u
+}
+
+// SetNillableExposureID sets the "exposure" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_u *ListenerUpdateOne) SetNillableExposureID(id *int) *ListenerUpdateOne {
+	if id != nil {
+		_u = _u.SetExposureID(*id)
+	}
 	return _u
 }
 
@@ -877,6 +1023,18 @@ func (_u *ListenerUpdateOne) Mutation() *ListenerMutation {
 // ClearApplication clears the "application" edge to the Application entity.
 func (_u *ListenerUpdateOne) ClearApplication() *ListenerUpdateOne {
 	_u.mutation.ClearApplication()
+	return _u
+}
+
+// ClearConsumer clears the "consumer" edge to the Application entity.
+func (_u *ListenerUpdateOne) ClearConsumer() *ListenerUpdateOne {
+	_u.mutation.ClearConsumer()
+	return _u
+}
+
+// ClearProvider clears the "provider" edge to the Application entity.
+func (_u *ListenerUpdateOne) ClearProvider() *ListenerUpdateOne {
+	_u.mutation.ClearProvider()
 	return _u
 }
 
@@ -1005,11 +1163,11 @@ func (_u *ListenerUpdateOne) check() error {
 	if _u.mutation.ApplicationCleared() && len(_u.mutation.ApplicationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Listener.application"`)
 	}
-	if _u.mutation.SubscriptionCleared() && len(_u.mutation.SubscriptionIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Listener.subscription"`)
+	if _u.mutation.ConsumerCleared() && len(_u.mutation.ConsumerIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.consumer"`)
 	}
-	if _u.mutation.ExposureCleared() && len(_u.mutation.ExposureIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Listener.exposure"`)
+	if _u.mutation.ProviderCleared() && len(_u.mutation.ProviderIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Listener.provider"`)
 	}
 	return nil
 }
@@ -1104,6 +1262,64 @@ func (_u *ListenerUpdateOne) sqlSave(ctx context.Context) (_node *Listener, err 
 			Inverse: true,
 			Table:   listener.ApplicationTable,
 			Columns: []string{listener.ApplicationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsumerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ConsumerTable,
+			Columns: []string{listener.ConsumerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsumerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ConsumerTable,
+			Columns: []string{listener.ConsumerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ProviderCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ProviderTable,
+			Columns: []string{listener.ProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   listener.ProviderTable,
+			Columns: []string{listener.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt),

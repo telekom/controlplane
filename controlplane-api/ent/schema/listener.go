@@ -52,14 +52,22 @@ func (Listener) Edges() []ent.Edge {
 			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
+		edge.From("consumer", Application.Type).
+			Ref("consumer_listeners").
+			Required().
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
+		edge.From("provider", Application.Type).
+			Ref("provider_listeners").
+			Required().
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.From("subscription", ApiSubscription.Type).
 			Ref("listeners").
-			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.From("exposure", ApiExposure.Type).
 			Ref("listeners").
-			Required().
 			Unique().
 			Annotations(entgql.Skip(entgql.SkipType | entgql.SkipWhereInput)),
 		edge.To("provider_approval", Approval.Type).
@@ -83,9 +91,11 @@ func (Listener) Annotations() []schema.Annotation {
 
 func (Listener) Indexes() []ent.Index {
 	return []ent.Index{
-		// FK lookups for application/subscription/exposure -> listeners traversals,
-		// team filter interceptor predicates, and ON DELETE CASCADE operations.
+		// FK lookups for application/consumer/provider/subscription/exposure -> listeners traversals,
+		// team filter interceptor predicates, and ON DELETE actions.
 		index.Edges("application"),
+		index.Edges("consumer"),
+		index.Edges("provider"),
 		index.Edges("subscription"),
 		index.Edges("exposure"),
 	}

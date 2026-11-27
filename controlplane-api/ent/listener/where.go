@@ -591,6 +591,52 @@ func HasApplicationWith(preds ...predicate.Application) predicate.Listener {
 	})
 }
 
+// HasConsumer applies the HasEdge predicate on the "consumer" edge.
+func HasConsumer() predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ConsumerTable, ConsumerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsumerWith applies the HasEdge predicate on the "consumer" edge with a given conditions (other predicates).
+func HasConsumerWith(preds ...predicate.Application) predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := newConsumerStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProvider applies the HasEdge predicate on the "provider" edge.
+func HasProvider() predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ProviderTable, ProviderColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProviderWith applies the HasEdge predicate on the "provider" edge with a given conditions (other predicates).
+func HasProviderWith(preds ...predicate.Application) predicate.Listener {
+	return predicate.Listener(func(s *sql.Selector) {
+		step := newProviderStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSubscription applies the HasEdge predicate on the "subscription" edge.
 func HasSubscription() predicate.Listener {
 	return predicate.Listener(func(s *sql.Selector) {

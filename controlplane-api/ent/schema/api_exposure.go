@@ -90,7 +90,7 @@ func (ApiExposure) Edges() []ent.Edge {
 			Ref("target").
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("listeners", Listener.Type).
-			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.Cascade)),
+			Annotations(entgql.Skip(entgql.SkipType|entgql.SkipWhereInput), entsql.OnDelete(entsql.SetNull)),
 	}
 }
 
