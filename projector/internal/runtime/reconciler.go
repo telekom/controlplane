@@ -98,6 +98,7 @@ func (r *ReadOnlyReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *ReadOnlyReconciler[T]) reconcileInner(ctx context.Context, req ctrl.Request, logger logr.Logger) (ctrl.Result, string, error) {
 	obj := r.newObj()
 
+	// audit:ignore 13-environment-isolation/unscoped-get the key comes from the controller's own watch event, so there is no cross-environment lookup
 	err := r.client.Get(ctx, req.NamespacedName, obj)
 
 	if apierrors.IsNotFound(err) {

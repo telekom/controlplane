@@ -214,6 +214,7 @@ func Run() error {
 	for _, m := range modules {
 		moduleDeps := deps
 		moduleDeps.DeleteCache = &infrastructure.DeleteCache{}
+		// audit:ignore 13-environment-isolation/unlabelled-write these are a registration call, not a write
 		if err = m.Register(mgr, moduleDeps); err != nil {
 			return fmt.Errorf("register %s: %w", m.Name(), err)
 		}
