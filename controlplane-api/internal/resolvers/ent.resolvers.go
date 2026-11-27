@@ -10,10 +10,13 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
 // Features is the resolver for the features field.
@@ -184,6 +187,55 @@ func (r *queryResolver) FileTypes(ctx context.Context, after *entgql.Cursor[int]
 		)
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *queryResolver) Listeners(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ListenerOrder, where *ent.ListenerWhereInput) (*ent.ListenerConnection, error) {
+	connection, err := r.client.Listener.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithListenerOrder(orderBy),
+			ent.WithListenerFilter(where.Filter),
+		)
+	if err != nil {
+		return nil, err
+	}
+	if len(connection.Edges) == 0 {
+		return connection, nil
+	}
+	ids := make([]int, len(connection.Edges))
+	for i, edge := range connection.Edges {
+		ids[i] = edge.Node.ID
+	}
+	loaded, err := withListenerInfo(r.client.Listener.Query()).
+		Where(listener.IDIn(ids...)).
+		All(viewer.SystemContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("loading listener relationships: %w", err)
+	}
+	byID := make(map[int]*ent.Listener, len(loaded))
+	for _, loadedListener := range loaded {
+		byID[loadedListener.ID] = loadedListener
+	}
+	edges := make([]*ent.ListenerEdge, 0, len(connection.Edges))
+	for _, edge := range connection.Edges {
+		loadedListener, ok := byID[edge.Node.ID]
+		if !ok {
+			continue
+		}
+		edge.Node = loadedListener
+		edges = append(edges, edge)
+	}
+	if len(edges) != len(connection.Edges) {
+		connection.Edges = edges
+		if len(edges) == 0 {
+			connection.PageInfo.StartCursor = nil
+			connection.PageInfo.EndCursor = nil
+		} else {
+			connection.PageInfo.StartCursor = &edges[0].Cursor
+			connection.PageInfo.EndCursor = &edges[len(edges)-1].Cursor
+		}
+	}
+	return connection, nil
+}
+
 // McpServers is the resolver for the mcpServers field.
 func (r *queryResolver) McpServers(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.McpServerOrder, where *ent.McpServerWhereInput) (*ent.McpServerConnection, error) {
 	return r.client.McpServer.Query().
@@ -269,6 +321,9 @@ func (r *Resolver) FileExposure() FileExposureResolver { return &fileExposureRes
 // FileSubscription returns FileSubscriptionResolver implementation.
 func (r *Resolver) FileSubscription() FileSubscriptionResolver { return &fileSubscriptionResolver{r} }
 
+// Listener returns ListenerResolver implementation.
+func (r *Resolver) Listener() ListenerResolver { return &listenerResolver{r} }
+
 // McpServer returns McpServerResolver implementation.
 func (r *Resolver) McpServer() McpServerResolver { return &mcpServerResolver{r} }
 
@@ -296,6 +351,7 @@ type (
 	eventTypeResolver           struct{ *Resolver }
 	fileExposureResolver        struct{ *Resolver }
 	fileSubscriptionResolver    struct{ *Resolver }
+	listenerResolver            struct{ *Resolver }
 	mcpServerResolver           struct{ *Resolver }
 	queryResolver               struct{ *Resolver }
 	teamResolver                struct{ *Resolver }

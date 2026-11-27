@@ -9,7 +9,10 @@ import (
 	"fmt"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/approval"
+	entlistener "github.com/telekom/controlplane/controlplane-api/ent/listener"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
@@ -198,6 +201,130 @@ func mapAgenticSubscriptionInfo(sub *ent.AgenticSubscription, app *ent.Applicati
 	}
 }
 
+func loadEdge[T any](ctx context.Context, loaded func() (T, error), query func(context.Context) (T, error)) (T, error) {
+	if v, err := loaded(); !ent.IsNotLoaded(err) {
+		return v, err
+	}
+	return query(ctx)
+}
+
+func mapListenerInfo(ctx context.Context, listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	application, err := listener.Edges.ApplicationOrErr()
+	if err != nil {
+		return nil, fmt.Errorf("loading listener application for listener %d: %w", listener.ID, err)
+	}
+	consumer, err := listener.Edges.ConsumerOrErr()
+	if err != nil {
+		return nil, fmt.Errorf("loading consumer application for listener %d: %w", listener.ID, err)
+	}
+	provider, err := listener.Edges.ProviderOrErr()
+	if err != nil {
+		return nil, fmt.Errorf("loading provider application for listener %d: %w", listener.ID, err)
+	}
+	applicationInfo, err := loadApplicationInfo(sysCtx, application)
+	if err != nil {
+		return nil, fmt.Errorf("loading listener application info for listener %d: %w", listener.ID, err)
+	}
+	consumerInfo, err := loadApplicationInfo(sysCtx, consumer)
+	if err != nil {
+		return nil, fmt.Errorf("loading consumer application info for listener %d: %w", listener.ID, err)
+	}
+	providerInfo, err := loadApplicationInfo(sysCtx, provider)
+	if err != nil {
+		return nil, fmt.Errorf("loading provider application info for listener %d: %w", listener.ID, err)
+	}
+	var resourceName *string
+	exposure, err := listener.Edges.ExposureOrErr()
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading exposure edge for listener %d: %w", listener.ID, err)
+	}
+	if exposure != nil {
+		apiDefinition, err := exposure.Edges.APIOrErr()
+		if err != nil && !ent.IsNotFound(err) {
+			return nil, fmt.Errorf("loading api edge for listener %d: %w", listener.ID, err)
+		}
+		if apiDefinition != nil && apiDefinition.Name != nil && *apiDefinition.Name != "" {
+			name := *apiDefinition.Name
+			resourceName = &name
+		}
+	}
+
+	approved := listener.Edges.ProviderApproval != nil && listener.Edges.ProviderApproval.State == approval.StateGranted &&
+		listener.Edges.ConsumerApproval != nil && listener.Edges.ConsumerApproval.State == approval.StateGranted
+	return &gqlmodel.ListenerInfo{
+		ID:               listener.ID,
+		ResourceName:     resourceName,
+		Approved:         approved,
+		Application:      applicationInfo,
+		Consumer:         consumerInfo,
+		Provider:         providerInfo,
+		OwnerApplication: applicationInfo,
+	}, nil
+}
+
+func withListenerInfo(query *ent.ListenerQuery) *ent.ListenerQuery {
+	withAppInfo := func(q *ent.ApplicationQuery) {
+		q.WithZone()
+		q.WithOwnerTeam(func(q *ent.TeamQuery) { q.WithGroup() })
+	}
+	return query.
+		WithApplication(withAppInfo).
+		WithConsumer(withAppInfo).
+		WithProvider(withAppInfo).
+		WithSubscription(func(q *ent.ApiSubscriptionQuery) {
+			q.WithOwner(withAppInfo)
+		}).
+		WithExposure(func(q *ent.ApiExposureQuery) {
+			q.WithAPI()
+			q.WithOwner(withAppInfo)
+		}).
+		WithProviderApproval().
+		WithConsumerApproval()
+}
+
+func loadListenerInfo(ctx context.Context, client *ent.Client, listener *ent.Listener) (*gqlmodel.ListenerInfo, error) {
+	loaded, err := withListenerInfo(client.Listener.Query()).Where(entlistener.IDEQ(listener.ID)).Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("loading listener %d: %w", listener.ID, err)
+	}
+	return mapListenerInfo(ctx, loaded)
+}
+
+func mapListenerInfos(ctx context.Context, listeners []*ent.Listener) ([]*gqlmodel.ListenerInfo, error) {
+	result := make([]*gqlmodel.ListenerInfo, len(listeners))
+	for i, listener := range listeners {
+		info, err := mapListenerInfo(ctx, listener)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = info
+	}
+	return result, nil
+}
+
+// loadApplicationChain loads zone, owner team, and optional group for an application,
+// reusing eager-loaded edges when present and falling back to DB queries otherwise.
+func loadApplicationChain(ctx context.Context, app *ent.Application) (*ent.Zone, *ent.Team, *ent.Group, error) {
+	// The zone edge is required in ent, so a not-found is a real error here.
+	zone, err := loadEdge(ctx, app.Edges.ZoneOrErr, app.QueryZone().Only)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
+	}
+	team, err := loadEdge(ctx, app.Edges.OwnerTeamOrErr, app.QueryOwnerTeam().Only)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("loading owner team for application %d: %w", app.ID, err)
+	}
+	group, err := loadEdge(ctx, team.Edges.GroupOrErr, team.QueryGroup().Only)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, nil, nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
+	}
+	if ent.IsNotFound(err) {
+		group = nil
+	}
+	return zone, team, group, nil
+}
+
 // loadOwnerChain traverses subscription → owner application → zone/team → group.
 // Used by both API and event subscription info loaders.
 func loadOwnerChain(ctx context.Context, ownerQuery interface {
@@ -208,28 +335,20 @@ func loadOwnerChain(ctx context.Context, ownerQuery interface {
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("loading owner application: %w", err)
 	}
-	// The zone edge is required in ent, so a not-found is a real error here.
-	zone, err := app.QueryZone().Only(ctx)
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("loading zone for application %d: %w", app.ID, err)
-	}
-	team, err := app.QueryOwnerTeam().Only(ctx)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("loading owner team for application %d: %w", app.ID, err)
-	}
-	group, err := team.QueryGroup().Only(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, nil, nil, nil, fmt.Errorf("loading group for team %d: %w", team.ID, err)
-	}
-	if ent.IsNotFound(err) {
-		group = nil
+		return nil, nil, nil, nil, err
 	}
 	return app, zone, team, group, nil
 }
 
 // loadApiSubscriptionInfo loads the full owner chain for an API subscription and maps it to ApiSubscriptionInfo.
 func loadApiSubscriptionInfo(ctx context.Context, sub *ent.ApiSubscription) (*gqlmodel.ApiSubscriptionInfo, error) {
-	app, zone, team, group, err := loadOwnerChain(ctx, sub.QueryOwner())
+	app, err := loadEdge(ctx, sub.Edges.OwnerOrErr, sub.QueryOwner().Only)
+	if err != nil {
+		return nil, fmt.Errorf("api subscription %d: loading owner application: %w", sub.ID, err)
+	}
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
 		return nil, fmt.Errorf("api subscription %d: %w", sub.ID, err)
 	}
@@ -265,7 +384,11 @@ func loadFileExposureInfo(ctx context.Context, exposure *ent.FileExposure) (*gql
 
 // loadApiExposureInfo loads the full owner chain for an API exposure and maps it to ApiExposureInfo.
 func loadApiExposureInfo(ctx context.Context, exposure *ent.ApiExposure) (*gqlmodel.ApiExposureInfo, error) {
-	app, zone, team, group, err := loadOwnerChain(ctx, exposure.QueryOwner())
+	app, err := loadEdge(ctx, exposure.Edges.OwnerOrErr, exposure.QueryOwner().Only)
+	if err != nil {
+		return nil, fmt.Errorf("api exposure %d: loading owner application: %w", exposure.ID, err)
+	}
+	zone, team, group, err := loadApplicationChain(ctx, app)
 	if err != nil {
 		return nil, fmt.Errorf("api exposure %d: %w", exposure.ID, err)
 	}
@@ -297,4 +420,12 @@ func loadAgenticExposureInfo(ctx context.Context, exposure *ent.AgenticExposure)
 		return nil, fmt.Errorf("agentic exposure %d: %w", exposure.ID, err)
 	}
 	return mapAgenticExposureInfo(exposure, app, zone, team, group), nil
+}
+
+func loadApplicationInfo(ctx context.Context, app *ent.Application) (*gqlmodel.ApplicationInfo, error) {
+	zone, team, group, err := loadApplicationChain(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	return mapApplicationInfo(app, zone, team, group), nil
 }

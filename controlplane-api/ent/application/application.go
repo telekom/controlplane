@@ -77,6 +77,12 @@ const (
 	EdgeExposedAgentics = "exposed_agentics"
 	// EdgeSubscribedAgentics holds the string denoting the subscribed_agentics edge name in mutations.
 	EdgeSubscribedAgentics = "subscribed_agentics"
+	// EdgeListeners holds the string denoting the listeners edge name in mutations.
+	EdgeListeners = "listeners"
+	// EdgeConsumerListeners holds the string denoting the consumer_listeners edge name in mutations.
+	EdgeConsumerListeners = "consumer_listeners"
+	// EdgeProviderListeners holds the string denoting the provider_listeners edge name in mutations.
+	EdgeProviderListeners = "provider_listeners"
 	// EdgePermissionSet holds the string denoting the permission_set edge name in mutations.
 	EdgePermissionSet = "permission_set"
 	// Table holds the table name of the application in the database.
@@ -151,6 +157,27 @@ const (
 	SubscribedAgenticsInverseTable = "agentic_subscriptions"
 	// SubscribedAgenticsColumn is the table column denoting the subscribed_agentics relation/edge.
 	SubscribedAgenticsColumn = "application_subscribed_agentics"
+	// ListenersTable is the table that holds the listeners relation/edge.
+	ListenersTable = "listeners"
+	// ListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ListenersInverseTable = "listeners"
+	// ListenersColumn is the table column denoting the listeners relation/edge.
+	ListenersColumn = "application_listeners"
+	// ConsumerListenersTable is the table that holds the consumer_listeners relation/edge.
+	ConsumerListenersTable = "listeners"
+	// ConsumerListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ConsumerListenersInverseTable = "listeners"
+	// ConsumerListenersColumn is the table column denoting the consumer_listeners relation/edge.
+	ConsumerListenersColumn = "application_consumer_listeners"
+	// ProviderListenersTable is the table that holds the provider_listeners relation/edge.
+	ProviderListenersTable = "listeners"
+	// ProviderListenersInverseTable is the table name for the Listener entity.
+	// It exists in this package in order to avoid circular dependency with the "listener" package.
+	ProviderListenersInverseTable = "listeners"
+	// ProviderListenersColumn is the table column denoting the provider_listeners relation/edge.
+	ProviderListenersColumn = "application_provider_listeners"
 	// PermissionSetTable is the table that holds the permission_set relation/edge.
 	PermissionSetTable = "permission_sets"
 	// PermissionSetInverseTable is the table name for the PermissionSet entity.
@@ -501,6 +528,48 @@ func BySubscribedAgentics(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 	}
 }
 
+// ByListenersCount orders the results by listeners count.
+func ByListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newListenersStep(), opts...)
+	}
+}
+
+// ByListeners orders the results by listeners terms.
+func ByListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConsumerListenersCount orders the results by consumer_listeners count.
+func ByConsumerListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConsumerListenersStep(), opts...)
+	}
+}
+
+// ByConsumerListeners orders the results by consumer_listeners terms.
+func ByConsumerListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsumerListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByProviderListenersCount orders the results by provider_listeners count.
+func ByProviderListenersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProviderListenersStep(), opts...)
+	}
+}
+
+// ByProviderListeners orders the results by provider_listeners terms.
+func ByProviderListeners(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProviderListenersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPermissionSetField orders the results by permission_set field.
 func ByPermissionSetField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -575,6 +644,27 @@ func newSubscribedAgenticsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscribedAgenticsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedAgenticsTable, SubscribedAgenticsColumn),
+	)
+}
+func newListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
+	)
+}
+func newConsumerListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsumerListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConsumerListenersTable, ConsumerListenersColumn),
+	)
+}
+func newProviderListenersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProviderListenersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ProviderListenersTable, ProviderListenersColumn),
 	)
 }
 func newPermissionSetStep() *sqlgraph.Step {

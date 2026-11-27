@@ -43,6 +43,7 @@ import (
 	filev1 "github.com/telekom/controlplane/file/api/v1"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
 
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/agentcard"
@@ -61,6 +62,7 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/filesubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/filetype"
 	"github.com/telekom/controlplane/projector/internal/domain/group"
+	"github.com/telekom/controlplane/projector/internal/domain/listener"
 	"github.com/telekom/controlplane/projector/internal/domain/mcpserver"
 	"github.com/telekom/controlplane/projector/internal/domain/permissionset"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
@@ -94,6 +96,10 @@ var modules = []module.Module{
 // init() so the gating logic can be exercised directly in tests.
 func registerSchemesAndModules(scheme *runtime.Scheme, baseModules []module.Module) []module.Module {
 	result := slices.Clone(baseModules)
+	if cconfig.FeatureSpectre.IsEnabled() {
+		_ = spectrev1.AddToScheme(scheme)
+		result = append(result, listener.Module)
+	}
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		_ = eventv1.AddToScheme(scheme)
@@ -162,6 +168,7 @@ func Run() error {
 
 	// --- Schema Migration ---
 	setupLog.Info("running schema migration")
+	// Migrates the database schema only; it writes no environment-scoped Kubernetes objects.
 	if err = entClient.Schema.Create(ctx,
 		migrate.WithGlobalUniqueID(true),
 		migrate.WithDropIndex(true),

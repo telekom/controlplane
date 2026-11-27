@@ -31,6 +31,8 @@ const (
 	FieldStatusMessage = "status_message"
 	// FieldNamespace holds the string denoting the namespace field in the database.
 	FieldNamespace = "namespace"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldBasePath holds the string denoting the base_path field in the database.
 	FieldBasePath = "base_path"
 	// FieldVersion holds the string denoting the version field in the database.
@@ -75,6 +77,7 @@ var Columns = []string{
 	FieldStatusPhase,
 	FieldStatusMessage,
 	FieldNamespace,
+	FieldName,
 	FieldBasePath,
 	FieldVersion,
 	FieldCategory,
@@ -187,6 +190,11 @@ func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
 // ByNamespace orders the results by the namespace field.
 func ByNamespace(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNamespace, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
 // ByBasePath orders the results by the base_path field.

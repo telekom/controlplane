@@ -32,6 +32,11 @@ type ApplicationInfo {
   ownerTeam: TeamInfo!
 }
 
+type ListenerFilter {
+  trigger: Map
+  payload: [String!]!
+}
+
 type Upstream {
   url: String!
   weight: Int!
@@ -320,6 +325,20 @@ type ApiSubscriptionInfo implements SubscriptionInfo {
   ownerApplication: ApplicationInfo!
 }
 
+"Reduced Listener information used by exposure, subscription, and approval relationships."
+type ListenerInfo implements SubscriptionInfo {
+  id: ID!
+  "Kubernetes resource name of the target API, or null when the exposure is missing, has no linked API, or has no projected name."
+  resourceName: String
+  "True when both provider and consumer approvals are granted."
+  approved: Boolean!
+  application: ApplicationInfo!
+  consumer: ApplicationInfo!
+  provider: ApplicationInfo!
+  "Declaring observer application that owns this Listener (reduced view)"
+  ownerApplication: ApplicationInfo!
+}
+
 "Reduced event subscription for cross-tenant contexts (e.g., exposure subscribers)."
 type EventSubscriptionInfo implements SubscriptionInfo {
   id: ID!
@@ -430,6 +449,14 @@ type SSHPublicKeySpec {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+  "All Listeners declared by this application, including non-ready Listeners."
+  listeners(
+    after: Cursor
+    first: Int
+    before: Cursor
+    last: Int
+    where: ListenerWhereInput
+  ): ListenerConnection! @goField(forceResolver: true)
 }
 
 extend type Zone {
@@ -440,11 +467,29 @@ extend type Zone {
 extend type ApiSubscription {
   "Target exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
   target: ApiExposureInfo @goField(forceResolver: true)
+  "Ready Listeners attached to this subscription."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
 }
 
 extend type ApiExposure {
   "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
   subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+  "Ready Listeners attached to this exposure."
+  listeners: [ListenerInfo!]! @goField(forceResolver: true)
+}
+
+extend type Listener {
+  "Kubernetes resource name of the target API, or null when the exposure is missing, has no linked API, or has no projected name."
+  resourceName: String @goField(forceResolver: true)
+  "True when both provider and consumer approvals are granted."
+  approved: Boolean! @goField(forceResolver: true)
+  application: ApplicationInfo! @goField(forceResolver: true)
+  consumer: ApplicationInfo! @goField(forceResolver: true)
+  provider: ApplicationInfo! @goField(forceResolver: true)
+  "Consumer's API subscription (reduced view — cross-tenant boundary). Null when the consumer has not subscribed yet."
+  subscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  "Provider's API exposure (reduced view — cross-tenant boundary). Null when the target API is not yet exposed."
+  exposure: ApiExposureInfo @goField(forceResolver: true)
 }
 
 extend type EventSubscription {
@@ -478,11 +523,13 @@ extend type FileExposure {
 }
 
 extend type Approval {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
 }
 
 extend type ApprovalRequest {
+  # TODO: Rename subscription to target in a future breaking schema revision.
   "Related subscription (reduced view — cross-tenant boundary)"
   subscription: SubscriptionInfo! @goField(forceResolver: true)
   "The corresponding approval, if one exists (traverses via the related subscription)"

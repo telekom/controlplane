@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"sort"
 
+	"entgo.io/contrib/entgql"
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/agenticexposure"
@@ -25,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
@@ -294,6 +296,18 @@ func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExp
 	return result, nil
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *apiExposureResolver) Listeners(ctx context.Context, obj *ent.ApiExposure) ([]*gqlmodel.ListenerInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	listeners, err := withListenerInfo(obj.QueryListeners()).
+		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading listeners for api exposure %d: %w", obj.ID, err)
+	}
+	return mapListenerInfos(sysCtx, listeners)
+}
+
 // Visibility is the resolver for the visibility field.
 func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *gqlmodel.ApiExposureInfo) (apiexposure.Visibility, error) {
 	return apiexposure.Visibility(obj.Visibility), nil
@@ -327,6 +341,18 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 	}
 
 	return loadApiExposureInfo(sysCtx, exposure)
+}
+
+// Listeners is the resolver for the listeners field.
+func (r *apiSubscriptionResolver) Listeners(ctx context.Context, obj *ent.ApiSubscription) ([]*gqlmodel.ListenerInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	listeners, err := withListenerInfo(obj.QueryListeners()).
+		Where(listener.StatusPhaseEQ(listener.StatusPhaseReady)).
+		All(sysCtx)
+	if err != nil {
+		return nil, fmt.Errorf("loading listeners for api subscription %d: %w", obj.ID, err)
+	}
+	return mapListenerInfos(sysCtx, listeners)
 }
 
 // StatusPhase is the resolver for the statusPhase field.
@@ -365,8 +391,14 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 	return mapTeamInfo(team, group), nil
 }
 
+// Listeners is the resolver for the listeners field.
+func (r *applicationResolver) Listeners(ctx context.Context, obj *ent.Application, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *ent.ListenerWhereInput) (*ent.ListenerConnection, error) {
+	return withListenerInfo(obj.QueryListeners()).
+		Paginate(viewer.SystemContext(ctx), after, first, before, last, ent.WithListenerFilter(where.Filter))
+}
+
 // Subscription is the resolver for the subscription field.
-// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
+// Returns the related API, event, agentic, or file subscription, or Listener as SubscriptionInfo.
 func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: The subscription belongs to the requesting tenant, but the
 	// traversal path (approval → subscription → owner) crosses privacy boundaries.
@@ -421,6 +453,21 @@ func (r *approvalResolver) Subscription(ctx context.Context, obj *ent.Approval) 
 		return loadFileSubscriptionInfo(sysCtx, fileSub)
 	}
 
+	listenerTarget, err := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading listener for approval %d: %w", obj.ID, err)
+	}
+	if listenerTarget != nil {
+		return loadListenerInfo(sysCtx, r.client, listenerTarget)
+	}
+	consumerListener, err := loadEdge(sysCtx, obj.Edges.ConsumerListenerOrErr, obj.QueryConsumerListener().Only)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading consumer listener for approval %d: %w", obj.ID, err)
+	}
+	if consumerListener != nil {
+		return loadListenerInfo(sysCtx, r.client, consumerListener)
+	}
+
 	return nil, fmt.Errorf("approval %d has no related subscription", obj.ID)
 }
 
@@ -430,7 +477,7 @@ func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.Approv
 }
 
 // Subscription is the resolver for the subscription field.
-// Returns the related API, event, agentic, or file subscription as SubscriptionInfo.
+// Returns the related API, event, agentic, or file subscription, or Listener as SubscriptionInfo.
 func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.ApprovalRequest) (gqlmodel.SubscriptionInfo, error) {
 	// SystemContext: Same rationale as approvalResolver.Subscription — the traversal
 	// path crosses privacy boundaries; reduced Info types limit exposure.
@@ -485,11 +532,19 @@ func (r *approvalRequestResolver) Subscription(ctx context.Context, obj *ent.App
 		return loadFileSubscriptionInfo(sysCtx, fileSub)
 	}
 
+	listenerTarget, err := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, err)
+	}
+	if listenerTarget != nil {
+		return loadListenerInfo(sysCtx, r.client, listenerTarget)
+	}
+
 	return nil, fmt.Errorf("approval request %d has no related subscription", obj.ID)
 }
 
 // Approval is the resolver for the approval field.
-// Traverses ApprovalRequest → subscription → Approval.
+// Traverses ApprovalRequest → subscription or Listener → Approval.
 // Returns nil if no Approval exists yet (request not decided).
 func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.ApprovalRequest) (*ent.Approval, error) {
 	sysCtx := viewer.SystemContext(ctx)
@@ -511,6 +566,33 @@ func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.Approva
 			return nil, fmt.Errorf("loading approval for api subscription %d: %w", apiSub.ID, err)
 		}
 		return appr, nil
+	}
+
+	listenerTarget, listenerErr := loadEdge(sysCtx, obj.Edges.ListenerOrErr, obj.QueryListener().Only)
+	if listenerErr != nil && !ent.IsNotFound(listenerErr) {
+		return nil, fmt.Errorf("loading listener for approval request %d: %w", obj.ID, listenerErr)
+	}
+	if listenerTarget != nil {
+		var approvalQuery *ent.ApprovalQuery
+		var gate string
+		switch obj.Action {
+		case "listen-provider":
+			approvalQuery = listenerTarget.QueryProviderApproval()
+			gate = "provider"
+		case "listen-consumer":
+			approvalQuery = listenerTarget.QueryConsumerApproval()
+			gate = "consumer"
+		default:
+			return nil, fmt.Errorf("unknown listener approval action %q for approval request %d", obj.Action, obj.ID)
+		}
+		matchedApproval, err := approvalQuery.Only(sysCtx)
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("loading %s approval for listener %d: %w", gate, listenerTarget.ID, err)
+		}
+		return matchedApproval, nil
 	}
 
 	// Fall back to event subscription path.
@@ -841,6 +923,109 @@ func (r *fileSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *gql
 	}
 	s := filesubscription.StatusPhase(*obj.StatusPhase)
 	return &s, nil
+}
+
+// ResourceName is the resolver for the resourceName field.
+func (r *listenerResolver) ResourceName(ctx context.Context, obj *ent.Listener) (*string, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	exposure, err := loadEdge(sysCtx, obj.Edges.ExposureOrErr, obj.QueryExposure().Only)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+	}
+	apiDefinition, err := loadEdge(sysCtx, exposure.Edges.APIOrErr, exposure.QueryAPI().Only)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading api for listener %d: %w", obj.ID, err)
+	}
+	if apiDefinition.Name == nil || *apiDefinition.Name == "" {
+		return nil, nil
+	}
+	name := *apiDefinition.Name
+	return &name, nil
+}
+
+// Approved is the resolver for the approved field.
+func (r *listenerResolver) Approved(ctx context.Context, obj *ent.Listener) (bool, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	providerApproval, err := loadEdge(sysCtx, obj.Edges.ProviderApprovalOrErr, obj.QueryProviderApproval().Only)
+	if ent.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("loading provider approval for listener %d: %w", obj.ID, err)
+	}
+	if providerApproval.State != approval.StateGranted {
+		return false, nil
+	}
+	consumerApproval, err := loadEdge(sysCtx, obj.Edges.ConsumerApprovalOrErr, obj.QueryConsumerApproval().Only)
+	if ent.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("loading consumer approval for listener %d: %w", obj.ID, err)
+	}
+	return consumerApproval.State == approval.StateGranted, nil
+}
+
+// Application is the resolver for the application field.
+func (r *listenerResolver) Application(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	application, err := loadEdge(sysCtx, obj.Edges.ApplicationOrErr, obj.QueryApplication().Only)
+	if err != nil {
+		return nil, fmt.Errorf("loading listener application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
+}
+
+// Consumer is the resolver for the consumer field.
+func (r *listenerResolver) Consumer(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	application, err := loadEdge(sysCtx, obj.Edges.ConsumerOrErr, obj.QueryConsumer().Only)
+	if err != nil {
+		return nil, fmt.Errorf("loading consumer application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
+}
+
+// Provider is the resolver for the provider field.
+func (r *listenerResolver) Provider(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApplicationInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	application, err := loadEdge(sysCtx, obj.Edges.ProviderOrErr, obj.QueryProvider().Only)
+	if err != nil {
+		return nil, fmt.Errorf("loading provider application for listener %d: %w", obj.ID, err)
+	}
+	return loadApplicationInfo(sysCtx, application)
+}
+
+// Subscription is the resolver for the subscription field.
+func (r *listenerResolver) Subscription(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApiSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subscription, err := loadEdge(sysCtx, obj.Edges.SubscriptionOrErr, obj.QuerySubscription().Only)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading subscription for listener %d: %w", obj.ID, err)
+	}
+	return loadApiSubscriptionInfo(sysCtx, subscription)
+}
+
+// Exposure is the resolver for the exposure field.
+func (r *listenerResolver) Exposure(ctx context.Context, obj *ent.Listener) (*gqlmodel.ApiExposureInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	exposure, err := loadEdge(sysCtx, obj.Edges.ExposureOrErr, obj.QueryExposure().Only)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading exposure for listener %d: %w", obj.ID, err)
+	}
+	return loadApiExposureInfo(sysCtx, exposure)
 }
 
 // SpecificationURL is the resolver for the specificationUrl field.

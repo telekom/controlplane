@@ -1,0 +1,537 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package resolvers_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+
+	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
+	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Listener resolvers", func() {
+	var (
+		client *ent.Client
+		r      *resolvers.Resolver
+		s      *testutil.SeedData
+	)
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+		r = resolvers.NewResolver(client, service.Services{}, nil, "")
+		s = testutil.SeedStandard(client)
+	})
+
+	AfterEach(func() { client.Close() })
+
+	It("resolves Listener fields and relationships", func() {
+		ctx := testutil.AllowContext()
+		resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resourceName).To(HaveValue(Equal("api-alpha")))
+
+		approved, err := r.Listener().Approved(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(approved).To(BeTrue())
+
+		Expect(s.ListenerReady.APIBasePath).To(Equal("/alpha"))
+		Expect(s.ListenerReady.RequestFilter.Trigger).To(Equal(map[string]any{"method": "GET"}))
+		Expect(s.ListenerReady.RequestFilter.Payload).To(Equal([]string{"request.id"}))
+		Expect(s.ListenerReady.ResponseFilter.Payload).To(Equal([]string{"response.id"}))
+
+		consumer, err := r.Listener().Consumer(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumer.Name).To(Equal("app-beta"))
+		Expect(consumer.OwnerTeam.Name).To(Equal("team-beta"))
+
+		application, err := r.Listener().Application(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(application.ID).To(Equal(consumer.ID))
+		Expect(application.Name).To(Equal(consumer.Name))
+		Expect(application.OwnerTeam.ID).To(Equal(consumer.OwnerTeam.ID))
+		Expect(application.Zone.ID).To(Equal(consumer.Zone.ID))
+
+		provider, err := r.Listener().Provider(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(provider.Name).To(Equal("app-alpha"))
+		Expect(provider.OwnerTeam.Name).To(Equal("team-alpha"))
+
+		subscription, err := r.Listener().Subscription(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscription.ID).To(Equal(s.Subscription.ID))
+		exposure, err := r.Listener().Exposure(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposure.ID).To(Equal(s.ExposureAlpha.ID))
+		providerApproval, err := s.ListenerReady.ProviderApproval(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(providerApproval.ID).To(Equal(s.ListenerApproval.ID))
+		consumerApproval, err := s.ListenerReady.ConsumerApproval(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumerApproval.ID).To(Equal(s.ListenerConsumerApproval.ID))
+
+		pendingApproved, err := r.Listener().Approved(ctx, s.ListenerPending)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(pendingApproved).To(BeFalse())
+	})
+
+	It("requires both approvals to be granted", func() {
+		ctx := testutil.AllowContext()
+		for _, approval := range []*ent.Approval{s.ListenerApproval, s.ListenerConsumerApproval} {
+			client.Approval.UpdateOne(approval).SetState("PENDING").ExecX(ctx)
+			approved, err := r.Listener().Approved(ctx, s.ListenerReady)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approved).To(BeFalse())
+			info, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(info[0].Approved).To(BeFalse())
+			client.Approval.UpdateOne(approval).SetState("GRANTED").ExecX(ctx)
+		}
+		client.Listener.UpdateOne(s.ListenerReady).ClearConsumerApproval().ExecX(ctx)
+		approved, err := r.Listener().Approved(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(approved).To(BeFalse())
+		info, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info[0].Approved).To(BeFalse())
+		consumerApproval, err := s.ListenerReady.ConsumerApproval(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumerApproval).To(BeNil())
+		client.Listener.UpdateOne(s.ListenerReady).SetConsumerApproval(s.ListenerConsumerApproval).ClearProviderApproval().ExecX(ctx)
+		approved, err = r.Listener().Approved(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(approved).To(BeFalse())
+		info, err = r.ApiSubscription().Listeners(ctx, s.Subscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info[0].Approved).To(BeFalse())
+	})
+
+	It("resolves a Listener application independently from consumer and provider", func() {
+		ctx := testutil.AllowContext()
+		team := client.Team.Create().
+			SetNamespace("default").SetName("team-listener").SetEmail("listener@test.dev").SetGroup(s.GroupA).SaveX(ctx)
+		application := client.Application.Create().
+			SetNamespace("default").SetName("app-listener").SetOwnerTeam(team).SetZone(s.ZoneEU).SaveX(ctx)
+		client.Listener.UpdateOne(s.ListenerReady).SetApplication(application).ExecX(ctx)
+		s.ListenerReady = client.Listener.GetX(ctx, s.ListenerReady.ID)
+
+		listenerApplication, err := r.Listener().Application(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(listenerApplication.ID).To(Equal(application.ID))
+		Expect(listenerApplication.Name).To(Equal("app-listener"))
+		Expect(listenerApplication.OwnerTeam.ID).To(Equal(team.ID))
+		Expect(listenerApplication.Zone.ID).To(Equal(s.ZoneEU.ID))
+
+		consumer, err := r.Listener().Consumer(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumer.Name).To(Equal("app-beta"))
+
+		provider, err := r.Listener().Provider(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(provider.Name).To(Equal("app-alpha"))
+
+		applicationListeners, err := r.Application().Listeners(ctx, application, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(applicationListeners.Edges).To(HaveLen(1))
+		Expect(applicationListeners.Edges[0].Node.ID).To(Equal(s.ListenerReady.ID))
+
+		consumerListeners, err := r.Application().Listeners(ctx, s.AppBeta, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumerListeners.Edges).To(HaveLen(1))
+		Expect(consumerListeners.Edges[0].Node.ID).To(Equal(s.ListenerPending.ID))
+
+		info, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info).To(HaveLen(1))
+		Expect(info[0].Application.ID).To(Equal(application.ID))
+		Expect(info[0].Application.Name).To(Equal("app-listener"))
+		Expect(info[0].Application.Zone.ID).To(Equal(s.ZoneEU.ID))
+		Expect(info[0].OwnerApplication.ID).To(Equal(application.ID))
+		Expect(info[0].OwnerApplication.OwnerTeam.ID).To(Equal(team.ID))
+		Expect(info[0].Consumer.ID).To(Equal(s.AppBeta.ID))
+		Expect(info[0].Provider.ID).To(Equal(s.AppAlpha.ID))
+
+		for _, approval := range []*ent.Approval{s.ListenerApproval, s.ListenerConsumerApproval} {
+			subscription, subErr := r.Approval().Subscription(ctx, approval)
+			Expect(subErr).NotTo(HaveOccurred())
+			Expect(subscription.(*gqlmodel.ListenerInfo).Application.ID).To(Equal(application.ID))
+			Expect(subscription.GetOwnerApplication().ID).To(Equal(application.ID))
+		}
+		requestSubscription, err := r.ApprovalRequest().Subscription(ctx, s.ListenerApprovalRequest)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(requestSubscription.GetOwnerApplication().ID).To(Equal(application.ID))
+	})
+
+	It("returns only ready Listeners from exposure and subscription fields", func() {
+		ctx := testutil.AllowContext()
+		exposureListeners, err := r.ApiExposure().Listeners(ctx, s.ExposureAlpha)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposureListeners).To(HaveLen(1))
+		Expect(exposureListeners[0].ID).To(Equal(s.ListenerReady.ID))
+		Expect(exposureListeners[0].ResourceName).To(HaveValue(Equal("api-alpha")))
+		Expect(exposureListeners[0].Approved).To(BeTrue())
+
+		subscriptionListeners, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscriptionListeners).To(HaveLen(1))
+		Expect(subscriptionListeners[0].ID).To(Equal(s.ListenerReady.ID))
+	})
+
+	It("returns nil resourceName without failing when API name is missing or exposure is unlinked", func() {
+		ctx := testutil.AllowContext()
+
+		assertNilResourceName := func() {
+			resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resourceName).To(BeNil())
+
+			exposureListeners, err := r.ApiExposure().Listeners(ctx, s.ExposureAlpha)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exposureListeners).To(HaveLen(1))
+			Expect(exposureListeners[0].ResourceName).To(BeNil())
+
+			subscriptionListeners, err := r.ApiSubscription().Listeners(ctx, s.Subscription)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(subscriptionListeners).To(HaveLen(1))
+			Expect(subscriptionListeners[0].ResourceName).To(BeNil())
+
+			approvalTarget, err := r.Approval().Subscription(ctx, s.ListenerApproval)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(approvalTarget.(*gqlmodel.ListenerInfo).ResourceName).To(BeNil())
+
+			requestTarget, err := r.ApprovalRequest().Subscription(ctx, s.ListenerApprovalRequest)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(requestTarget.(*gqlmodel.ListenerInfo).ResourceName).To(BeNil())
+		}
+
+		// Case 1: Api exists, but its Kubernetes name has not been projected yet.
+		client.Api.UpdateOne(s.APIAlpha).ClearName().ExecX(ctx)
+		assertNilResourceName()
+
+		// Case 2: ApiExposure has no linked Api catalogue row (e.g. inactive exposure or deleted Api).
+		client.ApiExposure.UpdateOne(s.ExposureAlpha).ClearAPI().ExecX(ctx)
+		assertNilResourceName()
+
+		// Case 3: Listener has no linked ApiExposure or ApiSubscription yet (blocked Listener).
+		client.Listener.UpdateOne(s.ListenerReady).ClearSubscription().ClearExposure().ExecX(ctx)
+		s.ListenerReady = client.Listener.GetX(ctx, s.ListenerReady.ID)
+		resourceName, err := r.Listener().ResourceName(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resourceName).To(BeNil())
+
+		subscription, err := r.Listener().Subscription(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(subscription).To(BeNil())
+
+		exposure, err := r.Listener().Exposure(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exposure).To(BeNil())
+
+		consumer, err := r.Listener().Consumer(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumer.Name).To(Equal("app-beta"))
+
+		provider, err := r.Listener().Provider(ctx, s.ListenerReady)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(provider.Name).To(Equal("app-alpha"))
+
+		approvalTarget, err := r.Approval().Subscription(ctx, s.ListenerApproval)
+		Expect(err).NotTo(HaveOccurred())
+		listenerInfo := approvalTarget.(*gqlmodel.ListenerInfo)
+		Expect(listenerInfo.ResourceName).To(BeNil())
+		Expect(listenerInfo.Consumer.Name).To(Equal("app-beta"))
+		Expect(listenerInfo.Provider.Name).To(Equal("app-alpha"))
+	})
+
+	It("includes non-ready Listeners on the listener application", func() {
+		connection, err := r.Application().Listeners(testutil.AllowContext(), s.AppBeta, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(connection.Edges).To(HaveLen(2))
+
+		providerConnection, err := r.Application().Listeners(testutil.AllowContext(), s.AppAlpha, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(providerConnection.Edges).To(BeEmpty())
+	})
+
+	It("includes non-ready Listeners in top-level queries", func() {
+		connection, err := r.Query().Listeners(testutil.AllowContext(), nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(connection.Edges).To(HaveLen(2))
+	})
+
+	It("resolves Listener fields from eager-loaded connections without extra DB queries", func() {
+		ctx := testutil.AllowContext()
+		// Clear Group on TeamAlpha and clear optional edges on ListenerPending to verify
+		// optional nil edges are also reused without querying.
+		client.Team.UpdateOne(s.TeamAlpha).ClearGroup().ExecX(ctx)
+		client.Listener.UpdateOne(s.ListenerPending).ClearSubscription().ClearExposure().ExecX(ctx)
+
+		queryConn, err := r.Query().Listeners(ctx, nil, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(queryConn.Edges).To(HaveLen(2))
+
+		appConn, err := r.Application().Listeners(ctx, s.AppBeta, nil, nil, nil, nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(appConn.Edges).To(HaveLen(2))
+
+		// Close the database so any unexpected lazy query fails immediately.
+		Expect(client.Close()).To(Succeed())
+
+		for _, conn := range []*ent.ListenerConnection{queryConn, appConn} {
+			for _, edge := range conn.Edges {
+				node := edge.Node
+				resourceName, err := r.Listener().ResourceName(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				if node.ID == s.ListenerReady.ID {
+					Expect(resourceName).To(HaveValue(Equal("api-alpha")))
+				} else {
+					Expect(resourceName).To(BeNil())
+				}
+
+				approved, err := r.Listener().Approved(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(approved).To(Equal(node.ID == s.ListenerReady.ID))
+
+				app, err := r.Listener().Application(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(app.Name).To(Equal("app-beta"))
+
+				consumer, err := r.Listener().Consumer(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(consumer.Name).To(Equal("app-beta"))
+
+				provider, err := r.Listener().Provider(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(provider.Name).To(Equal("app-alpha"))
+				Expect(provider.OwnerTeam.GroupName).To(BeEmpty())
+
+				sub, err := r.Listener().Subscription(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				exp, err := r.Listener().Exposure(ctx, node)
+				Expect(err).NotTo(HaveOccurred())
+				if node.ID == s.ListenerReady.ID {
+					Expect(sub).NotTo(BeNil())
+					Expect(sub.ID).To(Equal(s.Subscription.ID))
+					Expect(exp).NotTo(BeNil())
+					Expect(exp.ID).To(Equal(s.ExposureAlpha.ID))
+					Expect(exp.OwnerTeam.GroupName).To(BeEmpty())
+				} else {
+					Expect(sub).To(BeNil())
+					Expect(exp).To(BeNil())
+				}
+
+				providerApproval, err := node.ProviderApproval(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				consumerApproval, err := node.ConsumerApproval(ctx)
+				Expect(err).NotTo(HaveOccurred())
+				if node.ID == s.ListenerReady.ID {
+					Expect(providerApproval).NotTo(BeNil())
+					Expect(consumerApproval).NotTo(BeNil())
+				} else {
+					Expect(providerApproval).To(BeNil())
+					Expect(consumerApproval).To(BeNil())
+				}
+			}
+		}
+	})
+
+	It("serializes filter trigger and nil payload via GraphQL", func() {
+		ctx := testutil.AllowContext()
+		client.Listener.UpdateOne(s.ListenerPending).
+			SetRequestFilter(&model.ListenerFilter{Trigger: map[string]any{"method": "POST"}}).
+			ExecX(ctx)
+
+		server := handler.New(resolvers.NewExecutableSchema(resolvers.Config{
+			Resolvers: r,
+		}))
+		server.AddTransport(transport.POST{})
+		body, err := json.Marshal(map[string]string{"query": `{
+			listeners(where: { apiBasePath: "/alpha" }) {
+				edges {
+					node {
+						name
+						apiBasePath
+						requestFilter { trigger payload }
+						responseFilter { trigger payload }
+						providerApproval { id }
+						consumerApproval { id }
+					}
+				}
+			}
+		}`})
+		Expect(err).NotTo(HaveOccurred())
+		req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(body)).WithContext(ctx)
+		req.Header.Set("Content-Type", "application/json")
+		recorder := httptest.NewRecorder()
+		server.ServeHTTP(recorder, req)
+		Expect(recorder.Code).To(Equal(http.StatusOK))
+
+		var result struct {
+			Data struct {
+				Listeners struct {
+					Edges []struct {
+						Node struct {
+							Name             string
+							APIBasePath      string
+							RequestFilter    *model.ListenerFilter
+							ResponseFilter   *model.ListenerFilter
+							ProviderApproval *struct{ ID string }
+							ConsumerApproval *struct{ ID string }
+						}
+					}
+				}
+			}
+			Errors []any
+		}
+		Expect(json.Unmarshal(recorder.Body.Bytes(), &result)).To(Succeed())
+		Expect(result.Errors).To(BeEmpty(), recorder.Body.String())
+		Expect(result.Data.Listeners.Edges).To(HaveLen(2))
+
+		byName := make(map[string]struct {
+			apiBasePath      string
+			requestFilter    *model.ListenerFilter
+			responseFilter   *model.ListenerFilter
+			providerApproval bool
+			consumerApproval bool
+		})
+		for _, edge := range result.Data.Listeners.Edges {
+			n := edge.Node
+			byName[n.Name] = struct {
+				apiBasePath      string
+				requestFilter    *model.ListenerFilter
+				responseFilter   *model.ListenerFilter
+				providerApproval bool
+				consumerApproval bool
+			}{
+				apiBasePath:      n.APIBasePath,
+				requestFilter:    n.RequestFilter,
+				responseFilter:   n.ResponseFilter,
+				providerApproval: n.ProviderApproval != nil,
+				consumerApproval: n.ConsumerApproval != nil,
+			}
+		}
+
+		ready := byName["listener-ready"]
+		Expect(ready.apiBasePath).To(Equal("/alpha"))
+		Expect(ready.requestFilter.Trigger).To(Equal(map[string]any{"method": "GET"}))
+		Expect(ready.requestFilter.Payload).To(Equal([]string{"request.id"}))
+		Expect(ready.responseFilter.Payload).To(Equal([]string{"response.id"}))
+		Expect(ready.providerApproval).To(BeTrue())
+		Expect(ready.consumerApproval).To(BeTrue())
+
+		pending := byName["listener-pending"]
+		Expect(pending.requestFilter.Trigger).To(Equal(map[string]any{"method": "POST"}))
+		Expect(pending.requestFilter.Payload).NotTo(BeNil())
+		Expect(pending.requestFilter.Payload).To(BeEmpty())
+		Expect(pending.providerApproval).To(BeFalse())
+		Expect(pending.consumerApproval).To(BeFalse())
+	})
+
+	It("resolves Listener approval subscriptions", func() {
+		ctx := testutil.AllowContext()
+		subscription, err := r.Approval().Subscription(ctx, s.ListenerApproval)
+		Expect(err).NotTo(HaveOccurred())
+		info := subscription.(*gqlmodel.ListenerInfo)
+		Expect(info.ID).To(Equal(s.ListenerReady.ID))
+		Expect(info.OwnerApplication.ID).To(Equal(info.Application.ID))
+		Expect(info.Application.Zone.ID).To(Equal(s.ZoneEU.ID))
+		Expect(info.Consumer.Zone).NotTo(BeNil())
+		Expect(info.Provider.Zone).NotTo(BeNil())
+		consumerSubscription, err := r.Approval().Subscription(ctx, s.ListenerConsumerApproval)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumerSubscription.(*gqlmodel.ListenerInfo).ID).To(Equal(s.ListenerReady.ID))
+
+		requestSubscription, err := r.ApprovalRequest().Subscription(ctx, s.ListenerApprovalRequest)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(requestSubscription.(*gqlmodel.ListenerInfo).ID).To(Equal(s.ListenerReady.ID))
+
+		providerApproval, err := r.ApprovalRequest().Approval(ctx, s.ListenerApprovalRequest)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(providerApproval.ID).To(Equal(s.ListenerApproval.ID))
+		consumerRequest := client.ApprovalRequest.Create().
+			SetNamespace("prod").SetName("listener--listener-ready--consumer-request").
+			SetAction("listen-consumer").
+			SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
+			SetDecider(model.DeciderInfo{TeamName: "team-beta"}).
+			SetDeciderTeamName("team-beta").SetListener(s.ListenerReady).SaveX(ctx)
+		consumerApproval, err := r.ApprovalRequest().Approval(ctx, consumerRequest)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(consumerApproval.ID).To(Equal(s.ListenerConsumerApproval.ID))
+	})
+
+	It("rejects unknown Listener approval actions", func() {
+		ctx := testutil.AllowContext()
+		request := client.ApprovalRequest.Create().
+			SetNamespace("prod").SetName("listener-unknown-action").
+			SetAction("unexpected").
+			SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
+			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+			SetDeciderTeamName("team-alpha").SetListener(s.ListenerReady).SaveX(ctx)
+		matched, err := r.ApprovalRequest().Approval(ctx, request)
+		Expect(matched).To(BeNil())
+		Expect(err).To(MatchError(ContainSubstring("unknown listener approval action \"unexpected\"")))
+	})
+
+	It("preserves API and event approval subscription behavior", func() {
+		ctx := testutil.AllowContext()
+		apiTarget, err := r.Approval().Subscription(ctx, s.Approval)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(apiTarget.(*gqlmodel.ApiSubscriptionInfo).ID).To(Equal(s.Subscription.ID))
+		apiRequestTarget, err := r.ApprovalRequest().Subscription(ctx, s.ApprovalRequest)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(apiRequestTarget.(*gqlmodel.ApiSubscriptionInfo).ID).To(Equal(s.Subscription.ID))
+
+		eventApproval := client.Approval.Create().
+			SetNamespace("prod").SetName("event-approval").SetAction("ALLOW").
+			SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
+			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+			SetDeciderTeamName("team-alpha").SetEventSubscription(s.EventSubscription).SaveX(ctx)
+		eventTarget, err := r.Approval().Subscription(ctx, eventApproval)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(eventTarget.(*gqlmodel.EventSubscriptionInfo).ID).To(Equal(s.EventSubscription.ID))
+	})
+
+	It("deletes Listener-targeted approval records with the Listener", func() {
+		ctx := testutil.AllowContext()
+		client.Listener.DeleteOne(s.ListenerReady).ExecX(ctx)
+		_, err := client.Approval.Get(ctx, s.ListenerApproval.ID)
+		Expect(ent.IsNotFound(err)).To(BeTrue())
+		_, err = client.Approval.Get(ctx, s.ListenerConsumerApproval.ID)
+		Expect(ent.IsNotFound(err)).To(BeTrue())
+		_, err = client.ApprovalRequest.Get(ctx, s.ListenerApprovalRequest.ID)
+		Expect(ent.IsNotFound(err)).To(BeTrue())
+	})
+
+	It("preserves Listener and its approvals when subscription or exposure is deleted", func() {
+		ctx := testutil.AllowContext()
+		client.Approval.DeleteOne(s.Approval).ExecX(ctx)
+		client.ApprovalRequest.DeleteOne(s.ApprovalRequest).ExecX(ctx)
+		client.ApiSubscription.DeleteOne(s.Subscription).ExecX(ctx)
+		client.ApiExposure.DeleteOne(s.ExposureAlpha).ExecX(ctx)
+
+		reloaded := client.Listener.GetX(ctx, s.ListenerReady.ID)
+		sub, err := r.Listener().Subscription(ctx, reloaded)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(sub).To(BeNil())
+		exp, err := r.Listener().Exposure(ctx, reloaded)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exp).To(BeNil())
+		Expect(client.Approval.Get(ctx, s.ListenerApproval.ID)).NotTo(BeNil())
+		Expect(client.Approval.Get(ctx, s.ListenerConsumerApproval.ID)).NotTo(BeNil())
+		Expect(client.ApprovalRequest.Get(ctx, s.ListenerApprovalRequest.ID)).NotTo(BeNil())
+	})
+})

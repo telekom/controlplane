@@ -77,6 +77,8 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 
 	repo := m.RepoFactory(deps)
 	proc := runtime.NewProcessor(m.Translator, repo)
+	// The reconciler only Gets the object named by the reconcile request, an exact
+	// key in that object's own environment.
 	rec := runtime.NewReadOnlyReconciler(
 		mgr.GetClient(),
 		proc,
@@ -88,7 +90,7 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 
 	ctrlOpts := controller.Options{
 		MaxConcurrentReconciles: cfg.ConcurrencyFor(m.ModuleName),
-		RateLimiter:             newRateLimiter(cfg),
+		RateLimiter:             NewRateLimiter(cfg),
 		ReconciliationTimeout:   cfg.ReconcileTimeout,
 	}
 
@@ -102,10 +104,10 @@ func (m *TypedModule[T, D, K]) Register(mgr ctrl.Manager, deps ModuleDeps) error
 		Complete(rec)
 }
 
-// newRateLimiter constructs a composite rate limiter from config:
+// NewRateLimiter constructs a composite rate limiter from config:
 //   - Per-item exponential backoff (for errored reconciles)
 //   - Global token bucket (for steady-state throughput)
-func newRateLimiter(cfg *config.Config) workqueue.TypedRateLimiter[reconcile.Request] {
+func NewRateLimiter(cfg *config.Config) workqueue.TypedRateLimiter[reconcile.Request] {
 	return workqueue.NewTypedMaxOfRateLimiter(
 		workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
 			cfg.RateLimiterBaseDelay,

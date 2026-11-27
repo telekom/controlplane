@@ -1338,6 +1338,75 @@ func HasSubscribedAgenticsWith(preds ...predicate.AgenticSubscription) predicate
 	})
 }
 
+// HasListeners applies the HasEdge predicate on the "listeners" edge.
+func HasListeners() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ListenersTable, ListenersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasListenersWith applies the HasEdge predicate on the "listeners" edge with a given conditions (other predicates).
+func HasListenersWith(preds ...predicate.Listener) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newListenersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsumerListeners applies the HasEdge predicate on the "consumer_listeners" edge.
+func HasConsumerListeners() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsumerListenersTable, ConsumerListenersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsumerListenersWith applies the HasEdge predicate on the "consumer_listeners" edge with a given conditions (other predicates).
+func HasConsumerListenersWith(preds ...predicate.Listener) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newConsumerListenersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProviderListeners applies the HasEdge predicate on the "provider_listeners" edge.
+func HasProviderListeners() predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ProviderListenersTable, ProviderListenersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProviderListenersWith applies the HasEdge predicate on the "provider_listeners" edge with a given conditions (other predicates).
+func HasProviderListenersWith(preds ...predicate.Listener) predicate.Application {
+	return predicate.Application(func(s *sql.Selector) {
+		step := newProviderListenersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPermissionSet applies the HasEdge predicate on the "permission_set" edge.
 func HasPermissionSet() predicate.Application {
 	return predicate.Application(func(s *sql.Selector) {

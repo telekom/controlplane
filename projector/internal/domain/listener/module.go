@@ -1,0 +1,206 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package listener
+
+import (
+	"context"
+	"fmt"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	appv1 "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/module"
+	"github.com/telekom/controlplane/projector/internal/runtime"
+	spectrev1 "github.com/telekom/controlplane/spectre/api/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+const applicationIndex = "spec.application"
+const observerIndex = "spec.application.objectRef"
+const consumerIndex = "spec.consumer.owner"
+const providerIndex = "spec.provider.owner"
+const subscriptionIndex = "spec.consumer.subscription"
+const exposureIndex = "spec.provider.exposure"
+
+func ownerKey(namespace, name string) string { return namespace + "/" + name }
+func edgeKey(namespace, name, path string) string {
+	return namespace + "/" + name + "/" + path
+}
+
+type listenerModule struct{}
+
+var Module module.Module = listenerModule{}
+
+func (listenerModule) Name() string { return "listener" }
+
+func (listenerModule) Register(mgr ctrl.Manager, deps module.ModuleDeps) error {
+	for _, index := range []struct {
+		name string
+		fn   client.IndexerFunc
+	}{
+		{applicationIndex, indexApplication},
+		{consumerIndex, indexConsumer},
+		{providerIndex, indexProvider},
+		{subscriptionIndex, indexSubscription},
+		{exposureIndex, indexExposure},
+	} {
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spectrev1.Listener{}, index.name, index.fn); err != nil {
+			return fmt.Errorf("index listener %s: %w", index.name, err)
+		}
+	}
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &spectrev1.SpectreApplication{}, observerIndex, indexObserver); err != nil {
+		return fmt.Errorf("index spectre application observer: %w", err)
+	}
+	// The readers below only Get or List by keys that contain an environment-prefixed
+	// namespace, so every lookup stays within the source object's environment.
+	repo := NewRepository(deps.EntClient, deps.IDResolver)
+	translator := &Translator{Reader: mgr.GetClient()}
+	proc := &listenerProcessor{
+		processor:  runtime.NewProcessor[*spectrev1.Listener, *Data, Key](translator, repo),
+		translator: translator,
+		repo:       repo,
+	}
+	rec := runtime.NewReadOnlyReconciler(mgr.GetClient(), proc, deps.DeleteCache, "listener",
+		func() *spectrev1.Listener { return &spectrev1.Listener{} }, runtime.NewErrorPolicyFromConfig(deps.Config))
+	parentHandler := handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+		return listenersForParent(ctx, mgr.GetClient(), obj)
+	})
+
+	return ctrl.NewControllerManagedBy(mgr).
+		Named("projector-listener").
+		Watches(&spectrev1.Listener{}, infrastructure.NewSyncEventHandler(deps.DeleteCache),
+			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+		Watches(&spectrev1.SpectreApplication{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			return listenersForApplication(ctx, mgr.GetClient(), obj)
+		}),
+			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+		Watches(&appv1.Application{}, parentHandler,
+			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+		Watches(&apiv1.ApiSubscription{}, parentHandler,
+			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+		Watches(&apiv1.ApiExposure{}, parentHandler,
+			builder.WithPredicates(cc.Count("projector-listener", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}))).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: deps.Config.ConcurrencyFor("listener"),
+			RateLimiter:             module.NewRateLimiter(deps.Config),
+			ReconciliationTimeout:   deps.Config.ReconcileTimeout,
+		}).Complete(rec)
+}
+
+func indexApplication(obj client.Object) []string {
+	l := obj.(*spectrev1.Listener)
+	ref := l.Spec.Application
+	if ref.Name == "" {
+		return nil
+	}
+	if ref.Namespace == "" {
+		ref.Namespace = l.Namespace
+	}
+	return []string{ownerKey(ref.Namespace, ref.Name)}
+}
+
+func indexOwner(ref ctypes.ObjectRef) []string {
+	if ref.Name == "" || ref.Namespace == "" {
+		return nil
+	}
+	return []string{ownerKey(ref.Namespace, ref.Name)}
+}
+
+func indexEdge(l *spectrev1.Listener, ref ctypes.ObjectRef) []string {
+	if l.Spec.ApiListener == nil || l.Spec.ApiListener.ApiBasePath == "" || ref.Name == "" || ref.Namespace == "" {
+		return nil
+	}
+	return []string{edgeKey(ref.Namespace, ref.Name, l.Spec.ApiListener.ApiBasePath)}
+}
+
+func indexConsumer(obj client.Object) []string {
+	return indexOwner(obj.(*spectrev1.Listener).Spec.Consumer.ObjectRef)
+}
+
+func indexProvider(obj client.Object) []string {
+	return indexOwner(obj.(*spectrev1.Listener).Spec.Provider.ObjectRef)
+}
+
+func indexSubscription(obj client.Object) []string {
+	l := obj.(*spectrev1.Listener)
+	return indexEdge(l, l.Spec.Consumer.ObjectRef)
+}
+
+func indexExposure(obj client.Object) []string {
+	l := obj.(*spectrev1.Listener)
+	return indexEdge(l, l.Spec.Provider.ObjectRef)
+}
+
+func indexObserver(obj client.Object) []string {
+	return indexOwner(obj.(*spectrev1.SpectreApplication).Spec.Application.ObjectRef)
+}
+
+func listenersForParent(ctx context.Context, reader client.Reader, obj client.Object) []reconcile.Request {
+	var selectors []client.MatchingFields
+	var requests []reconcile.Request
+	switch parent := obj.(type) {
+	case *apiv1.ApiSubscription:
+		if parent.Spec.Requestor.Application.Name == "" || parent.Spec.ApiBasePath == "" {
+			return nil
+		}
+		selectors = append(selectors, client.MatchingFields{subscriptionIndex: edgeKey(parent.Namespace, parent.Spec.Requestor.Application.Name, parent.Spec.ApiBasePath)})
+	case *apiv1.ApiExposure:
+		appName := parent.Labels[cconfig.BuildLabelKey("application")]
+		if appName == "" || parent.Spec.ApiBasePath == "" {
+			return nil
+		}
+		selectors = append(selectors, client.MatchingFields{exposureIndex: edgeKey(parent.Namespace, appName, parent.Spec.ApiBasePath)})
+	case *appv1.Application:
+		key := ownerKey(parent.Namespace, parent.Name)
+		selectors = append(selectors, client.MatchingFields{consumerIndex: key}, client.MatchingFields{providerIndex: key})
+		apps := &spectrev1.SpectreApplicationList{}
+		// The index key contains the Application's namespace, which is environment-prefixed,
+		// so only SpectreApplications of the same environment match.
+		if err := reader.List(ctx, apps, client.MatchingFields{observerIndex: key}); err != nil {
+			log.FromContext(ctx).Error(err, "list spectre applications for observer", "application", client.ObjectKeyFromObject(parent))
+		} else {
+			for i := range apps.Items {
+				requests = append(requests, listenersForApplication(ctx, reader, &apps.Items[i])...)
+			}
+		}
+	default:
+		return nil
+	}
+	for _, selector := range selectors {
+		list := &spectrev1.ListenerList{}
+		if err := reader.List(ctx, list, selector); err != nil {
+			log.FromContext(ctx).Error(err, "list listeners for parent", "parent", client.ObjectKeyFromObject(obj), "selector", selector)
+			continue
+		}
+		for i := range list.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+		}
+	}
+	return requests
+}
+
+func listenersForApplication(ctx context.Context, reader client.Reader, obj client.Object) []reconcile.Request {
+	key := ownerKey(obj.GetNamespace(), obj.GetName())
+	list := &spectrev1.ListenerList{}
+	if err := reader.List(ctx, list, client.MatchingFields{applicationIndex: key}); err != nil {
+		log.FromContext(ctx).Error(err, "list listeners for spectre application", "application", key)
+		return nil
+	}
+	requests := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
+	}
+	return requests
+}

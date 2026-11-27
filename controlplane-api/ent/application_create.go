@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/eventsubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/fileexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/filesubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/listener"
 	"github.com/telekom/controlplane/controlplane-api/ent/permissionset"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -405,6 +406,51 @@ func (_c *ApplicationCreate) AddSubscribedAgentics(v ...*AgenticSubscription) *A
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscribedAgenticIDs(ids...)
+}
+
+// AddListenerIDs adds the "listeners" edge to the Listener entity by IDs.
+func (_c *ApplicationCreate) AddListenerIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddListenerIDs(ids...)
+	return _c
+}
+
+// AddListeners adds the "listeners" edges to the Listener entity.
+func (_c *ApplicationCreate) AddListeners(v ...*Listener) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddListenerIDs(ids...)
+}
+
+// AddConsumerListenerIDs adds the "consumer_listeners" edge to the Listener entity by IDs.
+func (_c *ApplicationCreate) AddConsumerListenerIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddConsumerListenerIDs(ids...)
+	return _c
+}
+
+// AddConsumerListeners adds the "consumer_listeners" edges to the Listener entity.
+func (_c *ApplicationCreate) AddConsumerListeners(v ...*Listener) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConsumerListenerIDs(ids...)
+}
+
+// AddProviderListenerIDs adds the "provider_listeners" edge to the Listener entity by IDs.
+func (_c *ApplicationCreate) AddProviderListenerIDs(ids ...int) *ApplicationCreate {
+	_c.mutation.AddProviderListenerIDs(ids...)
+	return _c
+}
+
+// AddProviderListeners adds the "provider_listeners" edges to the Listener entity.
+func (_c *ApplicationCreate) AddProviderListeners(v ...*Listener) *ApplicationCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddProviderListenerIDs(ids...)
 }
 
 // SetPermissionSetID sets the "permission_set" edge to the PermissionSet entity by ID.
@@ -801,6 +847,54 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(agenticsubscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ListenersTable,
+			Columns: []string{application.ListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsumerListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ConsumerListenersTable,
+			Columns: []string{application.ConsumerListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProviderListenersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.ProviderListenersTable,
+			Columns: []string{application.ProviderListenersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(listener.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
