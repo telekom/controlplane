@@ -194,6 +194,46 @@ func (_u *APIUpdate) ClearSpecification() *APIUpdate {
 	return _u
 }
 
+// SetChangelog sets the "changelog" field.
+func (_u *APIUpdate) SetChangelog(v string) *APIUpdate {
+	_u.mutation.SetChangelog(v)
+	return _u
+}
+
+// SetNillableChangelog sets the "changelog" field if the given value is not nil.
+func (_u *APIUpdate) SetNillableChangelog(v *string) *APIUpdate {
+	if v != nil {
+		_u.SetChangelog(*v)
+	}
+	return _u
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (_u *APIUpdate) ClearChangelog() *APIUpdate {
+	_u.mutation.ClearChangelog()
+	return _u
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (_u *APIUpdate) SetRoadmap(v string) *APIUpdate {
+	_u.mutation.SetRoadmap(v)
+	return _u
+}
+
+// SetNillableRoadmap sets the "roadmap" field if the given value is not nil.
+func (_u *APIUpdate) SetNillableRoadmap(v *string) *APIUpdate {
+	if v != nil {
+		_u.SetRoadmap(*v)
+	}
+	return _u
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (_u *APIUpdate) ClearRoadmap() *APIUpdate {
+	_u.mutation.ClearRoadmap()
+	return _u
+}
+
 // SetActive sets the "active" field.
 func (_u *APIUpdate) SetActive(v bool) *APIUpdate {
 	_u.mutation.SetActive(v)
@@ -397,6 +437,18 @@ func (_u *APIUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(api.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Changelog(); ok {
+		_spec.SetField(api.FieldChangelog, field.TypeString, value)
+	}
+	if _u.mutation.ChangelogCleared() {
+		_spec.ClearField(api.FieldChangelog, field.TypeString)
+	}
+	if value, ok := _u.mutation.Roadmap(); ok {
+		_spec.SetField(api.FieldRoadmap, field.TypeString, value)
+	}
+	if _u.mutation.RoadmapCleared() {
+		_spec.ClearField(api.FieldRoadmap, field.TypeString)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(api.FieldActive, field.TypeBool, value)
@@ -655,6 +707,46 @@ func (_u *APIUpdateOne) ClearSpecification() *APIUpdateOne {
 	return _u
 }
 
+// SetChangelog sets the "changelog" field.
+func (_u *APIUpdateOne) SetChangelog(v string) *APIUpdateOne {
+	_u.mutation.SetChangelog(v)
+	return _u
+}
+
+// SetNillableChangelog sets the "changelog" field if the given value is not nil.
+func (_u *APIUpdateOne) SetNillableChangelog(v *string) *APIUpdateOne {
+	if v != nil {
+		_u.SetChangelog(*v)
+	}
+	return _u
+}
+
+// ClearChangelog clears the value of the "changelog" field.
+func (_u *APIUpdateOne) ClearChangelog() *APIUpdateOne {
+	_u.mutation.ClearChangelog()
+	return _u
+}
+
+// SetRoadmap sets the "roadmap" field.
+func (_u *APIUpdateOne) SetRoadmap(v string) *APIUpdateOne {
+	_u.mutation.SetRoadmap(v)
+	return _u
+}
+
+// SetNillableRoadmap sets the "roadmap" field if the given value is not nil.
+func (_u *APIUpdateOne) SetNillableRoadmap(v *string) *APIUpdateOne {
+	if v != nil {
+		_u.SetRoadmap(*v)
+	}
+	return _u
+}
+
+// ClearRoadmap clears the value of the "roadmap" field.
+func (_u *APIUpdateOne) ClearRoadmap() *APIUpdateOne {
+	_u.mutation.ClearRoadmap()
+	return _u
+}
+
 // SetActive sets the "active" field.
 func (_u *APIUpdateOne) SetActive(v bool) *APIUpdateOne {
 	_u.mutation.SetActive(v)
@@ -888,6 +980,18 @@ func (_u *APIUpdateOne) sqlSave(ctx context.Context) (_node *Api, err error) {
 	}
 	if _u.mutation.SpecificationCleared() {
 		_spec.ClearField(api.FieldSpecification, field.TypeString)
+	}
+	if value, ok := _u.mutation.Changelog(); ok {
+		_spec.SetField(api.FieldChangelog, field.TypeString, value)
+	}
+	if _u.mutation.ChangelogCleared() {
+		_spec.ClearField(api.FieldChangelog, field.TypeString)
+	}
+	if value, ok := _u.mutation.Roadmap(); ok {
+		_spec.SetField(api.FieldRoadmap, field.TypeString, value)
+	}
+	if _u.mutation.RoadmapCleared() {
+		_spec.ClearField(api.FieldRoadmap, field.TypeString)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(api.FieldActive, field.TypeBool, value)

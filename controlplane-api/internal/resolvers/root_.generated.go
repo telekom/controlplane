@@ -231,12 +231,14 @@ type ComplexityRoot struct {
 		ActiveExposure   func(childComplexity int) int
 		BasePath         func(childComplexity int) int
 		Category         func(childComplexity int) int
+		ChangelogURL     func(childComplexity int) int
 		CreatedAt        func(childComplexity int) int
 		ID               func(childComplexity int) int
 		LastModifiedAt   func(childComplexity int) int
 		Namespace        func(childComplexity int) int
 		Oauth2Scopes     func(childComplexity int) int
 		Owner            func(childComplexity int) int
+		RoadmapURL       func(childComplexity int) int
 		SpecificationURL func(childComplexity int) int
 		StatusMessage    func(childComplexity int) int
 		StatusPhase      func(childComplexity int) int
@@ -1778,6 +1780,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Api.Category(childComplexity), true
+	case "Api.changelogUrl":
+		if e.ComplexityRoot.Api.ChangelogURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.ChangelogURL(childComplexity), true
 	case "Api.createdAt":
 		if e.ComplexityRoot.Api.CreatedAt == nil {
 			break
@@ -1814,6 +1822,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Api.Owner(childComplexity), true
+	case "Api.roadmapUrl":
+		if e.ComplexityRoot.Api.RoadmapURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Api.RoadmapURL(childComplexity), true
 	case "Api.specificationUrl":
 		if e.ComplexityRoot.Api.SpecificationURL == nil {
 			break
@@ -7340,6 +7354,42 @@ input ApiWhereInput {
   specificationEqualFold: String
   specificationContainsFold: String
   """
+  changelog field predicates
+  """
+  changelog: String
+  changelogNEQ: String
+  changelogIn: [String!]
+  changelogNotIn: [String!]
+  changelogGT: String
+  changelogGTE: String
+  changelogLT: String
+  changelogLTE: String
+  changelogContains: String
+  changelogHasPrefix: String
+  changelogHasSuffix: String
+  changelogIsNil: Boolean
+  changelogNotNil: Boolean
+  changelogEqualFold: String
+  changelogContainsFold: String
+  """
+  roadmap field predicates
+  """
+  roadmap: String
+  roadmapNEQ: String
+  roadmapIn: [String!]
+  roadmapNotIn: [String!]
+  roadmapGT: String
+  roadmapGTE: String
+  roadmapLT: String
+  roadmapLTE: String
+  roadmapContains: String
+  roadmapHasPrefix: String
+  roadmapHasSuffix: String
+  roadmapIsNil: Boolean
+  roadmapNotNil: Boolean
+  roadmapEqualFold: String
+  roadmapContainsFold: String
+  """
   active field predicates
   """
   active: Boolean
@@ -12755,6 +12805,10 @@ extend type ApprovalRequest {
 extend type Api {
   "URL to download the OpenAPI specification from the file-manager. Null if no specification is associated."
   specificationUrl: String @goField(forceResolver: true)
+  "URL to download the API changelog from the file-manager. Null if no changelog is associated."
+  changelogUrl: String @goField(forceResolver: true)
+  "URL to download the API roadmap from the file-manager. Null if no roadmap is associated."
+  roadmapUrl: String @goField(forceResolver: true)
   "The currently active exposure of this API, or null if no exposure is active."
   activeExposure: ApiExposureInfo @goField(forceResolver: true)
   "The team that owns this API."
@@ -13149,6 +13203,10 @@ func (ec *executionContext) childFields_Api(ctx context.Context, field graphql.C
 		return ec.fieldContext_Api_active(ctx, field)
 	case "specificationUrl":
 		return ec.fieldContext_Api_specificationUrl(ctx, field)
+	case "changelogUrl":
+		return ec.fieldContext_Api_changelogUrl(ctx, field)
+	case "roadmapUrl":
+		return ec.fieldContext_Api_roadmapUrl(ctx, field)
 	case "activeExposure":
 		return ec.fieldContext_Api_activeExposure(ctx, field)
 	case "owner":

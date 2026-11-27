@@ -42,3 +42,7 @@ resources:
 - apicategory_admin_role.yaml
 - apicategory_editor_role.yaml
 - apicategory_viewer_role.yaml
+- apichangelog_editor_role.yaml
+- apichangelog_viewer_role.yaml
+- apiroadmap_editor_role.yaml
+- apiroadmap_viewer_role.yaml

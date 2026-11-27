@@ -49,7 +49,9 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/agenticexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/agenticsubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/api"
+	"github.com/telekom/controlplane/projector/internal/domain/apichangelog"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
+	"github.com/telekom/controlplane/projector/internal/domain/apiroadmap"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
@@ -82,6 +84,8 @@ var modules = []module.Module{
 	team.Module,
 	application.Module,
 	api.Module,
+	apichangelog.Module,
+	apiroadmap.Module,
 	apiexposure.Module,
 	apisubscription.Module,
 	approval.Module,
@@ -178,18 +182,16 @@ func Run() error {
 	}
 	defer edgeCache.Close()
 
-	deleteCache := &infrastructure.DeleteCache{}
 	idResolver := infrastructure.NewIDResolver(entClient, edgeCache,
 		infrastructure.WithNegativeCacheTTL(cfg.IDResolverNegTTL),
 		infrastructure.WithSingleflight(cfg.IDResolverSingleflight),
 	)
 
 	deps := module.ModuleDeps{
-		DeleteCache: deleteCache,
-		EntClient:   entClient,
-		EdgeCache:   edgeCache,
-		IDResolver:  idResolver,
-		Config:      cfg,
+		EntClient:  entClient,
+		EdgeCache:  edgeCache,
+		IDResolver: idResolver,
+		Config:     cfg,
 	}
 
 	// --- Controller Manager ---
@@ -207,8 +209,13 @@ func Run() error {
 	}
 
 	// --- Register Modules ---
+	// Each module gets its own delete cache: it is keyed by namespace/name, and
+	// different kinds (e.g. ApiChangelog and ApiRoadmap) can share the same name.
 	for _, m := range modules {
-		if err = m.Register(mgr, deps); err != nil {
+		moduleDeps := deps
+		moduleDeps.DeleteCache = &infrastructure.DeleteCache{}
+		// audit:ignore 13-environment-isolation/unlabelled-write these are a registration call, not a write
+		if err = m.Register(mgr, moduleDeps); err != nil {
 			return fmt.Errorf("register %s: %w", m.Name(), err)
 		}
 		setupLog.Info("module registered", "module", m.Name())

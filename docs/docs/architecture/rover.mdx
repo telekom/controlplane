@@ -26,6 +26,14 @@ The Rover Server accepts resource names between 2 and 90 characters. Names longe
 
 The server also normalizes the environment, team, and group labels to lowercase, replaces spaces, underscores, and slashes with hyphens, trims leading and trailing hyphens, and shortens values exceeding the label-value limit.
 
+### API Changelog and Roadmap
+
+`ApiChangelog` and `Roadmap` always refer to an existing `ApiSpecification` by base path. Apply the `ApiSpecification` first: the Rover Server rejects a changelog or roadmap without it (`roverctl apply -f <dir>` applies specifications first), and the controllers stay blocked until it exists.
+
+The Rover controllers mirror each changelog and every roadmap of an `ApiSpecification` into an `ApiChangelog` or `ApiRoadmap` of the API domain, so that the Projector can expose them. Removing a changelog or roadmap removes its mirror, and the `Api` is never affected. Removing the `Api` does not remove the mirrors: they stay as long as the changelog or roadmap exists in Rover, and link to the `Api` again once an `Api` with that base path reappears. The name of a changelog or roadmap is derived from its base path without the version suffix, so applying a new major version (for example `/eni/foo/v2` after `/eni/foo/v1`) updates the same resource and moves the link to the `Api` of the new version. A roadmap of an `EventSpecification` is not mirrored.
+
+The Rover Server validates changelog items: `date` is `yyyy-MM-dd`, `version` is a semantic version (`MAJOR.MINOR.PATCH`), and `description` is not empty. The items are stored in the File Manager, so applying a changelog or roadmap requires the File Manager to be enabled.
+
 ### Application Info Status
 
 The `status` of `roverctl get-info` is the overall status of the Rover status endpoint. It includes every sub-resource owned by the Rover, also removed ones that are still being deleted, such as a Listener draining its capture, and reports `processing` or `pending` while the Rover or a sub-resource has a spec change that is not yet processed. A referenced sub-resource that cannot be read is listed in `errors` and does not fail the request. When the Rover itself is blocked or failed for a reason no sub-resource reports, for example a listener whose consumer application does not exist, both the status endpoint and get-info list it in `errors` as a problem of kind `Rover`. In get-info, this entry has the same shape as a problem from the status endpoint: `cause` is the condition reason and `message` is the condition message.

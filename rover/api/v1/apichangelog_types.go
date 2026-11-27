@@ -48,6 +48,10 @@ type ApiChangelogSpec struct {
 
 // ApiChangelogStatus defines the observed state of ApiChangelog
 type ApiChangelogStatus struct {
+	// ApiChangelog references the mirrored api ApiChangelog created for this changelog
+	// +optional
+	ApiChangelog types.ObjectRef `json:"apiChangelog,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

@@ -56,6 +56,20 @@ var _ = Describe("DeleteCache", func() {
 		Expect(second).To(BeNil())
 	})
 
+	It("loads without removing and deletes explicitly", func() {
+		obj := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "cm-3", Namespace: "ns"},
+		}
+		cache.Store(obj)
+		key := types.NamespacedName{Name: "cm-3", Namespace: "ns"}
+
+		Expect(cache.Load(key)).NotTo(BeNil())
+		Expect(cache.Load(key)).NotTo(BeNil())
+
+		cache.Delete(key)
+		Expect(cache.Load(key)).To(BeNil())
+	})
+
 	It("handles concurrent access without race conditions", func() {
 		const goroutines = 100
 		var wg sync.WaitGroup

@@ -48,6 +48,10 @@ type RoadmapSpec struct {
 
 // RoadmapStatus defines the observed state of Roadmap
 type RoadmapStatus struct {
+	// ApiRoadmap references the mirrored api ApiRoadmap created for this roadmap
+	// +optional
+	ApiRoadmap types.ObjectRef `json:"apiRoadmap,omitempty"`
+
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

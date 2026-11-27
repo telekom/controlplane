@@ -19,7 +19,7 @@ type ApiRoadmapHandler struct {
 
 func NewApiRoadmapHandlerInstance() *ApiRoadmapHandler {
 	handler := &ApiRoadmapHandler{
-		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiRoadmap", "apiroadmaps", 10).WithValidation(common.ValidateObjectName),
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiRoadmap", "apiroadmaps", 20).WithValidation(common.ValidateObjectName),
 	}
 
 	handler.AddHook(common.PreRequestHook, PatchApiRoadmapRequest)

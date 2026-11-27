@@ -6,6 +6,7 @@ package runtime_test
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/telekom/controlplane/projector/internal/runtime"
@@ -43,11 +44,17 @@ func (m *mockSyncProcessor) Delete(_ context.Context, _ types.NamespacedName, _ 
 // --- mock DeleteCacheReader ---
 
 type mockDeleteCache struct {
-	obj client.Object
+	obj     client.Object
+	deleted int
 }
 
-func (m *mockDeleteCache) LoadAndDelete(_ client.ObjectKey) client.Object {
+func (m *mockDeleteCache) Load(_ client.ObjectKey) client.Object {
 	return m.obj
+}
+
+func (m *mockDeleteCache) Delete(_ client.ObjectKey) {
+	m.deleted++
+	m.obj = nil
 }
 
 // --- helpers ---
@@ -287,6 +294,43 @@ var _ = Describe("ReadOnlyReconciler", func() {
 			result, err := rec.Reconcile(ctx, req)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.RequeueAfter).To(Equal(10 * time.Minute))
+		})
+	})
+
+	Describe("delete cache lifecycle", func() {
+		var (
+			dc      *mockDeleteCache
+			randVal float64
+		)
+
+		BeforeEach(func() {
+			dc = &mockDeleteCache{obj: newConfigMap("test-cm", "default")}
+			randVal = 0.5
+		})
+
+		It("keeps the cached object when the delete fails and removes it after a successful retry", func() {
+			rec := buildReconcilerWithDeleteCache(newFakeClient(), proc, dc, runtime.ErrorPolicy{}, &randVal)
+
+			proc.deleteErr = errors.New("transient database error")
+			_, err := rec.Reconcile(ctx, req)
+			Expect(err).To(HaveOccurred())
+			Expect(dc.obj).NotTo(BeNil(), "the last-known object must survive a failed delete")
+			Expect(dc.deleted).To(BeZero())
+
+			proc.deleteErr = nil
+			_, err = rec.Reconcile(ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(dc.deleted).To(Equal(1))
+			Expect(dc.obj).To(BeNil())
+		})
+
+		It("drops the entry when the delete key is lost", func() {
+			rec := buildReconcilerWithDeleteCache(newFakeClient(), proc, dc, runtime.ErrorPolicy{}, &randVal)
+
+			proc.deleteErr = runtime.ErrDeleteKeyLost
+			_, err := rec.Reconcile(ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(dc.deleted).To(Equal(1))
 		})
 	})
 

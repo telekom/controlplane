@@ -45,6 +45,12 @@ func (Api) Fields() []ent.Field {
 		field.Text("specification").
 			Optional().
 			Annotations(entgql.Skip(entgql.SkipType)),
+		field.Text("changelog").
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipType)),
+		field.Text("roadmap").
+			Optional().
+			Annotations(entgql.Skip(entgql.SkipType)),
 		field.Bool("active").
 			Default(false).
 			Comment("Only the oldest entry for a base path is active. Entries of other teams with the same base path " +

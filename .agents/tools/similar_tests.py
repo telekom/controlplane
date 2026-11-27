@@ -58,7 +58,7 @@ def findings(path: Path) -> list[dict]:
             reported.setdefault(line_b, line_a)
     return [
         {
-            "file": str(path),
+            "file": path.as_posix(),
             "line": line,
             "detail": f"test body nearly identical to the one at line {other}",
             "span": [line, ends[line]],

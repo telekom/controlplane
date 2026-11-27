@@ -36,3 +36,20 @@ func (c *DeleteCache) LoadAndDelete(key types.NamespacedName) client.Object {
 	obj, _ := val.(client.Object)
 	return obj
 }
+
+// Load returns the cached object for key without removing it, or nil if no
+// entry exists. Pair it with Delete once the delete has been fully processed,
+// so that a failed delete can be retried with the same last-known state.
+func (c *DeleteCache) Load(key types.NamespacedName) client.Object {
+	val, ok := c.cache.Load(key)
+	if !ok {
+		return nil
+	}
+	obj, _ := val.(client.Object)
+	return obj
+}
+
+// Delete removes the cached object for key.
+func (c *DeleteCache) Delete(key types.NamespacedName) {
+	c.cache.Delete(key)
+}

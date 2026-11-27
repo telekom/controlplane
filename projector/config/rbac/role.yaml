@@ -43,7 +43,9 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apichangelogs
   - apiexposures
+  - apiroadmaps
   - apisubscriptions
   - apis
   verbs:

@@ -73,6 +73,16 @@ func (c *ApiChangelogController) Update(ctx context.Context, resourceId string, 
 		return res, problems.BadRequest("basePath " + req.BasePath + " does not match resource ID " + resourceId)
 	}
 
+	if err := requireFileManager("ApiChangelog"); err != nil {
+		return res, err
+	}
+	if err := validateChangelogItems(req.Items); err != nil {
+		return res, err
+	}
+	if err := ensureApiSpecificationExists(ctx, c.stores, id, req.BasePath); err != nil {
+		return res, err
+	}
+
 	return c.createOrUpdateChangelog(ctx, id, req.BasePath, req.Items)
 }
 

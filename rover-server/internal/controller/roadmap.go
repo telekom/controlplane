@@ -72,6 +72,13 @@ func (r *RoadmapController) Update(ctx context.Context, resourceId string, req a
 		return res, problems.BadRequest("basePath " + req.BasePath + " does not match resource ID " + resourceId)
 	}
 
+	if err := requireFileManager("ApiRoadmap"); err != nil {
+		return res, err
+	}
+	if err := ensureApiSpecificationExists(ctx, r.stores, id, req.BasePath); err != nil {
+		return res, err
+	}
+
 	return r.createOrUpdateRoadmap(ctx, id, req.BasePath, req.Items)
 }
 
