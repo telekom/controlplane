@@ -32,8 +32,8 @@ func NewRepository(client *ent.Client) *Repository {
 
 // Upsert sets the roadmap file ID on the Api. If the Api has not been
 // projected yet, it returns ErrDependencyMissing so the CR is retried.
-// The resource name is derived from the base path (enforced by the rover-server), so a
-// different base path is a new resource and never retargets an existing one.
+// The resource name omits the version suffix of the base path, so a new major version reuses
+// the name and retargets the roadmap: the file ID is then cleared from the previous Api.
 func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	start := time.Now()
 	defer func() {
@@ -49,6 +49,15 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	}
 	if updated == 0 {
 		return runtime.WrapDependencyMissing("api", data.BasePath)
+	}
+
+	// Done after the new assignment so a missing target Api keeps the old one until the retry.
+	_, err = r.client.Api.Update().
+		Where(entapi.NamespaceEQ(data.Namespace), entapi.BasePathNEQ(data.BasePath), entapi.HasOwnerWith(team.NameEQ(data.TeamName)), entapi.RoadmapEQ(data.FileID)).
+		ClearRoadmap().
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("clear previous roadmap assignment for %q (team %q): %w", data.BasePath, data.TeamName, err)
 	}
 	return nil
 }

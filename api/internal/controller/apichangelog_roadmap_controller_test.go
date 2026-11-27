@@ -5,9 +5,11 @@
 package controller
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -105,5 +107,40 @@ var _ = Describe("ApiChangelog and ApiRoadmap Controllers", Ordered, func() {
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(api), api)).To(Succeed())
 		Expect(api.DeletionTimestamp.IsZero()).To(BeTrue())
+	})
+
+	It("should keep the mirror and its other owner when the Api is deleted", func() {
+		// envtest runs no garbage collector, so this checks the owner references and that the
+		// controllers do not remove the mirror themselves.
+		ownedBasePath := "/changelogroadmap/owned/v1"
+		creator := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "mirror-creator", Namespace: testNamespace}}
+		Expect(k8sClient.Create(ctx, creator)).To(Succeed())
+
+		changelog := newApiChangelog("cl-two-owners", ownedBasePath)
+		changelog.OwnerReferences = []metav1.OwnerReference{{
+			APIVersion: "v1", Kind: "ConfigMap", Name: creator.Name, UID: creator.UID,
+			Controller: ptr.To(true), BlockOwnerDeletion: ptr.To(true),
+		}}
+		Expect(k8sClient.Create(ctx, changelog)).To(Succeed())
+
+		api := NewApi(ownedBasePath)
+		Expect(k8sClient.Create(ctx, api)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(api), api)).To(Succeed())
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(changelog), changelog)).To(Succeed())
+			g.Expect(hasOwnerUID(changelog, api)).To(BeTrue())
+			g.Expect(changelog.GetOwnerReferences()).To(HaveLen(2))
+		}, timeout, interval).Should(Succeed())
+
+		Expect(k8sClient.Delete(ctx, api)).To(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(errors.IsNotFound(k8sClient.Get(ctx, client.ObjectKeyFromObject(api), &apiv1.Api{}))).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
+
+		Consistently(func(g Gomega) {
+			g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(changelog), changelog)).To(Succeed())
+			g.Expect(changelog.GetOwnerReferences()).To(ContainElement(HaveField("UID", creator.UID)))
+		}, "2s", interval).Should(Succeed())
 	})
 })

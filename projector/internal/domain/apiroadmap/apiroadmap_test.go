@@ -111,6 +111,35 @@ var _ = Describe("ApiRoadmap Repository", func() {
 		Expect(stored.Roadmap).To(BeEmpty())
 	})
 
+	It("moves the file ID when the mirror is retargeted to another major version", func() {
+		tm, err := client.Team.Query().Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		_, err = client.Api.Create().
+			SetNamespace("prod--platform--narvi").SetBasePath("/eni/docs/v2").SetVersion("2.0.0").
+			SetOwner(tm).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(repo.Upsert(ctx, data("/eni/docs/v1"))).To(Succeed())
+		Expect(repo.Upsert(ctx, data("/eni/docs/v2"))).To(Succeed())
+
+		v1, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v1")).Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v1.Roadmap).To(BeEmpty())
+		v2, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v2")).Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v2.Roadmap).To(Equal("file-1"))
+	})
+
+	It("keeps the previous assignment while the new target Api is not projected", func() {
+		Expect(repo.Upsert(ctx, data("/eni/docs/v1"))).To(Succeed())
+		err := repo.Upsert(ctx, data("/eni/docs/v2"))
+		Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+
+		v1, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v1")).Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v1.Roadmap).To(Equal("file-1"))
+	})
+
 	It("deletes idempotently when the Api is gone", func() {
 		Expect(repo.Delete(ctx, apiroadmap.Key{BasePath: "/nope", Namespace: "prod--platform--narvi", TeamName: "platform--narvi"})).To(Succeed())
 	})
