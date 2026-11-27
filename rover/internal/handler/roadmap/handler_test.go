@@ -57,7 +57,7 @@ func createRoadmapObject(kind string) *roverv1.Roadmap {
 // newMockContext injects a mock client. If apiSpec is nil, Get returns NotFound.
 // The mirror passed to CreateOrUpdate is written to captured.
 // No call is expected on the client unless the test triggers it, so unexpected calls fail the test.
-func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiRoadmap, anyChanged bool) context.Context {
+func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiRoadmap, anyChanged, allReady bool) context.Context {
 	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
 	testScheme := runtime.NewScheme()
 	_ = roverv1.AddToScheme(testScheme)
@@ -79,6 +79,7 @@ func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiRoad
 			return controllerutil.OperationResultCreated, nil
 		}).Maybe()
 	fakeClient.EXPECT().AnyChanged().Return(anyChanged).Maybe()
+	fakeClient.EXPECT().AllReady().Return(allReady).Maybe()
 
 	return cclient.WithClient(context.Background(), fakeClient)
 }
@@ -109,7 +110,7 @@ var _ = Describe("Roadmap Handler", func() {
 	Context("CreateOrUpdate", func() {
 		It("should mirror a roadmap for an ApiSpecification into an api ApiRoadmap", func() {
 			var mirror *apiapi.ApiRoadmap
-			ctx := newMockContext(apiSpec, &mirror, false)
+			ctx := newMockContext(apiSpec, &mirror, false, true)
 			roadmapObj := createRoadmapObject("ApiSpecification")
 
 			Expect(roadmapHandler.CreateOrUpdate(ctx, roadmapObj)).To(Succeed())
@@ -132,7 +133,19 @@ var _ = Describe("Roadmap Handler", func() {
 
 		It("should report not ready while the mirror is being changed", func() {
 			var mirror *apiapi.ApiRoadmap
-			ctx := newMockContext(apiSpec, &mirror, true)
+			ctx := newMockContext(apiSpec, &mirror, true, true)
+			roadmapObj := createRoadmapObject("ApiSpecification")
+
+			Expect(roadmapHandler.CreateOrUpdate(ctx, roadmapObj)).To(Succeed())
+
+			readyCond := meta.FindStatusCondition(roadmapObj.Status.Conditions, condition.ConditionTypeReady)
+			Expect(readyCond).NotTo(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should report not ready when the mirror is unchanged but blocked", func() {
+			var mirror *apiapi.ApiRoadmap
+			ctx := newMockContext(apiSpec, &mirror, false, false)
 			roadmapObj := createRoadmapObject("ApiSpecification")
 
 			Expect(roadmapHandler.CreateOrUpdate(ctx, roadmapObj)).To(Succeed())
@@ -184,7 +197,7 @@ var _ = Describe("Roadmap Handler", func() {
 
 		It("should be blocked and not mirror if the ApiSpecification does not exist", func() {
 			var mirror *apiapi.ApiRoadmap
-			ctx := newMockContext(nil, &mirror, false)
+			ctx := newMockContext(nil, &mirror, false, true)
 
 			err := roadmapHandler.CreateOrUpdate(ctx, createRoadmapObject("ApiSpecification"))
 

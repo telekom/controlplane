@@ -90,7 +90,7 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 
 	roadmap.Status.ApiRoadmap = *types.ObjectRefFromObject(mirror)
 
-	if c.AnyChanged() {
+	if c.AnyChanged() || !c.AllReady() {
 		roadmap.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "Roadmap updated"))
 		roadmap.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "Roadmap is not ready"))
 		return nil

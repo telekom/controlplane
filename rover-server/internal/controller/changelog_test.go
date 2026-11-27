@@ -224,6 +224,20 @@ var _ = Describe("ApiChangelog Controller", func() {
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
 		})
 
+		It("should reject a changelog whose basePath only matches the ApiSpecification after normalization", func() {
+			changelogReq := api.ApiChangelogUpdateRequest{
+				BasePath: "/eni/Test-Api/v1",
+				Items:    changelogItems,
+			}
+
+			reqBody, _ := json.Marshal(changelogReq)
+			req := httptest.NewRequest(http.MethodPut, "/apichangelogs/eni--hyperion--eni-test-api", bytes.NewReader(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
+
 		It("should reject mismatched basePath and resourceId", func() {
 			changelogReq := api.ApiChangelogUpdateRequest{
 				BasePath: "/eni/different-api/v1",

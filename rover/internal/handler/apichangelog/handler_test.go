@@ -56,7 +56,7 @@ func createApiChangelogObject() *roverv1.ApiChangelog {
 
 // newMockContext injects a mock client. If apiSpec is nil, Get returns NotFound.
 // The mirror passed to CreateOrUpdate is written to captured.
-func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiChangelog, anyChanged bool) context.Context {
+func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiChangelog, anyChanged, allReady bool) context.Context {
 	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
 	testScheme := runtime.NewScheme()
 	_ = roverv1.AddToScheme(testScheme)
@@ -78,6 +78,7 @@ func newMockContext(apiSpec *roverv1.ApiSpecification, captured **apiapi.ApiChan
 			return controllerutil.OperationResultCreated, nil
 		}).Maybe()
 	fakeClient.EXPECT().AnyChanged().Return(anyChanged).Maybe()
+	fakeClient.EXPECT().AllReady().Return(allReady).Maybe()
 
 	return cclient.WithClient(context.Background(), fakeClient)
 }
@@ -108,7 +109,7 @@ var _ = Describe("ApiChangelog Handler", func() {
 	Context("CreateOrUpdate", func() {
 		It("should mirror the changelog into an api ApiChangelog", func() {
 			var mirror *apiapi.ApiChangelog
-			ctx := newMockContext(apiSpec, &mirror, false)
+			ctx := newMockContext(apiSpec, &mirror, false, true)
 			changelogObj := createApiChangelogObject()
 
 			Expect(changelogHandler.CreateOrUpdate(ctx, changelogObj)).To(Succeed())
@@ -132,7 +133,19 @@ var _ = Describe("ApiChangelog Handler", func() {
 
 		It("should report not ready while the mirror is being changed", func() {
 			var mirror *apiapi.ApiChangelog
-			ctx := newMockContext(apiSpec, &mirror, true)
+			ctx := newMockContext(apiSpec, &mirror, true, true)
+			changelogObj := createApiChangelogObject()
+
+			Expect(changelogHandler.CreateOrUpdate(ctx, changelogObj)).To(Succeed())
+
+			readyCond := meta.FindStatusCondition(changelogObj.Status.Conditions, condition.ConditionTypeReady)
+			Expect(readyCond).NotTo(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should report not ready when the mirror is unchanged but blocked", func() {
+			var mirror *apiapi.ApiChangelog
+			ctx := newMockContext(apiSpec, &mirror, false, false)
 			changelogObj := createApiChangelogObject()
 
 			Expect(changelogHandler.CreateOrUpdate(ctx, changelogObj)).To(Succeed())
@@ -160,7 +173,7 @@ var _ = Describe("ApiChangelog Handler", func() {
 
 		It("should be blocked and not mirror if the ApiSpecification does not exist", func() {
 			var mirror *apiapi.ApiChangelog
-			ctx := newMockContext(nil, &mirror, false)
+			ctx := newMockContext(nil, &mirror, false, true)
 
 			err := changelogHandler.CreateOrUpdate(ctx, createApiChangelogObject())
 

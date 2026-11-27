@@ -9,10 +9,12 @@ package apichangelog
 import "github.com/telekom/controlplane/projector/internal/domain/shared"
 
 // Key identifies the Api (base path and owning team) a changelog belongs to.
+// FileID lets a delete find a link that was left on a previous base path by a retarget.
 type Key struct {
 	BasePath  string
 	Namespace string
 	TeamName  string
+	FileID    string
 }
 
 // Data carries the file-manager file ID of an API changelog.

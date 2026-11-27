@@ -177,6 +177,19 @@ var _ = Describe("Roadmap Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
 		})
+		It("should reject a roadmap whose basePath only matches the ApiSpecification after normalization", func() {
+			roadmapReq := api.ApiRoadmapUpdateRequest{
+				BasePath: "/eni/Test-Api/v1",
+				Items:    roadmapItems,
+			}
+
+			reqBody, _ := json.Marshal(roadmapReq)
+			req := httptest.NewRequest(http.MethodPut, "/apiroadmaps/eni--hyperion--eni-test-api", bytes.NewReader(reqBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
 	})
 
 	Context("Delete ApiRoadmap resource", func() {

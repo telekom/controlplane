@@ -53,7 +53,7 @@ var _ = Describe("ApiChangelog Translator", func() {
 	It("derives the delete key from the last known object only", func() {
 		key, err := tr.KeyFromDelete(types.NamespacedName{Name: "eni-docs"}, obj)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(key).To(Equal(apichangelog.Key{BasePath: "/eni/docs/v1", Namespace: "prod--platform--narvi", TeamName: "platform--narvi"}))
+		Expect(key).To(Equal(apichangelog.Key{BasePath: "/eni/docs/v1", Namespace: "prod--platform--narvi", TeamName: "platform--narvi", FileID: "file-1"}))
 
 		_, err = tr.KeyFromDelete(types.NamespacedName{Name: "eni-docs"}, nil)
 		Expect(runtime.IsDeleteKeyLost(err)).To(BeTrue())
@@ -134,6 +134,27 @@ var _ = Describe("ApiChangelog Repository", func() {
 		Expect(repo.Upsert(ctx, data("/eni/docs/v1"))).To(Succeed())
 		err := repo.Upsert(ctx, data("/eni/docs/v2"))
 		Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+
+		v1, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v1")).Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v1.Changelog).To(Equal("file-1"))
+	})
+
+	It("clears a link left on the previous base path when deleted before the new target is projected", func() {
+		Expect(repo.Upsert(ctx, data("/eni/docs/v1"))).To(Succeed())
+		err := repo.Upsert(ctx, data("/eni/docs/v2"))
+		Expect(runtime.IsDependencyMissing(err)).To(BeTrue())
+
+		Expect(repo.Delete(ctx, apichangelog.Key{BasePath: "/eni/docs/v2", Namespace: "prod--platform--narvi", TeamName: "platform--narvi", FileID: "file-1"})).To(Succeed())
+
+		v1, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v1")).Only(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(v1.Changelog).To(BeEmpty())
+	})
+
+	It("does not clear another changelog's file ID on delete", func() {
+		Expect(repo.Upsert(ctx, data("/eni/docs/v1"))).To(Succeed())
+		Expect(repo.Delete(ctx, apichangelog.Key{BasePath: "/eni/docs/v2", Namespace: "prod--platform--narvi", TeamName: "platform--narvi", FileID: "other-file"})).To(Succeed())
 
 		v1, err := client.Api.Query().Where(entapi.BasePathEQ("/eni/docs/v1")).Only(ctx)
 		Expect(err).NotTo(HaveOccurred())

@@ -1944,3 +1944,23 @@
  "type": "BadRequest"
 }
 ---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject a changelog whose basePath only matches the ApiSpecification after normalization - 1]
+{
+ "detail": "ApiSpecification eni-test-api-v1 has basePath /eni/test-api/v1, not /eni/Test-Api/v1",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should reject a roadmap whose basePath only matches the ApiSpecification after normalization - 1]
+{
+ "detail": "ApiSpecification eni-test-api-v1 has basePath /eni/test-api/v1, not /eni/Test-Api/v1",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---

@@ -57,8 +57,12 @@ func requireFileManager(resource string) error {
 func ensureApiSpecificationExists(ctx context.Context, stores *s.Stores, id mapper.ResourceIdInfo, basePath string) error {
 	// id comes from mapper.ParseResourceId, which sets Environment from the authenticated business context.
 	ns := id.Environment + "--" + id.Namespace
-	_, err := stores.APISpecificationStore.Get(ctx, ns, labelutil.NormalizeNameValue(basePath))
+	apiSpec, err := stores.APISpecificationStore.Get(ctx, ns, labelutil.NormalizeNameValue(basePath))
 	if err == nil {
+		// The name is normalized, so different paths (e.g. differing only in case) can map to the same spec.
+		if apiSpec.Spec.BasePath != basePath {
+			return problems.BadRequest("ApiSpecification " + apiSpec.Name + " has basePath " + apiSpec.Spec.BasePath + ", not " + basePath)
+		}
 		return nil
 	}
 	if problems.IsNotFound(err) {

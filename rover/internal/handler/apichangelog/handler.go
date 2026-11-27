@@ -74,7 +74,7 @@ func (h *ApiChangelogHandler) CreateOrUpdate(ctx context.Context, changelog *rov
 
 	changelog.Status.ApiChangelog = *types.ObjectRefFromObject(mirror)
 
-	if c.AnyChanged() {
+	if c.AnyChanged() || !c.AllReady() {
 		changelog.SetCondition(condition.NewProcessingCondition(condition.ReasonProvisioning, "ApiChangelog updated"))
 		changelog.SetCondition(condition.NewNotReadyCondition(condition.ReasonProvisioning, "ApiChangelog is not ready"))
 		return nil

@@ -43,6 +43,7 @@ func (t *Translator) KeyFromObject(obj *apiv1.ApiChangelog) Key {
 		BasePath:  obj.Spec.BasePath,
 		Namespace: obj.Namespace,
 		TeamName:  shared.TeamNameFromNamespace(obj.Namespace),
+		FileID:    obj.Spec.Contents,
 	}
 }
 

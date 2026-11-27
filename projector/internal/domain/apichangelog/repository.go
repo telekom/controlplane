@@ -62,15 +62,21 @@ func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	return nil
 }
 
-// Delete clears the changelog file ID. It is a no-op if the Api no longer exists.
+// Delete clears the changelog file ID from the Api at the key's base path and from any Api still
+// holding the same file ID (left behind by a retarget whose new target was never projected).
+// It is a no-op if no such Api exists.
 func (r *Repository) Delete(ctx context.Context, key Key) error {
 	start := time.Now()
 	defer func() {
 		metrics.DBOperationDuration.WithLabelValues(entityType, metrics.OperationDelete).Observe(time.Since(start).Seconds())
 	}()
 
+	target := entapi.BasePathEQ(key.BasePath)
+	if key.FileID != "" {
+		target = entapi.Or(target, entapi.ChangelogEQ(key.FileID))
+	}
 	_, err := r.client.Api.Update().
-		Where(entapi.NamespaceEQ(key.Namespace), entapi.BasePathEQ(key.BasePath), entapi.HasOwnerWith(team.NameEQ(key.TeamName))).
+		Where(entapi.NamespaceEQ(key.Namespace), target, entapi.HasOwnerWith(team.NameEQ(key.TeamName))).
 		ClearChangelog().
 		Save(ctx)
 	if err != nil {
