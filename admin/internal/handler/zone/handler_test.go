@@ -347,6 +347,19 @@ var _ = Describe("Zone Handler", func() {
 		Expect(realm.Spec.Attributes).To(BeEmpty(), realm.Name)
 	})
 
+	It("configures no claims on the internal (rover) realm", func() {
+		handler := newTestHandler()
+		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())
+
+		internalRealm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.InternalIdentityRealm.K8s(), internalRealm)).To(Succeed())
+		Expect(internalRealm.Spec.Claims).To(BeEmpty())
+
+		zoneRealm := &identityapi.Realm{}
+		Expect(k8sClient.Get(ctx, zone.Status.IdentityRealm.K8s(), zoneRealm)).To(Succeed())
+		Expect(zoneRealm.Spec.Claims).NotTo(BeEmpty())
+	})
+
 	It("overwrites modified realm attributes with the frontendUrl on world zones", func() {
 		handler := newTestHandler()
 		Expect(handler.CreateOrUpdate(newTestContext(zone), zone)).To(Succeed())

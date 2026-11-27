@@ -18,12 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -351,6 +353,68 @@ var _ = Describe("EventConfigHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
+		It("should adopt the leader's inline secret for a rover admin Client when Secret Manager is disabled", func() {
+			secretManagerWasEnabled := config.FeatureSecretManager.IsEnabled()
+			config.SetFeatureEnabled(config.FeatureSecretManager, false)
+			DeferCleanup(func() {
+				config.SetFeatureEnabled(config.FeatureSecretManager, secretManagerWasEnabled)
+			})
+
+			zone := makeReadyZone()
+			roverRealm := makeReadyRealm()
+			roverRealm.Name = "rover"
+			obj.Spec.Local.Admin.Client.Realm = ctypes.ObjectRef{Name: "rover", Namespace: "default"}
+			obj.Spec.Local.Admin.Client.ClientSecret = "local-secret"
+
+			mockScheme()
+			mockGetZone(zone, 1)
+			fakeClient.EXPECT().
+				Get(ctx, k8stypes.NamespacedName{Name: "rover", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
+				Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+					*out.(*identityv1.Realm) = *roverRealm
+				}).
+				Return(nil).Once()
+			mockGetRealm(makeReadyRealm(), 1)
+
+			var createdAdminClient *identityv1.Client
+			fakeClient.EXPECT().
+				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
+				Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+					adminClient := obj.(*identityv1.Client)
+					adminClient.Status.LeaderRef = &ctypes.ObjectRef{Name: "leader", Namespace: "other-env--zone"}
+					Expect(mutate()).To(Succeed())
+					createdAdminClient = adminClient.DeepCopy()
+				}).
+				Return(controllerutil.OperationResultNone, nil).Once()
+			// The leader belongs to another Environment, so it is only visible through the
+			// unscoped Reader and never through the Environment-scoped context client.
+			leader := &identityv1.Client{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "leader",
+					Namespace: "other-env--zone",
+					Labels:    map[string]string{config.EnvironmentLabelKey: "other-env"},
+				},
+				Spec: identityv1.ClientSpec{ClientSecret: "shared-inline-secret"},
+			}
+			readerScheme := runtime.NewScheme()
+			Expect(identityv1.AddToScheme(readerScheme)).To(Succeed())
+			h.Reader = k8sfake.NewClientBuilder().WithScheme(readerScheme).WithObjects(leader).Build()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 1)
+			mockCreateOrUpdateConsumer(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
+			mockListEventConfigs([]eventv1.EventConfig{}, 3)
+			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
+			fakeClient.EXPECT().AllReady().Return(false).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(createdAdminClient).NotTo(BeNil())
+			Expect(createdAdminClient.Spec.ClientSecret).To(Equal("shared-inline-secret"))
+		})
+
 		It("should return BlockedError when Zone is not found", func() {
 			notFoundErr := apierrors.NewNotFound(
 				schema.GroupResource{Group: "admin.cp.ei.telekom.de", Resource: "zones"},

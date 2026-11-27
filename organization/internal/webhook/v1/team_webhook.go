@@ -67,7 +67,7 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, teamObj *organizationv
 		return err
 	}
 
-	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client)
+	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client, env)
 	if err != nil {
 		return err
 	}

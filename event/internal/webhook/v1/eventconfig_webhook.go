@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -27,6 +28,8 @@ import (
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
+const sharedSecretScope = "shared"
+
 var log = logf.Log.WithName("eventconfig-resource")
 
 // SetupEventConfigWebhookWithManager registers the webhook for EventConfig in the manager.
@@ -42,7 +45,7 @@ func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsa
 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones/status,verbs=get
-// +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-event-cp-ei-telekom-de-v1-eventconfig,mutating=true,failurePolicy=fail,sideEffects=NoneOnDryRun,groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=create;update,versions=v1,name=meventconfig-v1.kb.io,admissionReviewVersions=v1
 
 // EventConfigCustomDefaulter struct is responsible for setting default values on the custom resource of the
 // Kind EventConfig when those are created or updated.
@@ -71,6 +74,12 @@ func getOldEventConfig(ctx context.Context) (*eventv1.EventConfig, bool) {
 		return nil, false
 	}
 	return oldObj, true
+}
+
+// isDryRun reports whether the admission request in ctx is a dry-run request.
+func isDryRun(ctx context.Context) bool {
+	req, err := admission.RequestFromContext(ctx)
+	return err == nil && req.DryRun != nil && *req.DryRun
 }
 
 // resolveSecretForUpdate returns the old secret value if the new value is empty and
@@ -108,7 +117,16 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 
 	// Proxy zones have no admin client of their own; they forward config
 	// traffic to their target zone, so no admin secret is onboarded.
-	needsAdminSecret := eventCfg.Spec.Local != nil && !secretsapi.IsRef(eventCfg.Spec.Local.Admin.Client.ClientSecret)
+	roverAdminClient := eventCfg.Spec.Local != nil &&
+		eventCfg.Spec.Local.Admin.Client.Realm.Name == util.RoverRealmName
+	needsAdminSecret := eventCfg.Spec.Local != nil &&
+		!secretsapi.IsRef(eventCfg.Spec.Local.Admin.Client.ClientSecret) &&
+		!roverAdminClient
+	if roverAdminClient {
+		if roverErr := d.onboardRoverAdminSecret(ctx, envName, zoneName, adminSecretPath, &eventCfg.Spec.Local.Admin.Client.ClientSecret); roverErr != nil {
+			return errors.Wrap(roverErr, "failed to onboard shared rover admin client secret")
+		}
+	}
 	if needsAdminSecret {
 		var secretValue string
 		secretValue, err = secretValueOrGenerate(eventCfg.Spec.Local.Admin.Client.ClientSecret)
@@ -159,6 +177,86 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 	return nil
 }
 
+func (d *EventConfigCustomDefaulter) onboardRoverAdminSecret(ctx context.Context, envName, zoneName, path string, secret *string) error {
+	sharedRef := sharedSecretRef(path)
+	if secretsapi.IsRef(*secret) {
+		if *secret == sharedRef {
+			return nil
+		}
+		if !isEnvironmentSecretRef(*secret, envName, path) {
+			return nil
+		}
+		return d.migrateRoverAdminSecret(ctx, zoneName, path, *secret, sharedRef, secret)
+	}
+
+	var secretValue string
+	if *secret == "" {
+		_, err := d.secretManager.Get(ctx, sharedRef)
+		if err == nil {
+			*secret = sharedRef
+			log.V(1).Info("Reusing shared rover Event admin client secret", "secretPath", path)
+			return nil
+		}
+		if !errors.Is(err, secretsapi.ErrNotFound) {
+			return errors.Wrap(err, "failed to read shared rover Event admin client secret")
+		}
+	}
+
+	secretValue, err := secretValueOrGenerate(*secret)
+	if err != nil {
+		return errors.Wrap(err, "failed to determine rover Event admin client secret")
+	}
+	if _, err := d.secretManager.UpsertEnvironment(ctx, sharedSecretScope,
+		secretsapi.WithMergeStrategy(),
+		secretsapi.WithSecretValue(path, secretValue)); err != nil {
+		return errors.Wrap(err, "failed to store shared rover Event admin client secret")
+	}
+	*secret = sharedRef
+	log.Info("Stored shared rover Event admin client secret", "secretPath", path, "zone", zoneName)
+	return nil
+}
+
+func (d *EventConfigCustomDefaulter) migrateRoverAdminSecret(ctx context.Context, zoneName, path, existingRef, sharedRef string, secret *string) error {
+	legacyValue, err := d.secretManager.Get(ctx, existingRef)
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve environment-scoped rover Event admin client secret")
+	}
+	sharedValue, err := d.secretManager.Get(ctx, sharedRef)
+	if err == nil {
+		if sharedValue != legacyValue {
+			log.Info("Environment-scoped rover Event admin client secret differs from shared value; retaining existing reference",
+				"secretPath", path, "zone", zoneName)
+			return nil
+		}
+		*secret = sharedRef
+		return nil
+	}
+	if !errors.Is(err, secretsapi.ErrNotFound) {
+		return errors.Wrap(err, "failed to read shared rover Event admin client secret")
+	}
+
+	if _, err := d.secretManager.UpsertEnvironment(ctx, sharedSecretScope,
+		secretsapi.WithMergeStrategy(),
+		secretsapi.WithSecretValue(path, legacyValue)); err != nil {
+		return errors.Wrap(err, "failed to seed shared rover Event admin client secret")
+	}
+	*secret = sharedRef
+	return nil
+}
+
+func sharedSecretRef(path string) string {
+	return secretsapi.ToRef(sharedSecretScope + ":::" + path + ":")
+}
+
+func isEnvironmentSecretRef(ref, envName, path string) bool {
+	id, ok := secretsapi.FromRef(ref)
+	if !ok {
+		return false
+	}
+	scopedPath, _ := secretsapi.FromRef(secretsapi.ToRef(envName + ":::" + path + ":"))
+	return strings.HasPrefix(id, scopedPath) && !strings.Contains(strings.TrimPrefix(id, scopedPath), ":")
+}
+
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind EventConfig.
 func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *eventv1.EventConfig) (err error) {
 	if controller.IsBeingDeleted(eventCfg) {
@@ -206,6 +304,11 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
+		if isDryRun(ctx) {
+			// Onboarding writes to the Secret-Manager; a dry-run request must not have side effects.
+			log.Info("Dry-run request, skipping onboarding of secrets for EventConfig")
+			return nil
+		}
 		log.Info("Secret-Manager is enabled, onboarding secrets for EventConfig")
 
 		if d.secretManager == nil {

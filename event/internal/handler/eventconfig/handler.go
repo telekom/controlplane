@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -30,13 +31,19 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 const tokenUrlSuffix = "/protocol/openid-connect/token"
 
 var _ handler.Handler[*eventv1.EventConfig] = &EventConfigHandler{}
 
-type EventConfigHandler struct{}
+// EventConfigHandler reconciles EventConfigs.
+type EventConfigHandler struct {
+	// Reader is an unscoped reader for objects of other Environments, such as the leader
+	// of a shared rover Event admin Client. The context client only reads the current Environment.
+	Reader client.Reader
+}
 
 func effectiveEnvironmentName(ctx context.Context, overwrite string) string {
 	if overwrite != "" {
@@ -263,7 +270,7 @@ func (h *EventConfigHandler) resolveAndCreateAdminClient(ctx context.Context, ob
 		return nil, "", ctrlerrors.BlockedErrorf("failed to construct token URL for identity Realm %s: %v", realm.Name, joinErr)
 	}
 
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, clientCfg.Realm.Name == util.RoverRealmName)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to create admin identity Client")
 	}
@@ -300,7 +307,7 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 		return nil, errors.Wrapf(err, "failed to get identity Realm %q", clientCfg.Realm.String())
 	}
 
-	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg)
+	identityClient, err := h.createIdentityClient(ctx, obj, &clientCfg, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create mesh identity Client")
 	}
@@ -309,7 +316,7 @@ func (h *EventConfigHandler) resolveAndCreateMeshClient(ctx context.Context, obj
 }
 
 // createIdentityClient is a utility function to create or update an identityv1.Client resource for a given EventConfig and ClientConfig.
-func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig) (*identityv1.Client, error) {
+func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig, sharedRoverAdmin bool) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	identityClient := &identityv1.Client{
@@ -334,10 +341,18 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 		}
 		identityClient.Annotations[identityv1.DisableSecretRotationAnnotation] = "true"
 
+		clientSecret := clientCfg.ClientSecret
+		if sharedRoverAdmin && !config.FeatureSecretManager.IsEnabled() {
+			var err error
+			if clientSecret, err = h.inlineRoverAdminSecret(ctx, identityClient, clientSecret); err != nil {
+				return err
+			}
+		}
+
 		identityClient.Spec = identityv1.ClientSpec{
 			Realm:        &clientCfg.Realm,
 			ClientId:     clientCfg.ClientId,
-			ClientSecret: clientCfg.ClientSecret,
+			ClientSecret: clientSecret,
 		}
 		return nil
 	}
@@ -348,6 +363,50 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 	}
 
 	return identityClient, nil
+}
+
+// inlineRoverAdminSecret returns the inline secret of a shared rover Event admin Client when
+// Secret-Manager is disabled: a follower adopts its leader's secret, an existing Client keeps
+// its own, and a new Client uses configured.
+func (h *EventConfigHandler) inlineRoverAdminSecret(ctx context.Context, identityClient *identityv1.Client, configured string) (string, error) {
+	clientSecret := configured
+	switch {
+	case identityClient.IsFollower():
+		leaderSecret, err := h.roverAdminLeaderSecret(ctx, identityClient.Status.LeaderRef)
+		if err != nil {
+			return "", err
+		}
+		clientSecret = leaderSecret
+	case identityClient.Spec.ClientSecret != "":
+		clientSecret = identityClient.Spec.ClientSecret
+	}
+	if secretsapi.IsRef(clientSecret) {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client has a Secret-Manager reference while Secret-Manager is disabled")
+	}
+	return clientSecret, nil
+}
+
+// roverAdminLeaderSecret reads the inline secret of the leader Client, which may belong to
+// another Environment and is therefore read with the unscoped Reader.
+func (h *EventConfigHandler) roverAdminLeaderSecret(ctx context.Context, leaderRef *types.ObjectRef) (string, error) {
+	if h.Reader == nil {
+		return "", errors.New("an unscoped reader is required to read the rover Event admin Client leader")
+	}
+	leader := &identityv1.Client{}
+	// audit:ignore 13-environment-isolation/unscoped-get necessary for reading the rover Event admin Client leader across environments
+	if err := h.Reader.Get(ctx, leaderRef.K8s(), leader); err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s is not found", leaderRef.String())
+		}
+		return "", errors.Wrapf(err, "failed to get rover Event admin Client leader %s", leaderRef.String())
+	}
+	if secretsapi.IsRef(leader.Spec.ClientSecret) {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has a Secret-Manager reference while Secret-Manager is disabled", leaderRef.String())
+	}
+	if leader.Spec.ClientSecret == "" {
+		return "", ctrlerrors.BlockedErrorf("rover Event admin Client leader %s has no client secret", leaderRef.String())
+	}
+	return leader.Spec.ClientSecret, nil
 }
 
 // createCallbackConsumer registers the callback identity with the zone's gateway.

@@ -38,6 +38,10 @@ If `realmName` differs from the environment name, set [`spec.overwriteEnvironmen
 Create the Kubernetes namespace before applying the Environment resource, or use a namespace provisioning tool that handles this automatically.
 :::
 
+:::warning
+The name `shared` is reserved for credentials shared across Environments and must not be used for an Environment. See [Sharing an identity provider across environments](#sharing-an-identity-provider-across-environments).
+:::
+
 ## Zones
 
 A Zone represents a physical or logical deployment target within an environment. Each zone has its own gateway and identity provider configuration, and the Control Plane creates a dedicated namespace for the zone's resources.
@@ -142,6 +146,75 @@ Without `issuerHostname`, the issuer is discovered by requesting `<base>/realms/
 
 :::note Upgrading
 Previously, World zones without `issuerHostname` got a `frontendUrl` derived from the host of `admin.url`. After the upgrade the Admin operator removes it from the Realm spec, and the Identity operator removes it from Keycloak only if it is listed in the Realm's `status.managedAttributes`. A `frontendUrl` configured directly in Keycloak and never managed by the controller is left unchanged and still determines the issuer. To keep the previous issuer, set `issuerHostname` explicitly to the former admin host.
+:::
+
+### Sharing an identity provider across environments
+
+Zones in different Environments can use the same Keycloak instance when their identity provider configurations use the same Admin URL. The Control Plane treats Realms with the same name as one shared realm, and clients with the same ID in that realm as one shared client.
+
+```mermaid
+flowchart TD
+    A["IdentityProviders use the same exact admin.url"] --> B["Matching Realm names share a Keycloak realm"]
+    B --> C["Clients with matching IDs share a Keycloak client"]
+    C --> D{"Does a manager already exist?"}
+    D -->|No| E["The oldest live Realm or Client becomes manager"]
+    D -->|Yes| F["A newly added Realm joins as a follower"]
+    E --> G["The manager controls the shared Keycloak object"]
+    F --> G
+    G --> H["Realm followers mirror issuer and readiness; followers do not write to Keycloak"]
+    H --> I{"Is the manager deleted?"}
+    I -->|No| J["Keep the manager; retain the object while owners remain"]
+    I -->|Yes| K{"Are live followers left?"}
+    K -->|Yes| L["The oldest live follower becomes manager"]
+    L --> G
+    K -->|No| M["Remove the Keycloak object after its last live owner is removed"]
+```
+
+Zones configured with the exact same Keycloak Admin URL share the internal `rover` realm, its gateway admin client (`rover`), and its Event admin client (default ID `horizon-quasar`).
+
+```mermaid
+flowchart TD
+    A["Zones use the same Keycloak Admin URL"] --> B["Share the internal rover realm"]
+    B --> C["Share the gateway admin and Event admin clients"]
+    C --> D["Handle credentials for each client separately"]
+    D --> E{"Is Secret-Manager enabled?"}
+    E -->|No| F["One Zone supplies the credential; other Zones use it"]
+    E -->|Yes| G{"Does a shared credential already exist?"}
+    G -->|Yes| H{"Does an existing Zone credential differ?"}
+    H -->|Yes| I["Keep the existing credential and record a warning"]
+    H -->|No| J["Use the shared credential"]
+    G -->|No| K{"Does a Zone already have a credential?"}
+    K -->|Yes| L["Use its value for the shared credential"]
+    K -->|No| M["Create a shared credential"]
+    L --> N["Use the shared credential"]
+    M --> N
+```
+
+With Secret-Manager enabled, the shared credentials use these paths:
+
+- Gateway admin client: `shared:::zones/<zone>/admin/rover/clientSecret`
+- Event admin client: `shared:::zones/<zone>/event/admin/clientSecret`
+
+With the Kubernetes Secret-Manager backend, Secret-Manager creates the `shared` namespace when the first shared credential is stored.
+
+Mesh clients are unchanged: they keep their configured IDs and use the Zone's default realm.
+
+The internal `rover` realm has no token claims. The Zone's claims (`originZone`, `originStargate`, `clientId`) are configured only on its default realm, so one Environment's values never appear in another Environment's tokens.
+
+:::warning Zones on one Keycloak must have the same name
+Use the same Zone name in every Environment that shares a Keycloak. The shared rover and Event admin clients use credentials stored under that name. Different names point to different credentials, so the platform cannot keep the shared clients in sync.
+:::
+
+In the shared realm, SFTP API clients use the ID `sftp-api-<zone>`, so the SFTP API clients of same-named Zones across Environments share one Keycloak client. Their credentials are onboarded per Environment at `<environment>:::zones/<zone>/file/clientSecret`, so a follower SFTP API client reports `Ready=False` with `client secret differs from leader` until its resolved secret matches the leader's. Event admin clients also share one ID across Environments. Event mesh clients keep their configured IDs in each Zone's default realm.
+
+The elected Realm owner supplies the shared settings. Those settings can affect access across Environments.
+
+IdentityProviders share a leader-election group only when their admin URLs are identical character for character. Differences in letter case, port, whitespace, or trailing slash create separate groups, even if the URLs reach the same Keycloak instance. Set the same `admin.url` value on each IdentityProvider you want to share.
+
+Zones with the same name on different Keycloak instances also use the same shared rover secret path and receive the same credential. See [Shared Realms and Leader Election](../architecture/identity.mdx#shared-realms-and-leader-election) and [rover client lifecycle](../architecture/admin.mdx#identity-realms-and-the-rover-client).
+
+:::warning Reserved name `shared`
+Do not name an Environment `shared`. That name is reserved for rover credentials used across Environments. Using it for an Environment can cause its rover secret references to be treated as shared credentials. The platform does not prevent this name, so choose another one.
 :::
 
 ### Traffic Types

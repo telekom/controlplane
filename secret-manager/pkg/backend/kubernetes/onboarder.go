@@ -67,6 +67,10 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
 
+	if err := ensureNamespace(ctx, k.client, env); err != nil {
+		return nil, errors.Wrap(err, "failed to ensure environment namespace")
+	}
+
 	obj := NewSecretObj(env, backend.NoTeam, backend.NoApp)
 	err = retry.OnError(retry.DefaultRetry, isRetryableConflict, func() error {
 		_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, func() error {
@@ -92,6 +96,23 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 	backend.MergeSecretRefs(New, secretRefs, env, backend.NoTeam, backend.NoApp, options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
+}
+
+func ensureNamespace(ctx context.Context, c client.Client, name string) error {
+	namespace := &corev1.Namespace{}
+	err := c.Get(ctx, client.ObjectKey{Name: name}, namespace)
+	if err == nil {
+		return nil
+	}
+	if !apierrors.IsNotFound(err) {
+		return errors.Wrap(err, "failed to read namespace")
+	}
+	if err := c.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+	}); err != nil && !apierrors.IsAlreadyExists(err) {
+		return errors.Wrap(err, "failed to create namespace")
+	}
+	return nil
 }
 
 func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {

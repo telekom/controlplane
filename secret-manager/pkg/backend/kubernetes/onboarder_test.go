@@ -178,6 +178,10 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
 
+			namespace := &corev1.Namespace{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: env}, namespace)
+			Expect(err).ToNot(HaveOccurred())
+
 			// Verify that the environment secret was created
 			secret := &corev1.Secret{}
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: "secrets", Namespace: env}, secret)

@@ -108,7 +108,7 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapSubResourceToZone),
 			builder.WithPredicates(cc.Count("zone", cc.RoleWatches, predicate.ResourceVersionChangedPredicate{}, AdminDomainPredicate, cc.SkipInitialListPredicate{}))).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: 1,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
