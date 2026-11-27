@@ -33,8 +33,8 @@ type Module interface {
 }
 
 // ModuleDeps carries shared infrastructure injected into every module at
-// registration. All fields are created once in the bootstrap and shared
-// across all modules.
+// registration. All fields except DeleteCache are created once in the
+// bootstrap and shared across all modules; DeleteCache is allocated per module.
 type ModuleDeps struct {
 	DeleteCache *infrastructure.DeleteCache
 	EntClient   *ent.Client

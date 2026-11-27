@@ -44,8 +44,9 @@ type ApiChangelogStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // ApiChangelog is the Schema for the apichangelogs API.
-// Once the described Api exists in the same namespace, the Api becomes the owner
-// of the ApiChangelog, so that deleting the Api also deletes the ApiChangelog.
+// Once the described Api exists in the same namespace, the Api becomes an additional owner
+// of the ApiChangelog. The object that created the ApiChangelog stays an owner too, so
+// deleting the Api does not delete the ApiChangelog while that owner exists.
 type ApiChangelog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -223,8 +223,18 @@ var _ = Describe("Roadmap Handler", func() {
 			Expect(roadmapHandler.Delete(ctx, createRoadmapObject("ApiSpecification"))).To(HaveOccurred())
 		})
 
-		It("should not touch the client for a roadmap that is not for an ApiSpecification", func() {
-			Expect(roadmapHandler.Delete(context.Background(), createRoadmapObject("EventSpecification"))).To(Succeed())
+		It("should still delete the mirror when the roadmap was switched to another specification kind", func() {
+			var deleted *apiapi.ApiRoadmap
+			ctx := newDeleteContext(nil, &deleted)
+			roadmapObj := createRoadmapObject("EventSpecification")
+			roadmapObj.Status.ApiRoadmap = *types.ObjectRefFromObject(&apiapi.ApiRoadmap{
+				ObjectMeta: metav1.ObjectMeta{Name: roadmapObj.Name, Namespace: roadmapObj.Namespace},
+			})
+
+			Expect(roadmapHandler.Delete(ctx, roadmapObj)).To(Succeed())
+
+			Expect(deleted).NotTo(BeNil())
+			Expect(deleted.Name).To(Equal(roadmapObj.Name))
 		})
 	})
 })

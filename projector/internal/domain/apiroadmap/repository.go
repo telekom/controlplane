@@ -32,6 +32,8 @@ func NewRepository(client *ent.Client) *Repository {
 
 // Upsert sets the roadmap file ID on the Api. If the Api has not been
 // projected yet, it returns ErrDependencyMissing so the CR is retried.
+// The resource name is derived from the base path (enforced by the rover-server), so a
+// different base path is a new resource and never retargets an existing one.
 func (r *Repository) Upsert(ctx context.Context, data *Data) error {
 	start := time.Now()
 	defer func() {

@@ -45,7 +45,8 @@ type ReadOnlyReconciler[T client.Object] struct {
 // DeleteCacheReader is the subset of DeleteCache that the reconciler needs.
 // This avoids importing the infrastructure package directly.
 type DeleteCacheReader interface {
-	LoadAndDelete(key client.ObjectKey) client.Object
+	Load(key client.ObjectKey) client.Object
+	Delete(key client.ObjectKey)
 }
 
 // NewReadOnlyReconciler creates a ReadOnlyReconciler wired to the given
@@ -101,7 +102,7 @@ func (r *ReadOnlyReconciler[T]) reconcileInner(ctx context.Context, req ctrl.Req
 
 	if apierrors.IsNotFound(err) {
 		logger.V(1).Info("object not found, treating as delete")
-		lastKnown := r.deleteCache.LoadAndDelete(req.NamespacedName)
+		lastKnown := r.deleteCache.Load(req.NamespacedName)
 		var typed T
 		if lastKnown != nil {
 			var ok bool
@@ -120,14 +121,18 @@ func (r *ReadOnlyReconciler[T]) reconcileInner(ctx context.Context, req ctrl.Req
 				logger.Info("delete key lost, cannot remove from database",
 					"key", req.NamespacedName,
 					"reason", delErr.Error())
+				// Nothing can be derived from the cache, so retrying cannot help.
+				r.deleteCache.Delete(req.NamespacedName)
 				return ctrl.Result{}, metrics.OutcomeDeleteKeyLost, nil
 			}
 
+			// The cache entry is kept so that the retry still has the last-known object.
 			logger.Error(delErr, "delete failed")
 
 			return ctrl.Result{}, metrics.OutcomeError, delErr
 		}
 
+		r.deleteCache.Delete(req.NamespacedName)
 		logger.V(1).Info("delete successful")
 		return ctrl.Result{}, metrics.OutcomeDeleteSuccess, nil
 	}

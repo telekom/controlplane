@@ -103,11 +103,10 @@ func (h *RoadmapHandler) CreateOrUpdate(ctx context.Context, roadmap *roverv1.Ro
 
 // Delete removes the mirror explicitly: the api controller adds the Api as a second owner,
 // so garbage collection alone would keep the mirror alive after the rover object is gone.
+// The mirror is deleted regardless of the current specification kind, because a roadmap that
+// was switched away from an ApiSpecification may not have been cleaned up yet.
 // Files in file-manager are cleaned up by the REST API layer, not by the operator.
 func (h *RoadmapHandler) Delete(ctx context.Context, roadmap *roverv1.Roadmap) error {
-	if roadmap.Spec.SpecificationRef.Kind != apiSpecificationKind {
-		return nil
-	}
 	return h.deleteMirror(ctx, roadmap)
 }
 

@@ -44,8 +44,9 @@ type ApiRoadmapStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // ApiRoadmap is the Schema for the apiroadmaps API.
-// Once the described Api exists in the same namespace, the Api becomes the owner
-// of the ApiRoadmap, so that deleting the Api also deletes the ApiRoadmap.
+// Once the described Api exists in the same namespace, the Api becomes an additional owner
+// of the ApiRoadmap. The object that created the ApiRoadmap stays an owner too, so
+// deleting the Api does not delete the ApiRoadmap while that owner exists.
 type ApiRoadmap struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

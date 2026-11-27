@@ -182,18 +182,16 @@ func Run() error {
 	}
 	defer edgeCache.Close()
 
-	deleteCache := &infrastructure.DeleteCache{}
 	idResolver := infrastructure.NewIDResolver(entClient, edgeCache,
 		infrastructure.WithNegativeCacheTTL(cfg.IDResolverNegTTL),
 		infrastructure.WithSingleflight(cfg.IDResolverSingleflight),
 	)
 
 	deps := module.ModuleDeps{
-		DeleteCache: deleteCache,
-		EntClient:   entClient,
-		EdgeCache:   edgeCache,
-		IDResolver:  idResolver,
-		Config:      cfg,
+		EntClient:  entClient,
+		EdgeCache:  edgeCache,
+		IDResolver: idResolver,
+		Config:     cfg,
 	}
 
 	// --- Controller Manager ---
@@ -211,8 +209,12 @@ func Run() error {
 	}
 
 	// --- Register Modules ---
+	// Each module gets its own delete cache: it is keyed by namespace/name, and
+	// different kinds (e.g. ApiChangelog and ApiRoadmap) can share the same name.
 	for _, m := range modules {
-		if err = m.Register(mgr, deps); err != nil {
+		moduleDeps := deps
+		moduleDeps.DeleteCache = &infrastructure.DeleteCache{}
+		if err = m.Register(mgr, moduleDeps); err != nil {
 			return fmt.Errorf("register %s: %w", m.Name(), err)
 		}
 		setupLog.Info("module registered", "module", m.Name())

@@ -30,7 +30,7 @@ The server also normalizes the environment, team, and group labels to lowercase,
 
 `ApiChangelog` and `Roadmap` always refer to an existing `ApiSpecification` by base path. Apply the `ApiSpecification` first: the Rover Server rejects a changelog or roadmap without it (`roverctl apply -f <dir>` applies specifications first), and the controllers stay blocked until it exists.
 
-The Rover controllers mirror each changelog and every roadmap of an `ApiSpecification` into an `ApiChangelog` or `ApiRoadmap` of the API domain, so that the Projector can expose them. Removing a changelog or roadmap removes only its mirror, never the `Api`. Removing the `Api` removes the mirrors. A roadmap of an `EventSpecification` is not mirrored.
+The Rover controllers mirror each changelog and every roadmap of an `ApiSpecification` into an `ApiChangelog` or `ApiRoadmap` of the API domain, so that the Projector can expose them. Removing a changelog or roadmap removes its mirror, and the `Api` is never affected. Removing the `Api` does not remove the mirrors: they stay as long as the changelog or roadmap exists in Rover, and link to the `Api` again once an `Api` with that base path reappears. The name of a changelog or roadmap is derived from its base path, so a different base path (for example a new major version) is a new resource, not a retarget of the existing one. A roadmap of an `EventSpecification` is not mirrored.
 
 The Rover Server validates changelog items: `date` is `yyyy-MM-dd`, `version` is a semantic version (`MAJOR.MINOR.PATCH`), and `description` is not empty. The items are stored in the File Manager, so applying a changelog or roadmap requires the File Manager to be enabled.
 

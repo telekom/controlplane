@@ -41,9 +41,12 @@ func FindApiByBasePath(ctx context.Context, c client.Reader, namespace, basePath
 	return &items[0], nil
 }
 
-// EnsureApiOwner makes the Api that has the given base path (if it exists in the namespace of obj)
-// an owner of obj, so that deleting the Api garbage-collects obj. The reverse does not hold:
-// deleting obj never affects the Api. Returns the Api, or nil if none exists (yet).
+// EnsureApiOwner adds the Api that has the given base path (if it exists in the namespace of obj)
+// as an additional owner of obj. The Api is not the only owner: the object that created obj
+// stays an owner as well, and Kubernetes garbage-collects an object only once all of its owners
+// are gone. Deleting the Api therefore does not delete obj while its other owner exists.
+// The reverse does not hold either: deleting obj never affects the Api.
+// Returns the Api, or nil if none exists (yet).
 //
 // A successful metadata update refreshes obj from the server, so callers must set
 // status conditions after calling this function.
