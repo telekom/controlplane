@@ -1,3 +1,12 @@
+## [0.49.1](https://github.com/telekom/controlplane/compare/v0.49.0...v0.49.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **admin,organization:** merge namespace labels instead of replacing them ([#885](https://github.com/telekom/controlplane/issues/885)) ([d519d3e](https://github.com/telekom/controlplane/commit/d519d3e3bc06963539a91a28d961bf8cb4b284b6))
+* **common-server:** make FileAccessToken safe for concurrent use ([#884](https://github.com/telekom/controlplane/issues/884)) ([14d7cd4](https://github.com/telekom/controlplane/commit/14d7cd4f9bcd18c1d42bf716255a0afd74fdfa35))
+* **deps:** bump OpenTelemetry Go to v1.47.0 for GO-2026-6974 ([#882](https://github.com/telekom/controlplane/issues/882)) ([00e8427](https://github.com/telekom/controlplane/commit/00e8427990682c80835ac4d43fbae24e1e893a60))
+
 # [0.49.0](https://github.com/telekom/controlplane/compare/v0.48.4...v0.49.0) (2026-11-24)
 
 
