@@ -5,18 +5,20 @@
 package agentcard
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	agenticv1 "github.com/telekom/controlplane/agentic/api/v1"
+	"github.com/telekom/controlplane/agentic/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -34,7 +36,8 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 	// List all AgentCards with the same basePath
 	cardList := &agenticv1.AgentCardList{}
 	if err := c.List(ctx, cardList, client.MatchingLabels{
-		agenticv1.BasePathLabelKey: labelutil.NormalizeLabelValue(obj.Spec.BasePath),
+		cconfig.EnvironmentLabelKey: obj.Labels[cconfig.EnvironmentLabelKey],
+		agenticv1.BasePathLabelKey:  labelutil.NormalizeLabelValue(obj.Spec.BasePath),
 	}); err != nil {
 		return errors.Wrapf(err, "failed to list AgentCards for basePath %q", obj.Spec.BasePath)
 	}
@@ -51,50 +54,67 @@ func (h *AgentCardHandler) CreateOrUpdate(ctx context.Context, obj *agenticv1.Ag
 	}
 
 	// Sort all candidates by creation timestamp (oldest-wins).
-	// Namespace as tiebreaker for equal timestamps ensures deterministic ordering.
+	// Namespace, name, and kind tiebreakers ensure deterministic ordering for equal timestamps.
 	slices.SortStableFunc(cardList.Items, func(a, b agenticv1.AgentCard) int {
-		c := a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
-		if c == 0 {
-			return cmp.Compare(a.GetNamespace(), b.GetNamespace())
-		}
-		return c
+		return util.CompareServerRegistrations(&a, &b)
 	})
 
 	activeCard := &cardList.Items[0]
 
+	peer, err := util.FindOldestPeerRegistration(ctx, obj)
+	if err != nil {
+		return errors.Wrap(err, "failed to find competing McpServers")
+	}
+	var winner client.Object = activeCard
 	if ctypes.Equals(activeCard, obj) {
-		obj.Status.Active = true
-		obj.SetCondition(condition.NewReadyCondition("AgentCardActive", "AgentCard is active"))
-		obj.SetCondition(condition.NewDoneProcessingCondition("AgentCard is processed"))
-		logger.Info("AgentCard is processed")
-	} else {
-		obj.Status.Active = false
-
-		if obj.Spec.BasePath == activeCard.Spec.BasePath {
-			// Exact same basePath — another AgentCard is older
-			msg := condition.NewWaitingForTakeoverMessage(
-				"AgentCard", condition.ConflictIdentifierBasePath, obj.Spec.BasePath,
-				organizationv1.TeamNameFromNamespace(activeCard.Namespace), condition.NoApplication)
-			obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
-			obj.SetCondition(condition.NewBlockedCondition(msg))
-			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath is already active.")
-		} else {
-			// Case conflict (e.g. /MyAgent vs /myagent)
-			obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotActive", "AgentCard is not active due to case conflict"))
-			obj.SetCondition(condition.NewBlockedCondition(
-				"AgentCard is blocked, another AgentCard with the same BasePath but different case is active. " +
-					"Please resolve the conflict by changing the BasePath of one of the AgentCards.",
-			))
-			logger.Info("AgentCard is blocked, another AgentCard with the same BasePath but different case is already active.")
-		}
+		winner = obj
+	}
+	if peer != nil && util.CompareServerRegistrations(peer, winner) < 0 {
+		winner = peer
 	}
 
+	if winner != obj {
+		obj.Status.Active = false
+		winnerPath, err := util.ServerRegistrationBasePath(winner)
+		if err != nil {
+			return errors.Wrap(err, "failed to get winning registration basePath")
+		}
+		if winnerPath != obj.Spec.BasePath {
+			conflict := "normalized basePath conflict"
+			if strings.EqualFold(winnerPath, obj.Spec.BasePath) {
+				conflict = "basePath case conflict"
+			}
+			msg := fmt.Sprintf("AgentCard is blocked due to a %s: %s with basePath %q has the same normalized basePath as %q. Please change one of the basePaths.",
+				conflict, util.ServerRegistrationKind(winner), winnerPath, obj.Spec.BasePath)
+			obj.SetCondition(condition.NewNotReadyCondition("AgentCardNotActive", msg))
+			obj.SetCondition(condition.NewBlockedCondition(msg))
+			logger.Info("AgentCard is blocked by a conflicting registration",
+				"conflictingKind", util.ServerRegistrationKind(winner), "basePath", winnerPath)
+			return nil
+		}
+		msg := condition.NewWaitingForTakeoverMessage(
+			util.ServerRegistrationKind(winner),
+			condition.ConflictIdentifierBasePath,
+			obj.Spec.BasePath,
+			organizationv1.TeamNameFromNamespace(winner.GetNamespace()),
+			condition.NoApplication,
+		)
+		obj.SetCondition(condition.NewNotReadyCondition(condition.ReasonPreconditionNotMet, msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg))
+		logger.Info("AgentCard is blocked by an older registration",
+			"conflictingKind", util.ServerRegistrationKind(winner), "basePath", winnerPath)
+		return nil
+	}
+
+	obj.Status.Active = true
+	obj.SetCondition(condition.NewReadyCondition("AgentCardActive", "AgentCard is active"))
+	obj.SetCondition(condition.NewDoneProcessingCondition("AgentCard is processed"))
+	logger.Info("AgentCard is processed")
 	return nil
 }
 
 func (h *AgentCardHandler) Delete(ctx context.Context, obj *agenticv1.AgentCard) error {
 	// No owned resources to clean up.
-	// Other AgentCards for the same basePath will be re-reconciled via
-	// MapAgentCardToAgentCard watch, allowing standby to become active.
+	// McpServers and AgentCards for the same basePath are re-reconciled by their controller watches.
 	return nil
 }

@@ -114,8 +114,6 @@ func (r *AgenticExposureReconciler) MapMcpServerToAgenticExposure(ctx context.Co
 }
 
 // MapAgenticExposureToAgenticExposure enqueues other AgenticExposures with the same basePath.
-//
-//nolint:dupl // parallel structure with MapMcpServerToMcpServer; operates on different types
 func (r *AgenticExposureReconciler) MapAgenticExposureToAgenticExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	exposure, ok := obj.(*agenticv1.AgenticExposure)
 	if !ok {

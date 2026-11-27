@@ -20,6 +20,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,7 +34,8 @@ func newMcpServer(name, basePath string, uid types.UID, creationTime time.Time) 
 			UID:               uid,
 			CreationTimestamp: metav1.NewTime(creationTime),
 			Labels: map[string]string{
-				agenticv1.BasePathLabelKey: basePath,
+				cconfig.EnvironmentLabelKey: "default",
+				agenticv1.BasePathLabelKey:  basePath,
 			},
 		},
 		Spec: agenticv1.McpServerSpec{
@@ -42,6 +44,15 @@ func newMcpServer(name, basePath string, uid types.UID, creationTime time.Time) 
 			Name:     "Test MCP Server",
 		},
 	}
+}
+
+func mockListAgentCards(fakeClient *fakeclient.MockJanitorClient, ctx context.Context, items ...agenticv1.AgentCard) {
+	fakeClient.EXPECT().
+		List(ctx, mock.AnythingOfType("*v1.AgentCardList"), mock.Anything).
+		Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+			*list.(*agenticv1.AgentCardList) = agenticv1.AgentCardList{Items: items}
+		}).
+		Return(nil)
 }
 
 var _ = Describe("McpServerHandler", func() {
@@ -73,6 +84,25 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(err.Error()).To(ContainSubstring("connection refused"))
 		})
 
+		It("should scope McpServer candidates to the object's environment", func() {
+			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.MatchedBy(func(option client.ListOption) bool {
+					matchingLabels, ok := option.(client.MatchingLabels)
+					return ok && matchingLabels[cconfig.EnvironmentLabelKey] == "default"
+				})).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{}
+				}).
+				Return(nil)
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Status.Active).To(BeFalse())
+		})
+
 		It("should set Active=true when no other McpServer exists for basePath", func() {
 			obj := newMcpServer("mcp-1", "/mcp/weather/v1", "uid-1", time.Now())
 
@@ -84,6 +114,7 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -110,6 +141,7 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
@@ -122,7 +154,8 @@ var _ = Describe("McpServerHandler", func() {
 			Expect(readyCond.Reason).To(Equal(condition.ReasonPreconditionNotMet))
 			Expect(readyCond.Message).To(Equal(
 				`Another McpServer with base path "/mcp/weather/v1" already exists and prevents this instance from becoming active. It is owned by team "platform--mcp-team". ` +
-					condition.MessageWaitingForTakeover))
+					condition.MessageWaitingForTakeover,
+			))
 
 			processingCond := meta.FindStatusCondition(obj.Status.Conditions, condition.ConditionTypeProcessing)
 			Expect(processingCond).NotTo(BeNil())
@@ -144,11 +177,101 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(obj.Status.Active).To(BeTrue())
+		})
+
+		It("should be blocked by an older AgentCard with the same basePath", func() {
+			now := time.Now()
+			obj := newMcpServer("mcp-1", "/shared/path/v1", "mcp-uid", now)
+			olderCard := agenticv1.AgentCard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "agent-1",
+					Namespace:         "default",
+					CreationTimestamp: metav1.NewTime(now.Add(-time.Hour)),
+				},
+				Spec: agenticv1.AgentCardSpec{BasePath: obj.Spec.BasePath},
+			}
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: []agenticv1.McpServer{*obj}}
+				}).
+				Return(nil)
+			mockListAgentCards(fakeClient, ctx, olderCard)
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Status.Active).To(BeFalse())
+			readyCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCond).NotTo(BeNil())
+			Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(readyCond.Message).To(ContainSubstring("Another AgentCard"))
+			Expect(readyCond.Message).To(ContainSubstring(obj.Spec.BasePath))
+		})
+
+		It("should use kind as a deterministic final tie-breaker", func() {
+			now := time.Now()
+			obj := newMcpServer("same-name", "/shared/path/v1", "mcp-uid", now)
+			obj.Namespace = "same-namespace"
+			card := agenticv1.AgentCard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              obj.Name,
+					Namespace:         obj.Namespace,
+					CreationTimestamp: metav1.NewTime(now),
+				},
+				Spec: agenticv1.AgentCardSpec{BasePath: obj.Spec.BasePath},
+			}
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: []agenticv1.McpServer{*obj}}
+				}).
+				Return(nil)
+			mockListAgentCards(fakeClient, ctx, card)
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Status.Active).To(BeFalse())
+			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Message).
+				To(ContainSubstring("Another AgentCard"))
+		})
+
+		It("should block a normalized basePath conflict with an older AgentCard", func() {
+			now := time.Now()
+			obj := newMcpServer("mcp-1", "/shared/path/v1", "mcp-uid", now)
+			caseDifferentCard := agenticv1.AgentCard{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "agent-1",
+					Namespace:         "default",
+					CreationTimestamp: metav1.NewTime(now.Add(-time.Hour)),
+				},
+				Spec: agenticv1.AgentCardSpec{BasePath: "/Shared/Path/V1"},
+			}
+
+			fakeClient.EXPECT().
+				List(ctx, mock.AnythingOfType("*v1.McpServerList"), mock.Anything).
+				Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
+					*list.(*agenticv1.McpServerList) = agenticv1.McpServerList{Items: []agenticv1.McpServer{*obj}}
+				}).
+				Return(nil)
+			mockListAgentCards(fakeClient, ctx, caseDifferentCard)
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(obj.Status.Active).To(BeFalse())
+			blocked := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+			Expect(blocked.Message).To(ContainSubstring("AgentCard"))
+			Expect(blocked.Message).To(ContainSubstring("/Shared/Path/V1"))
 		})
 
 		It("should treat McpServers with different basePaths as case conflicts", func() {
@@ -164,6 +287,7 @@ var _ = Describe("McpServerHandler", func() {
 					}
 				}).
 				Return(nil)
+			mockListAgentCards(fakeClient, ctx)
 
 			err := h.CreateOrUpdate(ctx, obj)
 
